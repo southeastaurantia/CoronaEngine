@@ -14,7 +14,7 @@ namespace ECS
     void ISystem::registerEvents(entt::dispatcher &dispatcher)
     {
         dispatcher.sink<ECS::Events::SceneCreate>().connect<&ISystem::start>(this);
-        dispatcher.sink<ECS::Events::SceneDestroy>().connect<&ISystem::quit>(this);
+        dispatcher.sink<ECS::Events::SceneRemove>().connect<&ISystem::quit>(this);
         this->onRegisterEvents(dispatcher);
     }
 

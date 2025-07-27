@@ -1,10 +1,6 @@
 #pragma once
 
-#include <entt/entt.hpp>
-
-#include <Multimedia/Animation/AnimationSystem.h>
-#include <Multimedia/Audio/AudioSystem.h>
-#include <Multimedia/Rendering/RenderingSystem.h>
+#include "ISystem.h"
 
 namespace ECS
 {
@@ -16,8 +12,8 @@ namespace ECS
 
       private:
         entt::dispatcher dispatcher;
-        std::unique_ptr<ECS::Systems::AnimationSystem> animationSystem;
-        std::unique_ptr<ECS::Systems::AudioSystem> audioSystem;
-        std::unique_ptr<ECS::Systems::RenderingSystem> renderingSystem;
+        std::unique_ptr<ECS::ISystem> animationSystem;
+        std::unique_ptr<ECS::ISystem> audioSystem;
+        std::unique_ptr<ECS::ISystem> renderingSystem;
     };
 }; // namespace ECS

@@ -1,9 +1,14 @@
 #include "Scene.h"
 #include "Events.hpp"
 
+#include <Multimedia/Animation/AnimationSystem.h>
+#include <Multimedia/Audio/AudioSystem.h>
+#include <Multimedia/Rendering/RenderingSystem.h>
+
 namespace ECS
 {
-    Scene::Scene() : animationSystem(std::make_unique<ECS::Systems::AnimationSystem>()),
+    Scene::Scene() : dispatcher(entt::dispatcher{}),
+                     animationSystem(std::make_unique<ECS::Systems::AnimationSystem>()),
                      audioSystem(std::make_unique<ECS::Systems::AudioSystem>()),
                      renderingSystem(std::make_unique<ECS::Systems::RenderingSystem>())
     {
@@ -16,7 +21,7 @@ namespace ECS
 
     Scene::~Scene()
     {
-        dispatcher.trigger<ECS::Events::SceneDestroy>();
+        dispatcher.trigger<ECS::Events::SceneRemove>();
         dispatcher.clear();
     }
 } // namespace ECS
