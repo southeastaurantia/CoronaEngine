@@ -4,7 +4,7 @@
 
 namespace ECS::Systems
 {
-    class AnimationSystem : public ISystem
+    class AnimationSystem final : public ISystem
     {
       public:
         AnimationSystem() = default;

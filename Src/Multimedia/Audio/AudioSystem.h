@@ -4,7 +4,7 @@
 
 namespace ECS::Systems
 {
-    class AudioSystem : public ISystem
+    class AudioSystem final : public ISystem
     {
       public:
         AudioSystem() = default;

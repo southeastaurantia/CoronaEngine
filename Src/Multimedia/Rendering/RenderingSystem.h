@@ -4,7 +4,7 @@
 
 namespace ECS::Systems
 {
-    class RenderingSystem : public ISystem
+    class RenderingSystem final : public ISystem
     {
       public:
         RenderingSystem() = default;
