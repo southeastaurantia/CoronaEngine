@@ -1,7 +1,6 @@
 #include "RenderingSystem.h"
 
 #include <chrono>
-#include <thread>
 
 namespace ECS::Systems
 {

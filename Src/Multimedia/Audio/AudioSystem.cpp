@@ -1,7 +1,6 @@
 #include "AudioSystem.h"
 
 #include <chrono>
-#include <thread>
 
 namespace ECS::Systems
 {
