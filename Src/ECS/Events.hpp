@@ -1,17 +1,20 @@
 #pragma once
 
-struct EngineStartEvent
+namespace ECS::Events
 {
-};
+    struct EngineStart
+    {
+    };
 
-struct EngineStopEvent
-{
-};
+    struct EngineStop
+    {
+    };
 
-struct SceneCreateEvent
-{
-};
+    struct SceneCreate
+    {
+    };
 
-struct SceneDestroyEvent
-{
-};
+    struct SceneDestroy
+    {
+    };
+} // namespace ECS::Events

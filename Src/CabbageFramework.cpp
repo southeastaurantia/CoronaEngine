@@ -1,11 +1,9 @@
 #include "CabbageFramework.h"
-#include "ECS/ECSWorld.h"
 
 // Actor实现
 CabbageFramework::Actor::Actor(const Scene &scene, const std::string &path)
     : actorID(static_cast<uint64_t>(0))
 {
-    ECSWorld::get();
 }
 
 CabbageFramework::Actor::~Actor()
