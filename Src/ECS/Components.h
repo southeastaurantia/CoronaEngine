@@ -6,6 +6,8 @@
 
 namespace ECS::Components
 {
+    struct ResLoadedTag{};
+
     struct ActorPose
     {
         ktm::fvec3 transform = ktm::fvec3(0.0f, 0.0f, 0.0f);
