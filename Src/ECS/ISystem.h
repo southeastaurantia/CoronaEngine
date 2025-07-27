@@ -9,8 +9,8 @@ namespace ECS
     class ISystem
     {
       public:
-        ISystem();
-        virtual ~ISystem();
+        ISystem() = default;
+        virtual ~ISystem() = default;
 
         virtual const char *getName() const = 0; // Debug used
 

@@ -6,14 +6,6 @@
 
 namespace ECS
 {
-    ISystem::ISystem()
-    {
-    }
-
-    ISystem::~ISystem()
-    {
-    }
-
     bool ISystem::isRunning() const
     {
         return this->running;
