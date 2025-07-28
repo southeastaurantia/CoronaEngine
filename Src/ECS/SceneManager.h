@@ -14,26 +14,22 @@ namespace ECS
 
       private:
         entt::dispatcher dispatcher;
-        std::unique_ptr<ECS::ISystem> animationSystem;
-        std::unique_ptr<ECS::ISystem> audioSystem;
-        std::unique_ptr<ECS::ISystem> renderingSystem;
+        std::shared_ptr<ECS::ISystem> animationSystem;
+        std::shared_ptr<ECS::ISystem> audioSystem;
+        std::shared_ptr<ECS::ISystem> renderingSystem;
     };
 
     class SceneManager final
     {
-      private:
-        SceneManager() = delete;
-        SceneManager(const SceneManager &) = delete;
-        SceneManager(const SceneManager &&) = delete;
-        SceneManager &operator=(const SceneManager &) = delete;
-        SceneManager &operator=(const SceneManager &&) = delete;
-
       public:
-        static entt::entity createScene();
-        static void removeScene(const entt::entity &scene);
+        SceneManager();
+        ~SceneManager();
+
+        entt::entity createSceneEntity();
+        void destroySceneEntity(const entt::entity &scene);
 
       private:
-        static std::unordered_map<entt::entity, std::unique_ptr<ECS::Scene>> scenes;
+        std::unordered_map<entt::entity, std::shared_ptr<ECS::Scene>> scenes;
     };
 
 } // namespace ECS

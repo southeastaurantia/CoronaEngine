@@ -1,7 +1,8 @@
 #include "Global.h"
 
-std::unique_ptr<entt::dispatcher> ECS::Global::dispatcher = std::make_unique<entt::dispatcher>();
-std::unique_ptr<entt::registry> ECS::Global::registry = std::make_unique<entt::registry>();
+std::shared_ptr<entt::dispatcher> ECS::Global::Dispatcher = std::make_shared<entt::dispatcher>();
+std::shared_ptr<entt::registry> ECS::Global::Registry = std::make_shared<entt::registry>();
+std::shared_ptr<ECS::SceneManager> ECS::Global::SceneMgr = std::make_shared<ECS::SceneManager>();
 
 namespace ECS
 {

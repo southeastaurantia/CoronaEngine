@@ -1,5 +1,7 @@
 #pragma once
 
+#include "SceneManager.h"
+
 #include <entt/entt.hpp>
 
 namespace ECS
@@ -14,7 +16,8 @@ namespace ECS
         Global &operator=(const Global &&) = delete;
 
       public:
-        static std::unique_ptr<entt::dispatcher> dispatcher;
-        static std::unique_ptr<entt::registry> registry;
+        static std::shared_ptr<entt::dispatcher> Dispatcher;
+        static std::shared_ptr<entt::registry> Registry;
+        static std::shared_ptr<ECS::SceneManager> SceneMgr;
     };
 } // namespace ECS
