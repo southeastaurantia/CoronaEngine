@@ -1,10 +1,24 @@
 #pragma once
 
-#include "Scene.h"
+#include "ISystem.h"
+
 #include <unordered_map>
 
 namespace ECS
 {
+    class Scene final
+    {
+      public:
+        Scene();
+        ~Scene();
+
+      private:
+        entt::dispatcher dispatcher;
+        std::unique_ptr<ECS::ISystem> animationSystem;
+        std::unique_ptr<ECS::ISystem> audioSystem;
+        std::unique_ptr<ECS::ISystem> renderingSystem;
+    };
+
     class SceneManager final
     {
       private:

@@ -14,7 +14,7 @@ namespace ECS::Events
     {
     };
 
-    struct SceneRemove
+    struct SceneDestroy
     {
     };
 } // namespace ECS::Events
