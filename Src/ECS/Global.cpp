@@ -1,12 +1,49 @@
 #include "Global.h"
 
-std::shared_ptr<entt::dispatcher> ECS::Global::Dispatcher = std::make_shared<entt::dispatcher>();
-std::shared_ptr<entt::registry> ECS::Global::Registry = std::make_shared<entt::registry>();
-std::shared_ptr<ECS::SceneManager> ECS::Global::SceneMgr = std::make_shared<ECS::SceneManager>();
-std::shared_ptr<ECS::ResourceManager> ECS::Global::ResourceMgr = std::make_shared<ECS::ResourceManager>();
-std::shared_ptr<ECS::TaskScheduler> ECS::Global::TaskScheduler = std::make_shared<ECS::TaskScheduler>();
-
-namespace ECS
+ECS::Singleton &ECS::Singleton::get()
 {
+    static ECS::Singleton instance;
+    return instance;
+}
 
+ECS::Singleton::Singleton() : dispatcher(std::make_shared<entt::dispatcher>()),
+                              registry(std::make_shared<entt::registry>()),
+                              sceneMgr(std::make_shared<ECS::SceneManager>()),
+                              resourceMgr(std::make_shared<ECS::ResourceManager>()),
+                              scheduler(std::make_shared<ECS::TaskScheduler>()),
+                              mainloopThread(std::make_unique<std::thread>(&ECS::Singleton::mainloop, this))
+{
+}
+
+ECS::Singleton::~Singleton()
+{
+    running = false;
+    if (mainloopThread != nullptr)
+    {
+        mainloopThread->detach();
+    }
+}
+
+void ECS::Singleton::mainloop()
+{
+    static constexpr float MaxFrameTime = 1.0f / 120.0f;
+
+    while (running)
+    {
+        auto startTime = std::chrono::high_resolution_clock::now();
+
+        /********** Do Something **********/
+
+        dispatcher->update();
+
+        /********** Do Something **********/
+
+        auto endTime = std::chrono::high_resolution_clock::now();
+        auto frameTime = std::chrono::duration<float>(endTime - startTime).count();
+
+        if (frameTime < MaxFrameTime)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>((MaxFrameTime - frameTime) * 1000.0f)));
+        }
+    }
 }

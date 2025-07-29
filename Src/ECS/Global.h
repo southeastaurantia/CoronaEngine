@@ -9,20 +9,24 @@
 
 namespace ECS
 {
-    class Global final
+    class Singleton final
     {
-      private:
-        Global() = delete;
-        Global(const Global &) = delete;
-        Global(const Global &&) = delete;
-        Global &operator=(const Global &) = delete;
-        Global &operator=(const Global &&) = delete;
-
       public:
-        static std::shared_ptr<entt::dispatcher> Dispatcher;
-        static std::shared_ptr<entt::registry> Registry;
-        static std::shared_ptr<ECS::SceneManager> SceneMgr;
-        static std::shared_ptr<ECS::ResourceManager> ResourceMgr;
-        static std::shared_ptr<ECS::TaskScheduler> TaskScheduler;
+        static Singleton &get();
+
+        std::shared_ptr<entt::dispatcher> dispatcher;
+        std::shared_ptr<entt::registry> registry;
+        std::shared_ptr<ECS::SceneManager> sceneMgr;
+        std::shared_ptr<ECS::ResourceManager> resourceMgr;
+        std::shared_ptr<ECS::TaskScheduler> scheduler;
+
+      private:
+        Singleton();
+        ~Singleton();
+
+        void mainloop();
+
+        bool running{true};
+        std::unique_ptr<std::thread> mainloopThread;
     };
 } // namespace ECS

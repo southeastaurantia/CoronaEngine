@@ -25,9 +25,6 @@ namespace ECS
         SceneManager();
         ~SceneManager();
 
-        entt::entity createSceneEntity();
-        void destroySceneEntity(const entt::entity &scene);
-
       private:
         std::unordered_map<entt::entity, std::shared_ptr<ECS::Scene>> scenes;
     };

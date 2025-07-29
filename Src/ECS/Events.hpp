@@ -1,5 +1,7 @@
 #pragma once
 
+#include <entt/entt.hpp>
+
 namespace ECS::Events
 {
     struct EngineStart
@@ -16,5 +18,10 @@ namespace ECS::Events
 
     struct SceneDestroy
     {
+    };
+
+    struct CreateActorEntity
+    {
+        entt::entity scene;
     };
 } // namespace ECS::Events
