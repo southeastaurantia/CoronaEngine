@@ -33,7 +33,7 @@ namespace ECS
         this->onQuit();
         if (mainloopThread != nullptr)
         {
-            mainloopThread->detach();
+            mainloopThread->join();
         }
         std::cout << std::format("[{}] quited.\n", this->getName());
     }

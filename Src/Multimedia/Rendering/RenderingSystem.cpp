@@ -22,7 +22,7 @@ namespace ECS::Systems
     {
         if (displayThread != nullptr)
         {
-            displayThread->detach();
+            displayThread->join();
         }
     }
 

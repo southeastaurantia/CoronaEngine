@@ -27,7 +27,7 @@ ECS::Global::~Global()
     running = false;
     if (mainloopThread != nullptr)
     {
-        mainloopThread->detach();
+        mainloopThread->join();
         std::cout << "Quited ECS::Global mainloop\n";
     }
     this->dispatcher->clear();
@@ -39,7 +39,7 @@ void ECS::Global::mainloop()
     std::cout << "Start ECS::Global mainloop\n";
     static constexpr float MaxFrameTime = 1.0f / 120.0f;
 
-    while (running)
+    while (true)
     {
         auto startTime = std::chrono::high_resolution_clock::now();
 
@@ -51,6 +51,11 @@ void ECS::Global::mainloop()
 
         auto endTime = std::chrono::high_resolution_clock::now();
         auto frameTime = std::chrono::duration<float>(endTime - startTime).count();
+
+        if (running == false)
+        {
+            break;
+        }
 
         if (frameTime < MaxFrameTime)
         {

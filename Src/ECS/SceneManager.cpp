@@ -51,6 +51,7 @@ namespace ECS
             return;
         }
         scenes[id] = scene;
+        std::cout << std::format("Scene with id {} added\n", static_cast<uint64_t>(id));
     }
 
     void SceneManager::removeScene(entt::entity id)
@@ -61,6 +62,7 @@ namespace ECS
             return;
         }
         scenes.erase(id);
+        std::cout << std::format("Scene with id {} removed\n", static_cast<uint64_t>(id));
     }
 
     std::shared_ptr<ECS::Scene> SceneManager::getScene(entt::entity id) const
