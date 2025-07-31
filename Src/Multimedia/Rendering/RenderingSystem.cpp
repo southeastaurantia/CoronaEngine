@@ -20,9 +20,9 @@ namespace ECS::Systems
 
     void RenderingSystem::onQuit()
     {
-        if (displayThread != nullptr && displayThread->joinable())
+        if (displayThread != nullptr)
         {
-            displayThread->join();
+            displayThread->detach();
         }
     }
 

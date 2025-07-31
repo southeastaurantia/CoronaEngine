@@ -34,11 +34,43 @@ namespace ECS
     /***************** SceneManager *****************/
     SceneManager::SceneManager() : scenes({})
     {
+        std::cout << "SceneManager created\n";
     }
 
     SceneManager::~SceneManager()
     {
         scenes.clear();
+        std::cout << "SceneManager destroyed\n";
+    }
+
+    void SceneManager::addScene(entt::entity id, std::shared_ptr<Scene> scene)
+    {
+        if (scenes.contains(id))
+        {
+            std::cout << std::format("Scene with id {} already exists\n", static_cast<uint64_t>(id));
+            return;
+        }
+        scenes[id] = scene;
+    }
+
+    void SceneManager::removeScene(entt::entity id)
+    {
+        if (!scenes.contains(id))
+        {
+            std::cout << std::format("Scene with id {} does not exist\n", static_cast<uint64_t>(id));
+            return;
+        }
+        scenes.erase(id);
+    }
+
+    std::shared_ptr<ECS::Scene> SceneManager::getScene(entt::entity id) const
+    {
+        if (!scenes.contains(id))
+        {
+            std::cout << std::format("Scene with id {} does not exist\n", static_cast<uint64_t>(id));
+            return nullptr;
+        }
+        return scenes.at(id);
     }
 
 } // namespace ECS

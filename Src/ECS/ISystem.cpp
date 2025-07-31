@@ -31,9 +31,9 @@ namespace ECS
     {
         running = false;
         this->onQuit();
-        if ((mainloopThread != nullptr) && (mainloopThread->joinable()))
+        if (mainloopThread != nullptr)
         {
-            mainloopThread->join();
+            mainloopThread->detach();
         }
         std::cout << std::format("[{}] quited.\n", this->getName());
     }

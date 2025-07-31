@@ -25,6 +25,10 @@ namespace ECS
         SceneManager();
         ~SceneManager();
 
+        void removeScene(entt::entity id);
+        void addScene(entt::entity id, std::shared_ptr<ECS::Scene> scene);
+        std::shared_ptr<ECS::Scene> getScene(entt::entity id) const;
+
       private:
         std::unordered_map<entt::entity, std::shared_ptr<ECS::Scene>> scenes;
     };
