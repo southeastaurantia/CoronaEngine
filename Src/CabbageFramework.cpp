@@ -1,14 +1,33 @@
 #include "CabbageFramework.h"
 
+#include <ECS/Components.h>
+#include <ECS/Events.hpp>
+#include <ECS/Global.h>
+
 // Actor实现
 CabbageFramework::Actor::Actor(const Scene &scene, const std::string &path)
-    : actorID(static_cast<uint64_t>(0))
+    : actorID(static_cast<uint64_t>(ECS::Singleton::get().registry->create())) // 创建Actor实体
 {
+    // Actor实体添加组件
+    entt::entity actor = static_cast<entt::entity>(actorID);
+    ECS::Singleton::get().registry->emplace<ECS::Components::ActorPose>(actor, std::move(ECS::Components::ActorPose{}));
+    ECS::Singleton::get().registry->emplace<ECS::Components::BoneMatrixDevice>(actor, std::move(ECS::Components::BoneMatrixDevice{}));
+    ECS::Singleton::get().registry->emplace<ECS::Components::BoneMatrixHost>(actor, std::move(ECS::Components::BoneMatrixHost{}));
+    ECS::Singleton::get().registry->emplace<ECS::Components::Model>(actor, std::move(ECS::Components::Model{.model = entt::null}));
+    // 发送事件给ECS系统
+    ECS::Singleton::get().dispatcher->enqueue<ECS::Events::CreateActorEntity>(std::move(ECS::Events::CreateActorEntity{
+        .scene = static_cast<entt::entity>(scene.sceneID),
+        .actor = actor,
+        .path = path}));
 }
 
 CabbageFramework::Actor::~Actor()
 {
-    // 析构函数实现
+    entt::entity actor = static_cast<entt::entity>(actorID);
+    ECS::Singleton::get().dispatcher->enqueue<ECS::Events::DestroyActorEntity>(std::move(ECS::Events::DestroyActorEntity{
+        .actor = actor}));
+
+    ECS::Singleton::get().registry->destroy(actor);
 }
 
 void CabbageFramework::Actor::move(const std::array<float, 3> &pos)
@@ -70,13 +89,26 @@ void CabbageFramework::Actor::setMechanicsParams(const MechanicsParams &params)
 
 // Scene实现
 CabbageFramework::Scene::Scene(void *surface, bool lightField)
-    : sceneID(static_cast<uint64_t>(0))
+    : sceneID(static_cast<uint64_t>(ECS::Singleton::get().registry->create())) // 创建Scene实体
 {
+    // Scene实体添加组件
+    entt::entity scene = static_cast<entt::entity>(sceneID);
+    ECS::Singleton::get().registry->emplace<ECS::Components::Camera>(scene, std::move(ECS::Components::Camera{}));
+    ECS::Singleton::get().registry->emplace<ECS::Components::SunLight>(scene, std::move(ECS::Components::SunLight{}));
+    ECS::Singleton::get().registry->emplace<ECS::Components::Actors>(scene, std::move(ECS::Components::Actors{.actors = {}}));
+    // 发送事件给ECS系统
+    ECS::Singleton::get().dispatcher->enqueue<ECS::Events::CreateSceneEntity>(std::move(ECS::Events::CreateSceneEntity{
+        .scene = scene,
+        .surface = surface,
+        .lightField = lightField}));
 }
 
 CabbageFramework::Scene::~Scene()
 {
-    // 析构函数实现
+    entt::entity scene = static_cast<entt::entity>(sceneID);
+    ECS::Singleton::get().dispatcher->enqueue<ECS::Events::DestroySceneEntity>(std::move(ECS::Events::DestroySceneEntity{
+        .scene = static_cast<entt::entity>(sceneID)}));
+    ECS::Singleton::get().registry->destroy(scene);
 }
 
 void CabbageFramework::Scene::setCamera(const std::array<float, 3> &pos, const std::array<float, 3> &forward, const std::array<float, 3> &worldup, const float &fov)
