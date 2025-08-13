@@ -25,3 +25,4 @@
 [submodule "Env/CabbageHardware"]
 	path = Env/CabbageHardware
 	url = https://github.com/CoronaEngine/CabbageHardware.git
+	ignore = all
