@@ -2,19 +2,25 @@
 
 #include <ECS/ISystem.h>
 
-#include <memory>
-#include <thread>
-
-class RenderingSystem final : public ISystem
+namespace ECS::Systems
 {
-  public:
-    RenderingSystem(const entt::entity &ownerScene = entt::null);
+    class RenderingSystem final : public ISystem
+    {
+      public:
+        RenderingSystem() = default;
+        virtual ~RenderingSystem() = default;
 
-    void registerEvents(entt::dispatcher &dispatcher) override;
-    void onStart() override;
-    void onQuit() override;
-    const char *getName() const override;
+        const char *getName() const override;
 
-  private:
-    std::shared_ptr<std::thread> mainloopThread;
-};
+      private:
+        void onRegisterEvents(entt::dispatcher &dispatcher) override;
+        void onStart() override;
+        void onQuit() override;
+        void mainloop() override;
+
+        void displayLoop();
+
+      private:
+        std::unique_ptr<std::thread> displayThread;
+    };
+} // namespace ECS::Systems

@@ -5,7 +5,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 project(
     CabbageFramework
     VERSION 0.5.0
-    HOMEPAGE_URL "https://github.com/Cabbage-Engine/CabbageEngine"
+    HOMEPAGE_URL "https://github.com/CoronaEngine/CabbageFramework"
     LANGUAGES C CXX
 )
 
@@ -29,7 +29,7 @@ set(BUILD_SHARED_LIBS OFF)
 
 add_subdirectory(Src)
 add_subdirectory(Env/assimp EXCLUDE_FROM_ALL)
-add_subdirectory(Env/CabbageDisplayer EXCLUDE_FROM_ALL)
+add_subdirectory(Env/CabbageHardware EXCLUDE_FROM_ALL)
 add_subdirectory(Env/entt EXCLUDE_FROM_ALL)
 add_subdirectory(Env/marl EXCLUDE_FROM_ALL)
 

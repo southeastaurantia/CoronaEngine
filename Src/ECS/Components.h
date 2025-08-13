@@ -4,112 +4,177 @@
 #include <entt/entt.hpp>
 #include <ktm/ktm.h>
 
-struct ActorPoseComponent
+namespace ECS::Components
 {
-    ktm::fvec3 transform = ktm::fvec3(0.0f, 0.0f, 0.0f);
-    ktm::fvec3 rotate = ktm::fvec3(0.0f, 0.0f, 0.0f);
-    ktm::fvec3 scale = ktm::fvec3(1.0f, 1.0f, 1.0f);
+    struct ResLoadedTag{};
+    
+    struct Camera
+    {
+        float fov = 45.0f;
+        ktm::fvec3 pos = ktm::fvec3(1.0f, 1.0f, 1.0f);
+        ktm::fvec3 forward = ktm::fvec3(-1.0f, -1.0f, -1.0f);
+        ktm::fvec3 worldUp = ktm::fvec3(0.0f, 1.0f, 0.0f);
+    };
+    
+    struct SunLight
+    {
+        ktm::fvec3 direction;
+    };
 
-    ktm::fvec3 aabbMinXYZ = ktm::fvec3(0.0f, 0.0f, 0.0f);
-    ktm::fvec3 aabbMaxXYZ = ktm::fvec3(0.0f, 0.0f, 0.0f);
-};
+    struct Actors
+    {
+        std::vector<entt::entity> actors;
+    };
+    
+    struct ActorPose
+    {
+        ktm::fvec3 transform = ktm::fvec3(0.0f, 0.0f, 0.0f);
+        ktm::fvec3 rotate = ktm::fvec3(0.0f, 0.0f, 0.0f);
+        ktm::fvec3 scale = ktm::fvec3(1.0f, 1.0f, 1.0f);
 
-struct BoneMatrixHostComponent
-{
-    std::vector<ktm::fmat4x4> matrices;
-};
+        ktm::fvec3 aabbMinXYZ = ktm::fvec3(0.0f, 0.0f, 0.0f);
+        ktm::fvec3 aabbMaxXYZ = ktm::fvec3(0.0f, 0.0f, 0.0f);
+    };
 
-struct BoneMatrixDeviceComponent
-{
-    HardwareBuffer matrices;
-};
+    struct BoneMatrixHost
+    {
+        std::vector<ktm::fmat4x4> matrices;
+    };
 
-struct ImageHostComponent
-{
-    std::string path;            ///< 纹理文件路径
-    unsigned char *data;         ///< 纹理数据指针
-    int width, height, channels; ///< 纹理宽、高、通道数
-};
+    struct BoneMatrixDevice
+    {
+        HardwareBuffer matrices;
+    };
 
-struct ImageDeviceComponent
-{
-    HardwareImage image;
-};
+    struct Meshes
+    {
+        std::vector<entt::entity> meshes;
+        std::string path;
+    };
 
-struct MaterialParamsComponent
-{
-    ktm::fvec3 baseColor;
-    float roughness;
-    float metallic;
-    float specular;
-    float transmission;
-};
+    struct MeshHost
+    {
+        std::vector<uint32_t> indices;
+        std::vector<float> positions;
+        std::vector<float> normals;
+        std::vector<float> texCoords;
+        std::vector<uint32_t> boneIndices;
+        std::vector<float> boneWeights;
+    };
 
-struct MeshHostComponent
-{
-    std::vector<uint32_t> indices;
-    std::vector<float> positions;
-    std::vector<float> normals;
-    std::vector<float> texCoords;
-    std::vector<uint32_t> boneIndices;
-    std::vector<float> boneWeights;
-};
+    struct MeshDevice
+    {
+        HardwareBuffer indicesBuffer;
+        HardwareBuffer positionsBuffer;
+        HardwareBuffer normalsBuffer;
+        HardwareBuffer texCoordsBuffer;
+        HardwareBuffer boneIndicesBuffer;
+        HardwareBuffer boneWeightsBuffer;
+    };
 
-struct MaterialComponent
-{
-    entt::entity material;
-};
+    struct Material
+    {
+        entt::entity material;
+    };
 
-struct MeshDeviceComponent
-{
-    HardwareBuffer indicesBuffer;
-    HardwareBuffer positionsBuffer;
-    HardwareBuffer normalsBuffer;
-    HardwareBuffer texCoordsBuffer;
-    HardwareBuffer boneIndicesBuffer;
-    HardwareBuffer boneWeightsBuffer;
-};
+    struct MaterialParams
+    {
+        ktm::fvec3 baseColor;
+        float roughness;
+        float metallic;
+        float specular;
+        float transmission;
+    };
 
-struct BaseColorTextureComponent
-{
-    entt::entity texture;
-};
+    struct BaseColorTexture
+    {
+        entt::entity texture;
+    };
 
-struct NormalTextureComponent
-{
-    entt::entity texture;
-};
+    struct NormalTexture
+    {
+        entt::entity texture;
+    };
 
-struct OpacityTextureComponent
-{
-    entt::entity texture;
-};
+    struct OpacityTexture
+    {
+        entt::entity texture;
+    };
 
-struct MeshesComponent
-{
-    std::vector<entt::entity> meshes;
-    std::string path;
-};
+    struct ImageHost
+    {
+        std::string path;            ///< 纹理文件路径
+        unsigned char *data;         ///< 纹理数据指针
+        int width, height, channels; ///< 纹理宽、高、通道数
+    };
 
-struct CameraComponent
-{
-    float fov = 45.0f;
-    ktm::fvec3 pos = ktm::fvec3(1.0f, 1.0f, 1.0f);
-    ktm::fvec3 forward = ktm::fvec3(-1.0f, -1.0f, -1.0f);
-    ktm::fvec3 worldUp = ktm::fvec3(0.0f, 1.0f, 0.0f);
-};
+    struct ImageDevice
+    {
+        HardwareImage image;
+    };
 
-struct SunLightComponent
-{
-    ktm::fvec3 direction;
-};
+    struct Model
+    {
+        entt::entity model;
+    };
 
-struct ActorsComponent
-{
-    std::vector<entt::entity> actors;
-};
+    struct KeyPosition
+    {
+        double time;
+        ktm::fvec3 position;
+    };
 
-struct ModelComponent
-{
-    entt::entity model;
-};
+    struct KeyRotation
+    {
+        double time;
+        ktm::fquat rotation;
+    };
+
+    struct KeyScale
+    {
+        double time;
+        ktm::fvec3 scale;
+    };
+
+    struct Bone
+    {
+        std::vector<KeyPosition>    keyPositions;
+        std::vector<KeyRotation>    keyRotations;
+        std::vector<KeyScale>       keyScales;
+        int NumPositions;
+        int NumRotations;
+        int NumScales;
+        std::string name;
+        int id;
+    };
+
+    struct AssimpNodeData
+    {
+        std::string name;
+        ktm::fmat4x4 transformation;
+        int chilenCount;
+        std::vector<AssimpNodeData> children;
+    };
+
+    struct SkeletalAnimation
+    {
+        double duration;
+        double ticksPerSecond;
+        std::vector<Bone> bones;
+        AssimpNodeData rootNode;
+    };
+
+    struct BoneInfo
+    {
+        int id;
+        ktm::fmat4x4 offsetMatrix;
+    };
+
+    struct Animations
+    {
+        std::vector<SkeletalAnimation> skeletalAnimations;
+        std::map<std::string, BoneInfo> boneInfoMap; 
+    };
+
+
+} // namespace ECS::Components

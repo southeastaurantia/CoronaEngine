@@ -1,47 +1,72 @@
 #include "RenderingSystem.h"
-#include <ECS/ECSWorld.h>
-#include <ECS/Events.hpp>
 
-RenderingSystem::RenderingSystem(const entt::entity &ownerScene)
-    : ISystem(ownerScene)
-{
-    // 初始化渲染系统
-    ECSWorld::get().getDispatcher(ownerScene).sink<SceneCreateEvent>().connect<&ISystem::onStart>(this);
-    ECSWorld::get().getDispatcher(ownerScene).sink<SceneDestroyEvent>().connect<&ISystem::onQuit>(this);
-    std::printf("Scene %-5lld %-16s %-10s\n", static_cast<uint64_t>(ownerScene), getName(), "created");
-}
+#include <chrono>
 
-void RenderingSystem::registerEvents(entt::dispatcher &dispatcher)
+namespace ECS::Systems
 {
-    // 注册渲染系统相关的事件处理器
-}
-
-void RenderingSystem::onStart()
-{
-    running = true;
-    std::printf("Scene %-5lld %-16s %-10s\n", static_cast<uint64_t>(ownerScene), getName(), "started");
-    mainloopThread = std::make_shared<std::thread>([this]() {
-        int i = 0;
-        do
-        {
-            std::printf("Scene %-5lld %-16s %-10s %-5d\n", static_cast<uint64_t>(ownerScene), getName(), "ticked", i++);
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        } while (running);
-    });
-}
-
-void RenderingSystem::onQuit()
-{
-    running = false;
-    // 关闭渲染系统
-    if (mainloopThread && mainloopThread->joinable())
+    const char *RenderingSystem::getName() const
     {
-        mainloopThread->join();
+        return "RenderingSystem";
     }
-    std::printf("Scene %-5lld %-16s %-10s\n", static_cast<uint64_t>(ownerScene), getName(), "quited");
-}
 
-const char *RenderingSystem::getName() const
-{
-    return "RenderingSystem";
-}
+    void RenderingSystem::onRegisterEvents(entt::dispatcher &dispatcher)
+    {
+    }
+
+    void RenderingSystem::onStart()
+    {
+        this->displayThread = std::make_unique<std::thread>(&RenderingSystem::displayLoop, this);
+    }
+
+    void RenderingSystem::onQuit()
+    {
+        if (displayThread != nullptr)
+        {
+            displayThread->join();
+        }
+    }
+
+    void RenderingSystem::mainloop()
+    {
+        static constexpr float MaxFrameTime = 1.0f / 120.0f;
+
+        while (isRunning())
+        {
+            auto startTime = std::chrono::high_resolution_clock::now();
+
+            /********** Do Something **********/
+
+            /********** Do Something **********/
+
+            auto endTime = std::chrono::high_resolution_clock::now();
+            auto frameTime = std::chrono::duration<float>(endTime - startTime).count();
+
+            if (frameTime < MaxFrameTime)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>((MaxFrameTime - frameTime) * 1000.0f)));
+            }
+        }
+    }
+
+    void RenderingSystem::displayLoop()
+    {
+        static constexpr float MaxFrameTime = 1.0f / 240.0f;
+
+        while (isRunning())
+        {
+            auto startTime = std::chrono::high_resolution_clock::now();
+
+            /********** Do Something **********/
+
+            /********** Do Something **********/
+
+            auto endTime = std::chrono::high_resolution_clock::now();
+            auto frameTime = std::chrono::duration<float>(endTime - startTime).count();
+
+            if (frameTime < MaxFrameTime)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>((MaxFrameTime - frameTime) * 1000.0f)));
+            }
+        }
+    }
+} // namespace ECS::Systems

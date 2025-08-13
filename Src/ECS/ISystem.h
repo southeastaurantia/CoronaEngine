@@ -2,19 +2,34 @@
 
 #include <entt/entt.hpp>
 
-class ISystem
+#include <thread>
+
+namespace ECS
 {
-  public:
-    ISystem(const entt::entity &ownerScene = entt::null);
-    virtual ~ISystem();
+    class ISystem
+    {
+      public:
+        ISystem() = default;
+        virtual ~ISystem() = default;
 
-    virtual void registerEvents(entt::dispatcher &dispatcher) = 0;
-    virtual void onStart() = 0;
-    virtual void onQuit() = 0;
+        virtual const char *getName() const = 0; // Debug used
 
-    virtual const char *getName() const = 0; // 调使用的名字
+      public:
+        void registerEvents(entt::dispatcher &dispatcher); // First called
+        bool isRunning() const;
 
-  protected:
-    entt::entity ownerScene;
-    bool running;
-};
+      private:
+        void start();
+        void quit();
+
+      protected:
+        virtual void onRegisterEvents(entt::dispatcher &dispatcher) = 0;
+        virtual void onStart() = 0;
+        virtual void onQuit() = 0;
+        virtual void mainloop() = 0;
+
+      private:
+        bool running{false};
+        std::unique_ptr<std::thread> mainloopThread;
+    };
+} // namespace ECS

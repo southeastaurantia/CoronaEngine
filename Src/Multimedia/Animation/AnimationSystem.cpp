@@ -1,47 +1,45 @@
 #include "AnimationSystem.h"
-#include <ECS/ECSWorld.h>
-#include <ECS/Events.hpp>
 
-AnimationSystem::AnimationSystem(const entt::entity &ownerScene)
-    : ISystem(ownerScene)
-{
-    // 初始化动画系统
-    ECSWorld::get().getDispatcher(ownerScene).sink<SceneCreateEvent>().connect<&ISystem::onStart>(this);
-    ECSWorld::get().getDispatcher(ownerScene).sink<SceneDestroyEvent>().connect<&ISystem::onQuit>(this);
-    std::printf("Scene %-5lld %-16s %-10s\n", static_cast<uint64_t>(ownerScene), getName(), "created");
-}
+#include <chrono>
 
-void AnimationSystem::registerEvents(entt::dispatcher &dispatcher)
+namespace ECS::Systems
 {
-    // 在此注册事件处理
-}
-
-void AnimationSystem::onStart()
-{
-    running = true;
-    std::printf("Scene %-5lld %-16s %-10s\n", static_cast<uint64_t>(ownerScene), getName(), "started");
-    mainloopThread = std::make_shared<std::thread>([this]() {
-        int i = 0;
-        do
-        {
-            std::printf("Scene %-5lld %-16s %-10s %-5d\n", static_cast<uint64_t>(ownerScene), getName(), "ticked", i++);
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        } while (running);
-    });
-}
-
-void AnimationSystem::onQuit()
-{
-    running = false;
-    // 关闭动画系统
-    if (mainloopThread && mainloopThread->joinable())
+    const char *AnimationSystem::getName() const
     {
-        mainloopThread->join();
+        return "AnimationSystem";
     }
-    std::printf("Scene %-5lld %-16s %-10s\n", static_cast<uint64_t>(ownerScene), getName(), "quited");
-}
 
-const char *AnimationSystem::getName() const
-{
-    return "AnimationSystem";
-}
+    void AnimationSystem::onRegisterEvents(entt::dispatcher &dispatcher)
+    {
+    }
+
+    void AnimationSystem::onStart()
+    {
+    }
+
+    void AnimationSystem::onQuit()
+    {
+    }
+
+    void AnimationSystem::mainloop()
+    {
+        static constexpr float MaxFrameTime = 1.0f / 120.0f;
+
+        while (isRunning())
+        {
+            auto startTime = std::chrono::high_resolution_clock::now();
+
+            /********** Do Something **********/
+
+            /********** Do Something **********/
+
+            auto endTime = std::chrono::high_resolution_clock::now();
+            auto frameTime = std::chrono::duration<float>(endTime - startTime).count();
+
+            if (frameTime < MaxFrameTime)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>((MaxFrameTime - frameTime) * 1000.0f)));
+            }
+        }
+    }
+} // namespace ECS::Systems
