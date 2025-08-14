@@ -12,8 +12,6 @@ add_executable(CabbageFrameworkExamples ${EXAMPLES_SOURCE_FILES})
 set_property(DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT CabbageFrameworkExamples)
 
 set_target_properties(CabbageFrameworkExamples PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin/$<CONFIG> # 可执行文件输出路径
-    PDB_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin/$<CONFIG> # PDB 文件输出路径
     VS_DEBUGGER_WORKING_DIRECTORY $<TARGET_FILE_DIR:CabbageFrameworkExamples> # VS 调试工作目录
 )
 

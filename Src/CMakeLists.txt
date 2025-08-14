@@ -7,10 +7,6 @@ file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES})
 add_library(CabbageFramework STATIC ${SOURCE_FILES})
 
-set_target_properties(CabbageFramework PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib/$<CONFIG> # 静态库输出路径
-)
-
 target_include_directories(CabbageFramework PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}"
     "${PROJECT_SOURCE_DIR}/Env/CabbageHardware/Src"
