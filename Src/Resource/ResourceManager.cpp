@@ -6,14 +6,16 @@
 
 namespace ECS
 {
-    ResourceManager::ResourceManager() : m_registry(ECS::Global::get().registry)
+    ResourceManager::ResourceManager()
     {
         // TODO: Implement
+        std::cout << "ResourceManager created\n";
     }
 
     ResourceManager::~ResourceManager()
     {
         // TODO: Implement
+        std::cout << "ResourceManager destroyed\n";
     }
 
     entt::entity ResourceManager::LoadModel(const std::string &filePath)
@@ -27,10 +29,10 @@ namespace ECS
             return entt::null;
         }
 
-        auto modelEntity = m_registry->create();
-        m_registry->emplace<Components::Meshes>(modelEntity, Components::Meshes{
-                                                                 .meshes = {},
-                                                                 .path = filePath});
+        auto modelEntity = ECS::Global::get().registry->create();
+        ECS::Global::get().registry->emplace<Components::Meshes>(modelEntity, Components::Meshes{
+                                                                                  .meshes = {},
+                                                                                  .path = filePath});
 
         ProcessNode(scene->mRootNode, scene, modelEntity);
 
@@ -43,7 +45,7 @@ namespace ECS
         {
             aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
             entt::entity meshEntity = ProcessMesh(mesh, scene, parentEntity);
-            auto &meshes = m_registry->get<Components::Meshes>(parentEntity);
+            auto &meshes = ECS::Global::get().registry->get<Components::Meshes>(parentEntity);
             meshes.meshes.push_back(meshEntity);
         }
 
@@ -55,7 +57,7 @@ namespace ECS
 
     entt::entity ResourceManager::ProcessMesh(aiMesh *mesh, const aiScene *scene, entt::entity modelEntity)
     {
-        auto meshEntity = m_registry->create();
+        auto meshEntity = ECS::Global::get().registry->create();
 
         Components::MeshHost meshHost;
 
@@ -121,7 +123,7 @@ namespace ECS
 
     void ResourceManager::ExtractBoneWeightForVertices(aiMesh *mesh, Components::MeshHost &meshHost, const aiScene *scene, entt::entity modelEntity)
     {
-        auto &animations = m_registry->get<Components::Animations>(modelEntity);
+        auto &animations = ECS::Global::get().registry->get<Components::Animations>(modelEntity);
         auto &boneInfoMap = animations.boneInfoMap;
         int &boneCount = animations.boneCount;
 

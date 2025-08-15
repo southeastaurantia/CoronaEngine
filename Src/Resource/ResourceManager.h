@@ -23,6 +23,5 @@ namespace ECS
         void ExtractBoneWeightForVertices(aiMesh *mesh, Components::MeshHost &meshHost, const aiScene *scene, entt::entity modelEntity);
 
       private:
-        std::shared_ptr<entt::registry> m_registry;
     };
 } // namespace ECS
