@@ -1,14 +1,12 @@
 #include "ResourceManager.h"
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-#include "ECS/Components.h"
+
+#include <ECS/Global.h>
+
 #include <iostream>
 
 namespace ECS
 {
-    ResourceManager::ResourceManager(entt::registry& registry)
-        :m_registry(registry)
+    ResourceManager::ResourceManager() : m_registry(ECS::Global::get().registry)
     {
         // TODO: Implement
     }
@@ -18,33 +16,34 @@ namespace ECS
         // TODO: Implement
     }
 
-    entt::entity ResourceManager::LoadModel(const std::string& filePath)
+    entt::entity ResourceManager::LoadModel(const std::string &filePath)
     {
         Assimp::Importer importer;
-        const aiScene* scene = importer.ReadFile(filePath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs);
+        const aiScene *scene = importer.ReadFile(filePath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs);
 
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
         {
             std::cout << "ERROR::ASSIMP::" << importer.GetErrorString() << std::endl;
             return entt::null;
         }
-        
-        auto modelEntity = m_registry.create();
-        m_registry.emplace<Components::Model>(modelEntity, modelEntity);
-        m_registry.emplace<Components::Meshes>(modelEntity, std::vector<entt::entity>(), filePath);
-        
+
+        auto modelEntity = m_registry->create();
+        m_registry->emplace<Components::Meshes>(modelEntity, Components::Meshes{
+                                                                 .meshes = {},
+                                                                 .path = filePath});
+
         ProcessNode(scene->mRootNode, scene, modelEntity);
-        
+
         return modelEntity;
     }
 
-    void ResourceManager::ProcessNode(aiNode* node, const aiScene* scene, entt::entity parentEntity)
+    void ResourceManager::ProcessNode(aiNode *node, const aiScene *scene, entt::entity parentEntity)
     {
         for (unsigned int i = 0; i < node->mNumMeshes; i++)
         {
-            aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+            aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
             entt::entity meshEntity = ProcessMesh(mesh, scene, parentEntity);
-            auto& meshes = m_registry.get<Components::Meshes>(parentEntity);
+            auto &meshes = m_registry->get<Components::Meshes>(parentEntity);
             meshes.meshes.push_back(meshEntity);
         }
 
@@ -54,10 +53,9 @@ namespace ECS
         }
     }
 
-
-    entt::entity ResourceManager::ProcessMesh(aiMesh* mesh, const aiScene* scene, entt::entity modelEntity)
+    entt::entity ResourceManager::ProcessMesh(aiMesh *mesh, const aiScene *scene, entt::entity modelEntity)
     {
-        auto meshEntity = m_registry.create();
+        auto meshEntity = m_registry->create();
 
         Components::MeshHost meshHost;
 
@@ -66,7 +64,7 @@ namespace ECS
         meshHost.texCoords.reserve(mesh->mNumVertices * 2);
         meshHost.boneIndices.resize(mesh->mNumVertices * 4, 0);
         meshHost.boneWeights.resize(mesh->mNumVertices * 4, 0.0f);
-        
+
         for (unsigned int i = 0; i < mesh->mNumVertices; i++)
         {
             meshHost.positions.push_back(mesh->mVertices[i].x);
@@ -114,22 +112,20 @@ namespace ECS
             }
         }
 
-        if (mesh-> mMaterialIndex >= 0)
+        if (mesh->mMaterialIndex >= 0)
         {
-
         }
 
         return meshEntity;
-
     }
 
-    void ResourceManager::ExtractBoneWeightForVertices(aiMesh* mesh, Components::MeshHost& meshHost, const aiScene* scene, entt::entity modelEntity)
+    void ResourceManager::ExtractBoneWeightForVertices(aiMesh *mesh, Components::MeshHost &meshHost, const aiScene *scene, entt::entity modelEntity)
     {
-        auto& animations = m_registry.get<Components::Animations>(modelEntity);
-        auto& boneInfoMap = animations.boneInfoMap;
-        int& boneCount = animations.boneCount;
+        auto &animations = m_registry->get<Components::Animations>(modelEntity);
+        auto &boneInfoMap = animations.boneInfoMap;
+        int &boneCount = animations.boneCount;
 
-        auto ConvertMatrixToKTFormat = [](const aiMatrix4x4& from) -> ktm::fmat4x4 {
+        auto ConvertMatrixToKTFormat = [](const aiMatrix4x4 &from) -> ktm::fmat4x4 {
             ktm::fmat4x4 to;
             to[0][0] = from.a1;
             to[1][0] = from.a2;
@@ -189,6 +185,5 @@ namespace ECS
             }
         }
     }
-
 
 } // namespace ECS
