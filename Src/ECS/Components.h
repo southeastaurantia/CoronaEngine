@@ -58,8 +58,8 @@ namespace ECS::Components
         std::vector<float> positions;
         std::vector<float> normals;
         std::vector<float> texCoords;
-        std::vector<uint32_t> boneIndices;
-        std::vector<float> boneWeights;
+        std::vector<uint32_t> boneIndices; 
+        std::vector<float> boneWeights; 
     };
 
     struct MeshDevice
@@ -173,7 +173,8 @@ namespace ECS::Components
     struct Animations
     {
         std::vector<SkeletalAnimation> skeletalAnimations;
-        std::map<std::string, BoneInfo> boneInfoMap; 
+        std::map<std::string, BoneInfo> boneInfoMap;
+        int boneCount;
     };
 
 
