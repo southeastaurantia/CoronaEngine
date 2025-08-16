@@ -16,6 +16,8 @@ CabbageFramework::Actor::Actor(const Scene &scene, const std::string &path)
     ECS::Global::get().registry->emplace<ECS::Components::ActorPose>(actor, std::move(ECS::Components::ActorPose{}));
     ECS::Global::get().registry->emplace<ECS::Components::BoneMatrixDevice>(actor, std::move(ECS::Components::BoneMatrixDevice{}));
     ECS::Global::get().registry->emplace<ECS::Components::BoneMatrixHost>(actor, std::move(ECS::Components::BoneMatrixHost{}));
+    
+    entt::entity modelEntity = ECS::Global::get().resourceMgr->LoadModel(path);
     ECS::Global::get().registry->emplace<ECS::Components::Model>(actor, std::move(ECS::Components::Model{.model = entt::null}));
     // 发送事件给ECS系统
     ECS::Global::get().dispatcher->enqueue<ECS::Events::CreateActorEntity>(std::move(ECS::Events::CreateActorEntity{
@@ -130,7 +132,8 @@ void CabbageFramework::Scene::setSunDirection(const std::array<float, 3> &direct
 
 void CabbageFramework::Scene::setDisplaySurface(void *surface)
 {
-    // 设置显示表面
+    HardwareDisplayer displayManager(surface);
+    
 }
 
 CabbageFramework::Actor *CabbageFramework::Scene::detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir)
