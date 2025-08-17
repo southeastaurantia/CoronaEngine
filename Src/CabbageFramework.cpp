@@ -133,7 +133,8 @@ void CabbageFramework::Scene::setSunDirection(const std::array<float, 3> &direct
 void CabbageFramework::Scene::setDisplaySurface(void *surface)
 {
     HardwareDisplayer displayManager(surface);
-    
+    HardwareImage finalOutputImage(ktm::uvec2(1920, 1080), ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
+    displayManager = finalOutputImage;
 }
 
 CabbageFramework::Actor *CabbageFramework::Scene::detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir)

@@ -25,7 +25,7 @@ namespace ECS
 
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
         {
-            std::cout << "ERROR::ASSIMP::" << importer.GetErrorString() << std::endl;
+            std::printf("ERROR::ASSIMP::%s\n", importer.GetErrorString());
             return entt::null;
         }
 
