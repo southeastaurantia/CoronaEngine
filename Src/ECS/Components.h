@@ -32,6 +32,17 @@ namespace ECS::Components
         ktm::fvec3 rotate = ktm::fvec3(0.0f, 0.0f, 0.0f);
         ktm::fvec3 scale = ktm::fvec3(1.0f, 1.0f, 1.0f);
 
+        ktm::fmat4x4 getModelMatrix() const
+        {
+            ktm::fmat4x4 model;
+            return model = ktm::translate3d(transform) *
+                                ktm::rotate3d_x(rotate.x) * ktm::rotate3d_y(rotate.y) * ktm::rotate3d_z(rotate.z) *
+                                ktm::scale3d(scale);
+        }
+    };
+    
+    struct AABB
+    {
         ktm::fvec3 aabbMinXYZ = ktm::fvec3(0.0f, 0.0f, 0.0f);
         ktm::fvec3 aabbMaxXYZ = ktm::fvec3(0.0f, 0.0f, 0.0f);
     };
