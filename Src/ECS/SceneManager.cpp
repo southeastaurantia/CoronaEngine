@@ -13,14 +13,13 @@
 namespace ECS
 {
     /***************** Scene *****************/
-    Scene::Scene(void *surface, bool lightField) : dispatcher(entt::dispatcher{}),
-
+    Scene::Scene(entt::entity sceneId, void *surface, bool lightField) : dispatcher(entt::dispatcher{}),
                      animationSystem(std::make_shared<ECS::Systems::AnimationSystem>()),
                      audioSystem(std::make_shared<ECS::Systems::AudioSystem>()),
                      renderingSystem(std::make_shared<ECS::Systems::RenderingSystem>()),
-                     sceneID(static_cast<uint64_t>(Global::get().registry->create()))
+                     sceneId(sceneId)
     {
-        entt::entity scene = static_cast<entt::entity>(sceneID);
+        entt::entity scene = sceneId;
         Global::get().registry->emplace<ECS::Components::Camera>(scene);
         Global::get().registry->emplace<ECS::Components::SunLight>(scene);
         Global::get().registry->emplace<ECS::Components::Actors>(scene);
@@ -35,7 +34,7 @@ namespace ECS
 
     Scene::~Scene()
     {
-        entt::entity scene = static_cast<entt::entity>(sceneID);
+        entt::entity scene = sceneId;
         dispatcher.trigger<Events::SceneDestroy>();
         Global::get().registry->destroy(scene);
         dispatcher.clear();
@@ -43,13 +42,13 @@ namespace ECS
 
     void Scene::setCamera(const std::array<float, 3> &pos, const std::array<float, 3> &forward, const std::array<float, 3> &worldup, const float &fov)
     {
-        entt::entity scene = static_cast<entt::entity>(sceneID);
+        entt::entity scene = sceneId;
         auto& camera = Global::get().registry->get<Components::Camera>(scene);
     }
 
     void Scene::setSunDirection(const std::array<float, 3> &direction)
     {
-        entt::entity scene = static_cast<entt::entity>(sceneID);
+        entt::entity scene = sceneId;
         auto& sunlight = Global::get().registry->get<Components::SunLight>(scene);
     }
 
@@ -58,6 +57,7 @@ namespace ECS
         if (renderingSystem != nullptr)
         {
             std::dynamic_pointer_cast<ECS::Systems::RenderingSystem>(renderingSystem)->setDisplaySurface(surface);
+            std::printf("Display surface set for scene %llu\n", static_cast<uint64_t>(sceneId));
         }
     }
 
@@ -88,7 +88,7 @@ namespace ECS
     entt::entity SceneManager::createScene(void *surface, bool lightField)
     {
         entt::entity sceneId = Global::get().registry->create();
-        auto scene = std::make_shared<Scene>(surface, lightField);
+        auto scene = std::make_shared<Scene>(sceneId, surface, lightField);
         addScene(sceneId, scene);
         return sceneId;
     }

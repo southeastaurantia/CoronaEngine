@@ -66,7 +66,8 @@ void ECS::Global::mainloop()
 
 void ECS::Global::onCreateSceneEntity(const ECS::Events::CreateSceneEntity &event)
 {
-    this->sceneMgr->addScene(event.scene, std::make_shared<ECS::Scene>(nullptr, false));
+    this->sceneMgr->addScene(event.scene, std::make_shared<ECS::Scene>(event.scene, nullptr, false));
+
 }
 
 void ECS::Global::onDestroySceneEntity(const ECS::Events::DestroySceneEntity &event)

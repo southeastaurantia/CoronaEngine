@@ -9,7 +9,7 @@ namespace ECS
     class Scene final
     {
       public:
-        Scene(void *surface, bool lightField);
+        Scene(entt::entity sceneId, void *surface, bool lightField);
         ~Scene();
 
         void setCamera(const std::array<float, 3> &pos, const std::array<float, 3> &forward, const std::array<float, 3> &worldup, const float &fov);
@@ -21,7 +21,7 @@ namespace ECS
         std::shared_ptr<ECS::ISystem> animationSystem;
         std::shared_ptr<ECS::ISystem> audioSystem;
         std::shared_ptr<ECS::ISystem> renderingSystem;
-        uint64_t sceneID;
+        entt::entity sceneId;
     };
 
     class SceneManager final
