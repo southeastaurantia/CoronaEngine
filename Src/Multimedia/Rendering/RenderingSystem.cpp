@@ -9,6 +9,13 @@ namespace ECS::Systems
         return "RenderingSystem";
     }
 
+    void RenderingSystem::setDisplaySurface(void *surface)
+    {
+        HardwareDisplayer displayManager(surface);
+        HardwareImage finalOutputImage(ktm::uvec2(800, 800), ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
+        displayManager = finalOutputImage;
+    }
+
     void RenderingSystem::onRegisterEvents(entt::dispatcher &dispatcher)
     {
     }

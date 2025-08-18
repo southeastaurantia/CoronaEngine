@@ -8,24 +8,27 @@
 #include <GLFW/glfw3native.h>
 
 #include "CabbageFramework.h"
+#include "ECS/Global.h"
 
 #include <functional>
 
 
 int main()
 {
-    std::vector<CabbageFramework::Scene> scenes;
+    auto& sceneMgr = ECS::Global::get().sceneMgr;
+    std::vector<entt::entity> sceneIds;
 
     if (glfwInit() >= 0)
     {
-        scenes.resize(4);
-        std::vector<GLFWwindow *> windows(scenes.size());
+        sceneIds.resize(4);
+        std::vector<GLFWwindow *> windows(4);
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        for (size_t i = 0; i < scenes.size(); i++)
+        for (size_t i = 0; i < 4; i++)
         {
             windows[i] = glfwCreateWindow(800, 800, "Cabbage Engine", nullptr, nullptr);
-            scenes[i].setDisplaySurface(glfwGetWin32Window(windows[i]));
+            entt::entity sceneId = sceneMgr->createScene(glfwGetWin32Window(windows[i]), false);
+            sceneIds[i] = sceneId;
         }
 
         auto shouldClosed = [&]() {

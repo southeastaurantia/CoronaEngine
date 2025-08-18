@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ECS/ISystem.h>
+#include <CabbageDisplayer.h>
 
 namespace ECS::Systems
 {
@@ -11,6 +12,7 @@ namespace ECS::Systems
         virtual ~RenderingSystem() = default;
 
         const char *getName() const override;
+        void setDisplaySurface(void *surface);
 
       private:
         void onRegisterEvents(entt::dispatcher &dispatcher) override;

@@ -49,17 +49,5 @@ struct CabbageFramework
         const uint64_t actorID;
     };
 
-    struct Scene
-    {
-        Scene(void *surface = nullptr, bool lightField = false);
-        ~Scene();
 
-        void setCamera(const std::array<float, 3> &pos, const std::array<float, 3> &forward, const std::array<float, 3> &worldup, const float &fov);
-        void setSunDirection(const std::array<float, 3> &direction);
-        void setDisplaySurface(void *surface);
-
-        Actor *detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir);
-
-        const uint64_t sceneID;
-    };
 };

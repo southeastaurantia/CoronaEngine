@@ -13,25 +13,56 @@
 namespace ECS
 {
     /***************** Scene *****************/
-    Scene::Scene() : dispatcher(entt::dispatcher{}),
+    Scene::Scene(void *surface, bool lightField) : dispatcher(entt::dispatcher{}),
+
                      animationSystem(std::make_shared<ECS::Systems::AnimationSystem>()),
                      audioSystem(std::make_shared<ECS::Systems::AudioSystem>()),
-                     renderingSystem(std::make_shared<ECS::Systems::RenderingSystem>())
+                     renderingSystem(std::make_shared<ECS::Systems::RenderingSystem>()),
+                     sceneID(static_cast<uint64_t>(Global::get().registry->create()))
     {
+        entt::entity scene = static_cast<entt::entity>(sceneID);
+        Global::get().registry->emplace<ECS::Components::Camera>(scene);
+        Global::get().registry->emplace<ECS::Components::SunLight>(scene);
+        Global::get().registry->emplace<ECS::Components::Actors>(scene);
+
         animationSystem->registerEvents(dispatcher);
         audioSystem->registerEvents(dispatcher);
         renderingSystem->registerEvents(dispatcher);
 
-        dispatcher.trigger<ECS::Events::SceneCreate>();
+        if(surface) setDisplaySurface(surface);
+        dispatcher.trigger<ECS::Events::SceneCreate>();        
     }
 
     Scene::~Scene()
     {
-        dispatcher.trigger<ECS::Events::SceneDestroy>();
+        entt::entity scene = static_cast<entt::entity>(sceneID);
+        dispatcher.trigger<Events::SceneDestroy>();
+        Global::get().registry->destroy(scene);
         dispatcher.clear();
     }
 
+    void Scene::setCamera(const std::array<float, 3> &pos, const std::array<float, 3> &forward, const std::array<float, 3> &worldup, const float &fov)
+    {
+        entt::entity scene = static_cast<entt::entity>(sceneID);
+        auto& camera = Global::get().registry->get<Components::Camera>(scene);
+    }
+
+    void Scene::setSunDirection(const std::array<float, 3> &direction)
+    {
+        entt::entity scene = static_cast<entt::entity>(sceneID);
+        auto& sunlight = Global::get().registry->get<Components::SunLight>(scene);
+    }
+
+    void Scene::setDisplaySurface(void *surface)
+    {
+        if (renderingSystem != nullptr)
+        {
+            std::dynamic_pointer_cast<ECS::Systems::RenderingSystem>(renderingSystem)->setDisplaySurface(surface);
+        }
+    }
+
     /***************** SceneManager *****************/
+
     SceneManager::SceneManager() : scenes({})
     {
         std::cout << "SceneManager created\n";
@@ -42,7 +73,7 @@ namespace ECS
         scenes.clear();
         std::cout << "SceneManager destroyed\n";
     }
-
+    
     void SceneManager::addScene(entt::entity id, std::shared_ptr<Scene> scene)
     {
         if (scenes.contains(id))
@@ -52,6 +83,14 @@ namespace ECS
         }
         scenes[id] = scene;
         std::cout << std::format("Scene with id {} added\n", static_cast<uint64_t>(id));
+    }
+
+    entt::entity SceneManager::createScene(void *surface, bool lightField)
+    {
+        entt::entity sceneId = Global::get().registry->create();
+        auto scene = std::make_shared<Scene>(surface, lightField);
+        addScene(sceneId, scene);
+        return sceneId;
     }
 
     void SceneManager::removeScene(entt::entity id)
