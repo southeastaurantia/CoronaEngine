@@ -13,7 +13,6 @@ namespace ECS::Systems
         const char *getName() const override;
 
       private:
-        void onRegisterEvents(entt::dispatcher &dispatcher) override;
         void onStart() override;
         void onQuit() override;
         void mainloop() override;

@@ -9,15 +9,11 @@ namespace ECS::Systems
         return "RenderingSystem";
     }
 
-    void RenderingSystem::setDisplaySurface(void *surface)
+    void RenderingSystem::setDisplaySurface(const ECS::Events::SetDisplaySurface &event)
     {
-        HardwareDisplayer displayManager(surface);
+        HardwareDisplayer displayManager(event.surface);
         HardwareImage finalOutputImage(ktm::uvec2(800, 800), ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
         displayManager = finalOutputImage;
-    }
-
-    void RenderingSystem::onRegisterEvents(entt::dispatcher &dispatcher)
-    {
     }
 
     void RenderingSystem::onStart()
@@ -43,6 +39,7 @@ namespace ECS::Systems
 
             /********** Do Something **********/
 
+            dispatcher.update();
             /********** Do Something **********/
 
             auto endTime = std::chrono::high_resolution_clock::now();

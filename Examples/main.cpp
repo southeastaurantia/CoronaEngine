@@ -12,23 +12,20 @@
 
 #include <functional>
 
-
 int main()
 {
-    auto& sceneMgr = ECS::Global::get().sceneMgr;
-    std::vector<entt::entity> sceneIds;
+    std::vector<CabbageFramework::Scene> scenes;
 
     if (glfwInit() >= 0)
     {
-        sceneIds.resize(4);
+        scenes.resize(4);
         std::vector<GLFWwindow *> windows(4);
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         for (size_t i = 0; i < 4; i++)
         {
             windows[i] = glfwCreateWindow(800, 800, "Cabbage Engine", nullptr, nullptr);
-            entt::entity sceneId = sceneMgr->createScene(glfwGetWin32Window(windows[i]), false);
-            sceneIds[i] = sceneId;
+            scenes[i].setDisplaySurface(glfwGetWin32Window(windows[i]));
         }
 
         auto shouldClosed = [&]() {

@@ -1,7 +1,9 @@
 #pragma once
 
-#include <ECS/ISystem.h>
 #include <CabbageDisplayer.h>
+#include <ECS/Events.hpp>
+#include <ECS/ISystem.h>
+
 
 namespace ECS::Systems
 {
@@ -12,10 +14,9 @@ namespace ECS::Systems
         virtual ~RenderingSystem() = default;
 
         const char *getName() const override;
-        void setDisplaySurface(void *surface);
+        void setDisplaySurface(const ECS::Events::SetDisplaySurface &event);
 
       private:
-        void onRegisterEvents(entt::dispatcher &dispatcher) override;
         void onStart() override;
         void onQuit() override;
         void mainloop() override;

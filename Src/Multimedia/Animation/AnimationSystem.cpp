@@ -9,10 +9,6 @@ namespace ECS::Systems
         return "AnimationSystem";
     }
 
-    void AnimationSystem::onRegisterEvents(entt::dispatcher &dispatcher)
-    {
-    }
-
     void AnimationSystem::onStart()
     {
     }

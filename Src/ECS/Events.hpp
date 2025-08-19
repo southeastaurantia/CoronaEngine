@@ -44,4 +44,10 @@ namespace ECS::Events
         entt::entity scene;
         entt::entity actor;
     };
+
+    struct SetDisplaySurface
+    {
+        entt::entity scene;
+        void *surface;
+    };
 } // namespace ECS::Events

@@ -6,6 +6,7 @@
 
 namespace ECS::Components
 {
+    // 资源加载完成标签
     struct ResLoadedTag{};
     
     struct Camera

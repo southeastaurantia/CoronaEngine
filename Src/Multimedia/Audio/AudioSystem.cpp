@@ -9,10 +9,6 @@ namespace ECS::Systems
         return "AudioSystem";
     }
 
-    void AudioSystem::onRegisterEvents(entt::dispatcher &dispatcher)
-    {
-    }
-
     void AudioSystem::onStart()
     {
     }
