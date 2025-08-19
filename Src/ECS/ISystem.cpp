@@ -8,12 +8,10 @@ namespace ECS
 {
     ISystem::ISystem()
     {
-        start();
     }
 
     ISystem::~ISystem()
     {
-        quit();
     }
 
     bool ISystem::isRunning() const

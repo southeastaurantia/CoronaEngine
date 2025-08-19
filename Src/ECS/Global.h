@@ -19,7 +19,6 @@ namespace ECS
             std::shared_ptr<ECS::Systems::AnimationSystem> animationSystem;
             std::shared_ptr<ECS::Systems::AudioSystem> audioSystem;
             std::shared_ptr<ECS::Systems::RenderingSystem> renderingSystem;
-            std::unordered_set<entt::entity> actors;
         };
 
       public:

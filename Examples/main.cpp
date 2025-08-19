@@ -1,16 +1,10 @@
 ﻿
-#include <filesystem>
-#include <iostream>
-#include <thread>
-
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 
 #include "CabbageFramework.h"
-#include "ECS/Global.h"
-
-#include <functional>
+#include <vector>
 
 int main()
 {
@@ -22,7 +16,7 @@ int main()
         std::vector<GLFWwindow *> windows(4);
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        for (size_t i = 0; i < 4; i++)
+        for (size_t i = 0; i < scenes.size(); i++)
         {
             windows[i] = glfwCreateWindow(800, 800, "Cabbage Engine", nullptr, nullptr);
             scenes[i].setDisplaySurface(glfwGetWin32Window(windows[i]));
