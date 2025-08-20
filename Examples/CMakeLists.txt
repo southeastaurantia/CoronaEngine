@@ -16,9 +16,11 @@ set_target_properties(CabbageFrameworkExamples PROPERTIES
 )
 
 target_include_directories(CabbageFrameworkExamples PRIVATE
-    "${PROJECT_SOURCE_DIR}/Env/glfw/include")
+    "${glfw_SOURCE_DIR}/include")
 
 target_link_libraries(CabbageFrameworkExamples PRIVATE
     glfw
     CabbageFramework
 )
+
+helicon_install_runtime_deps(CabbageFrameworkExamples)

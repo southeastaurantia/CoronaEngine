@@ -9,19 +9,12 @@ project(
     LANGUAGES C CXX
 )
 
+option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
+
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     option(CABBAGE_FRAMEWORK_BUILD_EXAMPLES "Build examples" ON)
 else()
     option(CABBAGE_FRAMEWORK_BUILD_EXAMPLES "Build examples" OFF)
-endif()
-
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib/$<CONFIG>)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib/$<CONFIG>)
-
-if(CABBAGE_FRAMEWORK_BUILD_EXAMPLES)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/$<CONFIG>)
-    set(CMAKE_PDB_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/$<CONFIG>)
 endif()
 
 add_compile_definitions(
@@ -32,17 +25,54 @@ add_compile_definitions(
 
     $<$<CONFIG:Debug>:CABBAGE_ENGINE_DEBUG>
     $<$<CONFIG:RelWithDebInfo>:CABBAGE_ENGINE_DEBUG>
+    $<$<CONFIG:Release>:CABBAGE_ENGINE_RELEASE>
+    $<$<CONFIG:MinSizeRel>:CABBAGE_ENGINE_RELEASE>
 )
 
-set(BUILD_SHARED_LIBS OFF)
+include(FetchContent)
+
+FetchContent_Declare(
+    CabbageHardware
+    GIT_REPOSITORY https://github.com/CoronaEngine/CabbageHardware.git
+    GIT_TAG main
+    EXCLUDE_FROM_ALL
+)
+FetchContent_MakeAvailable(CabbageHardware)
+
+FetchContent_Declare(
+    assimp
+    GIT_REPOSITORY https://github.com/assimp/assimp.git
+    GIT_TAG master
+    EXCLUDE_FROM_ALL
+)
+FetchContent_MakeAvailable(assimp)
+
+FetchContent_Declare(
+    entt
+    GIT_REPOSITORY https://github.com/skypjack/entt.git
+    GIT_TAG master
+    EXCLUDE_FROM_ALL
+)
+FetchContent_MakeAvailable(entt)
+
+FetchContent_Declare(
+    marl
+    GIT_REPOSITORY https://github.com/google/marl.git
+    GIT_TAG main
+    EXCLUDE_FROM_ALL
+)
+FetchContent_MakeAvailable(marl)
 
 add_subdirectory(Src)
-add_subdirectory(Env/assimp EXCLUDE_FROM_ALL)
-add_subdirectory(Env/CabbageHardware EXCLUDE_FROM_ALL)
-add_subdirectory(Env/entt EXCLUDE_FROM_ALL)
-add_subdirectory(Env/marl EXCLUDE_FROM_ALL)
 
 if(CABBAGE_FRAMEWORK_BUILD_EXAMPLES)
-    add_subdirectory(Env/glfw EXCLUDE_FROM_ALL)
+    FetchContent_Declare(
+        glfw
+        GIT_REPOSITORY https://github.com/glfw/glfw.git
+        GIT_TAG master
+        EXCLUDE_FROM_ALL
+    )
+    FetchContent_MakeAvailable(glfw)
+
     add_subdirectory(Examples)
 endif()
