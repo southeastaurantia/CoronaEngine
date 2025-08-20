@@ -140,6 +140,10 @@ void ECS::Global::onCreatActorEntity(const ECS::Events::CreateActorEntity &event
     auto &actorsCmpt = registry->get<ECS::Components::Actors>(event.scene);
     actorsCmpt.actors.push_back(event.actor);
     // TODO : 资源加载发送事件
+    if(event.path != "")
+    {
+        ECS::Global::get().resourceMgr->loadDemo(event.path, modelEntity);
+    }
 }
 
 void ECS::Global::onDestroyActorEntity(const ECS::Events::DestroyActorEntity &event)

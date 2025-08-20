@@ -7,6 +7,9 @@
 #include <assimp/scene.h>
 #include <entt/entt.hpp>
 #include <string>
+#include <fstream>
+
+
 
 namespace ECS
 {
@@ -21,6 +24,11 @@ namespace ECS
         void ProcessNode(aiNode *node, const aiScene *scene, entt::entity parentEntity);
         entt::entity ProcessMesh(aiMesh *mesh, const aiScene *scene, entt::entity modelEntity);
         void ExtractBoneWeightForVertices(aiMesh *mesh, Components::MeshHost &meshHost, const aiScene *scene, entt::entity modelEntity);
+        std::string loadShader(const std::string &shaderPath);
+        void loadDemo(const std::string &demoPath, entt::entity modelEntity);
+        void createMesh(entt::entity modelEntity);
+        void createComputeUniformBuffer(entt::entity modelEntity);
+
 
       private:
     };

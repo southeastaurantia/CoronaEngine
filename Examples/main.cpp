@@ -5,10 +5,37 @@
 
 #include "CabbageFramework.h"
 #include <vector>
+#include <regex>
+#include <filesystem>
+#include <map>
+
+std::string shaderPath = [] {
+    std::string resultPath = "";
+    std::string runtimePath = std::filesystem::current_path().string();
+    // std::replace(runtimePath.begin(), runtimePath.end(), '\\', '/');
+    std::regex pattern(R"((.*)CabbageFramework\b)");
+    std::smatch matches;
+    if (std::regex_search(runtimePath, matches, pattern))
+    {
+        if (matches.size() > 1)
+        {
+            resultPath = matches[1].str() + "CabbageFramework";
+        }
+        else
+        {
+            throw std::runtime_error("Failed to resolve source path.");
+        }
+    }
+    std::replace(resultPath.begin(), resultPath.end(), '\\', '/');
+    return resultPath + "/Examples";
+}();
 
 int main()
 {
     std::vector<CabbageFramework::Scene> scenes;
+    std::map<CabbageFramework::Scene, std::vector<CabbageFramework::Actor>> actors;
+
+
 
     if (glfwInit() >= 0)
     {
@@ -20,6 +47,7 @@ int main()
         {
             windows[i] = glfwCreateWindow(800, 800, "Cabbage Engine", nullptr, nullptr);
             scenes[i].setDisplaySurface(glfwGetWin32Window(windows[i]));
+            actors[scenes[i]].emplace_back(scenes[i], shaderPath);
         }
 
         auto shouldClosed = [&]() {

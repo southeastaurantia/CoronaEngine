@@ -25,5 +25,6 @@ namespace ECS::Systems
 
       private:
         std::unique_ptr<std::thread> displayThread;
+        HardwareDisplayer displayManager;
     };
 } // namespace ECS::Systems
