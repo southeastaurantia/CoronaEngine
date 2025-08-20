@@ -15,9 +15,6 @@ set_target_properties(CabbageFrameworkExamples PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY $<TARGET_FILE_DIR:CabbageFrameworkExamples> # VS 调试工作目录
 )
 
-target_include_directories(CabbageFrameworkExamples PRIVATE
-    "${glfw_SOURCE_DIR}/include")
-
 target_link_libraries(CabbageFrameworkExamples PRIVATE
     glfw
     CabbageFramework

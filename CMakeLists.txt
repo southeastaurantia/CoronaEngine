@@ -48,6 +48,14 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(assimp)
 
 FetchContent_Declare(
+    stb
+    GIT_REPOSITORY https://github.com/nothings/stb.git
+    GIT_TAG master
+    EXCLUDE_FROM_ALL
+)
+FetchContent_MakeAvailable(stb)
+
+FetchContent_Declare(
     entt
     GIT_REPOSITORY https://github.com/skypjack/entt.git
     GIT_TAG master

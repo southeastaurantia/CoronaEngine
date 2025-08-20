@@ -33,7 +33,7 @@ std::string shaderPath = [] {
 int main()
 {
     std::vector<CabbageFramework::Scene> scenes;
-    std::map<CabbageFramework::Scene, std::vector<CabbageFramework::Actor>> actors;
+    std::map<uint64_t, std::vector<CabbageFramework::Actor>> actors;
 
 
 
@@ -47,7 +47,7 @@ int main()
         {
             windows[i] = glfwCreateWindow(800, 800, "Cabbage Engine", nullptr, nullptr);
             scenes[i].setDisplaySurface(glfwGetWin32Window(windows[i]));
-            actors[scenes[i]].emplace_back(scenes[i], shaderPath);
+            actors[scenes[i].sceneID].emplace_back(scenes[i], shaderPath);
         }
 
         auto shouldClosed = [&]() {

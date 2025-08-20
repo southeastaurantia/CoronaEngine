@@ -9,6 +9,7 @@ add_library(CabbageFramework STATIC ${SOURCE_FILES})
 
 target_include_directories(CabbageFramework PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${stb_SOURCE_DIR}"
 )
 
 target_link_libraries(CabbageFramework PUBLIC
