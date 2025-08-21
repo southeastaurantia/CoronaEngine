@@ -221,6 +221,16 @@ namespace ECS
                                                                                   .image = HardwareImage(ktm::uvec2(width, height), ImageFormat::RGBA8_SRGB, ImageUsage::SampledImage, 1, data)});
 
         createMesh(modelEntity);
+
+        RasterizerPipeline rasterizerPipeline(loadShader(demoPath + "/vert.glsl"), loadShader(demoPath + "/frag.glsl"));
+        ComputePipeline computePipeline(loadShader(demoPath + "/compute.glsl"));
+
+        ECS::Global::get().registry->emplace<Components::Pipeline>(modelEntity, Components::Pipeline{
+            .rasterizerPipeline = rasterizerPipeline,
+            .computePipeline = computePipeline
+        });
+
+        ECS::Global::get().registry->emplace<Components::ResLoadedTag>(modelEntity);
     }
 
 
@@ -600,6 +610,8 @@ namespace ECS
             .boneIndicesBuffer = HardwareBuffer({}, BufferUsage::VertexBuffer),
             .boneWeightsBuffer = HardwareBuffer({}, BufferUsage::VertexBuffer)
         });
+
+
     }
 
 } // namespace ECS

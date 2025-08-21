@@ -1,6 +1,8 @@
-#pragma once
+﻿#pragma once
 
 #include <CabbageDisplayer.h>
+#include "Pipeline/ComputePipeline.h"
+#include "Pipeline/RasterizerPipeline.h"
 #include <entt/entt.hpp>
 #include <ktm/ktm.h>
 
@@ -62,6 +64,12 @@ namespace ECS::Components
     struct ComputeUniformBufferObject
     {
         uint32_t imageID;
+    };
+
+    struct Pipeline
+    {
+        RasterizerPipeline rasterizerPipeline;
+        ComputePipeline computePipeline;
     };
 
     struct BoneMatrixHost
