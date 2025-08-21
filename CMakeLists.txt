@@ -29,6 +29,8 @@ add_compile_definitions(
     $<$<CONFIG:MinSizeRel>:CABBAGE_ENGINE_RELEASE>
 )
 
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
 include(FetchContent)
 
 FetchContent_Declare(
