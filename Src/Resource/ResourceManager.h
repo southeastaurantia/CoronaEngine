@@ -6,17 +6,15 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <entt/entt.hpp>
-#include <string>
 #include <fstream>
-
-
+#include <string>
 
 namespace ECS
 {
     class ResourceManager final
     {
       public:
-        ResourceManager();
+        explicit ResourceManager(std::shared_ptr<entt::registry> registry);
         ~ResourceManager();
 
         // TODO: Implement resource management functions
@@ -29,7 +27,7 @@ namespace ECS
         void createMesh(entt::entity modelEntity);
         void createComputeUniformBuffer(entt::entity modelEntity);
 
-
       private:
+        std::shared_ptr<entt::registry> registry;
     };
 } // namespace ECS

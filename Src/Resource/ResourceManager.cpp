@@ -8,7 +8,8 @@
 
 namespace ECS
 {
-    ResourceManager::ResourceManager()
+    ResourceManager::ResourceManager(std::shared_ptr<entt::registry> registry)
+        : registry(std::move(registry))
     {
         // TODO: Implement
         std::cout << "ResourceManager created\n";
@@ -31,10 +32,10 @@ namespace ECS
             return entt::null;
         }
 
-        auto modelEntity = ECS::Core::registry()->create();
-        ECS::Core::registry()->emplace<Components::Meshes>(modelEntity, Components::Meshes{
-                                                                            .meshes = {},
-                                                                            .path = filePath});
+        auto modelEntity = registry->create();
+        registry->emplace<Components::Meshes>(modelEntity, Components::Meshes{
+                                                               .meshes = {},
+                                                               .path = filePath});
 
         ProcessNode(scene->mRootNode, scene, modelEntity);
 
@@ -47,7 +48,7 @@ namespace ECS
         {
             aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
             entt::entity meshEntity = ProcessMesh(mesh, scene, parentEntity);
-            auto &meshes = ECS::Core::registry()->get<Components::Meshes>(parentEntity);
+            auto &meshes = registry->get<Components::Meshes>(parentEntity);
             meshes.meshes.push_back(meshEntity);
         }
 
@@ -59,7 +60,7 @@ namespace ECS
 
     entt::entity ResourceManager::ProcessMesh(aiMesh *mesh, const aiScene *scene, entt::entity modelEntity)
     {
-        auto meshEntity = ECS::Core::registry()->create();
+        auto meshEntity = registry->create();
 
         Components::MeshHost meshHost;
 
@@ -125,7 +126,7 @@ namespace ECS
 
     void ResourceManager::ExtractBoneWeightForVertices(aiMesh *mesh, Components::MeshHost &meshHost, const aiScene *scene, entt::entity modelEntity)
     {
-        auto &animations = ECS::Core::registry()->get<Components::Animations>(modelEntity);
+        auto &animations = registry->get<Components::Animations>(modelEntity);
         auto &boneInfoMap = animations.boneInfoMap;
         int &boneCount = animations.boneCount;
 
@@ -210,26 +211,26 @@ namespace ECS
         std::string imagePath = demoPath + "/awesomeface.png";
         int width, height, channels;
         unsigned char *data = stbi_load(imagePath.c_str(), &width, &height, &channels, 0);
-        ECS::Core::registry()->emplace<Components::ImageHost>(modelEntity, Components::ImageHost{
-                                                                               .path = imagePath,
-                                                                               .data = data,
-                                                                               .width = width,
-                                                                               .height = height,
-                                                                               .channels = channels});
+        registry->emplace<Components::ImageHost>(modelEntity, Components::ImageHost{
+                                                                  .path = imagePath,
+                                                                  .data = data,
+                                                                  .width = width,
+                                                                  .height = height,
+                                                                  .channels = channels});
 
-        ECS::Core::registry()->emplace<Components::ImageDevice>(modelEntity, Components::ImageDevice{
-                                                                                 .image = HardwareImage(ktm::uvec2(width, height), ImageFormat::RGBA8_SRGB, ImageUsage::SampledImage, 1, data)});
+        registry->emplace<Components::ImageDevice>(modelEntity, Components::ImageDevice{
+                                                                    .image = HardwareImage(ktm::uvec2(width, height), ImageFormat::RGBA8_SRGB, ImageUsage::SampledImage, 1, data)});
 
         createMesh(modelEntity);
 
         RasterizerPipeline rasterizerPipeline(loadShader(demoPath + "/vert.glsl"), loadShader(demoPath + "/frag.glsl"));
         ComputePipeline computePipeline(loadShader(demoPath + "/compute.glsl"));
 
-        ECS::Core::registry()->emplace<Components::Pipeline>(modelEntity, Components::Pipeline{
-                                                                              .rasterizerPipeline = rasterizerPipeline,
-                                                                              .computePipeline = computePipeline});
+        registry->emplace<Components::Pipeline>(modelEntity, Components::Pipeline{
+                                                                 .rasterizerPipeline = rasterizerPipeline,
+                                                                 .computePipeline = computePipeline});
 
-        ECS::Core::registry()->emplace<Components::ResLoadedTag>(modelEntity);
+        registry->emplace<Components::ResLoadedTag>(modelEntity);
     }
 
     void ResourceManager::createMesh(entt::entity modelEntity)
@@ -579,33 +580,33 @@ namespace ECS
             1.0f,
         };
 
-        ECS::Core::registry()->emplace<Components::RasterizerUniformBufferObject>(modelEntity, Components::RasterizerUniformBufferObject{});
-        ECS::Core::registry()->emplace<Components::ComputeUniformBufferObject>(modelEntity, Components::ComputeUniformBufferObject{});
+        registry->emplace<Components::RasterizerUniformBufferObject>(modelEntity, Components::RasterizerUniformBufferObject{});
+        registry->emplace<Components::ComputeUniformBufferObject>(modelEntity, Components::ComputeUniformBufferObject{});
 
-        auto &rasterizerUniformBufferObject = ECS::Core::registry()->get<Components::RasterizerUniformBufferObject>(modelEntity);
-        auto &computeUniformBufferObject = ECS::Core::registry()->get<Components::ComputeUniformBufferObject>(modelEntity);
+        auto &rasterizerUniformBufferObject = registry->get<Components::RasterizerUniformBufferObject>(modelEntity);
+        auto &computeUniformBufferObject = registry->get<Components::ComputeUniformBufferObject>(modelEntity);
 
         std::vector<uint32_t> indices =
             {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35};
 
-        ECS::Core::registry()->emplace<Components::MeshHost>(modelEntity, Components::MeshHost{
-                                                                              .indices = indices,
-                                                                              .positions = pos,
-                                                                              .normals = normal,
-                                                                              .texCoords = textureUV,
-                                                                              .color = color,
-                                                                              .boneIndices = {},
-                                                                              .boneWeights = {}});
+        registry->emplace<Components::MeshHost>(modelEntity, Components::MeshHost{
+                                                                 .indices = indices,
+                                                                 .positions = pos,
+                                                                 .normals = normal,
+                                                                 .texCoords = textureUV,
+                                                                 .color = color,
+                                                                 .boneIndices = {},
+                                                                 .boneWeights = {}});
 
-        ECS::Core::registry()->emplace<Components::MeshDevice>(modelEntity, Components::MeshDevice{
-                                                                                .positionsBuffer = HardwareBuffer(pos, BufferUsage::VertexBuffer),
-                                                                                .normalsBuffer = HardwareBuffer(normal, BufferUsage::VertexBuffer),
-                                                                                .texCoordsBuffer = HardwareBuffer(textureUV, BufferUsage::VertexBuffer),
-                                                                                .colorBuffer = HardwareBuffer(color, BufferUsage::VertexBuffer),
-                                                                                .computeUniformBuffer = HardwareBuffer(sizeof(computeUniformBufferObject), BufferUsage::UniformBuffer),
-                                                                                .rasterizerUniformBuffer = HardwareBuffer(sizeof(rasterizerUniformBufferObject), BufferUsage::UniformBuffer),
-                                                                                .boneIndicesBuffer = HardwareBuffer({}, BufferUsage::VertexBuffer),
-                                                                                .boneWeightsBuffer = HardwareBuffer({}, BufferUsage::VertexBuffer)});
+        registry->emplace<Components::MeshDevice>(modelEntity, Components::MeshDevice{
+                                                                   .positionsBuffer = HardwareBuffer(pos, BufferUsage::VertexBuffer),
+                                                                   .normalsBuffer = HardwareBuffer(normal, BufferUsage::VertexBuffer),
+                                                                   .texCoordsBuffer = HardwareBuffer(textureUV, BufferUsage::VertexBuffer),
+                                                                   .colorBuffer = HardwareBuffer(color, BufferUsage::VertexBuffer),
+                                                                   .computeUniformBuffer = HardwareBuffer(sizeof(computeUniformBufferObject), BufferUsage::UniformBuffer),
+                                                                   .rasterizerUniformBuffer = HardwareBuffer(sizeof(rasterizerUniformBufferObject), BufferUsage::UniformBuffer),
+                                                                   .boneIndicesBuffer = HardwareBuffer({}, BufferUsage::VertexBuffer),
+                                                                   .boneWeightsBuffer = HardwareBuffer({}, BufferUsage::VertexBuffer)});
     }
 
 } // namespace ECS

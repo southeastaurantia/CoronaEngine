@@ -3,26 +3,17 @@
 #include "Components.h"
 #include "FrontBridge.h"
 
-#include <Multimedia/Animation/AnimationSystem.h>
-#include <Multimedia/Audio/AudioSystem.h>
-#include <Multimedia/Rendering/RenderingSystem.h>
-
 #include <format>
-
-static AnimationSystem animation_system(ECS::Core::registry());
-static AudioSystem audio_system(ECS::Core::registry());
-static RenderingSystem rendering_system(ECS::Core::registry());
 
 namespace ECS
 {
-    std::shared_ptr<entt::registry> Core::registry()
-    {
-        static auto inst = std::make_shared<entt::registry>();
-        return inst;
-    }
-
     Core::Core()
-        : running(true)
+        : running(true),
+          registry(std::make_shared<entt::registry>()),
+          animation_system(registry),
+          audio_system(registry),
+          rendering_system(registry),
+          resource_manager(registry)
     {
         // TODO: FrontBridge事件注册
         FrontBridge::dispatcher().sink<ECS::Events::SceneCreate>().connect<&Core::onSceneCreate>(this);
@@ -70,7 +61,7 @@ namespace ECS
 
     void Core::onSceneCreate(Events::SceneCreate &event)
     {
-        auto scene = Core::registry()->create();
+        auto scene = registry->create();
 
         std::puts(std::format("Scene {} created.", entt::to_entity(scene)).c_str());
 
