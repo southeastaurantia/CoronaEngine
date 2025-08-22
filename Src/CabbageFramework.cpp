@@ -83,9 +83,14 @@ void CabbageFramework::Actor::setMechanicsParams(const MechanicsParams &params)
 CabbageFramework::Scene::Scene(void *surface, bool lightField)
     : id(std::numeric_limits<uint64_t>::max()) // 创建Scene实体
 {
-    FrontBridge::dispatcher().enqueue<ECS::Events::SceneCreate>({.surface = surface,
-                                                                 .lightField = lightField});
-    // TODO: 使用promise和future等待后端创建scene返回id
+    const auto id_promise = std::make_shared<std::promise<entt::entity>>();
+    std::future<entt::entity> id_future = id_promise->get_future();
+
+    FrontBridge::dispatcher().enqueue<ECS::Events::SceneCreateRequest>({.surface = surface,
+                                                                        .lightField = lightField,
+                                                                        .scene_id_promise = id_promise});
+    id = entt::to_entity(id_future.get());
+    std::puts(std::format("Scene id {} returned and set to front id.", id).c_str());
 }
 
 CabbageFramework::Scene::~Scene()
@@ -104,6 +109,8 @@ void CabbageFramework::Scene::setSunDirection(const std::array<float, 3> &direct
 
 void CabbageFramework::Scene::setDisplaySurface(void *surface)
 {
+    FrontBridge::dispatcher().enqueue<ECS::Events::SceneSetDisplaySurface>({.scene = static_cast<entt::entity>(id),
+                                                                            .surface = surface});
 }
 
 CabbageFramework::Actor *CabbageFramework::Scene::detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir)

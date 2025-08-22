@@ -1,5 +1,6 @@
 #include "Core.h"
 
+#include "BackBridge.h"
 #include "Components.h"
 #include "FrontBridge.h"
 
@@ -16,7 +17,9 @@ namespace ECS
           resource_manager(registry)
     {
         // TODO: FrontBridge事件注册
-        FrontBridge::dispatcher().sink<ECS::Events::SceneCreate>().connect<&Core::onSceneCreate>(this);
+        FrontBridge::dispatcher().sink<Events::SceneCreateRequest>().connect<&Core::onSceneCreate>(this);
+        FrontBridge::dispatcher().sink<Events::SceneDestroy>().connect<&Core::onSceneDestroy>(this);
+        FrontBridge::dispatcher().sink<Events::SceneSetDisplaySurface>().connect<&Core::onSceneSetDisplaySurface>(this);
 
         coreThread = std::thread(&Core::coreLoop, this);
 
@@ -59,13 +62,13 @@ namespace ECS
         }
     }
 
-    void Core::onSceneCreate(Events::SceneCreate &event)
+    void Core::onSceneCreate(Events::SceneCreateRequest &event)
     {
         auto scene = registry->create();
 
         std::puts(std::format("Scene {} created.", entt::to_entity(scene)).c_str());
 
-        // TODO: 使用promise和future将scene id返回给前端
+        event.scene_id_promise->set_value(scene);
     }
 
     void Core::onSceneDestroy(const Events::SceneDestroy &event)
@@ -82,5 +85,6 @@ namespace ECS
 
     void Core::onSceneSetDisplaySurface(const Events::SceneSetDisplaySurface &event)
     {
+        BackBridge::render_dispatcher().enqueue<Events::SceneSetDisplaySurface>(event);
     }
 } // namespace ECS

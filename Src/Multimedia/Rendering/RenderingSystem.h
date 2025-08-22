@@ -7,6 +7,8 @@
 
 #include <entt/entt.hpp>
 
+#include <ECS/Events.hpp>
+
 #include <thread>
 
 class RenderingSystem
@@ -28,6 +30,8 @@ class RenderingSystem
     std::thread renderThread;
     std::thread displayThread;
     std::shared_ptr<entt::registry> registry;
+
+    void onSetDisplaySurface(const ECS::Events::SceneSetDisplaySurface& event);
 };
 
 #endif // CABBAGEFRAMEWORK_RENDERINGSYSTEM_H

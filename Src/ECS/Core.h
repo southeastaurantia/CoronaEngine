@@ -33,7 +33,7 @@ namespace ECS
 
         void coreLoop();
 
-        void onSceneCreate(Events::SceneCreate &event);
+        void onSceneCreate(Events::SceneCreateRequest &event);
         void onSceneDestroy(const Events::SceneDestroy &event);
         void onActorCreate(const Events::ActorCreate &event);
         void onActorDestroy(const Events::ActorDestroy &event);

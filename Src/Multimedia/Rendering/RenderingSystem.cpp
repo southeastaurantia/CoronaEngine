@@ -12,8 +12,8 @@
 RenderingSystem::RenderingSystem(std::shared_ptr<entt::registry> registry)
     : running(true), registry(std::move(registry))
 {
-
     // TODO: BackBridge事件注册
+    BackBridge::render_dispatcher().sink<ECS::Events::SceneSetDisplaySurface>().connect<&RenderingSystem::onSetDisplaySurface>(this);
 
     // 启动循环线程
     renderThread = std::thread(&RenderingSystem::renderLoop, this);
@@ -85,4 +85,9 @@ void RenderingSystem::displayLoop()
             std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>((DisplayMinFrameTime - frameTime) * 1000.0f)));
         }
     }
+}
+
+void RenderingSystem::onSetDisplaySurface(const ECS::Events::SceneSetDisplaySurface &event)
+{
+    std::puts(std::format("Scene {} set display surface.", entt::to_entity(event.scene)).c_str());
 }

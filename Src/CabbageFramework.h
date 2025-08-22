@@ -54,7 +54,7 @@ struct CabbageFramework
 
     struct Scene
     {
-        Scene(void *surface = nullptr, bool lightField = false);
+        explicit Scene(void *surface = nullptr, bool lightField = false);
         ~Scene();
 
         void setCamera(const std::array<float, 3> &pos, const std::array<float, 3> &forward, const std::array<float, 3> &worldup, const float &fov);
