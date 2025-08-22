@@ -2,6 +2,7 @@
 
 #include <ECS/Core.h>
 #include <ECS/Events.hpp>
+#include <ECS/FrontBridge.h>
 
 static ECS::Core core;
 
@@ -82,6 +83,9 @@ void CabbageFramework::Actor::setMechanicsParams(const MechanicsParams &params)
 CabbageFramework::Scene::Scene(void *surface, bool lightField)
     : id(std::numeric_limits<uint64_t>::max()) // 创建Scene实体
 {
+    FrontBridge::dispatcher().enqueue<ECS::Events::SceneCreate>({.surface = surface,
+                                                                 .lightField = lightField});
+    // TODO: 使用promise和future等待后端创建scene返回id
 }
 
 CabbageFramework::Scene::~Scene()

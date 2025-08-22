@@ -4,6 +4,8 @@
 
 #include "RenderingSystem.h"
 
+#include <ECS/BackBridge.h>
+
 #include <chrono>
 #include <utility>
 
@@ -47,7 +49,7 @@ void RenderingSystem::renderLoop()
         }
 
         auto startTime = std::chrono::high_resolution_clock::now();
-
+        BackBridge::render_dispatcher().update();
         /********** Do Something **********/
 
         /********** Do Something **********/

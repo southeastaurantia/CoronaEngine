@@ -1,6 +1,7 @@
 #include "Core.h"
 
 #include "Components.h"
+#include "FrontBridge.h"
 
 #include <Multimedia/Animation/AnimationSystem.h>
 #include <Multimedia/Audio/AudioSystem.h>
@@ -16,7 +17,7 @@ namespace ECS
 {
     std::shared_ptr<entt::registry> Core::registry()
     {
-        static std::shared_ptr<entt::registry> inst;
+        static auto inst = std::make_shared<entt::registry>();
         return inst;
     }
 
@@ -24,6 +25,7 @@ namespace ECS
         : running(true)
     {
         // TODO: FrontBridge事件注册
+        FrontBridge::dispatcher().sink<ECS::Events::SceneCreate>().connect<&Core::onSceneCreate>(this);
 
         coreThread = std::thread(&Core::coreLoop, this);
 
@@ -52,7 +54,7 @@ namespace ECS
             }
 
             auto startTime = std::chrono::high_resolution_clock::now();
-
+            FrontBridge::dispatcher().update();
             /********** Do Something **********/
 
             /********** Do Something **********/
@@ -68,6 +70,11 @@ namespace ECS
 
     void Core::onSceneCreate(Events::SceneCreate &event)
     {
+        auto scene = Core::registry()->create();
+
+        std::puts(std::format("Scene {} created.", entt::to_entity(scene)).c_str());
+
+        // TODO: 使用promise和future将scene id返回给前端
     }
 
     void Core::onSceneDestroy(const Events::SceneDestroy &event)

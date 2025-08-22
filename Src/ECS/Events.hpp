@@ -38,7 +38,6 @@ namespace ECS::Events
     struct ActorCreate
     {
         entt::entity scene;
-        entt::entity actor;
         std::string path;
     };
 

@@ -4,6 +4,8 @@
 
 #include "AnimationSystem.h"
 
+#include <ECS/BackBridge.h>
+
 #include <chrono>
 #include <utility>
 
@@ -40,7 +42,7 @@ void AnimationSystem::loop()
         }
 
         auto startTime = std::chrono::high_resolution_clock::now();
-
+        BackBridge::anim_dispatcher().update();
         /********** Do Something **********/
 
         /********** Do Something **********/

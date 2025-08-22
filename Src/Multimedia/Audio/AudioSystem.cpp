@@ -4,6 +4,8 @@
 
 #include "AudioSystem.h"
 
+#include <ECS/BackBridge.h>
+
 #include <chrono>
 #include <utility>
 
@@ -39,7 +41,7 @@ void AudioSystem::loop()
         }
 
         auto startTime = std::chrono::high_resolution_clock::now();
-
+        BackBridge::audio_dispatcher().update();
         /********** Do Something **********/
 
         /********** Do Something **********/
