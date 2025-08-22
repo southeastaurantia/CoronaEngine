@@ -6,7 +6,7 @@
 #define CABBAGEFRAMEWORK_RENDERINGSYSTEM_H
 
 #include <entt/entt.hpp>
-
+#include "CabbageDisplayer.h"
 #include <ECS/Events.hpp>
 
 #include <thread>
