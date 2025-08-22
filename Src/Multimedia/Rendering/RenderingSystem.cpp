@@ -1,76 +1,86 @@
+//
+// Created by 47226 on 2025/8/22.
+//
+
 #include "RenderingSystem.h"
 
 #include <chrono>
+#include <utility>
 
-namespace ECS::Systems
+RenderingSystem::RenderingSystem(std::shared_ptr<entt::registry> registry)
+    : running(true), registry(std::move(registry))
 {
-    const char *RenderingSystem::getName() const
+
+    // TODO: BackBridge事件注册
+
+    // 启动循环线程
+    renderThread = std::thread(&RenderingSystem::renderLoop, this);
+    displayThread = std::thread(&RenderingSystem::displayLoop, this);
+
+    std::puts("Animation system started.");
+}
+
+RenderingSystem::~RenderingSystem()
+{
+    running = false;
+
+    if (renderThread.joinable())
     {
-        return "RenderingSystem";
+        renderThread.join();
     }
 
-    void RenderingSystem::setDisplaySurface(const ECS::Events::SetDisplaySurface &event)
+    if (displayThread.joinable())
     {
-        HardwareDisplayer displayManager(event.surface);
-        HardwareImage finalOutputImage(ktm::uvec2(800, 800), ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
-        displayManager = finalOutputImage;
+        displayThread.join();
     }
 
-    void RenderingSystem::onStart()
-    {
-        this->displayThread = std::make_unique<std::thread>(&RenderingSystem::displayLoop, this);
-    }
+    std::puts("Rendering system stoped.");
+}
 
-    void RenderingSystem::onQuit()
+void RenderingSystem::renderLoop()
+{
+    while (true)
     {
-        if (displayThread != nullptr)
+        if (!running)
         {
-            displayThread->join();
+            break;
+        }
+
+        auto startTime = std::chrono::high_resolution_clock::now();
+
+        /********** Do Something **********/
+
+        /********** Do Something **********/
+
+        auto endTime = std::chrono::high_resolution_clock::now();
+
+        if (const auto frameTime = std::chrono::duration<float>(endTime - startTime).count(); frameTime < RenderMinFrameTime)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>((RenderMinFrameTime - frameTime) * 1000.0f)));
         }
     }
+}
 
-    void RenderingSystem::mainloop()
+void RenderingSystem::displayLoop()
+{
+    while (true)
     {
-        static constexpr float MaxFrameTime = 1.0f / 120.0f;
-
-        while (isRunning())
+        if (!running)
         {
-            auto startTime = std::chrono::high_resolution_clock::now();
+            break;
+        }
 
-            /********** Do Something **********/
+        auto startTime = std::chrono::high_resolution_clock::now();
 
-            dispatcher.update();
-            /********** Do Something **********/
+        /********** Do Something **********/
 
-            auto endTime = std::chrono::high_resolution_clock::now();
-            auto frameTime = std::chrono::duration<float>(endTime - startTime).count();
+        /********** Do Something **********/
 
-            if (frameTime < MaxFrameTime)
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>((MaxFrameTime - frameTime) * 1000.0f)));
-            }
+        auto endTime = std::chrono::high_resolution_clock::now();
+
+        if (const auto frameTime = std::chrono::duration<float>(endTime - startTime).count(); frameTime < DisplayMinFrameTime)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>((DisplayMinFrameTime - frameTime) * 1000.0f)));
         }
     }
-
-    void RenderingSystem::displayLoop()
-    {
-        static constexpr float MaxFrameTime = 1.0f / 240.0f;
-
-        while (isRunning())
-        {
-            auto startTime = std::chrono::high_resolution_clock::now();
-
-            /********** Do Something **********/
-
-            /********** Do Something **********/
-
-            auto endTime = std::chrono::high_resolution_clock::now();
-            auto frameTime = std::chrono::duration<float>(endTime - startTime).count();
-
-            if (frameTime < MaxFrameTime)
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>((MaxFrameTime - frameTime) * 1000.0f)));
-            }
-        }
-    }
-} // namespace ECS::Systems
+}

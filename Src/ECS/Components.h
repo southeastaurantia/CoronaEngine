@@ -1,16 +1,18 @@
 ﻿#pragma once
 
-#include <CabbageDisplayer.h>
 #include "Pipeline/ComputePipeline.h"
 #include "Pipeline/RasterizerPipeline.h"
+#include <CabbageDisplayer.h>
 #include <entt/entt.hpp>
 #include <ktm/ktm.h>
 
 namespace ECS::Components
 {
     // 资源加载完成标签
-    struct ResLoadedTag{};
-    
+    struct ResLoadedTag
+    {
+    };
+
     struct Camera
     {
         float fov = 45.0f;
@@ -18,7 +20,7 @@ namespace ECS::Components
         ktm::fvec3 forward = ktm::fvec3(-1.0f, -1.0f, -1.0f);
         ktm::fvec3 worldUp = ktm::fvec3(0.0f, 1.0f, 0.0f);
     };
-    
+
     struct SunLight
     {
         ktm::fvec3 direction;
@@ -28,7 +30,7 @@ namespace ECS::Components
     {
         std::vector<entt::entity> actors;
     };
-    
+
     struct ActorPose
     {
         ktm::fvec3 transform = ktm::fvec3(0.0f, 0.0f, 0.0f);
@@ -39,8 +41,8 @@ namespace ECS::Components
         {
             ktm::fmat4x4 model;
             return model = ktm::translate3d(transform) *
-                                ktm::rotate3d_x(rotate.x) * ktm::rotate3d_y(rotate.y) * ktm::rotate3d_z(rotate.z) *
-                                ktm::scale3d(scale);
+                           ktm::rotate3d_x(rotate.x) * ktm::rotate3d_y(rotate.y) * ktm::rotate3d_z(rotate.z) *
+                           ktm::scale3d(scale);
         }
     };
 
@@ -95,8 +97,8 @@ namespace ECS::Components
         std::vector<float> normals;
         std::vector<float> texCoords;
         std::vector<float> color;
-        std::vector<uint32_t> boneIndices; 
-        std::vector<float> boneWeights; 
+        std::vector<uint32_t> boneIndices;
+        std::vector<float> boneWeights;
     };
 
     struct MeshDevice
@@ -178,9 +180,9 @@ namespace ECS::Components
 
     struct Bone
     {
-        std::vector<KeyPosition>    keyPositions;
-        std::vector<KeyRotation>    keyRotations;
-        std::vector<KeyScale>       keyScales;
+        std::vector<KeyPosition> keyPositions;
+        std::vector<KeyRotation> keyRotations;
+        std::vector<KeyScale> keyScales;
         int NumPositions;
         int NumRotations;
         int NumScales;
@@ -216,6 +218,5 @@ namespace ECS::Components
         std::map<std::string, BoneInfo> boneInfoMap;
         int boneCount;
     };
-
 
 } // namespace ECS::Components

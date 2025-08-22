@@ -1,27 +1,19 @@
 #include "CabbageFramework.h"
 
-#include <ECS/Components.h>
+#include <ECS/Core.h>
 #include <ECS/Events.hpp>
-#include <ECS/Global.h>
 
-#include <format>
-#include <iostream>
+static ECS::Core core;
 
 // Actor实现
-CabbageFramework::Actor::Actor(const Scene &scene, const std::string &path)
-    : actorID(static_cast<uint64_t>(ECS::Global::get().registry->create())) // 创建Actor实体
+CabbageFramework::Actor::Actor(const std::string &path)
+    : id(std::numeric_limits<uint64_t>::max()) // 创建Actor实体
 {
     // 发送事件给ECS系统
-    ECS::Global::get().dispatcher->enqueue<ECS::Events::CreateActorEntity>(std::move(ECS::Events::CreateActorEntity{
-        .scene = static_cast<entt::entity>(scene.sceneID),
-        .actor = static_cast<entt::entity>(actorID),
-        .path = path}));
 }
 
 CabbageFramework::Actor::~Actor()
 {
-    ECS::Global::get().dispatcher->enqueue<ECS::Events::DestroyActorEntity>(std::move(ECS::Events::DestroyActorEntity{
-        .actor = static_cast<entt::entity>(actorID)}));
 }
 
 void CabbageFramework::Actor::move(const std::array<float, 3> &pos)
@@ -66,6 +58,11 @@ uint64_t CabbageFramework::Actor::detectCollision(const Actor &other)
     return std::numeric_limits<uint64_t>::max();
 }
 
+uint64_t CabbageFramework::Actor::getID() const
+{
+    return id;
+}
+
 void CabbageFramework::Actor::setOpticsParams(const OpticsParams &params)
 {
     // 设置光学参数
@@ -83,22 +80,12 @@ void CabbageFramework::Actor::setMechanicsParams(const MechanicsParams &params)
 
 // Scene实现
 CabbageFramework::Scene::Scene(void *surface, bool lightField)
-    : sceneID(static_cast<uint64_t>(ECS::Global::get().registry->create())) // 创建Scene实体
+    : id(std::numeric_limits<uint64_t>::max()) // 创建Scene实体
 {
-    // Scene实体
-    entt::entity scene = static_cast<entt::entity>(sceneID);
-    // 发送事件给ECS系统
-    ECS::Global::get().dispatcher->enqueue<ECS::Events::CreateSceneEntity>(std::move(ECS::Events::CreateSceneEntity{
-        .scene = scene,
-        .surface = surface,
-        .lightField = lightField}));
 }
 
 CabbageFramework::Scene::~Scene()
 {
-    entt::entity scene = static_cast<entt::entity>(sceneID);
-    ECS::Global::get().dispatcher->enqueue<ECS::Events::DestroySceneEntity>(std::move(ECS::Events::DestroySceneEntity{
-        .scene = static_cast<entt::entity>(sceneID)}));
 }
 
 void CabbageFramework::Scene::setCamera(const std::array<float, 3> &pos, const std::array<float, 3> &forward, const std::array<float, 3> &worldup, const float &fov)
@@ -113,12 +100,22 @@ void CabbageFramework::Scene::setSunDirection(const std::array<float, 3> &direct
 
 void CabbageFramework::Scene::setDisplaySurface(void *surface)
 {
-    ECS::Global::get().dispatcher->enqueue<ECS::Events::SetDisplaySurface>(std::move(ECS::Events::SetDisplaySurface{
-        .scene = static_cast<entt::entity>(sceneID),
-        .surface = surface}));
 }
 
 CabbageFramework::Actor *CabbageFramework::Scene::detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir)
 {
     return nullptr;
+}
+
+void CabbageFramework::Scene::addActor(const uint64_t &actor)
+{
+}
+
+void CabbageFramework::Scene::removeActor(const uint64_t &actor)
+{
+}
+
+uint64_t CabbageFramework::Scene::getID() const
+{
+    return id;
 }

@@ -1,20 +1,29 @@
-#pragma once
+//
+// Created by 47226 on 2025/8/22.
+//
 
-#include <ECS/ISystem.h>
+#ifndef CABBAGEFRAMEWORK_AUDIOSYSTEM_H
+#define CABBAGEFRAMEWORK_AUDIOSYSTEM_H
 
-namespace ECS::Systems
+#include <entt/entt.hpp>
+
+#include <thread>
+
+class AudioSystem
 {
-    class AudioSystem final : public ISystem
-    {
-      public:
-        AudioSystem() = default;
-        virtual ~AudioSystem() = default;
+  public:
+    static constexpr int FPS = 120;
+    static constexpr float MinFrameTime = 1.0f / FPS;
 
-        const char *getName() const override;
+    explicit AudioSystem(std::shared_ptr<entt::registry> registry);
+    ~AudioSystem();
 
-      private:
-        void onStart() override;
-        void onQuit() override;
-        void mainloop() override;
-    };
-} // namespace ECS::Systems
+  private:
+    void loop();
+
+    bool running;
+    std::thread loopThread;
+    std::shared_ptr<entt::registry> registry;
+};
+
+#endif // CABBAGEFRAMEWORK_AUDIOSYSTEM_H

@@ -14,38 +14,41 @@ namespace ECS::Events
 
     struct SceneCreate
     {
-    };
-
-    struct SceneDestroy
-    {
-    };
-
-    struct CreateSceneEntity
-    {
-        entt::entity scene;
         void *surface;
         bool lightField;
     };
 
-    struct DestroySceneEntity
+    struct SceneDestroy
     {
         entt::entity scene;
     };
 
-    struct CreateActorEntity
+    struct SceneAddActor
+    {
+        entt::entity scene;
+        entt::entity actor;
+    };
+
+    struct SceneRemoveActor
+    {
+        entt::entity scene;
+        entt::entity actor;
+    };
+
+    struct ActorCreate
     {
         entt::entity scene;
         entt::entity actor;
         std::string path;
     };
 
-    struct DestroyActorEntity
+    struct ActorDestroy
     {
         entt::entity scene;
         entt::entity actor;
     };
 
-    struct SetDisplaySurface
+    struct SceneSetDisplaySurface
     {
         entt::entity scene;
         void *surface;

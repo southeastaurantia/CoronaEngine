@@ -1,41 +1,54 @@
+//
+// Created by 47226 on 2025/8/22.
+//
+
 #include "AudioSystem.h"
 
 #include <chrono>
+#include <utility>
 
-namespace ECS::Systems
+AudioSystem::AudioSystem(std::shared_ptr<entt::registry> registry)
+    : running(true), registry(std::move(registry))
 {
-    const char *AudioSystem::getName() const
+    // TODO: BackBridge事件注册
+
+    // 启动循环线程
+    loopThread = std::thread(&AudioSystem::loop, this);
+
+    std::puts("Audio system started.");
+}
+
+AudioSystem::~AudioSystem()
+{
+    running = false;
+
+    if (loopThread.joinable())
     {
-        return "AudioSystem";
+        loopThread.join();
     }
+    std::puts("Audio system stoped.");
+}
 
-    void AudioSystem::onStart()
+void AudioSystem::loop()
+{
+    while (true)
     {
-    }
-
-    void AudioSystem::onQuit()
-    {
-    }
-
-    void AudioSystem::mainloop()
-    {
-        static constexpr float MaxFrameTime = 1.0f / 120.0f;
-
-        while (isRunning())
+        if (!running)
         {
-            auto startTime = std::chrono::high_resolution_clock::now();
+            break;
+        }
 
-            /********** Do Something **********/
+        auto startTime = std::chrono::high_resolution_clock::now();
 
-            /********** Do Something **********/
+        /********** Do Something **********/
 
-            auto endTime = std::chrono::high_resolution_clock::now();
-            auto frameTime = std::chrono::duration<float>(endTime - startTime).count();
+        /********** Do Something **********/
 
-            if (frameTime < MaxFrameTime)
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>((MaxFrameTime - frameTime) * 1000.0f)));
-            }
+        auto endTime = std::chrono::high_resolution_clock::now();
+
+        if (const auto frameTime = std::chrono::duration<float>(endTime - startTime).count(); frameTime < MinFrameTime)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>((MinFrameTime - frameTime) * 1000.0f)));
         }
     }
-} // namespace ECS::Systems
+}

@@ -1,30 +1,33 @@
-#pragma once
+//
+// Created by 47226 on 2025/8/22.
+//
 
-#include <CabbageDisplayer.h>
-#include <ECS/Events.hpp>
-#include <ECS/ISystem.h>
+#ifndef CABBAGEFRAMEWORK_RENDERINGSYSTEM_H
+#define CABBAGEFRAMEWORK_RENDERINGSYSTEM_H
 
+#include <entt/entt.hpp>
 
-namespace ECS::Systems
+#include <thread>
+
+class RenderingSystem
 {
-    class RenderingSystem final : public ISystem
-    {
-      public:
-        RenderingSystem() = default;
-        virtual ~RenderingSystem() = default;
+  public:
+    static constexpr int RenderFPS = 120;
+    static constexpr int DisplayFPS = 240;
+    static constexpr float RenderMinFrameTime = 1.0f / RenderFPS;
+    static constexpr float DisplayMinFrameTime = 1.0f / DisplayFPS;
 
-        const char *getName() const override;
-        void setDisplaySurface(const ECS::Events::SetDisplaySurface &event);
+    explicit RenderingSystem(std::shared_ptr<entt::registry> registry);
+    ~RenderingSystem();
 
-      private:
-        void onStart() override;
-        void onQuit() override;
-        void mainloop() override;
+  private:
+    void renderLoop();
+    void displayLoop();
 
-        void displayLoop();
+    bool running;
+    std::thread renderThread;
+    std::thread displayThread;
+    std::shared_ptr<entt::registry> registry;
+};
 
-      private:
-        std::unique_ptr<std::thread> displayThread;
-        HardwareDisplayer displayManager;
-    };
-} // namespace ECS::Systems
+#endif // CABBAGEFRAMEWORK_RENDERINGSYSTEM_H

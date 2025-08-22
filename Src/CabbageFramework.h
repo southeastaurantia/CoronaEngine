@@ -13,7 +13,7 @@ struct CabbageFramework
 
     struct Actor
     {
-        Actor(const Scene &scene, const std::string &path = "");
+        Actor(const std::string &path = "");
         ~Actor();
 
         void move(const std::array<float, 3> &pos);
@@ -27,6 +27,8 @@ struct CabbageFramework
         void setSkeletalAnimation(const std::string &path);
 
         uint64_t detectCollision(const Actor &other);
+
+        uint64_t getID() const;
 
         struct OpticsParams
         {
@@ -46,7 +48,8 @@ struct CabbageFramework
         };
         void setMechanicsParams(const MechanicsParams &params);
 
-        const uint64_t actorID;
+      private:
+        uint64_t id;
     };
 
     struct Scene
@@ -60,6 +63,12 @@ struct CabbageFramework
 
         Actor *detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir);
 
-        const uint64_t sceneID;
+        void addActor(const uint64_t &actor);
+        void removeActor(const uint64_t &actor);
+
+        uint64_t getID() const;
+
+      private:
+        uint64_t id;
     };
 };

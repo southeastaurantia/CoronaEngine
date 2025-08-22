@@ -9,6 +9,11 @@ project(
     LANGUAGES C CXX
 )
 
+if(POLICY CMP0077)
+    cmake_policy(SET CMP0077 NEW)
+endif()
+
+
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
