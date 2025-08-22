@@ -30,6 +30,7 @@ class RenderingSystem
     std::thread renderThread;
     std::thread displayThread;
     std::shared_ptr<entt::registry> registry;
+    HardwareDisplayer displayer;
 
     void onSetDisplaySurface(const ECS::Events::SceneSetDisplaySurface& event);
 };

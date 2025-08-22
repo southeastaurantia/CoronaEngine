@@ -89,8 +89,8 @@ void RenderingSystem::displayLoop()
 
 void RenderingSystem::onSetDisplaySurface(const ECS::Events::SceneSetDisplaySurface &event)
 {
-    HardwareDisplayer displayManager(event.surface);
+    displayer = HardwareDisplayer(event.surface);
     HardwareImage finalOutputImage(ktm::uvec2(800, 800), ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
-    displayManager = finalOutputImage;
+    displayer = finalOutputImage;
     std::puts(std::format("Scene {} set display surface.", entt::to_entity(event.scene)).c_str());
 }
