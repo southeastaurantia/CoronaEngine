@@ -14,7 +14,7 @@ struct CabbageFramework::ActorImpl final
         const auto id_promise = std::make_shared<std::promise<entt::entity>>();
         std::future<entt::entity> id_future = id_promise->get_future();
 
-        FrontBridge::dispatcher().enqueue(std::make_shared<ECS::Events::ActorCreateRequest>(entt::null ,path, id_promise));
+        FrontBridge::dispatcher().enqueue(std::make_shared<ECS::Events::ActorCreateRequest>(path, id_promise));
         id = id_future.get();
         std::cout << std::format("Actor id {} returned and set to front id.", getID()) << std::endl;
         // 发送事件给ECS系统

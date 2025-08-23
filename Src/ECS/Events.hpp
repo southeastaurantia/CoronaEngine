@@ -32,7 +32,6 @@ namespace ECS::Events
 
     struct ActorCreateRequest
     {
-        entt::entity scene;
         std::string path;
         std::shared_ptr<std::promise<entt::entity>> actor_id_promise; // 后端创建ID返回给前端
     };
