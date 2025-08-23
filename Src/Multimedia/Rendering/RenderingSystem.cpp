@@ -7,6 +7,7 @@
 #include <ECS/BackBridge.h>
 
 #include <chrono>
+#include <iostream>
 #include <utility>
 
 RenderingSystem::RenderingSystem(std::shared_ptr<entt::registry> registry)
@@ -19,7 +20,7 @@ RenderingSystem::RenderingSystem(std::shared_ptr<entt::registry> registry)
     renderThread = std::thread(&RenderingSystem::renderLoop, this);
     displayThread = std::thread(&RenderingSystem::displayLoop, this);
 
-    std::puts("Animation system started.");
+    std::cout << "Animation system started." << std::endl;
 }
 
 RenderingSystem::~RenderingSystem()
@@ -36,7 +37,7 @@ RenderingSystem::~RenderingSystem()
         displayThread.join();
     }
 
-    std::puts("Rendering system stoped.");
+    std::cout << "Rendering system stoped." << std::endl;
 }
 
 void RenderingSystem::renderLoop()
@@ -92,5 +93,5 @@ void RenderingSystem::onSetDisplaySurface(const ECS::Events::SceneSetDisplaySurf
     displayer = HardwareDisplayer(event.surface);
     HardwareImage finalOutputImage(ktm::uvec2(800, 800), ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
     displayer = finalOutputImage;
-    std::puts(std::format("Scene {} set display surface.", entt::to_entity(event.scene)).c_str());
+    std::cout << std::format("Scene {} set display surface.", entt::to_entity(event.scene)) << std::endl;
 }

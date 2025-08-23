@@ -6,127 +6,357 @@
 
 static ECS::Core core;
 
-// Actor实现
-CabbageFramework::Actor::Actor(const std::string &path)
-    : id(std::numeric_limits<uint64_t>::max()) // 创建Actor实体
+struct CabbageFramework::ActorImpl final
 {
-    // 发送事件给ECS系统
+    ActorImpl(const std::string &path = "")
+        : id(entt::null) // 创建Actor实体
+    {
+        // 发送事件给ECS系统
+    }
+
+    ~ActorImpl()
+    {
+        // TODO: 销毁ECS中的Actor实体 & 移除Scene中对应的Actor
+    }
+
+    void move(const std::array<float, 3> &pos)
+    {
+        // 实现移动功能
+    }
+
+    void rotate(const std::array<float, 3> &euler)
+    {
+        // 实现旋转功能
+    }
+
+    void scale(const std::array<float, 3> &size)
+    {
+        // 实现缩放功能
+    }
+
+    void setWorldMatrix(const std::array<std::array<float, 4>, 4> &worldMartix)
+    {
+        // 设置世界变换矩阵
+    }
+
+    std::array<std::array<float, 4>, 4> getWorldMatrix() const
+    {
+        // 返回当前世界变换矩阵
+        return std::array<std::array<float, 4>, 4>{};
+    }
+
+    void setMeshShape(const std::string &path)
+    {
+        // 设置网格形状
+    }
+
+    void setSkeletalAnimation(const std::string &path)
+    {
+        // 设置骨骼动画
+    }
+
+    uint64_t detectCollision(const ActorImpl &other)
+    {
+        // 碰撞检测实现
+        return std::numeric_limits<uint64_t>::max();
+    }
+
+    [[nodiscard]] uint64_t getID() const
+    {
+        return entt::to_entity(id);
+    }
+
+  private:
+    entt::entity id;
+};
+
+struct CabbageFramework::SceneImpl final
+{
+    explicit SceneImpl(void *surface = nullptr, const bool lightField = false)
+        : id(entt::null)
+    {
+        const auto id_promise = std::make_shared<std::promise<entt::entity>>();
+        std::future<entt::entity> id_future = id_promise->get_future();
+
+        FrontBridge::dispatcher().enqueue<ECS::Events::SceneCreateRequest>({.surface = surface,
+                                                                            .lightField = lightField,
+                                                                            .scene_id_promise = id_promise});
+        id = id_future.get();
+        std::cout << std::format("Scene id {} returned and set to front id.", getID()) << std::endl;
+    }
+
+    ~SceneImpl()
+    {
+        // TODO: 销毁ECS中的Scene实体
+        std::cout << std::format("Scene {} destroyed.", getID()).c_str() << std::endl;
+    }
+
+    void setCamera(const std::array<float, 3> &pos, const std::array<float, 3> &forward, const std::array<float, 3> &worldup, const float &fov)
+    {
+        // 设置相机参数
+    }
+
+    void setSunDirection(const std::array<float, 3> &direction)
+    {
+        // 设置太阳光方向
+    }
+
+    void setDisplaySurface(void *surface)
+    {
+        FrontBridge::dispatcher().enqueue<ECS::Events::SceneSetDisplaySurface>({.scene = id,
+                                                                                .surface = surface});
+    }
+
+    ActorImpl *detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir)
+    {
+        return nullptr;
+    }
+
+    void addActor(const ActorImpl &actor)
+    {
+    }
+
+    void removeActor(const ActorImpl &actor)
+    {
+    }
+
+    [[nodiscard]] uint64_t getID() const
+    {
+        return entt::to_entity(id);
+    }
+
+  private:
+    entt::entity id;
+};
+
+/************************************ 以下是API ********************************************/
+
+CabbageFramework::Actor::Actor(const std::string &path)
+    : impl(new ActorImpl(path)),
+      ref_count(new int(1))
+{
+}
+
+CabbageFramework::Actor::Actor(const Actor &other)
+    : impl(other.impl),
+      ref_count(other.ref_count)
+{
+    if (ref_count)
+    {
+        ++(*ref_count);
+    }
+}
+
+CabbageFramework::Actor::Actor(Actor &&other) noexcept
+    : impl(other.impl),
+      ref_count(other.ref_count)
+{
+    other.impl = nullptr;
+    other.ref_count = nullptr;
 }
 
 CabbageFramework::Actor::~Actor()
 {
+    if (ref_count && (--(*ref_count) == 0))
+    {
+        delete impl;
+        delete ref_count;
+        impl = nullptr;
+        ref_count = nullptr;
+    }
 }
 
-void CabbageFramework::Actor::move(const std::array<float, 3> &pos)
+CabbageFramework::Actor &CabbageFramework::Actor::operator=(const Actor &other)
 {
-    // 实现移动功能
+    if (this != &other)
+    {
+        if (ref_count && (--(*ref_count) == 0))
+        {
+            delete impl;
+            delete ref_count;
+        }
+
+        impl = other.impl;
+        ref_count = other.ref_count;
+
+        if (ref_count)
+        {
+            ++(*ref_count);
+        }
+    }
+    return *this;
 }
 
-void CabbageFramework::Actor::rotate(const std::array<float, 3> &euler)
+CabbageFramework::Actor &CabbageFramework::Actor::operator=(Actor &&other) noexcept
 {
-    // 实现旋转功能
+    if (this != &other)
+    {
+        if (ref_count && (--(*ref_count) == 0))
+        {
+            delete impl;
+            delete ref_count;
+        }
+
+        impl = other.impl;
+        ref_count = other.ref_count;
+
+        other.impl = nullptr;
+        other.ref_count = nullptr;
+    }
+    return *this;
 }
 
-void CabbageFramework::Actor::scale(const std::array<float, 3> &size)
+void CabbageFramework::Actor::move(const std::array<float, 3> &pos) const
 {
-    // 实现缩放功能
+    impl->move(pos);
 }
 
-void CabbageFramework::Actor::setWorldMatrix(const std::array<std::array<float, 4>, 4> &worldMartix)
+void CabbageFramework::Actor::rotate(const std::array<float, 3> &euler) const
 {
-    // 设置世界变换矩阵
+    impl->rotate(euler);
+}
+
+void CabbageFramework::Actor::scale(const std::array<float, 3> &size) const
+{
+    impl->scale(size);
+}
+
+void CabbageFramework::Actor::setWorldMatrix(const std::array<std::array<float, 4>, 4> &worldMartix) const
+{
+    impl->setWorldMatrix(worldMartix);
 }
 
 std::array<std::array<float, 4>, 4> CabbageFramework::Actor::getWorldMatrix() const
 {
-    // 返回当前世界变换矩阵
-    return std::array<std::array<float, 4>, 4>{};
+    return impl->getWorldMatrix();
 }
 
-void CabbageFramework::Actor::setMeshShape(const std::string &path)
+void CabbageFramework::Actor::setMeshShape(const std::string &path) const
 {
-    // 设置网格形状
+    impl->setMeshShape(path);
 }
 
-void CabbageFramework::Actor::setSkeletalAnimation(const std::string &path)
+void CabbageFramework::Actor::setSkeletalAnimation(const std::string &path) const
 {
-    // 设置骨骼动画
+    impl->setSkeletalAnimation(path);
 }
 
-uint64_t CabbageFramework::Actor::detectCollision(const Actor &other)
+uint64_t CabbageFramework::Actor::detectCollision(const ActorImpl &other)
 {
-    // 碰撞检测实现
-    return std::numeric_limits<uint64_t>::max();
+    return impl->detectCollision(other);
 }
 
 uint64_t CabbageFramework::Actor::getID() const
 {
-    return id;
+    return impl->getID();
 }
 
-void CabbageFramework::Actor::setOpticsParams(const OpticsParams &params)
+CabbageFramework::Scene::Scene(void *surface, const bool lightField)
+    : impl(new SceneImpl(surface, lightField)),
+      ref_count(new int(1))
 {
-    // 设置光学参数
 }
 
-void CabbageFramework::Actor::setAcousticsParams(const AcousticsParams &params)
+CabbageFramework::Scene::Scene(const Scene &other)
+    : impl(other.impl),
+      ref_count(other.ref_count)
 {
-    // 设置声学参数
+    if (ref_count)
+    {
+        ++(*ref_count);
+    }
 }
 
-void CabbageFramework::Actor::setMechanicsParams(const MechanicsParams &params)
+CabbageFramework::Scene::Scene(Scene &&other) noexcept
+    : impl(other.impl),
+      ref_count(other.ref_count)
 {
-    // 设置力学参数
-}
-
-// Scene实现
-CabbageFramework::Scene::Scene(void *surface, bool lightField)
-    : id(std::numeric_limits<uint64_t>::max()) // 创建Scene实体
-{
-    const auto id_promise = std::make_shared<std::promise<entt::entity>>();
-    std::future<entt::entity> id_future = id_promise->get_future();
-
-    FrontBridge::dispatcher().enqueue<ECS::Events::SceneCreateRequest>({.surface = surface,
-                                                                        .lightField = lightField,
-                                                                        .scene_id_promise = id_promise});
-    id = entt::to_entity(id_future.get());
-    std::puts(std::format("Scene id {} returned and set to front id.", id).c_str());
+    other.impl = nullptr;
+    other.ref_count = nullptr;
 }
 
 CabbageFramework::Scene::~Scene()
 {
+    if (ref_count && (--(*ref_count) == 0))
+    {
+        delete impl;
+        delete ref_count;
+        impl = nullptr;
+        ref_count = nullptr;
+    }
 }
 
-void CabbageFramework::Scene::setCamera(const std::array<float, 3> &pos, const std::array<float, 3> &forward, const std::array<float, 3> &worldup, const float &fov)
+CabbageFramework::Scene &CabbageFramework::Scene::operator=(const Scene &other)
 {
-    // 设置相机参数
+    if (this != &other)
+    {
+        if (ref_count && (--(*ref_count) == 0))
+        {
+            delete impl;
+            delete ref_count;
+        }
+
+        impl = other.impl;
+        ref_count = other.ref_count;
+
+        if (ref_count)
+        {
+            ++(*ref_count);
+        }
+    }
+    return *this;
 }
 
-void CabbageFramework::Scene::setSunDirection(const std::array<float, 3> &direction)
+CabbageFramework::Scene &CabbageFramework::Scene::operator=(Scene &&other) noexcept
 {
-    // 设置太阳光方向
+    if (this != &other)
+    {
+        if (ref_count && (--(*ref_count) == 0))
+        {
+            delete impl;
+            delete ref_count;
+        }
+
+        impl = other.impl;
+        ref_count = other.ref_count;
+
+        other.impl = nullptr;
+        other.ref_count = nullptr;
+    }
+    return *this;
 }
 
-void CabbageFramework::Scene::setDisplaySurface(void *surface)
+void CabbageFramework::Scene::setCamera(const std::array<float, 3> &pos, const std::array<float, 3> &forward, const std::array<float, 3> &worldup, const float &fov) const
 {
-    FrontBridge::dispatcher().enqueue<ECS::Events::SceneSetDisplaySurface>({.scene = static_cast<entt::entity>(id),
-                                                                            .surface = surface});
+    impl->setCamera(pos, forward, worldup, fov);
 }
 
-CabbageFramework::Actor *CabbageFramework::Scene::detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir)
+void CabbageFramework::Scene::setSunDirection(const std::array<float, 3> &direction) const
 {
-    return nullptr;
+    impl->setSunDirection(direction);
 }
 
-void CabbageFramework::Scene::addActor(const uint64_t &actor)
+void CabbageFramework::Scene::setDisplaySurface(void *surface) const
 {
+    impl->setDisplaySurface(surface);
 }
 
-void CabbageFramework::Scene::removeActor(const uint64_t &actor)
+CabbageFramework::ActorImpl *CabbageFramework::Scene::detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir) const
 {
+    return impl->detectActorByRay(origin, dir);
+}
+
+void CabbageFramework::Scene::addActor(const ActorImpl &actor) const
+{
+    impl->addActor(actor);
+}
+
+void CabbageFramework::Scene::removeActor(const ActorImpl &actor) const
+{
+    impl->removeActor(actor);
 }
 
 uint64_t CabbageFramework::Scene::getID() const
 {
-    return id;
+    return impl->getID();
 }

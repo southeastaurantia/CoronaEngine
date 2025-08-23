@@ -23,7 +23,7 @@ namespace ECS
 
         coreThread = std::thread(&Core::coreLoop, this);
 
-        std::puts("Core started.");
+        std::cout << "Core started" << std::endl;
     };
 
     Core::~Core()
@@ -35,7 +35,7 @@ namespace ECS
             coreThread.join();
         }
 
-        std::puts("Core stoped.");
+        std::cout << "Core stoped" << std::endl;
     }
 
     void Core::coreLoop()
@@ -66,7 +66,7 @@ namespace ECS
     {
         auto scene = registry->create();
 
-        std::puts(std::format("Scene {} created.", entt::to_entity(scene)).c_str());
+        std::cout << std::format("Scene {} created.", entt::to_entity(scene)) << std::endl;
 
         event.scene_id_promise->set_value(scene);
     }

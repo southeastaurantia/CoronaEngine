@@ -4,10 +4,10 @@
 #include <GLFW/glfw3native.h>
 
 #include "CabbageFramework.h"
-#include <vector>
-#include <regex>
 #include <filesystem>
 #include <map>
+#include <regex>
+#include <vector>
 
 std::string shaderPath = [] {
     std::string resultPath = "";
@@ -32,11 +32,14 @@ std::string shaderPath = [] {
 
 int main()
 {
-    std::vector<CabbageFramework::Scene> scenes;
-
     if (glfwInit() >= 0)
     {
-        scenes.resize(4);
+        const std::vector<CabbageFramework::Scene> scenes{
+            CabbageFramework::Scene(),
+            CabbageFramework::Scene(),
+            CabbageFramework::Scene(),
+            CabbageFramework::Scene()};
+
         std::vector<GLFWwindow *> windows(4);
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -44,7 +47,6 @@ int main()
         {
             windows[i] = glfwCreateWindow(800, 800, "Cabbage Engine", nullptr, nullptr);
             scenes[i].setDisplaySurface(glfwGetWin32Window(windows[i]));
-
         }
 
         auto shouldClosed = [&]() {

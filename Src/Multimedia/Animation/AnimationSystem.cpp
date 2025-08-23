@@ -7,6 +7,7 @@
 #include <ECS/BackBridge.h>
 
 #include <chrono>
+#include <iostream>
 #include <utility>
 
 AnimationSystem::AnimationSystem(std::shared_ptr<entt::registry> registry)
@@ -18,7 +19,7 @@ AnimationSystem::AnimationSystem(std::shared_ptr<entt::registry> registry)
     // 启动循环线程
     loopThread = std::thread(&AnimationSystem::loop, this);
 
-    std::puts("Animation system started.");
+    std::cout << "Animation system started." << std::endl;
 }
 
 AnimationSystem::~AnimationSystem()
@@ -29,7 +30,7 @@ AnimationSystem::~AnimationSystem()
     {
         loopThread.join();
     }
-    std::puts("Animation system stoped.");
+    std::cout << "Animation system stoped." << std::endl;
 }
 
 void AnimationSystem::loop()

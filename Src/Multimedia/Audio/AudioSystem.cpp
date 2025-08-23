@@ -7,6 +7,7 @@
 #include <ECS/BackBridge.h>
 
 #include <chrono>
+#include <iostream>
 #include <utility>
 
 AudioSystem::AudioSystem(std::shared_ptr<entt::registry> registry)
@@ -17,7 +18,7 @@ AudioSystem::AudioSystem(std::shared_ptr<entt::registry> registry)
     // 启动循环线程
     loopThread = std::thread(&AudioSystem::loop, this);
 
-    std::puts("Audio system started.");
+    std::cout << "Audio system started." << std::endl;
 }
 
 AudioSystem::~AudioSystem()
@@ -28,7 +29,7 @@ AudioSystem::~AudioSystem()
     {
         loopThread.join();
     }
-    std::puts("Audio system stoped.");
+    std::cout << "Audio system stoped." << std::endl;
 }
 
 void AudioSystem::loop()

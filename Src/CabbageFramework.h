@@ -3,72 +3,63 @@
 #include <array>
 #include <string>
 
-struct CabbageFramework
+namespace CabbageFramework
 {
-    CabbageFramework() = delete;
-    ~CabbageFramework() = delete;
+    struct ActorImpl;
+    struct SceneImpl;
 
-    struct Actor;
-    struct Scene;
-
-    struct Actor
+    struct Actor final
     {
-        Actor(const std::string &path = "");
+        explicit Actor(const std::string &path = "");
+        Actor(const Actor &other);
+        Actor(Actor &&other) noexcept;
         ~Actor();
 
-        void move(const std::array<float, 3> &pos);
-        void rotate(const std::array<float, 3> &euler);
-        void scale(const std::array<float, 3> &size);
+        Actor &operator=(const Actor &other);
+        Actor &operator=(Actor &&other) noexcept;
 
-        void setWorldMatrix(const std::array<std::array<float, 4>, 4> &worldMartix);
-        std::array<std::array<float, 4>, 4> getWorldMatrix() const;
+        void move(const std::array<float, 3> &pos) const;
+        void rotate(const std::array<float, 3> &euler) const;
+        void scale(const std::array<float, 3> &size) const;
 
-        void setMeshShape(const std::string &path);
-        void setSkeletalAnimation(const std::string &path);
+        void setWorldMatrix(const std::array<std::array<float, 4>, 4> &worldMartix) const;
+        [[nodiscard]] std::array<std::array<float, 4>, 4> getWorldMatrix() const;
 
-        uint64_t detectCollision(const Actor &other);
+        void setMeshShape(const std::string &path) const;
+        void setSkeletalAnimation(const std::string &path) const;
 
-        uint64_t getID() const;
+        uint64_t detectCollision(const ActorImpl &other);
 
-        struct OpticsParams
-        {
-            bool enable;
-        };
-        void setOpticsParams(const OpticsParams &params);
-
-        struct AcousticsParams
-        {
-            bool enable;
-        };
-        void setAcousticsParams(const AcousticsParams &params);
-
-        struct MechanicsParams
-        {
-            bool enable;
-        };
-        void setMechanicsParams(const MechanicsParams &params);
+        [[nodiscard]] uint64_t getID() const;
 
       private:
-        uint64_t id;
+        ActorImpl *impl;
+        int *ref_count;
     };
 
-    struct Scene
+    struct Scene final
     {
         explicit Scene(void *surface = nullptr, bool lightField = false);
+        Scene(const Scene &other);
+        Scene(Scene &&other) noexcept;
         ~Scene();
 
-        void setCamera(const std::array<float, 3> &pos, const std::array<float, 3> &forward, const std::array<float, 3> &worldup, const float &fov);
-        void setSunDirection(const std::array<float, 3> &direction);
-        void setDisplaySurface(void *surface);
+        Scene &operator=(const Scene &other);
+        Scene &operator=(Scene &&other) noexcept;
 
-        Actor *detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir);
+        void setCamera(const std::array<float, 3> &pos, const std::array<float, 3> &forward, const std::array<float, 3> &worldup, const float &fov) const;
+        void setSunDirection(const std::array<float, 3> &direction) const;
+        void setDisplaySurface(void *surface) const;
 
-        void addActor(const uint64_t &actor);
-        void removeActor(const uint64_t &actor);
+        ActorImpl *detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir) const;
 
-        uint64_t getID() const;
+        void addActor(const ActorImpl &actor) const;
+        void removeActor(const ActorImpl &actor) const;
+
+        [[nodiscard]] uint64_t getID() const;
 
       private:
-        uint64_t id;
+        SceneImpl *impl;
+        int *ref_count;
     };
-};
+}; // namespace CabbageFramework
