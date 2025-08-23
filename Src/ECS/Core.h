@@ -35,8 +35,11 @@ namespace ECS
 
         void onSceneCreate(std::shared_ptr<Events::SceneCreateRequest> event);
         void onSceneDestroy(std::shared_ptr<Events::SceneDestroy> event);
+        void onSceneSetDisplaySurface(std::shared_ptr<Events::SceneSetDisplaySurface> event);
+        void onSceneAddActor(std::shared_ptr<Events::SceneAddActor> event);
+        void onSceneRemoveActor(std::shared_ptr<Events::SceneRemoveActor> event);
+
         void onActorCreate(std::shared_ptr<Events::ActorCreateRequest> event);
         void onActorDestroy(std::shared_ptr<Events::ActorDestroy> event);
-        void onSceneSetDisplaySurface(std::shared_ptr<Events::SceneSetDisplaySurface> event);
     };
 } // namespace ECS

@@ -23,12 +23,12 @@ namespace ECS::Components
 
     struct SunLight
     {
-        ktm::fvec3 direction;
+        ktm::fvec3 direction{-1.0f, -1.0f, -1.0f};
     };
 
     struct Actors
     {
-        std::vector<entt::entity> actors;
+        std::vector<entt::entity> data{};
     };
 
     struct ActorPose
@@ -86,7 +86,7 @@ namespace ECS::Components
 
     struct Meshes
     {
-        std::vector<entt::entity> meshes;
+        std::vector<entt::entity> data;
         std::string path;
     };
 

@@ -20,8 +20,11 @@ namespace ECS
         FrontBridge::dispatcher().sink<std::shared_ptr<Events::SceneCreateRequest>>().connect<&Core::onSceneCreate>(this);
         FrontBridge::dispatcher().sink<std::shared_ptr<Events::SceneDestroy>>().connect<&Core::onSceneDestroy>(this);
         FrontBridge::dispatcher().sink<std::shared_ptr<Events::SceneSetDisplaySurface>>().connect<&Core::onSceneSetDisplaySurface>(this);
+        FrontBridge::dispatcher().sink<std::shared_ptr<Events::SceneAddActor>>().connect<&Core::onSceneAddActor>(this);
+        FrontBridge::dispatcher().sink<std::shared_ptr<Events::SceneRemoveActor>>().connect<&Core::onSceneRemoveActor>(this);
 
         FrontBridge::dispatcher().sink<std::shared_ptr<Events::ActorCreateRequest>>().connect<&Core::onActorCreate>(this);
+        FrontBridge::dispatcher().sink<std::shared_ptr<Events::ActorDestroy>>().connect<&Core::onActorDestroy>(this);
 
         coreThread = std::thread(&Core::coreLoop, this);
 
@@ -36,6 +39,8 @@ namespace ECS
         {
             coreThread.join();
         }
+
+        FrontBridge::dispatcher().update();
 
         std::cout << "Core stoped" << std::endl;
     }
@@ -67,6 +72,9 @@ namespace ECS
     void Core::onSceneCreate(std::shared_ptr<Events::SceneCreateRequest> event)
     {
         auto scene = registry->create();
+        registry->emplace<Components::Camera>(scene, Components::Camera{});
+        registry->emplace<Components::SunLight>(scene, Components::SunLight{});
+        registry->emplace<Components::Actors>(scene, Components::Actors{});
 
         std::cout << std::format("Scene {} created.", entt::to_entity(scene)) << std::endl;
 
@@ -75,6 +83,30 @@ namespace ECS
 
     void Core::onSceneDestroy(std::shared_ptr<Events::SceneDestroy> event)
     {
+        registry->destroy(event->scene);
+
+        std::cout << std::format("Scene {} destroyed.", entt::to_entity(event->scene)) << std::endl;
+    }
+
+    void Core::onSceneSetDisplaySurface(std::shared_ptr<Events::SceneSetDisplaySurface> event)
+    {
+        BackBridge::render_dispatcher().enqueue(event);
+    }
+
+    void Core::onSceneAddActor(std::shared_ptr<Events::SceneAddActor> event)
+    {
+        auto &actors = registry->get<Components::Actors>(event->scene);
+        actors.data.push_back(event->actor);
+
+        std::cout << std::format("Actor {} added to Scene {}.", entt::to_entity(event->actor), entt::to_entity(event->scene)) << std::endl;
+    }
+
+    void Core::onSceneRemoveActor(std::shared_ptr<Events::SceneRemoveActor> event)
+    {
+        auto &actors = registry->get<Components::Actors>(event->scene);
+        actors.data.erase(std::remove(actors.data.begin(), actors.data.end(), event->actor), actors.data.end());
+
+        std::cout << std::format("Actor {} removed from Scene {}.", entt::to_entity(event->actor), entt::to_entity(event->scene)) << std::endl;
     }
 
     void Core::onActorCreate(std::shared_ptr<Events::ActorCreateRequest> event)
@@ -88,10 +120,9 @@ namespace ECS
 
     void Core::onActorDestroy(std::shared_ptr<Events::ActorDestroy> event)
     {
+        registry->destroy(event->actor);
+
+        std::cout << std::format("Actor {} destroyed.", entt::to_entity(event->actor)) << std::endl;
     }
 
-    void Core::onSceneSetDisplaySurface(std::shared_ptr<Events::SceneSetDisplaySurface> event)
-    {
-        BackBridge::render_dispatcher().enqueue<std::shared_ptr<Events::SceneSetDisplaySurface>>(event);
-    }
 } // namespace ECS

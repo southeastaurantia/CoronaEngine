@@ -34,7 +34,7 @@ namespace ECS
 
         auto modelEntity = registry->create();
         registry->emplace<Components::Meshes>(modelEntity, Components::Meshes{
-                                                               .meshes = {},
+                                                               .data = {},
                                                                .path = filePath});
 
         ProcessNode(scene->mRootNode, scene, modelEntity);
@@ -49,7 +49,7 @@ namespace ECS
             aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
             entt::entity meshEntity = ProcessMesh(mesh, scene, parentEntity);
             auto &meshes = registry->get<Components::Meshes>(parentEntity);
-            meshes.meshes.push_back(meshEntity);
+            meshes.data.push_back(meshEntity);
         }
 
         for (unsigned int i = 0; i < node->mNumChildren; i++)

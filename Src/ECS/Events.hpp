@@ -38,7 +38,6 @@ namespace ECS::Events
 
     struct ActorDestroy
     {
-        entt::entity scene;
         entt::entity actor;
     };
 

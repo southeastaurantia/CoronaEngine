@@ -31,6 +31,7 @@ namespace CabbageFramework
         uint64_t detectCollision(const ActorImpl &other);
 
         [[nodiscard]] uint64_t getID() const;
+        ActorImpl *get() const;
 
       private:
         ActorImpl *impl;
@@ -53,10 +54,11 @@ namespace CabbageFramework
 
         [[nodiscard]] uint64_t detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir) const;
 
-        void addActor(const ActorImpl &actor) const;
-        void removeActor(const ActorImpl &actor) const;
+        void addActor(const Actor &actor) const;
+        void removeActor(const Actor &actor) const;
 
         [[nodiscard]] uint64_t getID() const;
+        SceneImpl *get() const;
 
       private:
         SceneImpl *impl;

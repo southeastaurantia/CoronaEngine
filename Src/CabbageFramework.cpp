@@ -4,10 +4,14 @@
 #include <ECS/Events.hpp>
 #include <ECS/FrontBridge.h>
 
-static ECS::Core core;
+static ECS::Core core{};
 
 struct CabbageFramework::ActorImpl final
 {
+    friend struct Actor;
+    friend struct SceneImpl;
+
+  private:
     ActorImpl(const std::string &path = "")
         : id(entt::null) // 创建Actor实体
     {
@@ -23,6 +27,7 @@ struct CabbageFramework::ActorImpl final
     ~ActorImpl()
     {
         // TODO: 销毁ECS中的Actor实体 & 移除Scene中对应的Actor
+        FrontBridge::dispatcher().enqueue(std::make_shared<ECS::Events::ActorDestroy>(id));
     }
 
     void move(const std::array<float, 3> &pos)
@@ -78,6 +83,9 @@ struct CabbageFramework::ActorImpl final
 
 struct CabbageFramework::SceneImpl final
 {
+    friend struct Scene;
+
+  private:
     explicit SceneImpl(void *surface = nullptr, const bool lightField = false)
         : id(entt::null)
     {
@@ -87,12 +95,17 @@ struct CabbageFramework::SceneImpl final
         FrontBridge::dispatcher().enqueue(std::make_shared<ECS::Events::SceneCreateRequest>(surface, lightField, id_promise));
         id = id_future.get();
         std::cout << std::format("Scene id {} returned and set to front id.", getID()) << std::endl;
+
+        if (surface)
+        {
+            setDisplaySurface(surface);
+        }
     }
 
     ~SceneImpl()
     {
         // TODO: 销毁ECS中的Scene实体
-        std::cout << std::format("Scene {} destroyed.", getID()).c_str() << std::endl;
+        FrontBridge::dispatcher().enqueue(std::make_shared<ECS::Events::SceneDestroy>(id));
     }
 
     void setCamera(const std::array<float, 3> &pos, const std::array<float, 3> &forward, const std::array<float, 3> &worldup, const float &fov)
@@ -115,12 +128,14 @@ struct CabbageFramework::SceneImpl final
         return entt::null;
     }
 
-    void addActor(const ActorImpl &actor)
+    void addActor(const ActorImpl *actor)
     {
+        FrontBridge::dispatcher().enqueue(std::make_shared<ECS::Events::SceneAddActor>(id, actor->id));
     }
 
-    void removeActor(const ActorImpl &actor)
+    void removeActor(const ActorImpl *actor)
     {
+        FrontBridge::dispatcher().enqueue(std::make_shared<ECS::Events::SceneRemoveActor>(id, actor->id));
     }
 
     [[nodiscard]] uint64_t getID() const
@@ -254,6 +269,11 @@ uint64_t CabbageFramework::Actor::getID() const
     return impl->getID();
 }
 
+CabbageFramework::ActorImpl *CabbageFramework::Actor::get() const
+{
+    return impl;
+}
+
 CabbageFramework::Scene::Scene(void *surface, const bool lightField)
     : impl(new SceneImpl(surface, lightField)),
       ref_count(new int(1))
@@ -349,17 +369,22 @@ uint64_t CabbageFramework::Scene::detectActorByRay(const std::array<float, 3> &o
     return entt::to_entity(impl->detectActorByRay(origin, dir));
 }
 
-void CabbageFramework::Scene::addActor(const ActorImpl &actor) const
+void CabbageFramework::Scene::addActor(const Actor &actor) const
 {
-    impl->addActor(actor);
+    impl->addActor(actor.get());
 }
 
-void CabbageFramework::Scene::removeActor(const ActorImpl &actor) const
+void CabbageFramework::Scene::removeActor(const Actor &actor) const
 {
-    impl->removeActor(actor);
+    impl->removeActor(actor.get());
 }
 
 uint64_t CabbageFramework::Scene::getID() const
 {
     return impl->getID();
+}
+
+CabbageFramework::SceneImpl *CabbageFramework::Scene::get() const
+{
+    return impl;
 }

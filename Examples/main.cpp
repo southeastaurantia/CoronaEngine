@@ -34,16 +34,17 @@ int main()
 {
     if (glfwInit() >= 0)
     {
-        const std::vector<CabbageFramework::Scene> scenes(4);
+        const std::vector<CabbageFramework::Scene> Scenes(4);
         const CabbageFramework::Actor actor(shaderPath);
 
         std::vector<GLFWwindow *> windows(4);
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        for (size_t i = 0; i < scenes.size(); i++)
+        for (size_t i = 0; i < Scenes.size(); i++)
         {
             windows[i] = glfwCreateWindow(800, 800, "Cabbage Engine", nullptr, nullptr);
-            scenes[i].setDisplaySurface(glfwGetWin32Window(windows[i]));
+            Scenes[i].setDisplaySurface(glfwGetWin32Window(windows[i]));
+            Scenes[i].addActor(actor);
         }
 
         auto shouldClosed = [&]() {
