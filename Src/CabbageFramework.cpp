@@ -78,9 +78,7 @@ struct CabbageFramework::SceneImpl final
         const auto id_promise = std::make_shared<std::promise<entt::entity>>();
         std::future<entt::entity> id_future = id_promise->get_future();
 
-        FrontBridge::dispatcher().enqueue<ECS::Events::SceneCreateRequest>({.surface = surface,
-                                                                            .lightField = lightField,
-                                                                            .scene_id_promise = id_promise});
+        FrontBridge::dispatcher().enqueue(std::make_shared<ECS::Events::SceneCreateRequest>(surface, lightField, id_promise));
         id = id_future.get();
         std::cout << std::format("Scene id {} returned and set to front id.", getID()) << std::endl;
     }
@@ -103,8 +101,7 @@ struct CabbageFramework::SceneImpl final
 
     void setDisplaySurface(void *surface)
     {
-        FrontBridge::dispatcher().enqueue<ECS::Events::SceneSetDisplaySurface>({.scene = id,
-                                                                                .surface = surface});
+        FrontBridge::dispatcher().enqueue(std::make_shared<ECS::Events::SceneSetDisplaySurface>(id, surface));
     }
 
     entt::entity detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir)

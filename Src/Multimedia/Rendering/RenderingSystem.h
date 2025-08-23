@@ -5,9 +5,9 @@
 #ifndef CABBAGEFRAMEWORK_RENDERINGSYSTEM_H
 #define CABBAGEFRAMEWORK_RENDERINGSYSTEM_H
 
-#include <entt/entt.hpp>
 #include "CabbageDisplayer.h"
 #include <ECS/Events.hpp>
+#include <entt/entt.hpp>
 
 #include <thread>
 
@@ -32,7 +32,7 @@ class RenderingSystem
     std::shared_ptr<entt::registry> registry;
     HardwareDisplayer displayer;
 
-    void onSetDisplaySurface(const ECS::Events::SceneSetDisplaySurface& event);
+    void onSetDisplaySurface(std::shared_ptr<ECS::Events::SceneSetDisplaySurface> event);
 };
 
 #endif // CABBAGEFRAMEWORK_RENDERINGSYSTEM_H

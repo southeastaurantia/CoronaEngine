@@ -33,10 +33,10 @@ namespace ECS
 
         void coreLoop();
 
-        void onSceneCreate(Events::SceneCreateRequest &event);
-        void onSceneDestroy(const Events::SceneDestroy &event);
-        void onActorCreate(const Events::ActorCreate &event);
-        void onActorDestroy(const Events::ActorDestroy &event);
-        void onSceneSetDisplaySurface(const Events::SceneSetDisplaySurface &event);
+        void onSceneCreate(std::shared_ptr<Events::SceneCreateRequest> event);
+        void onSceneDestroy(std::shared_ptr<Events::SceneDestroy> event);
+        void onActorCreate(std::shared_ptr<Events::ActorCreate> event);
+        void onActorDestroy(std::shared_ptr<Events::ActorDestroy> event);
+        void onSceneSetDisplaySurface(std::shared_ptr<Events::SceneSetDisplaySurface> event);
     };
 } // namespace ECS
