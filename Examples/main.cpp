@@ -34,11 +34,8 @@ int main()
 {
     if (glfwInit() >= 0)
     {
-        const std::vector<CabbageFramework::Scene> scenes{
-            CabbageFramework::Scene(),
-            CabbageFramework::Scene(),
-            CabbageFramework::Scene(),
-            CabbageFramework::Scene()};
+        const std::vector<CabbageFramework::Scene> scenes(4);
+        const CabbageFramework::Actor actor(shaderPath);
 
         std::vector<GLFWwindow *> windows(4);
 

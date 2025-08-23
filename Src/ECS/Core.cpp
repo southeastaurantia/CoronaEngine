@@ -21,6 +21,8 @@ namespace ECS
         FrontBridge::dispatcher().sink<std::shared_ptr<Events::SceneDestroy>>().connect<&Core::onSceneDestroy>(this);
         FrontBridge::dispatcher().sink<std::shared_ptr<Events::SceneSetDisplaySurface>>().connect<&Core::onSceneSetDisplaySurface>(this);
 
+        FrontBridge::dispatcher().sink<std::shared_ptr<Events::ActorCreateRequest>>().connect<&Core::onActorCreate>(this);
+
         coreThread = std::thread(&Core::coreLoop, this);
 
         std::cout << "Core started" << std::endl;
@@ -75,8 +77,13 @@ namespace ECS
     {
     }
 
-    void Core::onActorCreate(std::shared_ptr<Events::ActorCreate> event)
+    void Core::onActorCreate(std::shared_ptr<Events::ActorCreateRequest> event)
     {
+        auto actor = registry->create();
+
+        std::cout << std::format("Actor {} created.", entt::to_entity(actor)) << std::endl;
+
+        event->actor_id_promise->set_value(actor);
     }
 
     void Core::onActorDestroy(std::shared_ptr<Events::ActorDestroy> event)
