@@ -107,9 +107,9 @@ struct CabbageFramework::SceneImpl final
                                                                                 .surface = surface});
     }
 
-    ActorImpl *detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir)
+    entt::entity detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir)
     {
-        return nullptr;
+        return entt::null;
     }
 
     void addActor(const ActorImpl &actor)
@@ -341,9 +341,9 @@ void CabbageFramework::Scene::setDisplaySurface(void *surface) const
     impl->setDisplaySurface(surface);
 }
 
-CabbageFramework::ActorImpl *CabbageFramework::Scene::detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir) const
+uint64_t CabbageFramework::Scene::detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir) const
 {
-    return impl->detectActorByRay(origin, dir);
+    return entt::to_entity(impl->detectActorByRay(origin, dir));
 }
 
 void CabbageFramework::Scene::addActor(const ActorImpl &actor) const

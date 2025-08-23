@@ -51,7 +51,7 @@ namespace CabbageFramework
         void setSunDirection(const std::array<float, 3> &direction) const;
         void setDisplaySurface(void *surface) const;
 
-        ActorImpl *detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir) const;
+        uint64_t detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir) const;
 
         void addActor(const ActorImpl &actor) const;
         void removeActor(const ActorImpl &actor) const;
