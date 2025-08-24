@@ -90,10 +90,8 @@ namespace ECS
             auto actorsCopy = actors.data;
             for (auto actor : actorsCopy)
             {
-                auto removeEvent = std::make_shared<Events::SceneRemoveActor>();
-                removeEvent->scene = event->scene;
-                removeEvent->actor = actor;
-                onSceneRemoveActor(removeEvent);
+                auto &SceneRef = registry->get<Components::SceneRef>(actor);
+                SceneRef.scenes.erase(event->scene);
             }
         }
 
@@ -110,6 +108,10 @@ namespace ECS
     void Core::onSceneAddActor(std::shared_ptr<Events::SceneAddActor> event)
     {
         auto &actors = registry->get<Components::Actors>(event->scene);
+        if(std::find(actors.data.begin(), actors.data.end(), event->actor) != actors.data.end())
+        {
+            return;
+        }
         actors.data.push_back(event->actor);
 
         if (!registry->try_get<Components::SceneRef>(event->actor))
