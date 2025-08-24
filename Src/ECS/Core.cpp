@@ -83,6 +83,20 @@ namespace ECS
 
     void Core::onSceneDestroy(std::shared_ptr<Events::SceneDestroy> event)
     {
+        if(registry->try_get<Components::Actors>(event->scene))
+        {
+            auto &actors = registry->get<Components::Actors>(event->scene);
+
+            auto actorsCopy = actors.data;
+            for (auto actor : actorsCopy)
+            {
+                auto removeEvent = std::make_shared<Events::SceneRemoveActor>();
+                removeEvent->scene = event->scene;
+                removeEvent->actor = actor;
+                onSceneRemoveActor(removeEvent);
+            }
+        }
+
         registry->destroy(event->scene);
 
         std::cout << std::format("Scene {} destroyed.", entt::to_entity(event->scene)) << std::endl;
