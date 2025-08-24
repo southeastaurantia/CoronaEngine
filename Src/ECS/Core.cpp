@@ -6,6 +6,19 @@
 
 #include <format>
 
+#define LOG_DEBUG(message)       \
+    if constexpr (LOG_LEVEL < 1) \
+    std::cout << std::format("[DEBUG][Core] {}", message) << std::endl
+#define LOG_INFO(message)        \
+    if constexpr (LOG_LEVEL < 2) \
+    std::cout << std::format("[INFO ][Core] {}", message) << std::endl
+#define LOG_WARNING(message)     \
+    if constexpr (LOG_LEVEL < 3) \
+    std::cout << std::format("[WARN ][Core] {}", message) << std::endl
+#define LOG_ERROR(message)       \
+    if constexpr (LOG_LEVEL < 4) \
+    std::cout << std::format("[ERROR][Core] {}", message) << std::endl
+
 namespace ECS
 {
     Core::Core()
@@ -27,12 +40,12 @@ namespace ECS
         FrontBridge::dispatcher().sink<Events::ActorDestroy>().connect<&Core::onActorDestroy>(this);
         FrontBridge::dispatcher().sink<Events::ActorRotate>().connect<&Core::onActorRotate>(this);
 
-        std::cout << "Core started" << std::endl;
+        LOG_INFO("ECS::Core created");
     };
 
     Core::~Core()
     {
-        std::cout << "Core stoped" << std::endl;
+        LOG_INFO("ECS::Core destroyed");
     }
 
     void Core::onSceneCreate(Events::SceneCreateRequest event)
@@ -41,10 +54,8 @@ namespace ECS
         registry->emplace<Components::Camera>(scene, Components::Camera{});
         registry->emplace<Components::SunLight>(scene, Components::SunLight{});
         registry->emplace<Components::Actors>(scene, Components::Actors{});
-
-        std::cout << std::format("Scene {} created.", entt::to_entity(scene)) << std::endl;
-
         event.scene_id_promise->set_value(scene);
+        LOG_INFO(std::format("Scene {} created", entt::to_entity(scene)));
     }
 
     void Core::onSceneDestroy(Events::SceneDestroy event)
@@ -54,15 +65,16 @@ namespace ECS
         {
             auto &scenes = registry->get<Components::SceneRef>(actor).scenes;
             scenes.erase(event.scene);
-            std::cout << std::format("Scene {} removed reference from actor {} before scene destroyed.", entt::to_entity(event.scene), entt::to_entity(actor)) << std::endl;
+            LOG_DEBUG(std::format("Before scene {} destroyed, remove reference from actor {}", entt::to_entity(event.scene), entt::to_entity(actor)));
         }
 
         registry->destroy(event.scene);
-        std::cout << std::format("Scene {} destroyed.", entt::to_entity(event.scene)) << std::endl;
+        LOG_INFO(std::format("Scene {} destroyed", entt::to_entity(event.scene)));
     }
 
     void Core::onSceneSetDisplaySurface(Events::SceneSetDisplaySurface event)
     {
+        LOG_DEBUG(std::format("Scene {} published event 'SceneSetDisplaySurface'", entt::to_entity(event.scene)));
         BackBridge::render_dispatcher().enqueue(event);
     }
 
@@ -78,7 +90,7 @@ namespace ECS
         auto &[scenes] = registry->get<Components::SceneRef>(event.actor);
         scenes.insert(event.scene);
 
-        std::cout << std::format("Actor {} added to Scene {}.", entt::to_entity(event.actor), entt::to_entity(event.scene)) << std::endl;
+        LOG_DEBUG(std::format("Scene {} added actor {}", entt::to_entity(event.scene), entt::to_entity(event.actor)));
     }
 
     void Core::onSceneRemoveActor(Events::SceneRemoveActor event)
@@ -95,7 +107,7 @@ namespace ECS
         auto &scenes = registry->get<Components::SceneRef>(event.actor).scenes;
         scenes.erase(event.scene);
 
-        std::cout << std::format("Actor {} removed from Scene {}", entt::to_entity(event.actor), entt::to_entity(event.scene)) << std::endl;
+        LOG_DEBUG(std::format("Scene {} removed actor {}", entt::to_entity(event.scene), entt::to_entity(event.actor)));
     }
 
     void Core::onSceneSetCamera(Events::SceneSetCamera event)
@@ -105,6 +117,7 @@ namespace ECS
         camera.forward = {event.forward[0], event.forward[1], event.forward[2]};
         camera.worldUp = {event.worldup[0], event.worldup[1], event.worldup[2]};
         camera.fov = event.fov;
+        LOG_DEBUG(std::format("Scene {} processed event 'SceneSetCamera'", entt::to_entity(event.scene)));
     }
 
     void Core::onActorCreate(Events::ActorCreateRequest event)
@@ -113,9 +126,8 @@ namespace ECS
         registry->emplace<Components::ActorPose>(actor, Components::ActorPose{});
         registry->emplace<Components::Model>(actor, Components::Model{});
         registry->emplace<Components::SceneRef>(actor, Components::SceneRef{});
-
-        std::cout << std::format("Actor {} created.", entt::to_entity(actor)) << std::endl;
         event.actor_id_promise->set_value(actor);
+        LOG_INFO(std::format("Actor {} created", entt::to_entity(actor)));
     }
 
     void Core::onActorDestroy(Events::ActorDestroy event)
@@ -125,11 +137,11 @@ namespace ECS
         {
             auto &actors = registry->get<Components::Actors>(scene).data;
             std::erase(actors, event.actor);
-            std::cout << std::format("Actor {} removed from scene {} before actor destroyed.", entt::to_entity(event.actor), entt::to_entity(scene)) << std::endl;
+            LOG_DEBUG(std::format("Before actor {} destroyed, remove reference from scene {}", entt::to_entity(event.actor), entt::to_entity(scene)));
         }
 
         registry->destroy(event.actor);
-        std::cout << std::format("Actor {} destroyed.", entt::to_entity(event.actor)) << std::endl;
+        LOG_INFO(std::format("Actor {} destroyed", entt::to_entity(event.actor)));
     }
 
     void Core::onActorRotate(Events::ActorRotate event)
@@ -139,6 +151,7 @@ namespace ECS
             event.euler[0],
             event.euler[1],
             event.euler[2]};
+        LOG_DEBUG(std::format("Actor {} processed event 'ActorRotate'", entt::to_entity(event.actor)));
     }
 
 } // namespace ECS

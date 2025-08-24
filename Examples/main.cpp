@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <map>
 #include <regex>
+#include <thread>
 #include <vector>
 
 std::string shaderPath = [] {
@@ -34,8 +35,32 @@ int main()
 {
     if (glfwInit() >= 0)
     {
+        const std::vector<CabbageFramework::Actor> Actors{
+            CabbageFramework::Actor(shaderPath),
+            CabbageFramework::Actor(shaderPath),
+            CabbageFramework::Actor(shaderPath),
+            CabbageFramework::Actor(shaderPath),
+            CabbageFramework::Actor(shaderPath),
+            CabbageFramework::Actor(shaderPath),
+            CabbageFramework::Actor(shaderPath),
+            CabbageFramework::Actor(shaderPath),
+            CabbageFramework::Actor(shaderPath),
+            CabbageFramework::Actor(shaderPath),
+            CabbageFramework::Actor(shaderPath),
+            CabbageFramework::Actor(shaderPath),
+            CabbageFramework::Actor(shaderPath)};
+
         const std::vector<CabbageFramework::Scene> Scenes(4);
-        const CabbageFramework::Actor actor(shaderPath);
+
+        const std::vector<CabbageFramework::Actor> Actors2{
+            CabbageFramework::Actor(shaderPath),
+            CabbageFramework::Actor(shaderPath),
+            CabbageFramework::Actor(shaderPath),
+            CabbageFramework::Actor(shaderPath),
+            CabbageFramework::Actor(shaderPath),
+            CabbageFramework::Actor(shaderPath),
+            CabbageFramework::Actor(shaderPath),
+            CabbageFramework::Actor(shaderPath)};
 
         std::vector<GLFWwindow *> windows(4);
 
@@ -44,13 +69,22 @@ int main()
         {
             windows[i] = glfwCreateWindow(800, 800, "Cabbage Engine", nullptr, nullptr);
             Scenes[i].setDisplaySurface(glfwGetWin32Window(windows[i]));
-            Scenes[i].addActor(actor);
+
+            for (const auto &actor : Actors)
+            {
+                Scenes[i].addActor(actor);
+            }
+
+            for (const auto &actor : Actors2)
+            {
+                Scenes[i].addActor(actor);
+            }
+
             Scenes[i].setCamera(
-            {2.0f, 2.0f, 2.0f},
-            {-1.0f, -1.0f, -1.0f}, 
-            {0.0f, 1.0f, 0.0f},  
-            45.0f
-            );
+                {2.0f, 2.0f, 2.0f},
+                {-1.0f, -1.0f, -1.0f},
+                {0.0f, 1.0f, 0.0f},
+                45.0f);
         }
 
         auto shouldClosed = [&]() {
@@ -67,14 +101,27 @@ int main()
         float angle = 0.0f;
         while (!shouldClosed())
         {
+            static constexpr uint64_t FPS = 120;
+            static constexpr uint64_t TIME = 1000 / FPS;
+
+            auto now = std::chrono::high_resolution_clock::now();
+
             glfwPollEvents();
 
             angle += 0.01f;
-            if(angle > 2 * 3.1415926f)
+            if (angle > 2 * 3.1415926f)
             {
                 angle -= 2 * 3.14159f;
             }
-            actor.rotate({0.0f, angle, 0.0f});
+            Actors2[0].rotate({0.0f, angle, 0.0f});
+
+            auto end = std::chrono::high_resolution_clock::now();
+
+            if (const auto Spend = std::chrono::duration_cast<std::chrono::milliseconds>(end - now).count();
+                Spend < TIME)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(TIME - Spend));
+            }
         }
         for (size_t i = 0; i < windows.size(); i++)
         {

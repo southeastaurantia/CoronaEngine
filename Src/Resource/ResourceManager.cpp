@@ -2,9 +2,23 @@
 
 #include <ECS/Core.h>
 
-#include <iostream>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+
+#include <iostream>
+
+#define LOG_DEBUG(message)       \
+    if constexpr (LOG_LEVEL < 1) \
+    std::cout << std::format("[DEBUG][Resouce] {}", message) << std::endl
+#define LOG_INFO(message)        \
+    if constexpr (LOG_LEVEL < 2) \
+    std::cout << std::format("[INFO ][Resouce] {}", message) << std::endl
+#define LOG_WARNING(message)     \
+    if constexpr (LOG_LEVEL < 3) \
+    std::cout << std::format("[WARN ][Resouce] {}", message) << std::endl
+#define LOG_ERROR(message)       \
+    if constexpr (LOG_LEVEL < 4) \
+    std::cout << std::format("[ERROR][Resouce] {}", message) << std::endl
 
 namespace ECS
 {
@@ -12,13 +26,13 @@ namespace ECS
         : registry(std::move(registry))
     {
         // TODO: Implement
-        std::cout << "ResourceManager created\n";
+        LOG_INFO("ResourceManager created");
     }
 
     ResourceManager::~ResourceManager()
     {
         // TODO: Implement
-        std::cout << "ResourceManager destroyed\n";
+        LOG_INFO("ResourceManager destroyed");
     }
 
     entt::entity ResourceManager::LoadModel(const std::string &filePath)
@@ -28,7 +42,7 @@ namespace ECS
 
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
         {
-            std::printf("ERROR::ASSIMP::%s\n", importer.GetErrorString());
+            LOG_ERROR(std::format("Assimp Error: {}", importer.GetErrorString()));
             return entt::null;
         }
 

@@ -3,6 +3,7 @@
 //
 
 #include "RenderingSystem.h"
+#include "entt/entity/entity.hpp"
 
 #include <ECS/BackBridge.h>
 #include <ECS/Core.h>
@@ -10,6 +11,19 @@
 #include <chrono>
 #include <iostream>
 #include <utility>
+
+#define LOG_DEBUG(message)       \
+    if constexpr (LOG_LEVEL < 1) \
+    std::cout << std::format("[DEBUG][Render] {}", message) << std::endl
+#define LOG_INFO(message)        \
+    if constexpr (LOG_LEVEL < 2) \
+    std::cout << std::format("[INFO ][Render] {}", message) << std::endl
+#define LOG_WARNING(message)     \
+    if constexpr (LOG_LEVEL < 3) \
+    std::cout << std::format("[WARN ][Render] {}", message) << std::endl
+#define LOG_ERROR(message)       \
+    if constexpr (LOG_LEVEL < 4) \
+    std::cout << std::format("[ERROR][Render] {}", message) << std::endl
 
 RenderingSystem::RenderingSystem(std::shared_ptr<entt::registry> registry)
     : running(true), registry(std::move(registry))
@@ -21,7 +35,7 @@ RenderingSystem::RenderingSystem(std::shared_ptr<entt::registry> registry)
     renderThread = std::thread(&RenderingSystem::renderLoop, this);
     displayThread = std::thread(&RenderingSystem::displayLoop, this);
 
-    std::cout << "Animation system started." << std::endl;
+    LOG_INFO("Rendering system initialized & started.");
 }
 
 RenderingSystem::~RenderingSystem()
@@ -38,7 +52,7 @@ RenderingSystem::~RenderingSystem()
         displayThread.join();
     }
 
-    std::cout << "Rendering system stoped." << std::endl;
+    LOG_INFO("Rendering system stopped & destroyed.");
 }
 
 void RenderingSystem::renderLoop()
@@ -96,5 +110,5 @@ void RenderingSystem::onSetDisplaySurface(const ECS::Events::SceneSetDisplaySurf
     displayer = HardwareDisplayer(event.surface);
     HardwareImage finalOutputImage(ktm::uvec2(800, 800), ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
     displayer = finalOutputImage;
-    std::cout << std::format("Scene {} set display surface.", entt::to_entity(event.scene)) << std::endl;
+    LOG_DEBUG(std::format("Scene {} set display surface.", entt::to_entity(event.scene)));
 }

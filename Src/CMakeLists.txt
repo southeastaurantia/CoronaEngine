@@ -19,3 +19,10 @@ target_link_libraries(CabbageFramework PUBLIC
     CabbageHardware
     marl
 )
+
+# 日志级别
+# 0 - Debug
+# 1 - Info
+# 2 - Warn
+# 3 - Error
+target_compile_definitions(CabbageFramework PRIVATE LOG_LEVEL=1)

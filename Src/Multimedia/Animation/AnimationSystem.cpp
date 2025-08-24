@@ -10,6 +10,19 @@
 #include <iostream>
 #include <utility>
 
+#define LOG_DEBUG(message)       \
+    if constexpr (LOG_LEVEL < 1) \
+    std::cout << std::format("[DEBUG][Anim] {}", message) << std::endl
+#define LOG_INFO(message)        \
+    if constexpr (LOG_LEVEL < 2) \
+    std::cout << std::format("[INFO ][Anim] {}", message) << std::endl
+#define LOG_WARNING(message)     \
+    if constexpr (LOG_LEVEL < 3) \
+    std::cout << std::format("[WARN ][Anim] {}", message) << std::endl
+#define LOG_ERROR(message)       \
+    if constexpr (LOG_LEVEL < 4) \
+    std::cout << std::format("[ERROR][Anim] {}", message) << std::endl
+
 AnimationSystem::AnimationSystem(std::shared_ptr<entt::registry> registry)
     : running(true), registry(std::move(registry))
 {
@@ -19,7 +32,7 @@ AnimationSystem::AnimationSystem(std::shared_ptr<entt::registry> registry)
     // 启动循环线程
     loopThread = std::thread(&AnimationSystem::loop, this);
 
-    std::cout << "Animation system started." << std::endl;
+    LOG_INFO("Animation system initialized & started.");
 }
 
 AnimationSystem::~AnimationSystem()
@@ -30,7 +43,7 @@ AnimationSystem::~AnimationSystem()
     {
         loopThread.join();
     }
-    std::cout << "Animation system stoped." << std::endl;
+    LOG_INFO("Animation system stopped & destroyed.");
 }
 
 void AnimationSystem::loop()
