@@ -32,7 +32,7 @@ class RenderingSystem
     std::shared_ptr<entt::registry> registry;
     HardwareDisplayer displayer;
 
-    void onSetDisplaySurface(std::shared_ptr<ECS::Events::SceneSetDisplaySurface> event);
+    void onSetDisplaySurface(ECS::Events::SceneSetDisplaySurface event);
 };
 
 #endif // CABBAGEFRAMEWORK_RENDERINGSYSTEM_H

@@ -22,8 +22,6 @@ namespace ECS
         ~Core();
 
       private:
-        bool running;
-        std::thread coreThread;
         std::shared_ptr<entt::registry> registry;
 
         AnimationSystem animation_system;
@@ -31,17 +29,15 @@ namespace ECS
         RenderingSystem rendering_system;
         ResourceManager resource_manager;
 
-        void coreLoop();
+        void onSceneCreate(Events::SceneCreateRequest event);
+        void onSceneDestroy(Events::SceneDestroy event);
+        void onSceneSetDisplaySurface(Events::SceneSetDisplaySurface event);
+        void onSceneAddActor(Events::SceneAddActor event);
+        void onSceneRemoveActor(Events::SceneRemoveActor event);
+        void onSceneSetCamera(Events::SceneSetCamera event);
 
-        void onSceneCreate(std::shared_ptr<Events::SceneCreateRequest> event);
-        void onSceneDestroy(std::shared_ptr<Events::SceneDestroy> event);
-        void onSceneSetDisplaySurface(std::shared_ptr<Events::SceneSetDisplaySurface> event);
-        void onSceneAddActor(std::shared_ptr<Events::SceneAddActor> event);
-        void onSceneRemoveActor(std::shared_ptr<Events::SceneRemoveActor> event);
-        void onSceneSetCamera(std::shared_ptr<Events::SceneSetCamera> event);
-
-        void onActorCreate(std::shared_ptr<Events::ActorCreateRequest> event);
-        void onActorDestroy(std::shared_ptr<Events::ActorDestroy> event);
-        void onActorRotate(std::shared_ptr<Events::ActorRotate> event);
+        void onActorCreate(Events::ActorCreateRequest event);
+        void onActorDestroy(Events::ActorDestroy event);
+        void onActorRotate(Events::ActorRotate event);
     };
 } // namespace ECS

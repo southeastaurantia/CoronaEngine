@@ -15,7 +15,7 @@ RenderingSystem::RenderingSystem(std::shared_ptr<entt::registry> registry)
     : running(true), registry(std::move(registry))
 {
     // TODO: BackBridge事件注册
-    BackBridge::render_dispatcher().sink<std::shared_ptr<ECS::Events::SceneSetDisplaySurface>>().connect<&RenderingSystem::onSetDisplaySurface>(this);
+    BackBridge::render_dispatcher().sink<ECS::Events::SceneSetDisplaySurface>().connect<&RenderingSystem::onSetDisplaySurface>(this);
 
     // 启动循环线程
     renderThread = std::thread(&RenderingSystem::renderLoop, this);
@@ -91,10 +91,10 @@ void RenderingSystem::displayLoop()
     }
 }
 
-void RenderingSystem::onSetDisplaySurface(std::shared_ptr<ECS::Events::SceneSetDisplaySurface> event)
+void RenderingSystem::onSetDisplaySurface(const ECS::Events::SceneSetDisplaySurface event)
 {
-    displayer = HardwareDisplayer(event->surface);
+    displayer = HardwareDisplayer(event.surface);
     HardwareImage finalOutputImage(ktm::uvec2(800, 800), ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
     displayer = finalOutputImage;
-    std::cout << std::format("Scene {} set display surface.", entt::to_entity(event->scene)) << std::endl;
+    std::cout << std::format("Scene {} set display surface.", entt::to_entity(event.scene)) << std::endl;
 }

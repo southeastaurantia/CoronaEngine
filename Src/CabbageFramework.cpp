@@ -18,7 +18,7 @@ struct CabbageFramework::ActorImpl final
         const auto id_promise = std::make_shared<std::promise<entt::entity>>();
         std::future<entt::entity> id_future = id_promise->get_future();
 
-        FrontBridge::dispatcher().enqueue(std::make_shared<ECS::Events::ActorCreateRequest>(path, id_promise));
+        FrontBridge::dispatcher().trigger(ECS::Events::ActorCreateRequest{.path = path, .actor_id_promise = id_promise});
         id = id_future.get();
         std::cout << std::format("Actor id {} returned and set to front id.", getID()) << std::endl;
         // 发送事件给ECS系统
@@ -27,7 +27,7 @@ struct CabbageFramework::ActorImpl final
     ~ActorImpl()
     {
         // TODO: 销毁ECS中的Actor实体 & 移除Scene中对应的Actor
-        FrontBridge::dispatcher().enqueue(std::make_shared<ECS::Events::ActorDestroy>(id));
+        FrontBridge::dispatcher().trigger(ECS::Events::ActorDestroy{.actor = id});
     }
 
     void move(const std::array<float, 3> &pos)
@@ -38,9 +38,7 @@ struct CabbageFramework::ActorImpl final
     void rotate(const std::array<float, 3> &euler)
     {
         // 实现旋转功能
-        if(id != entt::null){
-            FrontBridge::dispatcher().enqueue(std::make_shared<ECS::Events::ActorRotate>(id, euler));
-        }
+        FrontBridge::dispatcher().trigger(ECS::Events::ActorRotate{.actor = id, .euler = euler});
     }
 
     void scale(const std::array<float, 3> &size)
@@ -95,7 +93,7 @@ struct CabbageFramework::SceneImpl final
         const auto id_promise = std::make_shared<std::promise<entt::entity>>();
         std::future<entt::entity> id_future = id_promise->get_future();
 
-        FrontBridge::dispatcher().enqueue(std::make_shared<ECS::Events::SceneCreateRequest>(surface, lightField, id_promise));
+        FrontBridge::dispatcher().trigger(ECS::Events::SceneCreateRequest{.surface = surface, .lightField = lightField, .scene_id_promise = id_promise});
         id = id_future.get();
         std::cout << std::format("Scene id {} returned and set to front id.", getID()) << std::endl;
 
@@ -108,13 +106,13 @@ struct CabbageFramework::SceneImpl final
     ~SceneImpl()
     {
         // TODO: 销毁ECS中的Scene实体
-        FrontBridge::dispatcher().enqueue(std::make_shared<ECS::Events::SceneDestroy>(id));
+        FrontBridge::dispatcher().trigger(ECS::Events::SceneDestroy{.scene = id});
     }
 
     void setCamera(const std::array<float, 3> &pos, const std::array<float, 3> &forward, const std::array<float, 3> &worldup, const float &fov)
     {
         // 设置相机参数
-        FrontBridge::dispatcher().enqueue(std::make_shared<ECS::Events::SceneSetCamera>(id, pos, forward, worldup, fov));
+        FrontBridge::dispatcher().trigger(ECS::Events::SceneSetCamera{.scene = id, .pos = pos, .forward = forward, .worldup = worldup, .fov = fov});
     }
 
     void setSunDirection(const std::array<float, 3> &direction)
@@ -124,7 +122,7 @@ struct CabbageFramework::SceneImpl final
 
     void setDisplaySurface(void *surface)
     {
-        FrontBridge::dispatcher().enqueue(std::make_shared<ECS::Events::SceneSetDisplaySurface>(id, surface));
+        FrontBridge::dispatcher().trigger(ECS::Events::SceneSetDisplaySurface{.scene = id, .surface = surface});
     }
 
     entt::entity detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir)
@@ -134,12 +132,12 @@ struct CabbageFramework::SceneImpl final
 
     void addActor(const ActorImpl *actor)
     {
-        FrontBridge::dispatcher().enqueue(std::make_shared<ECS::Events::SceneAddActor>(id, actor->id));
+        FrontBridge::dispatcher().trigger(ECS::Events::SceneAddActor{.scene = id, .actor = actor->id});
     }
 
     void removeActor(const ActorImpl *actor)
     {
-        FrontBridge::dispatcher().enqueue(std::make_shared<ECS::Events::SceneRemoveActor>(id, actor->id));
+        FrontBridge::dispatcher().trigger(ECS::Events::SceneRemoveActor{.scene = id, .actor = actor->id});
     }
 
     [[nodiscard]] uint64_t getID() const
