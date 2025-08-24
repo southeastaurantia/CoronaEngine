@@ -22,9 +22,11 @@ namespace ECS
         FrontBridge::dispatcher().sink<std::shared_ptr<Events::SceneSetDisplaySurface>>().connect<&Core::onSceneSetDisplaySurface>(this);
         FrontBridge::dispatcher().sink<std::shared_ptr<Events::SceneAddActor>>().connect<&Core::onSceneAddActor>(this);
         FrontBridge::dispatcher().sink<std::shared_ptr<Events::SceneRemoveActor>>().connect<&Core::onSceneRemoveActor>(this);
+        FrontBridge::dispatcher().sink<std::shared_ptr<Events::SceneSetCamera>>().connect<&Core::onSceneSetCamera>(this);
 
         FrontBridge::dispatcher().sink<std::shared_ptr<Events::ActorCreateRequest>>().connect<&Core::onActorCreate>(this);
         FrontBridge::dispatcher().sink<std::shared_ptr<Events::ActorDestroy>>().connect<&Core::onActorDestroy>(this);
+        FrontBridge::dispatcher().sink<std::shared_ptr<Events::ActorRotate>>().connect<&Core::onActorRotate>(this);
 
         coreThread = std::thread(&Core::coreLoop, this);
 
@@ -144,6 +146,18 @@ namespace ECS
         }
     }
 
+    void Core::onSceneSetCamera(std::shared_ptr<Events::SceneSetCamera> event)
+    {
+        if (registry->try_get<Components::Camera>(event->scene))
+        {
+            auto &camera = registry->get<Components::Camera>(event->scene);
+            camera.pos = {event->pos[0], event->pos[1], event->pos[2]};
+            camera.forward = {event->forward[0], event->forward[1], event->forward[2]};
+            camera.worldUp = {event->worldup[0], event->worldup[1], event->worldup[2]};
+            camera.fov = event->fov;
+        }
+    }
+
     void Core::onActorCreate(std::shared_ptr<Events::ActorCreateRequest> event)
     {
         auto actor = registry->create();
@@ -158,6 +172,24 @@ namespace ECS
         registry->destroy(event->actor);
 
         std::cout << std::format("Actor {} destroyed.", entt::to_entity(event->actor)) << std::endl;
+    }
+
+    void Core::onActorRotate(std::shared_ptr<Events::ActorRotate> event)
+    {
+        if (registry->try_get<Components::ActorPose>(event->actor))
+        {
+            auto &pose = registry->get<Components::ActorPose>(event->actor);
+            pose.rotate = {
+                event->euler[0],
+                event->euler[1],
+                event->euler[2]
+            };
+            std::cout << std::format("Actor {} rotated to ({}, {}, {})\n",
+                entt::to_entity(event->actor),
+                pose.rotate[0],
+                pose.rotate[1],
+                pose.rotate[2]);
+        }
     }
 
 } // namespace ECS

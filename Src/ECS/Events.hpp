@@ -30,6 +30,21 @@ namespace ECS::Events
         entt::entity actor;
     };
 
+    struct SceneSetDisplaySurface
+    {
+        entt::entity scene;
+        void *surface;
+    };
+
+    struct SceneSetCamera
+    {
+        entt::entity scene;
+        std::array<float, 3> pos;
+        std::array<float, 3> forward;
+        std::array<float, 3> worldup;
+        float fov;
+    };
+
     struct ActorCreateRequest
     {
         std::string path;
@@ -41,9 +56,10 @@ namespace ECS::Events
         entt::entity actor;
     };
 
-    struct SceneSetDisplaySurface
+    struct ActorRotate
     {
-        entt::entity scene;
-        void *surface;
+        entt::entity actor;
+        std::array<float, 3> euler;
     };
+
 } // namespace ECS::Events

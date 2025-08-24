@@ -45,6 +45,12 @@ int main()
             windows[i] = glfwCreateWindow(800, 800, "Cabbage Engine", nullptr, nullptr);
             Scenes[i].setDisplaySurface(glfwGetWin32Window(windows[i]));
             Scenes[i].addActor(actor);
+            Scenes[i].setCamera(
+            {2.0f, 2.0f, 2.0f},
+            {-1.0f, -1.0f, -1.0f}, 
+            {0.0f, 1.0f, 0.0f},  
+            45.0f
+            );
         }
 
         auto shouldClosed = [&]() {
@@ -58,9 +64,17 @@ int main()
             return false;
         };
 
+        float angle = 0.0f;
         while (!shouldClosed())
         {
             glfwPollEvents();
+
+            angle += 0.01f;
+            if(angle > 2 * 3.1415926f)
+            {
+                angle -= 2 * 3.14159f;
+            }
+            actor.rotate({0.0f, angle, 0.0f});
         }
         for (size_t i = 0; i < windows.size(); i++)
         {

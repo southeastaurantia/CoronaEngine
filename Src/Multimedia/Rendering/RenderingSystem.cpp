@@ -5,6 +5,7 @@
 #include "RenderingSystem.h"
 
 #include <ECS/BackBridge.h>
+#include <ECS/Core.h>
 
 #include <chrono>
 #include <iostream>
@@ -52,7 +53,9 @@ void RenderingSystem::renderLoop()
         auto startTime = std::chrono::high_resolution_clock::now();
         BackBridge::render_dispatcher().update();
         /********** Do Something **********/
-
+        // registry->view<ECS::Components::ActorPose, ECS::Components::RasterizerUniformBufferObject>().each([](auto entity, auto &pose, auto &ubo) {
+        //     ubo.model = pose.getModelMatrix();
+        // });
         /********** Do Something **********/
 
         auto endTime = std::chrono::high_resolution_clock::now();

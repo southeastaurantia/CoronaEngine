@@ -38,6 +38,9 @@ struct CabbageFramework::ActorImpl final
     void rotate(const std::array<float, 3> &euler)
     {
         // 实现旋转功能
+        if(id != entt::null){
+            FrontBridge::dispatcher().enqueue(std::make_shared<ECS::Events::ActorRotate>(id, euler));
+        }
     }
 
     void scale(const std::array<float, 3> &size)
@@ -111,6 +114,7 @@ struct CabbageFramework::SceneImpl final
     void setCamera(const std::array<float, 3> &pos, const std::array<float, 3> &forward, const std::array<float, 3> &worldup, const float &fov)
     {
         // 设置相机参数
+        FrontBridge::dispatcher().enqueue(std::make_shared<ECS::Events::SceneSetCamera>(id, pos, forward, worldup, fov));
     }
 
     void setSunDirection(const std::array<float, 3> &direction)
