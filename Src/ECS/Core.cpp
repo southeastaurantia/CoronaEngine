@@ -98,15 +98,34 @@ namespace ECS
         auto &actors = registry->get<Components::Actors>(event->scene);
         actors.data.push_back(event->actor);
 
+        if (!registry->try_get<Components::SceneRef>(event->actor))
+        {
+            registry->emplace<Components::SceneRef>(event->actor);
+        }
+        auto &sceneRef = registry->get<Components::SceneRef>(event->actor);
+        sceneRef.scenes.insert(event->scene);
+
         std::cout << std::format("Actor {} added to Scene {}.", entt::to_entity(event->actor), entt::to_entity(event->scene)) << std::endl;
     }
 
     void Core::onSceneRemoveActor(std::shared_ptr<Events::SceneRemoveActor> event)
     {
-        auto &actors = registry->get<Components::Actors>(event->scene);
-        actors.data.erase(std::remove(actors.data.begin(), actors.data.end(), event->actor), actors.data.end());
+        if (registry->valid(event->scene) && registry->valid(event->actor))
+        {
+            if (registry->try_get<Components::Actors>(event->scene))
+            {
+                auto &actors = registry->get<Components::Actors>(event->scene);
+                actors.data.erase(std::remove(actors.data.begin(), actors.data.end(), event->actor), actors.data.end());
+            }
 
-        std::cout << std::format("Actor {} removed from Scene {}.", entt::to_entity(event->actor), entt::to_entity(event->scene)) << std::endl;
+            if (registry->try_get<Components::SceneRef>(event->actor))
+            {
+                auto &sceneRef = registry->get<Components::SceneRef>(event->actor);
+                sceneRef.scenes.erase(event->scene);
+            }
+
+            std::cout << std::format("Actor {} removed from Scene {}", entt::to_entity(event->actor), entt::to_entity(event->scene)) << std::endl;
+        }
     }
 
     void Core::onActorCreate(std::shared_ptr<Events::ActorCreateRequest> event)

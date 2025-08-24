@@ -46,6 +46,11 @@ namespace ECS::Components
         }
     };
 
+    struct SceneRef
+    {
+        std::set<entt::entity> scenes;
+    };
+
     struct AABB
     {
         ktm::fvec3 aabbMinXYZ = ktm::fvec3(0.0f, 0.0f, 0.0f);
