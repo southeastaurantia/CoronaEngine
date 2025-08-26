@@ -1,4 +1,4 @@
-#include "Core.h"
+﻿#include "Core.h"
 
 #include "BackBridge.h"
 #include "Components.h"
@@ -146,7 +146,6 @@ namespace ECS
                 modelComponent.model = sharedModelEntity;
                 LOG_INFO(std::format("Actor {} reused model from path: {}", entt::to_entity(actor), event.path));
             } else {
-                // 如果没有找到，则创建新的模型实体并加载资源
                 auto modelEntity = registry->create();
 
                 registry->emplace<Components::Animations>(modelEntity, Components::Animations{
