@@ -35,7 +35,7 @@ namespace ECS
         LOG_INFO("ResourceManager destroyed");
     }
 
-    entt::entity ResourceManager::LoadModel(const std::string &filePath)
+    void ResourceManager::LoadModel(entt::entity modelEntity, const std::string &filePath)
     {
         Assimp::Importer importer;
         const aiScene *scene = importer.ReadFile(filePath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs);
@@ -43,40 +43,38 @@ namespace ECS
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
         {
             LOG_ERROR(std::format("Assimp Error: {}", importer.GetErrorString()));
-            return entt::null;
         }
 
-        auto modelEntity = registry->create();
         registry->emplace<Components::Meshes>(modelEntity, Components::Meshes{
                                                                .data = {},
                                                                .path = filePath});
 
         ProcessNode(scene->mRootNode, scene, modelEntity);
 
-        return modelEntity;
     }
 
-    void ResourceManager::ProcessNode(aiNode *node, const aiScene *scene, entt::entity parentEntity)
+    void ResourceManager::ProcessNode(aiNode *node, const aiScene *scene, entt::entity modelEntity)
     {
         for (unsigned int i = 0; i < node->mNumMeshes; i++)
         {
             aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
-            entt::entity meshEntity = ProcessMesh(mesh, scene, parentEntity);
-            auto &meshes = registry->get<Components::Meshes>(parentEntity);
+
+            auto meshEntity = registry->create();
+            ProcessMesh(mesh, scene, meshEntity, modelEntity);
+
+            auto &meshes = registry->get<Components::Meshes>(modelEntity);
             meshes.data.push_back(meshEntity);
         }
 
         for (unsigned int i = 0; i < node->mNumChildren; i++)
         {
-            ProcessNode(node->mChildren[i], scene, parentEntity);
+            ProcessNode(node->mChildren[i], scene, modelEntity);
         }
     }
 
-    entt::entity ResourceManager::ProcessMesh(aiMesh *mesh, const aiScene *scene, entt::entity modelEntity)
+    void ResourceManager::ProcessMesh(aiMesh *mesh, const aiScene *scene, entt::entity meshEntity, entt::entity modelEntity)
     {
-        auto meshEntity = registry->create();
-
-        Components::MeshHost meshHost;
+        auto &meshHost = registry->emplace<Components::MeshHost>(meshEntity);
 
         meshHost.positions.reserve(mesh->mNumVertices * 3);
         meshHost.normals.reserve(mesh->mNumVertices * 3);
@@ -107,17 +105,10 @@ namespace ECS
                 meshHost.texCoords.push_back(0.0f);
                 meshHost.texCoords.push_back(0.0f);
             }
-
-            meshHost.boneIndices.push_back(0);
-            meshHost.boneIndices.push_back(0);
-            meshHost.boneIndices.push_back(0);
-            meshHost.boneIndices.push_back(0);
-
-            meshHost.boneWeights.push_back(0.0f);
-            meshHost.boneWeights.push_back(0.0f);
-            meshHost.boneWeights.push_back(0.0f);
-            meshHost.boneWeights.push_back(0.0f);
         }
+
+        meshHost.boneIndices.resize(mesh->mNumVertices * 4, 0);
+        meshHost.boneWeights.resize(mesh->mNumVertices * 4, 0.0f);
 
         ExtractBoneWeightForVertices(mesh, meshHost, scene, modelEntity);
 
@@ -135,7 +126,6 @@ namespace ECS
         {
         }
 
-        return meshEntity;
     }
 
     void ResourceManager::ExtractBoneWeightForVertices(aiMesh *mesh, Components::MeshHost &meshHost, const aiScene *scene, entt::entity modelEntity)
@@ -172,10 +162,10 @@ namespace ECS
 
             if (boneInfoMap.find(boneName) == boneInfoMap.end())
             {
-                Components::BoneInfo newBoneInfo;
-                newBoneInfo.id = boneCount;
-                newBoneInfo.offsetMatrix = ConvertMatrixToKTFormat(mesh->mBones[boneIndex]->mOffsetMatrix);
-                boneInfoMap[boneName] = newBoneInfo;
+                registry->emplace<Components::BoneInfo>(modelEntity, Components::BoneInfo{
+                                                                      .id = boneCount,
+                                                                      .offsetMatrix = ConvertMatrixToKTFormat(mesh->mBones[boneIndex]->mOffsetMatrix)});
+                boneInfoMap[boneName] = registry->get<Components::BoneInfo>(modelEntity);
                 boneID = boneCount;
                 boneCount++;
             }
@@ -194,10 +184,11 @@ namespace ECS
 
                 for (int i = 0; i < 4; ++i)
                 {
-                    if ((meshHost.boneIndices[vertexId * 4 + i] == 0) && (meshHost.boneWeights[vertexId * 4 + i] <= 1e-3))
+                    size_t index = vertexId * 4 + i;
+                    if (index < meshHost.boneWeights.size() && meshHost.boneWeights[index] <= 1e-3)
                     {
-                        meshHost.boneWeights[vertexId * 4 + i] = weight;
-                        meshHost.boneIndices[vertexId * 4 + i] = boneID;
+                        meshHost.boneWeights[index] = weight;
+                        meshHost.boneIndices[index] = boneID;
                         break;
                     }
                 }

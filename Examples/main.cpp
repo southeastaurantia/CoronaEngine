@@ -28,7 +28,7 @@ std::string shaderPath = [] {
         }
     }
     std::replace(resultPath.begin(), resultPath.end(), '\\', '/');
-    return resultPath + "/Examples";
+    return resultPath + "/Examples/armadillo.obj";
 }();
 
 int main()
@@ -37,28 +37,11 @@ int main()
     {
         const std::vector<CabbageFramework::Actor> Actors{
             CabbageFramework::Actor(shaderPath),
-            CabbageFramework::Actor(shaderPath),
-            CabbageFramework::Actor(shaderPath),
-            CabbageFramework::Actor(shaderPath),
-            CabbageFramework::Actor(shaderPath),
-            CabbageFramework::Actor(shaderPath),
-            CabbageFramework::Actor(shaderPath),
-            CabbageFramework::Actor(shaderPath),
-            CabbageFramework::Actor(shaderPath),
-            CabbageFramework::Actor(shaderPath),
-            CabbageFramework::Actor(shaderPath),
-            CabbageFramework::Actor(shaderPath),
             CabbageFramework::Actor(shaderPath)};
 
         const std::vector<CabbageFramework::Scene> Scenes(4);
 
         const std::vector<CabbageFramework::Actor> Actors2{
-            CabbageFramework::Actor(shaderPath),
-            CabbageFramework::Actor(shaderPath),
-            CabbageFramework::Actor(shaderPath),
-            CabbageFramework::Actor(shaderPath),
-            CabbageFramework::Actor(shaderPath),
-            CabbageFramework::Actor(shaderPath),
             CabbageFramework::Actor(shaderPath),
             CabbageFramework::Actor(shaderPath)};
 

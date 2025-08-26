@@ -127,6 +127,23 @@ namespace ECS
         registry->emplace<Components::Model>(actor, Components::Model{});
         registry->emplace<Components::SceneRef>(actor, Components::SceneRef{});
         event.actor_id_promise->set_value(actor);
+
+        if(!event.path.empty())
+        {
+            auto modelEntity = registry->create();
+
+            registry->emplace<Components::Animations>(modelEntity, Components::Animations{
+                .skeletalAnimations = {},
+                .boneInfoMap = {},
+                .boneCount = 0
+            });
+
+            resource_manager.LoadModel(modelEntity, event.path);
+
+            auto& modelComponent = registry->get<Components::Model>(actor);
+            modelComponent.model = modelEntity;
+        }
+
         LOG_INFO(std::format("Actor {} created", entt::to_entity(actor)));
     }
 

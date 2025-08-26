@@ -18,9 +18,9 @@ namespace ECS
         ~ResourceManager();
 
         // TODO: Implement resource management functions
-        entt::entity LoadModel(const std::string &resourcePath);
-        void ProcessNode(aiNode *node, const aiScene *scene, entt::entity parentEntity);
-        entt::entity ProcessMesh(aiMesh *mesh, const aiScene *scene, entt::entity modelEntity);
+        void LoadModel(entt::entity modelEntity, const std::string &resourcePath);
+        void ProcessNode(aiNode *node, const aiScene *scene, entt::entity modelEntity);
+        void ProcessMesh(aiMesh *mesh, const aiScene *scene, entt::entity meshEntity, entt::entity modelEntity);
         void ExtractBoneWeightForVertices(aiMesh *mesh, Components::MeshHost &meshHost, const aiScene *scene, entt::entity modelEntity);
         std::string loadShader(const std::string &shaderPath);
         void loadDemo(const std::string &demoPath, entt::entity modelEntity);
