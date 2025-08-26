@@ -130,18 +130,37 @@ namespace ECS
 
         if(!event.path.empty())
         {
-            auto modelEntity = registry->create();
+            entt::entity sharedModelEntity = entt::null;
 
-            registry->emplace<Components::Animations>(modelEntity, Components::Animations{
-                .skeletalAnimations = {},
-                .boneInfoMap = {},
-                .boneCount = 0
+            registry->view<Components::Meshes>().each([&](entt::entity modelEntity, Components::Meshes& meshes)
+            {
+                if (meshes.path == event.path)
+                {
+                    sharedModelEntity = modelEntity;
+                }
             });
 
-            resource_manager.LoadModel(modelEntity, event.path);
+            if (sharedModelEntity != entt::null)
+            {
+                auto& modelComponent = registry->get<Components::Model>(actor);
+                modelComponent.model = sharedModelEntity;
+                LOG_INFO(std::format("Actor {} reused model from path: {}", entt::to_entity(actor), event.path));
+            } else {
+                // 如果没有找到，则创建新的模型实体并加载资源
+                auto modelEntity = registry->create();
 
-            auto& modelComponent = registry->get<Components::Model>(actor);
-            modelComponent.model = modelEntity;
+                registry->emplace<Components::Animations>(modelEntity, Components::Animations{
+                    .skeletalAnimations = {},
+                    .boneInfoMap = {},
+                    .boneCount = 0
+                });
+
+                resource_manager.LoadModel(modelEntity, event.path);
+
+                auto& modelComponent = registry->get<Components::Model>(actor);
+                modelComponent.model = modelEntity;
+                LOG_INFO(std::format("Actor {} created new model from path: {}", entt::to_entity(actor), event.path));
+            }
         }
 
         LOG_INFO(std::format("Actor {} created", entt::to_entity(actor)));
