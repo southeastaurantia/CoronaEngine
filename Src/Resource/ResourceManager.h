@@ -20,6 +20,11 @@ namespace ECS
 
         // TODO: Implement resource management functions
         void LoadModel(entt::entity modelEntity, const std::string &filePath);
+
+        
+      private:
+        std::shared_ptr<entt::registry> registry;
+        
         void LoadAnimation(const aiScene *scene, aiAnimation *animation, entt::entity modelEntity);
         void ReadHeirarchyData(Components::AssimpNodeData &dest, const aiNode *src);
         void ProcessNode(std::string path, aiNode *node, const aiScene *scene, entt::entity modelEntity);
@@ -28,10 +33,6 @@ namespace ECS
         void LoadMaterial(std::string path, aiMaterial *material, entt::entity modelEntity);
         entt::entity createTextureEntity(const std::string& texturePath, aiTextureType textureType);
         entt::entity createColorTextureEntity(const std::string& directory, aiTextureType textureType, const aiColor3D& color);
-        
-      private:
-        std::shared_ptr<entt::registry> registry;
-        
         void ReadBoneChannels(aiAnimation *animation, std::vector<Components::Bone>& outBones, std::map<std::string, Components::BoneInfo>& boneInfoMap, int& boneCount);
         void LoadKeyPositions(aiNodeAnim* channel, std::vector<Components::KeyPosition>& outPositions);
         void LoadKeyRotations(aiNodeAnim* channel, std::vector<Components::KeyRotation>& outRotations);
