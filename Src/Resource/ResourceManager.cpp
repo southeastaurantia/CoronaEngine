@@ -49,18 +49,154 @@ namespace ECS
                                                                .data = {},
                                                                .path = filePath});
 
-        ProcessNode(scene->mRootNode, scene, modelEntity);
+        registry->emplace_or_replace<Components::Animations>(modelEntity, Components::Animations{
+            .skeletalAnimations = {},
+            .boneInfoMap = {},
+            .boneCount = 0});
 
+        ProcessNode(filePath, scene->mRootNode, scene, modelEntity);
+
+        auto& animationsEntity = registry->get<Components::Animations>(modelEntity);
+        animationsEntity.skeletalAnimations.reserve(scene->mNumAnimations);
+        for (unsigned int i = 0; i < scene->mNumAnimations; i++)
+        {
+            LoadAnimation(scene, scene->mAnimations[i], modelEntity);
+        }
+
+        registry->emplace<Components::ResLoadedTag>(modelEntity);
     }
 
-    void ResourceManager::ProcessNode(aiNode *node, const aiScene *scene, entt::entity modelEntity)
+    void ResourceManager::LoadAnimation(const aiScene *scene, aiAnimation *animation, entt::entity modelEntity)
+    {
+        auto& animations = registry->get<Components::Animations>(modelEntity);
+        Components::SkeletalAnimation skeletalAnimation;
+
+        skeletalAnimation.duration = animation->mDuration;
+        skeletalAnimation.ticksPerSecond = animation->mTicksPerSecond;
+
+        ReadHeirarchyData(skeletalAnimation.rootNode, scene->mRootNode);
+
+        ReadBoneChannels(animation, skeletalAnimation.bones, animations.boneInfoMap, animations.boneCount);
+    }
+
+    void ResourceManager::ReadHeirarchyData(Components::AssimpNodeData &dest, const aiNode *src)
+    {
+        auto ConvertMatrixToGLMFormat = [](const aiMatrix4x4 &from) -> ktm::fmat4x4 {
+            ktm::fmat4x4 to;
+            to[0][0] = from.a1;
+            to[1][0] = from.a2;
+            to[2][0] = from.a3;
+            to[3][0] = from.a4;
+            to[0][1] = from.b1;
+            to[1][1] = from.b2;
+            to[2][1] = from.b3;
+            to[3][1] = from.b4;
+            to[0][2] = from.c1;
+            to[1][2] = from.c2;
+            to[2][2] = from.c3;
+            to[3][2] = from.c4;
+            to[0][3] = from.d1;
+            to[1][3] = from.d2;
+            to[2][3] = from.d3;
+            to[3][3] = from.d4;
+            return to;
+        };
+
+        dest.name = src->mName.data;
+        dest.transformation = ConvertMatrixToGLMFormat(src->mTransformation);
+        dest.childrenCount = src->mNumChildren;
+
+        for (uint32_t i = 0; i < src->mNumChildren; i++)
+        {
+            Components::AssimpNodeData newData;
+            ReadHeirarchyData(newData, src->mChildren[i]);
+            dest.children.push_back(newData);
+        }
+    }
+
+    void ResourceManager::ReadBoneChannels(aiAnimation *animation, std::vector<Components::Bone>& outBones,
+                                        std::map<std::string, Components::BoneInfo>& boneInfoMap, int& boneCount)
+    {
+        for (uint32_t i = 0; i < animation->mNumChannels; i++)
+        {
+            auto channel = animation->mChannels[i];
+            std::string boneName = channel->mNodeName.data;
+            if (boneInfoMap.find(boneName) == boneInfoMap.end())
+            {
+                boneInfoMap[boneName].id = boneCount;
+                boneCount++;
+            }
+
+            Components::Bone bone;
+            bone.name = boneName;
+            bone.id = boneInfoMap[boneName].id;
+            LoadKeyPositions(channel, bone.keyPositions);
+            bone.NumPositions = bone.keyPositions.size();
+
+            LoadKeyRotations(channel, bone.keyRotations);
+            bone.NumRotations = bone.keyRotations.size();
+
+            LoadKeyScales(channel, bone.keyScales);
+            bone.NumScales = bone.keyScales.size();
+
+            outBones.push_back(bone);
+        }
+    }
+
+    void ResourceManager::LoadKeyPositions(aiNodeAnim* channel, std::vector<Components::KeyPosition>& outPositions)
+    {
+        for (uint32_t i = 0; i < channel->mNumPositionKeys; i++)
+        {
+            Components::KeyPosition keyPosition;
+            keyPosition.time = channel->mPositionKeys[i].mTime;
+            keyPosition.position = { 
+                channel->mPositionKeys[i].mValue.x, 
+                channel->mPositionKeys[i].mValue.y, 
+                channel->mPositionKeys[i].mValue.z 
+            };
+            outPositions.push_back(keyPosition);
+        }
+    }
+
+    void ResourceManager::LoadKeyRotations(aiNodeAnim* channel, std::vector<Components::KeyRotation>& outRotations)
+    {
+        for (uint32_t i = 0; i < channel->mNumRotationKeys; i++)
+        {
+            Components::KeyRotation keyRotation;
+            keyRotation.time = channel->mRotationKeys[i].mTime;
+            keyRotation.rotation = { 
+                channel->mRotationKeys[i].mValue.x, 
+                channel->mRotationKeys[i].mValue.y, 
+                channel->mRotationKeys[i].mValue.z, 
+                channel->mRotationKeys[i].mValue.w 
+            };
+            outRotations.push_back(keyRotation);
+        }
+    }
+
+    void ResourceManager::LoadKeyScales(aiNodeAnim* channel, std::vector<Components::KeyScale>& outScales)
+    {
+        for (uint32_t i = 0; i < channel->mNumScalingKeys; i++)
+        {
+            Components::KeyScale keyScale;
+            keyScale.time = channel->mScalingKeys[i].mTime;
+            keyScale.scale = { 
+                channel->mScalingKeys[i].mValue.x, 
+                channel->mScalingKeys[i].mValue.y, 
+                channel->mScalingKeys[i].mValue.z 
+            };
+            outScales.push_back(keyScale);
+        }
+    }
+
+    void ResourceManager::ProcessNode(std::string path, aiNode *node, const aiScene *scene, entt::entity modelEntity)
     {
         for (unsigned int i = 0; i < node->mNumMeshes; i++)
         {
             aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
 
             auto meshEntity = registry->create();
-            ProcessMesh(mesh, scene, meshEntity, modelEntity);
+            ProcessMesh(path, mesh, scene, meshEntity, modelEntity);
 
             auto &meshes = registry->get<Components::Meshes>(modelEntity);
             meshes.data.push_back(meshEntity);
@@ -68,11 +204,11 @@ namespace ECS
 
         for (unsigned int i = 0; i < node->mNumChildren; i++)
         {
-            ProcessNode(node->mChildren[i], scene, modelEntity);
+            ProcessNode(path, node->mChildren[i], scene, modelEntity);
         }
     }
 
-    void ResourceManager::ProcessMesh(aiMesh *mesh, const aiScene *scene, entt::entity meshEntity, entt::entity modelEntity)
+    void ResourceManager::ProcessMesh(std::string path, aiMesh *mesh, const aiScene *scene, entt::entity meshEntity, entt::entity modelEntity)
     {
         auto &meshHost = registry->emplace<Components::MeshHost>(meshEntity);
 
@@ -124,6 +260,7 @@ namespace ECS
 
         if (mesh->mMaterialIndex >= 0)
         {
+            LoadMaterial(path, scene->mMaterials[mesh->mMaterialIndex], modelEntity);
         }
 
     }
@@ -196,422 +333,163 @@ namespace ECS
         }
     }
 
-    std::string ResourceManager::loadShader(const std::string &shaderPath)
+    void ResourceManager::LoadMaterial(std::string path, aiMaterial *material, entt::entity modelEntity)
     {
-        std::ifstream file(shaderPath.data());
-        if (!file.is_open())
+        std::string meshRootPath = "";
+        std::regex rexPattern("(.*)((\\\\)|(/))");
+        std::smatch matchPath;
+        if (regex_search(path, matchPath, rexPattern))
         {
-            throw std::runtime_error("Could not open the file.");
+            meshRootPath = matchPath[1].str();
+        }
+        else
+        {
+            throw "mesh path invalid in python";
+        }
+        std::string directory = meshRootPath;
+
+        entt::entity materialEntity = registry->create();
+
+        registry->emplace<Components::Material>(modelEntity, Components::Material{.material = materialEntity});
+
+        std::vector<aiTextureType> allTextureTypes = {
+            aiTextureType_BASE_COLOR,
+            aiTextureType_DIFFUSE,
+            aiTextureType_SPECULAR,
+            aiTextureType_EMISSIVE
+        };
+
+        for (aiTextureType textureType : allTextureTypes)
+        {
+            for (unsigned int i = 0; i < material->GetTextureCount(textureType); i++)
+            {
+                aiString str;
+                if(material->GetTexture(textureType, i, &str) != aiReturn_SUCCESS)
+                    continue;
+                
+                std::string texturePath = directory + str.C_Str();
+                entt::entity textureEntity = createTextureEntity(texturePath, textureType);
+                
+                switch (textureType)
+                {
+                case aiTextureType_BASE_COLOR:
+                    registry->emplace<Components::BaseColorTexture>(materialEntity, Components::BaseColorTexture{
+                        .texture = textureEntity
+                    });
+                    break;
+                case aiTextureType_DIFFUSE:
+                    break;
+                case aiTextureType_SPECULAR:
+                    break;
+                case aiTextureType_EMISSIVE:
+                    break;
+                default:
+                    break;
+                }
+            }
         }
 
-        std::stringstream buffer;
-        buffer << file.rdbuf();
+        Components::MaterialParams materialParams;
 
-        file.close();
-        return buffer.str();
+        aiColor3D baseColor(0.f, 0.f, 0.f);
+        if (material->Get(AI_MATKEY_BASE_COLOR, baseColor) == aiReturn_SUCCESS)
+        {
+            materialParams.baseColor = {baseColor[0], baseColor[1], baseColor[2]};
+
+            if(registry->try_get<Components::BaseColorTexture>(materialEntity))
+            {
+                entt::entity colorTextureEntity = createColorTextureEntity(directory, aiTextureType_BASE_COLOR, baseColor);
+                registry->emplace<Components::BaseColorTexture>(materialEntity, Components::BaseColorTexture{.texture = colorTextureEntity});
+            }
+        }
+
+        float metallic = 0.0f;
+        if (material->Get(AI_MATKEY_METALLIC_FACTOR, metallic) == aiReturn_SUCCESS)
+        {
+            materialParams.metallic = metallic;
+        }
+
+        float roughness = 0.0f;
+        if (material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness) == aiReturn_SUCCESS)
+        {
+            materialParams.roughness = roughness;
+        }
+
+        float specular = 0.0f;
+        if (material->Get(AI_MATKEY_SPECULAR_FACTOR, specular) == aiReturn_SUCCESS)
+        {
+            materialParams.specular = specular;
+        }
+
+        float transmission = 0.0f;
+        if (material->Get(AI_MATKEY_OPACITY, transmission) == aiReturn_SUCCESS)
+        {
+            materialParams.transmission = 1.0f - transmission;
+        }
+
+        registry->emplace<Components::MaterialParams>(materialEntity, materialParams);
     }
 
-    void ResourceManager::loadDemo(const std::string &demoPath, entt::entity modelEntity)
+    entt::entity ResourceManager::createTextureEntity(const std::string& texturePath, aiTextureType textureType)
     {
-        std::string imagePath = demoPath + "/awesomeface.png";
+        entt::entity textureEntity = registry->create();
+        
+        static std::unordered_map<std::string, entt::entity> loadedTextures;
+        auto it = loadedTextures.find(texturePath);
+        
+        if (it != loadedTextures.end())
+        {
+            return it->second;
+        }
+
         int width, height, channels;
-        unsigned char *data = stbi_load(imagePath.c_str(), &width, &height, &channels, 0);
-        registry->emplace<Components::ImageHost>(modelEntity, Components::ImageHost{
-                                                                  .path = imagePath,
-                                                                  .data = data,
-                                                                  .width = width,
-                                                                  .height = height,
-                                                                  .channels = channels});
+        unsigned char* data = stbi_load(texturePath.c_str(), &width, &height, &channels, 0);
+        
+        if (!data)
+        {
+            std::cerr << "Failed to load texture: " << texturePath << std::endl;
+            return entt::null;
+        }
 
-        registry->emplace<Components::ImageDevice>(modelEntity, Components::ImageDevice{
-                                                                    .image = HardwareImage(ktm::uvec2(width, height), ImageFormat::RGBA8_SRGB, ImageUsage::SampledImage, 1, data)});
+        registry->emplace<Components::ImageHost>(textureEntity, Components::ImageHost{
+            .path = texturePath,
+            .data = data,
+            .width = width,
+            .height = height,
+            .channels = channels
+        });
 
-        createMesh(modelEntity);
-
-        RasterizerPipeline rasterizerPipeline(loadShader(demoPath + "/vert.glsl"), loadShader(demoPath + "/frag.glsl"));
-        ComputePipeline computePipeline(loadShader(demoPath + "/compute.glsl"));
-
-        registry->emplace<Components::Pipeline>(modelEntity, Components::Pipeline{
-                                                                 .rasterizerPipeline = rasterizerPipeline,
-                                                                 .computePipeline = computePipeline});
-
-        registry->emplace<Components::ResLoadedTag>(modelEntity);
+        loadedTextures[texturePath] = textureEntity;
+        
+        return textureEntity;
     }
 
-    void ResourceManager::createMesh(entt::entity modelEntity)
+    entt::entity ResourceManager::createColorTextureEntity(const std::string& directory, aiTextureType textureType, const aiColor3D& color)
     {
-        std::vector<float> pos = {
-            -0.5f,
-            -0.5f,
-            -0.5f,
-            0.5f,
-            -0.5f,
-            -0.5f,
-            0.5f,
-            0.5f,
-            -0.5f,
-            0.5f,
-            0.5f,
-            -0.5f,
-            -0.5f,
-            0.5f,
-            -0.5f,
-            -0.5f,
-            -0.5f,
-            -0.5f,
-
-            -0.5f,
-            -0.5f,
-            0.5f,
-            0.5f,
-            -0.5f,
-            0.5f,
-            0.5f,
-            0.5f,
-            0.5f,
-            0.5f,
-            0.5f,
-            0.5f,
-            -0.5f,
-            0.5f,
-            0.5f,
-            -0.5f,
-            -0.5f,
-            0.5f,
-
-            -0.5f,
-            0.5f,
-            0.5f,
-            -0.5f,
-            0.5f,
-            -0.5f,
-            -0.5f,
-            -0.5f,
-            -0.5f,
-            -0.5f,
-            -0.5f,
-            -0.5f,
-            -0.5f,
-            -0.5f,
-            0.5f,
-            -0.5f,
-            0.5f,
-            0.5f,
-
-            0.5f,
-            0.5f,
-            0.5f,
-            0.5f,
-            0.5f,
-            -0.5f,
-            0.5f,
-            -0.5f,
-            -0.5f,
-            0.5f,
-            -0.5f,
-            -0.5f,
-            0.5f,
-            -0.5f,
-            0.5f,
-            0.5f,
-            0.5f,
-            0.5f,
-
-            -0.5f,
-            -0.5f,
-            -0.5f,
-            0.5f,
-            -0.5f,
-            -0.5f,
-            0.5f,
-            -0.5f,
-            0.5f,
-            0.5f,
-            -0.5f,
-            0.5f,
-            -0.5f,
-            -0.5f,
-            0.5f,
-            -0.5f,
-            -0.5f,
-            -0.5f,
-
-            -0.5f,
-            0.5f,
-            -0.5f,
-            0.5f,
-            0.5f,
-            -0.5f,
-            0.5f,
-            0.5f,
-            0.5f,
-            0.5f,
-            0.5f,
-            0.5f,
-            -0.5f,
-            0.5f,
-            0.5f,
-            -0.5f,
-            0.5f,
-            -0.5f,
-        };
-
-        std::vector<float> normal = {
-            // Back face (Z-negative)
-            0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, // Triangle 1
-            0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, // Triangle 2
-
-            // Front face (Z-positive)
-            0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, // Triangle 1
-            0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, // Triangle 2
-
-            // Left face (X-negative)
-            -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, // Triangle 1
-            -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, // Triangle 2
-
-            // Right face (X-positive)
-            1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // Triangle 1
-            1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // Triangle 2
-
-            // Bottom face (Y-negative)
-            0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, // Triangle 1
-            0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, // Triangle 2
-
-            // Top face (Y-positive)
-            0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // Triangle 1
-            0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f  // Triangle 2
-        };
-
-        std::vector<float> textureUV = {
-            // Back face
-            0.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            1.0f,
-            1.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            0.0f,
-
-            // Front face
-            0.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            1.0f,
-            1.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            0.0f,
-
-            // Left face
-            0.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            1.0f,
-            1.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            0.0f,
-
-            // Right face
-            0.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            1.0f,
-            1.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            0.0f,
-
-            // Bottom face
-            0.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            1.0f,
-            1.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            0.0f,
-
-            // Top face
-            0.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            1.0f,
-            1.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            0.0f,
-        };
-
-        std::vector<float> color = {
-            // Back face (Red)
-            1.0f,
-            0.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            0.0f,
-            // Front face (Green)
-            0.0f,
-            1.0f,
-            0.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            // Left face (Blue)
-            0.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            0.0f,
-            1.0f,
-            0.0f,
-            0.0f,
-            1.0f,
-            // Right face (Yellow)
-            1.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            1.0f,
-            0.0f,
-            // Bottom face (Cyan)
-            0.0f,
-            1.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            1.0f,
-            // Top face (Magenta)
-            1.0f,
-            0.0f,
-            1.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-            1.0f,
-            0.0f,
-            1.0f,
-        };
-
-        registry->emplace<Components::RasterizerUniformBufferObject>(modelEntity, Components::RasterizerUniformBufferObject{});
-        registry->emplace<Components::ComputeUniformBufferObject>(modelEntity, Components::ComputeUniformBufferObject{});
-
-        auto &rasterizerUniformBufferObject = registry->get<Components::RasterizerUniformBufferObject>(modelEntity);
-        auto &computeUniformBufferObject = registry->get<Components::ComputeUniformBufferObject>(modelEntity);
-
-        std::vector<uint32_t> indices =
-            {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35};
-
-        registry->emplace<Components::MeshHost>(modelEntity, Components::MeshHost{
-                                                                 .indices = indices,
-                                                                 .positions = pos,
-                                                                 .normals = normal,
-                                                                 .texCoords = textureUV,
-                                                                 .color = color,
-                                                                 .boneIndices = {},
-                                                                 .boneWeights = {}});
-
-        registry->emplace<Components::MeshDevice>(modelEntity, Components::MeshDevice{
-                                                                   .positionsBuffer = HardwareBuffer(pos, BufferUsage::VertexBuffer),
-                                                                   .normalsBuffer = HardwareBuffer(normal, BufferUsage::VertexBuffer),
-                                                                   .texCoordsBuffer = HardwareBuffer(textureUV, BufferUsage::VertexBuffer),
-                                                                   .colorBuffer = HardwareBuffer(color, BufferUsage::VertexBuffer),
-                                                                   .computeUniformBuffer = HardwareBuffer(sizeof(computeUniformBufferObject), BufferUsage::UniformBuffer),
-                                                                   .rasterizerUniformBuffer = HardwareBuffer(sizeof(rasterizerUniformBufferObject), BufferUsage::UniformBuffer),
-                                                                   .boneIndicesBuffer = HardwareBuffer({}, BufferUsage::VertexBuffer),
-                                                                   .boneWeightsBuffer = HardwareBuffer({}, BufferUsage::VertexBuffer)});
+        entt::entity textureEntity = registry->create();
+        
+        static int colorTextureCounter = 0;
+        std::string texturePath = directory + "color_" + std::to_string(textureType) + "_" + std::to_string(++colorTextureCounter);
+        
+        unsigned char* data = (unsigned char*)malloc(sizeof(unsigned char) * 4);
+        if (data)
+        {
+            data[0] = static_cast<unsigned char>(color[0] * 255.0f);
+            data[1] = static_cast<unsigned char>(color[1] * 255.0f);
+            data[2] = static_cast<unsigned char>(color[2] * 255.0f);
+            data[3] = 255;
+            
+            registry->emplace<Components::ImageHost>(textureEntity, Components::ImageHost{
+                .path = texturePath,
+                .data = data,
+                .width = 1,
+                .height = 1,
+                .channels = 4
+            });
+        }
+        
+        return textureEntity;
     }
+
 
 } // namespace ECS
