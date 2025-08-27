@@ -258,6 +258,15 @@ namespace ECS
             }
         }
 
+        registry->emplace<Components::MeshDevice>(meshEntity, Components::MeshDevice{
+            .indicesBuffer = HardwareBuffer(meshHost.indices, BufferUsage::IndexBuffer),
+            .positionsBuffer = HardwareBuffer(meshHost.positions, BufferUsage::VertexBuffer),
+            .normalsBuffer = HardwareBuffer(meshHost.normals, BufferUsage::VertexBuffer),
+            .texCoordsBuffer = HardwareBuffer(meshHost.texCoords, BufferUsage::VertexBuffer),
+            .boneIndicesBuffer = HardwareBuffer(meshHost.boneIndices, BufferUsage::VertexBuffer),
+            .boneWeightsBuffer = HardwareBuffer(meshHost.boneWeights, BufferUsage::VertexBuffer),
+        });
+
         if (mesh->mMaterialIndex >= 0)
         {
             LoadMaterial(path, scene->mMaterials[mesh->mMaterialIndex], modelEntity);
