@@ -12,11 +12,10 @@
 
 std::string shaderPath = [] {
     std::string resultPath = "";
-    std::string runtimePath = std::filesystem::current_path().string();
+    const std::string runtimePath = std::filesystem::current_path().string();
     // std::replace(runtimePath.begin(), runtimePath.end(), '\\', '/');
-    std::regex pattern(R"((.*)CabbageFramework\b)");
-    std::smatch matches;
-    if (std::regex_search(runtimePath, matches, pattern))
+    const std::regex pattern(R"((.*)CabbageFramework\b)");
+    if (std::smatch matches; std::regex_search(runtimePath, matches, pattern))
     {
         if (matches.size() > 1)
         {
@@ -27,7 +26,7 @@ std::string shaderPath = [] {
             throw std::runtime_error("Failed to resolve source path.");
         }
     }
-    std::replace(resultPath.begin(), resultPath.end(), '\\', '/');
+    std::ranges::replace(resultPath, '\\', '/');
     return resultPath + "/Examples/armadillo.obj";
 }();
 
@@ -81,7 +80,6 @@ int main()
             return false;
         };
 
-        float angle = 0.0f;
         while (!shouldClosed())
         {
             static constexpr uint64_t FPS = 120;
@@ -91,15 +89,12 @@ int main()
 
             glfwPollEvents();
 
-            angle += 0.01f;
-            if (angle > 2 * 3.1415926f)
+            // DO SOMETHING
             {
-                angle -= 2 * 3.14159f;
+
             }
-            Actors2[0].rotate({0.0f, angle, 0.0f});
 
             auto end = std::chrono::high_resolution_clock::now();
-
             if (const auto Spend = std::chrono::duration_cast<std::chrono::milliseconds>(end - now).count();
                 Spend < TIME)
             {

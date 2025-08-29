@@ -18,7 +18,7 @@
     std::cout << std::format("[WARN ][Resouce] {}", message) << std::endl
 #define LOG_ERROR(message)       \
     if constexpr (LOG_LEVEL < 4) \
-    std::cout << std::format("[ERROR][Resouce] {}", message) << std::endl
+    std::cerr << std::format("[ERROR][Resouce] {}", message) << std::endl
 
 namespace ECS
 {
@@ -35,7 +35,7 @@ namespace ECS
         LOG_INFO("ResourceManager destroyed");
     }
 
-    void ResourceManager::LoadModel(entt::entity modelEntity, const std::string &filePath)
+    void ResourceManager::LoadModel(const entt::entity modelEntity, const std::string &filePath)
     {
         Assimp::Importer importer;
         const aiScene *scene = importer.ReadFile(filePath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs);
@@ -43,6 +43,7 @@ namespace ECS
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
         {
             LOG_ERROR(std::format("Assimp Error: {}", importer.GetErrorString()));
+            return;
         }
 
         registry->emplace<Components::Meshes>(modelEntity, Components::Meshes{

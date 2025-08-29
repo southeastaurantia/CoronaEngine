@@ -21,7 +21,7 @@
     std::cout << std::format("[WARN ][Anim] {}", message) << std::endl
 #define LOG_ERROR(message)       \
     if constexpr (LOG_LEVEL < 4) \
-    std::cout << std::format("[ERROR][Anim] {}", message) << std::endl
+    std::cerr << std::format("[ERROR][Anim] {}", message) << std::endl
 
 AnimationSystem::AnimationSystem(std::shared_ptr<entt::registry> registry)
     : running(true), registry(std::move(registry))

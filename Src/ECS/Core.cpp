@@ -17,7 +17,7 @@
     std::cout << std::format("[WARN ][Core] {}", message) << std::endl
 #define LOG_ERROR(message)       \
     if constexpr (LOG_LEVEL < 4) \
-    std::cout << std::format("[ERROR][Core] {}", message) << std::endl
+    std::cerr << std::format("[ERROR][Core] {}", message) << std::endl
 
 namespace ECS
 {

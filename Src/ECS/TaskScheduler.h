@@ -36,7 +36,7 @@ namespace ECS
 
         // 批量提交任务并返回关联的WaitGroup
         template <typename Func, typename... Args>
-        marl::WaitGroup scheduleBatch(int numTasks, Func &&func, Args &&...args)
+        marl::WaitGroup scheduleBatch(const int numTasks, Func &&func, Args &&...args)
         {
             marl::WaitGroup wg(numTasks);
 
@@ -62,13 +62,13 @@ namespace ECS
 
         // 创建事件对象
         static marl::Event
-        createEvent(marl::Event::Mode mode = marl::Event::Mode::Manual)
+        createEvent(const marl::Event::Mode mode = marl::Event::Mode::Manual)
         {
             return marl::Event(mode);
         }
 
         // 等待任务组完成
-        static void waitGroupComplete(marl::WaitGroup &wg)
+        static void waitGroupComplete(const marl::WaitGroup &wg)
         {
             wg.wait();
         }
