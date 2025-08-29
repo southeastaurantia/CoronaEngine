@@ -51,6 +51,7 @@ namespace ECS
     void Core::onSceneCreate(Events::SceneCreateRequest event)
     {
         auto scene = registry->create();
+        registry->emplace<Components::Scene>(scene, Components::Scene{});
         registry->emplace<Components::Camera>(scene, Components::Camera{});
         registry->emplace<Components::SunLight>(scene, Components::SunLight{});
         registry->emplace<Components::Actors>(scene, Components::Actors{});
@@ -75,6 +76,8 @@ namespace ECS
     void Core::onSceneSetDisplaySurface(Events::SceneSetDisplaySurface event)
     {
         LOG_DEBUG(std::format("Scene {} published event 'SceneSetDisplaySurface'", entt::to_entity(event.scene)));
+        auto &scene = registry->get<Components::Scene>(event.scene);
+        scene.displaySurface = event.surface;
         BackBridge::render_dispatcher().enqueue(event);
     }
 

@@ -33,6 +33,7 @@ class RenderingSystem
     HardwareDisplayer displayer;
 
     void onSetDisplaySurface(ECS::Events::SceneSetDisplaySurface event);
+    void updateEngine(entt::entity scene);
 };
 
 #endif // CABBAGEFRAMEWORK_RENDERINGSYSTEM_H

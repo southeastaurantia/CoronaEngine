@@ -67,9 +67,10 @@ void RenderingSystem::renderLoop()
         auto startTime = std::chrono::high_resolution_clock::now();
         BackBridge::render_dispatcher().update();
         /********** Do Something **********/
-        // registry->view<ECS::Components::ActorPose, ECS::Components::RasterizerUniformBufferObject>().each([](auto entity, auto &pose, auto &ubo) {
-        //     ubo.model = pose.getModelMatrix();
-        // });
+        for ()
+        {
+            updateEngine(scene);
+        }
         /********** Do Something **********/
 
         auto endTime = std::chrono::high_resolution_clock::now();
@@ -107,8 +108,15 @@ void RenderingSystem::displayLoop()
 
 void RenderingSystem::onSetDisplaySurface(const ECS::Events::SceneSetDisplaySurface event)
 {
-    displayer = HardwareDisplayer(event.surface);
-    HardwareImage finalOutputImage(ktm::uvec2(800, 800), ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
-    displayer = finalOutputImage;
-    LOG_DEBUG(std::format("Scene {} set display surface.", entt::to_entity(event.scene)));
+    auto &scene = registry->get<ECS::Components::Scene>(event.scene);
+    scene.displayer = HardwareDisplayer(event.surface);
+    scene.finalOutputImage = HardwareImage(ktm::uvec2(800, 800), ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
+    scene.displayer = scene.finalOutputImage;
+    LOG_INFO(std::format("Scene {} set display surface.", entt::to_entity(event.scene)));
+}
+
+void RenderingSystem::updateEngine(entt::entity scene)
+{
+    auto& sceneComponent = registry->get<ECS::Components::Scene>(scene);
+    sceneComponent.displayer = sceneComponent.finalOutputImage;
 }

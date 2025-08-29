@@ -13,6 +13,13 @@ namespace ECS::Components
     {
     };
 
+    struct Scene
+    {
+        void* displaySurface;
+        HardwareDisplayer displayer;
+        HardwareImage finalOutputImage;
+    };
+
     struct Camera
     {
         float fov = 45.0f;
