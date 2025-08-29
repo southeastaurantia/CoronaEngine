@@ -21,7 +21,7 @@
     std::cout << std::format("[WARN ][Audio] {}", message) << std::endl
 #define LOG_ERROR(message)       \
     if constexpr (LOG_LEVEL < 4) \
-    std::cout << std::format("[ERROR][Audio] {}", message) << std::endl
+    std::cerr << std::format("[ERROR][Audio] {}", message) << std::endl
 
 AudioSystem::AudioSystem(std::shared_ptr<entt::registry> registry)
     : running(true), registry(std::move(registry))

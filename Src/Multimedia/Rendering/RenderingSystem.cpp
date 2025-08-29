@@ -23,7 +23,7 @@
     std::cout << std::format("[WARN ][Render] {}", message) << std::endl
 #define LOG_ERROR(message)       \
     if constexpr (LOG_LEVEL < 4) \
-    std::cout << std::format("[ERROR][Render] {}", message) << std::endl
+    std::cerr << std::format("[ERROR][Render] {}", message) << std::endl
 
 RenderingSystem::RenderingSystem(std::shared_ptr<entt::registry> registry)
     : running(true), registry(std::move(registry))
