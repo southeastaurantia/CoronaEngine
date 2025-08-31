@@ -9,6 +9,28 @@ project(
     LANGUAGES C CXX
 )
 
+function(cabbage_install_runtime_deps target_name)
+    get_target_property(CABBAGE_DEPS CabbageFramework INTERFACE_CABBAGE_RUNTIME_DEPS)
+
+    if(NOT CABBAGE_DEPS)
+        message(WARNING "Cabbage library did not specify any runtime dependencies.")
+        return()
+    endif()
+
+    message(STATUS "Scheduling runtime dependencies for ${target_name}: ${CABBAGE_DEPS}")
+
+    set(DESTINATION_DIR "$<TARGET_FILE_DIR:${target_name}>")
+
+    add_custom_command(
+            TARGET ${target_name} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CABBAGE_DEPS}
+            "${DESTINATION_DIR}"
+            COMMENT "Copying Cabbage runtime dependencies to ${target_name} output directory"
+            VERBATIM
+    )
+endfunction()
+
 if(POLICY CMP0077)
     cmake_policy(SET CMP0077 NEW)
 endif()
@@ -70,13 +92,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(entt)
 
-FetchContent_Declare(
-    marl
-    GIT_REPOSITORY https://github.com/google/marl.git
-    GIT_TAG main
-    EXCLUDE_FROM_ALL
-)
-FetchContent_MakeAvailable(marl)
+#FetchContent_Declare(
+#    oneTBB
+#    GIT_REPOSITORY https://github.com/uxlfoundation/oneTBB.git
+#    GIT_TAG master
+#    EXCLUDE_FROM_ALL
+#)
+#FetchContent_MakeAvailable(oneTBB)
 
 add_subdirectory(Src)
 

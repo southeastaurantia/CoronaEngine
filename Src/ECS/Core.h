@@ -1,7 +1,5 @@
 #pragma once
 
-#include "TaskScheduler.h"
-
 #include <ECS/Events.hpp>
 #include <Multimedia/Animation/AnimationSystem.h>
 #include <Multimedia/Audio/AudioSystem.h>

@@ -21,3 +21,4 @@ target_link_libraries(CabbageFrameworkExamples PRIVATE
 )
 
 helicon_install_runtime_deps(CabbageFrameworkExamples)
+cabbage_install_runtime_deps(CabbageFrameworkExamples)
