@@ -20,10 +20,16 @@ namespace ECS
 
         // TODO: Implement resource management functions
         void LoadModel(entt::entity modelEntity, const std::string &filePath);
-
+        std::string readStringFile(const std::string_view file_path);
+        void setBasePath(const std::string& basePath);
+        void setUserPath(const std::string& userPath);
+        std::string getBasePath() const;
+        std::string getUserPath() const;
         
       private:
         std::shared_ptr<entt::registry> registry;
+        std::string basePath;
+        std::string userPath;
         
         void LoadAnimation(const aiScene *scene, aiAnimation *animation, entt::entity modelEntity);
         void ReadHeirarchyData(Components::AssimpNodeData &dest, const aiNode *src);

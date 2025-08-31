@@ -67,6 +67,41 @@ namespace ECS
         registry->emplace<Components::ResLoadedTag>(modelEntity);
     }
 
+    std::string ResourceManager::readStringFile(const std::string_view file_path)
+    {
+        std::ifstream file(file_path.data());
+        if (!file.is_open())
+        {
+            throw std::runtime_error("Could not open the file.");
+        }
+
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+
+        file.close();
+        return buffer.str();
+    }
+
+    void ResourceManager::setBasePath(const std::string& basePath)
+    {
+        this->basePath = basePath;
+    }
+
+    void ResourceManager::setUserPath(const std::string& userPath)
+    {
+        this->userPath = userPath;
+    }
+
+    std::string ResourceManager::getBasePath() const
+    {
+        return basePath;
+    }
+
+    std::string ResourceManager::getUserPath() const
+    {
+        return userPath;
+    }
+
     void ResourceManager::LoadAnimation(const aiScene *scene, aiAnimation *animation, entt::entity modelEntity)
     {
         auto& animations = registry->get<Components::Animations>(modelEntity);

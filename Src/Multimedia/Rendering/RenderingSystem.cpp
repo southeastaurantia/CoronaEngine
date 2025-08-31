@@ -1,4 +1,4 @@
-//
+﻿//
 // Created by 47226 on 2025/8/22.
 //
 
@@ -67,7 +67,8 @@ void RenderingSystem::renderLoop()
         auto startTime = std::chrono::high_resolution_clock::now();
         BackBridge::render_dispatcher().update();
         /********** Do Something **********/
-        for ()
+        auto const &scenes = registry->view<ECS::Components::Scene>();
+        for (auto scene : scenes)
         {
             updateEngine(scene);
         }
