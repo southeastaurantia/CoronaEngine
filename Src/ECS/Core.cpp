@@ -40,16 +40,25 @@ namespace ECS
         FrontBridge::dispatcher().sink<Events::ActorDestroy>().connect<&Core::onActorDestroy>(this);
         FrontBridge::dispatcher().sink<Events::ActorRotate>().connect<&Core::onActorRotate>(this);
 
-        LOG_INFO("ECS::Core created");
+        animation_system.start();
+        audio_system.start();
+        rendering_system.start();
+
+        LOG_INFO("ECS::Core initialized");
     };
 
     Core::~Core()
     {
-        animation_system.Destroy();
-        audio_system.Destroy();
-        rendering_system.Destroy();
+        animation_system.stop();
+        audio_system.stop();
+        rendering_system.stop();
 
         registry->clear();
+        BackBridge::scene_to_actors().clear();
+        BackBridge::actor_to_scenes().clear();
+        BackBridge::anim_dispatcher().clear();
+        BackBridge::audio_dispatcher().clear();
+        BackBridge::render_dispatcher().clear();
 
         LOG_INFO("ECS::Core destroyed");
     }
@@ -136,12 +145,11 @@ namespace ECS
         event.actor_id_promise->set_value(actor);
         BackBridge::actor_to_scenes().insert(std::make_pair(actor, BackBridge::SceneToActorsMap::value_type::second_type()));
 
-        if(!event.path.empty())
+        if (!event.path.empty())
         {
             entt::entity sharedModelEntity = entt::null;
 
-            registry->view<Components::Meshes>().each([&](entt::entity modelEntity, Components::Meshes& meshes)
-            {
+            registry->view<Components::Meshes>().each([&](entt::entity modelEntity, Components::Meshes &meshes) {
                 if (meshes.path == event.path)
                 {
                     sharedModelEntity = modelEntity;
@@ -150,21 +158,22 @@ namespace ECS
 
             if (sharedModelEntity != entt::null)
             {
-                auto& modelComponent = registry->get<Components::Model>(actor);
+                auto &modelComponent = registry->get<Components::Model>(actor);
                 modelComponent.model = sharedModelEntity;
                 LOG_INFO(std::format("Actor {} reused model from path: {}", entt::to_entity(actor), event.path));
-            } else {
+            }
+            else
+            {
                 auto modelEntity = registry->create();
 
                 registry->emplace<Components::Animations>(modelEntity, Components::Animations{
-                    .skeletalAnimations = {},
-                    .boneInfoMap = {},
-                    .boneCount = 0
-                });
+                                                                           .skeletalAnimations = {},
+                                                                           .boneInfoMap = {},
+                                                                           .boneCount = 0});
 
                 resource_manager.LoadModel(modelEntity, event.path);
 
-                auto& modelComponent = registry->get<Components::Model>(actor);
+                auto &modelComponent = registry->get<Components::Model>(actor);
                 modelComponent.model = modelEntity;
                 LOG_INFO(std::format("Actor {} created new model from path: {}", entt::to_entity(actor), event.path));
             }

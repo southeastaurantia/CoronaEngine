@@ -19,9 +19,11 @@ class RenderingSystem
     static constexpr float RenderMinFrameTime = 1.0f / RenderFPS;
     static constexpr float DisplayMinFrameTime = 1.0f / DisplayFPS;
 
-    explicit RenderingSystem(std::shared_ptr<entt::registry> registry);
+    explicit RenderingSystem(const std::shared_ptr<entt::registry> &registry);
     ~RenderingSystem();
-    void Destroy();
+
+    void start();
+    void stop();
 
   private:
     void renderLoop();

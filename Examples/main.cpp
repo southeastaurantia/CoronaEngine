@@ -30,42 +30,9 @@ std::string shaderPath = [] {
     return resultPath + "/Examples/armadillo.obj";
 }();
 
-#include <iostream>
-#include <oneapi/tbb.h>
-
-void complex_calculation_A(const int id)
-{
-    std::cout << std::format("Starting calc {} task\n", id);
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    std::cout << "Calculation A finished.\n";
-}
-
 int main()
 {
-    { // TBB的一个示例
-        const auto start_time = std::chrono::high_resolution_clock::now();
-
-        tbb::task_group g;
-
-        for (size_t i = 0; i < 100; ++i)
-        {
-            g.run([i] { complex_calculation_A(i); });
-        }
-
-        // 在这里主线程可以做一些其他的事情...
-        std::cout << "Main thread is doing other work while tasks run in parallel.\n";
-
-        // 等待 task_group 中的所有任务完成
-        g.wait();
-
-        const auto end_time = std::chrono::high_resolution_clock::now();
-        const std::chrono::duration<double> duration = end_time - start_time;
-
-        std::cout << "All tasks finished.\n";
-        std::cout << std::format("Total time: {:.3f} seconds\n", duration.count());
-    }
-
-    if (glfwInit() >= 0 && false)
+    if (glfwInit() >= 0)
     {
         const std::vector<CabbageFramework::Actor> Actors{
             CabbageFramework::Actor(shaderPath),
@@ -103,9 +70,9 @@ int main()
         }
 
         auto shouldClosed = [&]() {
-            for (size_t i = 0; i < windows.size(); i++)
+            for (const auto & window : windows)
             {
-                if (glfwWindowShouldClose(windows[i]))
+                if (glfwWindowShouldClose(window))
                 {
                     return true;
                 }
@@ -133,9 +100,9 @@ int main()
                 std::this_thread::sleep_for(std::chrono::milliseconds(TIME - Spend));
             }
         }
-        for (size_t i = 0; i < windows.size(); i++)
+        for (const auto & window : windows)
         {
-            glfwDestroyWindow(windows[i]);
+            glfwDestroyWindow(window);
         }
         glfwTerminate();
     }

@@ -15,9 +15,11 @@ class AudioSystem
     static constexpr int FPS = 120;
     static constexpr float MinFrameTime = 1.0f / FPS;
 
-    explicit AudioSystem(std::shared_ptr<entt::registry> registry);
+    explicit AudioSystem(const std::shared_ptr<entt::registry> &registry);
     ~AudioSystem();
-    void Destroy();
+
+    void start();
+    void stop();
 
   private:
     void loop();

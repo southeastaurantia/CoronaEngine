@@ -23,26 +23,23 @@
     if constexpr (LOG_LEVEL < 4) \
     std::cerr << std::format("[ERROR][Audio] {}", message) << std::endl
 
-AudioSystem::AudioSystem(std::shared_ptr<entt::registry> registry)
-    : running(true), registry(std::move(registry))
+AudioSystem::AudioSystem(const std::shared_ptr<entt::registry> &registry)
+    : running(false), registry(registry)
 {
     // TODO: BackBridge事件注册
 
-    // 启动循环线程
-    loopThread = std::thread(&AudioSystem::loop, this);
-
-    LOG_INFO("Audio system initialized & started.");
+    LOG_INFO("Audio system initialized.");
 }
 
-void AudioSystem::Destroy()
+void AudioSystem::stop()
 {
-    running = false;
+    running.store(false);
 
     if (loopThread.joinable())
     {
         loopThread.join();
     }
-    LOG_INFO("Audio system stopped & destroyed.");
+    LOG_INFO("Audio system stopped");
 }
 
 AudioSystem::~AudioSystem()
@@ -50,11 +47,19 @@ AudioSystem::~AudioSystem()
     LOG_INFO("Animation system deconstruct.");
 }
 
+void AudioSystem::start()
+{
+    running.store(true);
+    // 启动循环线程
+    loopThread = std::thread(&AudioSystem::loop, this);
+    LOG_INFO("Audio system started.");
+}
+
 void AudioSystem::loop()
 {
     while (true)
     {
-        if (!running)
+        if (!running.load())
         {
             break;
         }

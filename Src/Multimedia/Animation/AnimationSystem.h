@@ -15,9 +15,11 @@ class AnimationSystem
     static constexpr int FPS = 120;
     static constexpr float MinFrameTime = 1.0f / FPS;
 
-    explicit AnimationSystem(std::shared_ptr<entt::registry> registry);
+    explicit AnimationSystem(const std::shared_ptr<entt::registry> &registry);
     ~AnimationSystem();
-    void Destroy();
+
+    void start();
+    void stop();
 
   private:
     void loop();

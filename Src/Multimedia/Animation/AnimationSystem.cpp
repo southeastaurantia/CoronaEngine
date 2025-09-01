@@ -23,27 +23,24 @@
     if constexpr (LOG_LEVEL < 4) \
     std::cerr << std::format("[ERROR][Anim] {}", message) << std::endl
 
-AnimationSystem::AnimationSystem(std::shared_ptr<entt::registry> registry)
-    : running(true), registry(std::move(registry))
+AnimationSystem::AnimationSystem(const std::shared_ptr<entt::registry> &registry)
+    : running(false), registry(registry)
 {
 
     // TODO: BackBridge事件注册
 
-    // 启动循环线程
-    loopThread = std::thread(&AnimationSystem::loop, this);
-
-    LOG_INFO("Animation system initialized & started.");
+    LOG_INFO("Animation system initialized.");
 }
 
-void AnimationSystem::Destroy()
+void AnimationSystem::stop()
 {
-    running = false;
+    running.store(false);
 
     if (loopThread.joinable())
     {
         loopThread.join();
     }
-    LOG_INFO("Animation system stopped & destroyed.");
+    LOG_INFO("Animation system stopped.");
 }
 
 AnimationSystem::~AnimationSystem()
@@ -51,11 +48,19 @@ AnimationSystem::~AnimationSystem()
     LOG_INFO("Animation system deconstruct.");
 }
 
+void AnimationSystem::start()
+{
+    running.store(true);
+    // 启动循环线程
+    loopThread = std::thread(&AnimationSystem::loop, this);
+    LOG_INFO("Animation system started.");
+}
+
 void AnimationSystem::loop()
 {
     while (true)
     {
-        if (!running)
+        if (!running.load())
         {
             break;
         }

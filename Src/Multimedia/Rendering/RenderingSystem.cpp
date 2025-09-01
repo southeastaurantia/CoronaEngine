@@ -25,20 +25,18 @@
     if constexpr (LOG_LEVEL < 4) \
     std::cerr << std::format("[ERROR][Render] {}", message) << std::endl
 
-RenderingSystem::RenderingSystem(std::shared_ptr<entt::registry> registry)
-    : running(true), registry(std::move(registry))
+static tbb::task_group tasks;
+
+RenderingSystem::RenderingSystem(const std::shared_ptr<entt::registry> &registry)
+    : running(false), registry(registry)
 {
     // TODO: BackBridge事件注册
     BackBridge::render_dispatcher().sink<ECS::Events::SceneSetDisplaySurface>().connect<&RenderingSystem::onSetDisplaySurface>(this);
 
-    // 启动循环线程
-    renderThread = std::thread(&RenderingSystem::renderLoop, this);
-    displayThread = std::thread(&RenderingSystem::displayLoop, this);
-
-    LOG_INFO("Rendering system initialized & started.");
+    LOG_INFO("Rendering system initialized.");
 }
 
-void RenderingSystem::Destroy()
+void RenderingSystem::stop()
 {
     running.store(false);
 
@@ -51,12 +49,22 @@ void RenderingSystem::Destroy()
     {
         displayThread.join();
     }
-    LOG_INFO("Rendering system destroyed.");
+
+    LOG_INFO("Rendering system stopped.");
 }
 
 RenderingSystem::~RenderingSystem()
 {
     LOG_INFO("Rendering system deconstruct.");
+}
+
+void RenderingSystem::start()
+{
+    running.store(true);
+    // 启动循环线程
+    renderThread = std::thread(&RenderingSystem::renderLoop, this);
+    displayThread = std::thread(&RenderingSystem::displayLoop, this);
+    LOG_INFO("Rendering system started.");
 }
 
 void RenderingSystem::renderLoop()
@@ -71,11 +79,15 @@ void RenderingSystem::renderLoop()
         auto startTime = std::chrono::high_resolution_clock::now();
         BackBridge::render_dispatcher().update();
         /********** Do Something **********/
-        auto const &scenes = registry->view<ECS::Components::Scene>();
-        for (auto scene : scenes)
+        for (auto const &scenes = registry->view<ECS::Components::Scene>();
+             auto const &scene : scenes)
         {
-            updateEngine(scene);
+            tasks.run([this, scene] {
+                updateEngine(scene);
+            });
         }
+
+        tasks.wait();
         /********** Do Something **********/
 
         auto endTime = std::chrono::high_resolution_clock::now();
@@ -91,7 +103,7 @@ void RenderingSystem::displayLoop()
 {
     while (true)
     {
-        if (!running)
+        if (!running.load())
         {
             break;
         }
@@ -122,6 +134,6 @@ void RenderingSystem::onSetDisplaySurface(const ECS::Events::SceneSetDisplaySurf
 
 void RenderingSystem::updateEngine(entt::entity scene)
 {
-    auto& sceneComponent = registry->get<ECS::Components::Scene>(scene);
+    auto &sceneComponent = registry->get<ECS::Components::Scene>(scene);
     sceneComponent.displayer = sceneComponent.finalOutputImage;
 }
