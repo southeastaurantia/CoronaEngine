@@ -1,4 +1,4 @@
-//
+﻿//
 // Created by 47226 on 2025/8/22.
 //
 
@@ -21,16 +21,16 @@ class RenderingSystem
 
     explicit RenderingSystem(std::shared_ptr<entt::registry> registry);
     ~RenderingSystem();
+    void Destroy();
 
   private:
     void renderLoop();
     void displayLoop();
 
-    bool running;
+    std::atomic<bool> running;
     std::thread renderThread;
     std::thread displayThread;
     std::shared_ptr<entt::registry> registry;
-    HardwareDisplayer displayer;
 
     void onSetDisplaySurface(ECS::Events::SceneSetDisplaySurface event);
     void updateEngine(entt::entity scene);

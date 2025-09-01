@@ -45,6 +45,12 @@ namespace ECS
 
     Core::~Core()
     {
+        animation_system.Destroy();
+        audio_system.Destroy();
+        rendering_system.Destroy();
+
+        registry->clear();
+
         LOG_INFO("ECS::Core destroyed");
     }
 
@@ -54,19 +60,24 @@ namespace ECS
         registry->emplace<Components::Scene>(scene, Components::Scene{});
         registry->emplace<Components::Camera>(scene, Components::Camera{});
         registry->emplace<Components::SunLight>(scene, Components::SunLight{});
-        registry->emplace<Components::Actors>(scene, Components::Actors{});
         event.scene_id_promise->set_value(scene);
+        BackBridge::scene_to_actors().insert(std::make_pair(scene, BackBridge::SceneToActorsMap::value_type::second_type()));
         LOG_INFO(std::format("Scene {} created", entt::to_entity(scene)));
     }
 
     void Core::onSceneDestroy(Events::SceneDestroy event)
     {
-        for (const auto &actors = registry->get<Components::Actors>(event.scene).data;
-             const auto &actor : actors)
+        if (BackBridge::scene_to_actors().contains(event.scene))
         {
-            auto &scenes = registry->get<Components::SceneRef>(actor).scenes;
-            scenes.erase(event.scene);
-            LOG_DEBUG(std::format("Before scene {} destroyed, remove reference from actor {}", entt::to_entity(event.scene), entt::to_entity(actor)));
+            for (auto const &actor : BackBridge::scene_to_actors().at(event.scene))
+            {
+                if (BackBridge::actor_to_scenes().contains(actor))
+                {
+                    BackBridge::actor_to_scenes().at(actor).unsafe_erase(event.scene);
+                }
+                LOG_DEBUG(std::format("Before scene {} destroyed, remove reference from actor {}", entt::to_entity(event.scene), entt::to_entity(actor)));
+            }
+            BackBridge::scene_to_actors().unsafe_erase(event.scene);
         }
 
         registry->destroy(event.scene);
@@ -83,32 +94,26 @@ namespace ECS
 
     void Core::onSceneAddActor(Events::SceneAddActor event)
     {
-        auto &actors = registry->get<Components::Actors>(event.scene).data;
-        if (std::ranges::find(actors, event.actor) != actors.end())
+        if (BackBridge::scene_to_actors().contains(event.actor))
         {
             return;
         }
-        actors.push_back(event.actor);
 
-        auto &[scenes] = registry->get<Components::SceneRef>(event.actor);
-        scenes.insert(event.scene);
+        BackBridge::scene_to_actors().at(event.scene).insert(event.actor);
+        BackBridge::actor_to_scenes().at(event.actor).insert(event.scene);
 
-        LOG_DEBUG(std::format("Scene {} added actor {}", entt::to_entity(event.scene), entt::to_entity(event.actor)));
+        LOG_INFO(std::format("Scene {} added actor {}", entt::to_entity(event.scene), entt::to_entity(event.actor)));
     }
 
     void Core::onSceneRemoveActor(Events::SceneRemoveActor event)
     {
-        auto &actors = registry->get<Components::Actors>(event.scene).data;
-
-        if (std::ranges::find(actors, event.actor) == actors.end())
+        if (!BackBridge::scene_to_actors().contains(event.actor))
         {
             return;
         }
 
-        std::erase(actors, event.actor);
-
-        auto &scenes = registry->get<Components::SceneRef>(event.actor).scenes;
-        scenes.erase(event.scene);
+        BackBridge::scene_to_actors().at(event.scene).unsafe_erase(event.actor);
+        BackBridge::actor_to_scenes().at(event.actor).unsafe_erase(event.scene);
 
         LOG_DEBUG(std::format("Scene {} removed actor {}", entt::to_entity(event.scene), entt::to_entity(event.actor)));
     }
@@ -128,8 +133,8 @@ namespace ECS
         auto actor = registry->create();
         registry->emplace<Components::ActorPose>(actor, Components::ActorPose{});
         registry->emplace<Components::Model>(actor, Components::Model{});
-        registry->emplace<Components::SceneRef>(actor, Components::SceneRef{});
         event.actor_id_promise->set_value(actor);
+        BackBridge::actor_to_scenes().insert(std::make_pair(actor, BackBridge::SceneToActorsMap::value_type::second_type()));
 
         if(!event.path.empty())
         {
@@ -170,14 +175,15 @@ namespace ECS
 
     void Core::onActorDestroy(Events::ActorDestroy event)
     {
-        for (const auto &scenes = registry->get<Components::SceneRef>(event.actor).scenes;
-             const auto &scene : scenes)
+        if (BackBridge::actor_to_scenes().contains(event.actor))
         {
-            auto &actors = registry->get<Components::Actors>(scene).data;
-            std::erase(actors, event.actor);
-            LOG_DEBUG(std::format("Before actor {} destroyed, remove reference from scene {}", entt::to_entity(event.actor), entt::to_entity(scene)));
+            for (auto const &scene : BackBridge::actor_to_scenes().at(event.actor))
+            {
+                BackBridge::scene_to_actors().at(scene).unsafe_erase(event.actor);
+                LOG_DEBUG(std::format("Before actor {} destroyed, remove reference from scene {}", entt::to_entity(event.actor), entt::to_entity(scene)));
+            }
+            BackBridge::actor_to_scenes().unsafe_erase(event.actor);
         }
-
         registry->destroy(event.actor);
         LOG_INFO(std::format("Actor {} destroyed", entt::to_entity(event.actor)));
     }

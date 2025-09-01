@@ -34,7 +34,7 @@ AudioSystem::AudioSystem(std::shared_ptr<entt::registry> registry)
     LOG_INFO("Audio system initialized & started.");
 }
 
-AudioSystem::~AudioSystem()
+void AudioSystem::Destroy()
 {
     running = false;
 
@@ -43,6 +43,11 @@ AudioSystem::~AudioSystem()
         loopThread.join();
     }
     LOG_INFO("Audio system stopped & destroyed.");
+}
+
+AudioSystem::~AudioSystem()
+{
+    LOG_INFO("Animation system deconstruct.");
 }
 
 void AudioSystem::loop()

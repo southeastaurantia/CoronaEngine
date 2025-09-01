@@ -5,6 +5,7 @@
 #include <CabbageDisplayer.h>
 #include <entt/entt.hpp>
 #include <ktm/ktm.h>
+#include <tbb/tbb.h>
 
 namespace ECS::Components
 {
@@ -33,11 +34,6 @@ namespace ECS::Components
         ktm::fvec3 direction{-1.0f, -1.0f, -1.0f};
     };
 
-    struct Actors
-    {
-        std::vector<entt::entity> data{};
-    };
-
     struct ActorPose
     {
         ktm::fvec3 transform = ktm::fvec3(0.0f, 0.0f, 0.0f);
@@ -51,11 +47,6 @@ namespace ECS::Components
                            ktm::rotate3d_x(rotate.x) * ktm::rotate3d_y(rotate.y) * ktm::rotate3d_z(rotate.z) *
                            ktm::scale3d(scale);
         }
-    };
-
-    struct SceneRef
-    {
-        std::set<entt::entity> scenes;
     };
 
     struct AABB
@@ -76,7 +67,7 @@ namespace ECS::Components
 
     struct Meshes
     {
-        std::vector<entt::entity> data;
+        tbb::concurrent_vector<entt::entity> data;
         std::string path;
     };
 

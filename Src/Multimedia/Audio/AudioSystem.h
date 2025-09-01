@@ -17,11 +17,12 @@ class AudioSystem
 
     explicit AudioSystem(std::shared_ptr<entt::registry> registry);
     ~AudioSystem();
+    void Destroy();
 
   private:
     void loop();
 
-    bool running;
+    std::atomic<bool> running;
     std::thread loopThread;
     std::shared_ptr<entt::registry> registry;
 };

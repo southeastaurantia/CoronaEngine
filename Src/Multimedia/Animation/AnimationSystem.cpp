@@ -35,7 +35,7 @@ AnimationSystem::AnimationSystem(std::shared_ptr<entt::registry> registry)
     LOG_INFO("Animation system initialized & started.");
 }
 
-AnimationSystem::~AnimationSystem()
+void AnimationSystem::Destroy()
 {
     running = false;
 
@@ -44,6 +44,11 @@ AnimationSystem::~AnimationSystem()
         loopThread.join();
     }
     LOG_INFO("Animation system stopped & destroyed.");
+}
+
+AnimationSystem::~AnimationSystem()
+{
+    LOG_INFO("Animation system deconstruct.");
 }
 
 void AnimationSystem::loop()

@@ -38,9 +38,9 @@ RenderingSystem::RenderingSystem(std::shared_ptr<entt::registry> registry)
     LOG_INFO("Rendering system initialized & started.");
 }
 
-RenderingSystem::~RenderingSystem()
+void RenderingSystem::Destroy()
 {
-    running = false;
+    running.store(false);
 
     if (renderThread.joinable())
     {
@@ -51,15 +51,19 @@ RenderingSystem::~RenderingSystem()
     {
         displayThread.join();
     }
+    LOG_INFO("Rendering system destroyed.");
+}
 
-    LOG_INFO("Rendering system stopped & destroyed.");
+RenderingSystem::~RenderingSystem()
+{
+    LOG_INFO("Rendering system deconstruct.");
 }
 
 void RenderingSystem::renderLoop()
 {
     while (true)
     {
-        if (!running)
+        if (!running.load())
         {
             break;
         }

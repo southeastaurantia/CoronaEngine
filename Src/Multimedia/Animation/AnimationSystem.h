@@ -17,11 +17,12 @@ class AnimationSystem
 
     explicit AnimationSystem(std::shared_ptr<entt::registry> registry);
     ~AnimationSystem();
+    void Destroy();
 
   private:
     void loop();
 
-    bool running;
+    std::atomic<bool> running;
     std::thread loopThread;
     std::shared_ptr<entt::registry> registry;
 };
