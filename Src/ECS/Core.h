@@ -19,13 +19,14 @@ namespace ECS
         Core();
         ~Core();
 
+        std::shared_ptr<entt::registry> getRegistry();
+
       private:
         std::shared_ptr<entt::registry> registry;
 
         AnimationSystem animation_system;
         AudioSystem audio_system;
         RenderingSystem rendering_system;
-        ResourceManager resource_manager;
 
         void onSceneCreate(Events::SceneCreateRequest event);
         void onSceneDestroy(Events::SceneDestroy event);

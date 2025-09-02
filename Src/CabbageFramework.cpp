@@ -3,10 +3,14 @@
 #include <ECS/Core.h>
 #include <ECS/Events.hpp>
 #include <ECS/FrontBridge.h>
+#include <Resource/ResourceManager.h>
+#include <filesystem>
 #include <format>
-#include <iostream>
 
 static ECS::Core core{};
+std::shared_ptr<entt::registry> ECS::ResourceManager::registry = core.getRegistry();
+std::string ECS::ResourceManager::basePath;
+std::string ECS::ResourceManager::userPath;
 
 struct CabbageFramework::ActorImpl final
 {

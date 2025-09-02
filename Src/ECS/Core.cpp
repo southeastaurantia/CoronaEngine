@@ -25,8 +25,7 @@ namespace ECS
         : registry(std::make_shared<entt::registry>()),
           animation_system(registry),
           audio_system(registry),
-          rendering_system(registry),
-          resource_manager(registry)
+          rendering_system(registry)
     {
         // TODO: FrontBridge事件注册
         FrontBridge::dispatcher().sink<Events::SceneCreateRequest>().connect<&Core::onSceneCreate>(this);
@@ -63,6 +62,11 @@ namespace ECS
         LOG_INFO("ECS::Core destroyed");
     }
 
+    std::shared_ptr<entt::registry> Core::getRegistry()
+    {
+        return registry;
+    }
+
     void Core::onSceneCreate(Events::SceneCreateRequest event)
     {
         auto scene = registry->create();
@@ -88,7 +92,6 @@ namespace ECS
             }
             BackBridge::scene_to_actors().unsafe_erase(event.scene);
         }
-
         registry->destroy(event.scene);
         LOG_INFO(std::format("Scene {} destroyed", entt::to_entity(event.scene)));
     }
@@ -171,7 +174,7 @@ namespace ECS
                                                                            .boneInfoMap = {},
                                                                            .boneCount = 0});
 
-                resource_manager.LoadModel(modelEntity, event.path);
+                ResourceManager::LoadModel(modelEntity, event.path);
 
                 auto &modelComponent = registry->get<Components::Model>(actor);
                 modelComponent.model = modelEntity;

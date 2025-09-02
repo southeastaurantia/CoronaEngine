@@ -20,24 +20,14 @@
     if constexpr (LOG_LEVEL < 4) \
     std::cerr << std::format("[ERROR][Resouce] {}", message) << std::endl
 
+
+
 namespace ECS
 {
-    ResourceManager::ResourceManager(std::shared_ptr<entt::registry> registry)
-        : registry(std::move(registry))
-    {
-        // TODO: Implement
-        LOG_INFO("ResourceManager created");
-    }
-
-    ResourceManager::~ResourceManager()
-    {
-        // TODO: Implement
-        LOG_INFO("ResourceManager destroyed");
-    }
-
     void ResourceManager::LoadModel(const entt::entity modelEntity, const std::string &filePath)
     {
-        Assimp::Importer importer;
+        Assimp::Importer importer{};
+
         const aiScene *scene = importer.ReadFile(filePath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs);
 
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
@@ -46,25 +36,27 @@ namespace ECS
             return;
         }
 
-        registry->emplace<Components::Meshes>(modelEntity, Components::Meshes{
-                                                               .data = {},
-                                                               .path = filePath});
-
-        registry->emplace_or_replace<Components::Animations>(modelEntity, Components::Animations{
-            .skeletalAnimations = {},
-            .boneInfoMap = {},
-            .boneCount = 0});
-
-        ProcessNode(filePath, scene->mRootNode, scene, modelEntity);
-
-        auto& animationsEntity = registry->get<Components::Animations>(modelEntity);
-        animationsEntity.skeletalAnimations.reserve(scene->mNumAnimations);
-        for (unsigned int i = 0; i < scene->mNumAnimations; i++)
         {
-            LoadAnimation(scene, scene->mAnimations[i], modelEntity);
-        }
+            registry->emplace<Components::Meshes>(modelEntity, Components::Meshes{
+                                                                   .data = {},
+                                                                   .path = filePath});
 
-        registry->emplace<Components::ResLoadedTag>(modelEntity);
+            registry->emplace_or_replace<Components::Animations>(modelEntity, Components::Animations{
+                                                                                  .skeletalAnimations = {},
+                                                                                  .boneInfoMap = {},
+                                                                                  .boneCount = 0});
+
+            ProcessNode(filePath, scene->mRootNode, scene, modelEntity);
+
+            auto &animationsEntity = registry->get<Components::Animations>(modelEntity);
+            animationsEntity.skeletalAnimations.reserve(scene->mNumAnimations);
+            for (unsigned int i = 0; i < scene->mNumAnimations; i++)
+            {
+                LoadAnimation(scene, scene->mAnimations[i], modelEntity);
+            }
+
+            registry->emplace<Components::ResLoadedTag>(modelEntity);
+        }
     }
 
     std::string ResourceManager::readStringFile(const std::string_view file_path)
@@ -82,29 +74,30 @@ namespace ECS
         return buffer.str();
     }
 
-    void ResourceManager::setBasePath(const std::string& basePath)
+    void ResourceManager::setBasePath(const std::string &path)
     {
-        this->basePath = basePath;
+        basePath = path;
     }
 
-    void ResourceManager::setUserPath(const std::string& userPath)
+    void ResourceManager::setUserPath(const std::string &path)
     {
-        this->userPath = userPath;
+        userPath = path;
     }
 
-    std::string ResourceManager::getBasePath() const
+    std::string ResourceManager::getBasePath()
     {
         return basePath;
     }
 
-    std::string ResourceManager::getUserPath() const
+    std::string ResourceManager::getUserPath()
     {
         return userPath;
     }
 
+
     void ResourceManager::LoadAnimation(const aiScene *scene, aiAnimation *animation, entt::entity modelEntity)
     {
-        auto& animations = registry->get<Components::Animations>(modelEntity);
+        auto &animations = registry->get<Components::Animations>(modelEntity);
         Components::SkeletalAnimation skeletalAnimation;
 
         skeletalAnimation.duration = animation->mDuration;
@@ -150,8 +143,8 @@ namespace ECS
         }
     }
 
-    void ResourceManager::ReadBoneChannels(aiAnimation *animation, std::vector<Components::Bone>& outBones,
-                                        std::map<std::string, Components::BoneInfo>& boneInfoMap, int& boneCount)
+    void ResourceManager::ReadBoneChannels(aiAnimation *animation, std::vector<Components::Bone> &outBones,
+                                           std::map<std::string, Components::BoneInfo> &boneInfoMap, int &boneCount)
     {
         for (uint32_t i = 0; i < animation->mNumChannels; i++)
         {
@@ -179,48 +172,45 @@ namespace ECS
         }
     }
 
-    void ResourceManager::LoadKeyPositions(aiNodeAnim* channel, std::vector<Components::KeyPosition>& outPositions)
+    void ResourceManager::LoadKeyPositions(aiNodeAnim *channel, std::vector<Components::KeyPosition> &outPositions)
     {
         for (uint32_t i = 0; i < channel->mNumPositionKeys; i++)
         {
             Components::KeyPosition keyPosition;
             keyPosition.time = channel->mPositionKeys[i].mTime;
-            keyPosition.position = { 
-                channel->mPositionKeys[i].mValue.x, 
-                channel->mPositionKeys[i].mValue.y, 
-                channel->mPositionKeys[i].mValue.z 
-            };
+            keyPosition.position = {
+                channel->mPositionKeys[i].mValue.x,
+                channel->mPositionKeys[i].mValue.y,
+                channel->mPositionKeys[i].mValue.z};
             outPositions.push_back(keyPosition);
         }
     }
 
-    void ResourceManager::LoadKeyRotations(aiNodeAnim* channel, std::vector<Components::KeyRotation>& outRotations)
+    void ResourceManager::LoadKeyRotations(aiNodeAnim *channel, std::vector<Components::KeyRotation> &outRotations)
     {
         for (uint32_t i = 0; i < channel->mNumRotationKeys; i++)
         {
             Components::KeyRotation keyRotation;
             keyRotation.time = channel->mRotationKeys[i].mTime;
-            keyRotation.rotation = { 
-                channel->mRotationKeys[i].mValue.x, 
-                channel->mRotationKeys[i].mValue.y, 
-                channel->mRotationKeys[i].mValue.z, 
-                channel->mRotationKeys[i].mValue.w 
-            };
+            keyRotation.rotation = {
+                channel->mRotationKeys[i].mValue.x,
+                channel->mRotationKeys[i].mValue.y,
+                channel->mRotationKeys[i].mValue.z,
+                channel->mRotationKeys[i].mValue.w};
             outRotations.push_back(keyRotation);
         }
     }
 
-    void ResourceManager::LoadKeyScales(aiNodeAnim* channel, std::vector<Components::KeyScale>& outScales)
+    void ResourceManager::LoadKeyScales(aiNodeAnim *channel, std::vector<Components::KeyScale> &outScales)
     {
         for (uint32_t i = 0; i < channel->mNumScalingKeys; i++)
         {
             Components::KeyScale keyScale;
             keyScale.time = channel->mScalingKeys[i].mTime;
-            keyScale.scale = { 
-                channel->mScalingKeys[i].mValue.x, 
-                channel->mScalingKeys[i].mValue.y, 
-                channel->mScalingKeys[i].mValue.z 
-            };
+            keyScale.scale = {
+                channel->mScalingKeys[i].mValue.x,
+                channel->mScalingKeys[i].mValue.y,
+                channel->mScalingKeys[i].mValue.z};
             outScales.push_back(keyScale);
         }
     }
@@ -295,19 +285,18 @@ namespace ECS
         }
 
         registry->emplace<Components::MeshDevice>(meshEntity, Components::MeshDevice{
-            .indicesBuffer = HardwareBuffer(meshHost.indices, BufferUsage::IndexBuffer),
-            .positionsBuffer = HardwareBuffer(meshHost.positions, BufferUsage::VertexBuffer),
-            .normalsBuffer = HardwareBuffer(meshHost.normals, BufferUsage::VertexBuffer),
-            .texCoordsBuffer = HardwareBuffer(meshHost.texCoords, BufferUsage::VertexBuffer),
-            .boneIndicesBuffer = HardwareBuffer(meshHost.boneIndices, BufferUsage::VertexBuffer),
-            .boneWeightsBuffer = HardwareBuffer(meshHost.boneWeights, BufferUsage::VertexBuffer),
-        });
+                                                                  .indicesBuffer = HardwareBuffer(meshHost.indices, BufferUsage::IndexBuffer),
+                                                                  .positionsBuffer = HardwareBuffer(meshHost.positions, BufferUsage::VertexBuffer),
+                                                                  .normalsBuffer = HardwareBuffer(meshHost.normals, BufferUsage::VertexBuffer),
+                                                                  .texCoordsBuffer = HardwareBuffer(meshHost.texCoords, BufferUsage::VertexBuffer),
+                                                                  .boneIndicesBuffer = HardwareBuffer(meshHost.boneIndices, BufferUsage::VertexBuffer),
+                                                                  .boneWeightsBuffer = HardwareBuffer(meshHost.boneWeights, BufferUsage::VertexBuffer),
+                                                              });
 
         if (mesh->mMaterialIndex >= 0)
         {
             LoadMaterial(path, scene->mMaterials[mesh->mMaterialIndex], modelEntity);
         }
-
     }
 
     void ResourceManager::ExtractBoneWeightForVertices(aiMesh *mesh, Components::MeshHost &meshHost, const aiScene *scene, entt::entity modelEntity)
@@ -345,8 +334,8 @@ namespace ECS
             if (boneInfoMap.find(boneName) == boneInfoMap.end())
             {
                 registry->emplace<Components::BoneInfo>(modelEntity, Components::BoneInfo{
-                                                                      .id = boneCount,
-                                                                      .offsetMatrix = ConvertMatrixToKTFormat(mesh->mBones[boneIndex]->mOffsetMatrix)});
+                                                                         .id = boneCount,
+                                                                         .offsetMatrix = ConvertMatrixToKTFormat(mesh->mBones[boneIndex]->mOffsetMatrix)});
                 boneInfoMap[boneName] = registry->get<Components::BoneInfo>(modelEntity);
                 boneID = boneCount;
                 boneCount++;
@@ -401,26 +390,24 @@ namespace ECS
             aiTextureType_BASE_COLOR,
             aiTextureType_DIFFUSE,
             aiTextureType_SPECULAR,
-            aiTextureType_EMISSIVE
-        };
+            aiTextureType_EMISSIVE};
 
         for (aiTextureType textureType : allTextureTypes)
         {
             for (unsigned int i = 0; i < material->GetTextureCount(textureType); i++)
             {
                 aiString str;
-                if(material->GetTexture(textureType, i, &str) != aiReturn_SUCCESS)
+                if (material->GetTexture(textureType, i, &str) != aiReturn_SUCCESS)
                     continue;
-                
+
                 std::string texturePath = directory + str.C_Str();
                 entt::entity textureEntity = createTextureEntity(texturePath, textureType);
-                
+
                 switch (textureType)
                 {
                 case aiTextureType_BASE_COLOR:
                     registry->emplace<Components::BaseColorTexture>(materialEntity, Components::BaseColorTexture{
-                        .texture = textureEntity
-                    });
+                                                                                        .texture = textureEntity});
                     break;
                 case aiTextureType_DIFFUSE:
                     break;
@@ -441,7 +428,7 @@ namespace ECS
         {
             materialParams.baseColor = {baseColor[0], baseColor[1], baseColor[2]};
 
-            if(registry->try_get<Components::BaseColorTexture>(materialEntity))
+            if (registry->try_get<Components::BaseColorTexture>(materialEntity))
             {
                 entt::entity colorTextureEntity = createColorTextureEntity(directory, aiTextureType_BASE_COLOR, baseColor);
                 registry->emplace<Components::BaseColorTexture>(materialEntity, Components::BaseColorTexture{.texture = colorTextureEntity});
@@ -475,21 +462,21 @@ namespace ECS
         registry->emplace<Components::MaterialParams>(materialEntity, materialParams);
     }
 
-    entt::entity ResourceManager::createTextureEntity(const std::string& texturePath, aiTextureType textureType)
+    entt::entity ResourceManager::createTextureEntity(const std::string &texturePath, aiTextureType textureType)
     {
         entt::entity textureEntity = registry->create();
-        
+
         static std::unordered_map<std::string, entt::entity> loadedTextures;
         auto it = loadedTextures.find(texturePath);
-        
+
         if (it != loadedTextures.end())
         {
             return it->second;
         }
 
         int width, height, channels;
-        unsigned char* data = stbi_load(texturePath.c_str(), &width, &height, &channels, 0);
-        
+        unsigned char *data = stbi_load(texturePath.c_str(), &width, &height, &channels, 0);
+
         if (!data)
         {
             std::cerr << "Failed to load texture: " << texturePath << std::endl;
@@ -497,44 +484,41 @@ namespace ECS
         }
 
         registry->emplace<Components::ImageHost>(textureEntity, Components::ImageHost{
-            .path = texturePath,
-            .data = data,
-            .width = width,
-            .height = height,
-            .channels = channels
-        });
+                                                                    .path = texturePath,
+                                                                    .data = data,
+                                                                    .width = width,
+                                                                    .height = height,
+                                                                    .channels = channels});
 
         loadedTextures[texturePath] = textureEntity;
-        
+
         return textureEntity;
     }
 
-    entt::entity ResourceManager::createColorTextureEntity(const std::string& directory, aiTextureType textureType, const aiColor3D& color)
+    entt::entity ResourceManager::createColorTextureEntity(const std::string &directory, aiTextureType textureType, const aiColor3D &color)
     {
         entt::entity textureEntity = registry->create();
-        
+
         static int colorTextureCounter = 0;
         std::string texturePath = directory + "color_" + std::to_string(textureType) + "_" + std::to_string(++colorTextureCounter);
-        
-        unsigned char* data = (unsigned char*)malloc(sizeof(unsigned char) * 4);
+
+        unsigned char *data = (unsigned char *)malloc(sizeof(unsigned char) * 4);
         if (data)
         {
             data[0] = static_cast<unsigned char>(color[0] * 255.0f);
             data[1] = static_cast<unsigned char>(color[1] * 255.0f);
             data[2] = static_cast<unsigned char>(color[2] * 255.0f);
             data[3] = 255;
-            
+
             registry->emplace<Components::ImageHost>(textureEntity, Components::ImageHost{
-                .path = texturePath,
-                .data = data,
-                .width = 1,
-                .height = 1,
-                .channels = 4
-            });
+                                                                        .path = texturePath,
+                                                                        .data = data,
+                                                                        .width = 1,
+                                                                        .height = 1,
+                                                                        .channels = 4});
         }
-        
+
         return textureEntity;
     }
-
 
 } // namespace ECS

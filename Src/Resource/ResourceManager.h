@@ -7,41 +7,41 @@
 #include <assimp/scene.h>
 #include <entt/entt.hpp>
 #include <fstream>
-#include <string>
 #include <regex>
+#include <string>
+
+// TODO: 资源缓存，资源uid
+// TODO: 移除ECS操作, 解析后的资源数据不存储在ECS中, ECS中存储资源的uid 
 
 namespace ECS
 {
     class ResourceManager final
     {
       public:
-        explicit ResourceManager(std::shared_ptr<entt::registry> registry);
-        ~ResourceManager();
-
         // TODO: Implement resource management functions
-        void LoadModel(entt::entity modelEntity, const std::string &filePath);
-        std::string readStringFile(const std::string_view file_path);
-        void setBasePath(const std::string& basePath);
-        void setUserPath(const std::string& userPath);
-        std::string getBasePath() const;
-        std::string getUserPath() const;
-        
+        static void LoadModel(entt::entity modelEntity, const std::string &filePath);
+        static std::string readStringFile(std::string_view file_path);
+        static void setBasePath(const std::string &path);
+        static void setUserPath(const std::string &path);
+        static std::string getBasePath();
+        static std::string getUserPath();
+
       private:
-        std::shared_ptr<entt::registry> registry;
-        std::string basePath;
-        std::string userPath;
-        
-        void LoadAnimation(const aiScene *scene, aiAnimation *animation, entt::entity modelEntity);
-        void ReadHeirarchyData(Components::AssimpNodeData &dest, const aiNode *src);
-        void ProcessNode(std::string path, aiNode *node, const aiScene *scene, entt::entity modelEntity);
-        void ProcessMesh(std::string path, aiMesh *mesh, const aiScene *scene, entt::entity meshEntity, entt::entity modelEntity);
-        void ExtractBoneWeightForVertices(aiMesh *mesh, Components::MeshHost &meshHost, const aiScene *scene, entt::entity modelEntity);
-        void LoadMaterial(std::string path, aiMaterial *material, entt::entity modelEntity);
-        entt::entity createTextureEntity(const std::string& texturePath, aiTextureType textureType);
-        entt::entity createColorTextureEntity(const std::string& directory, aiTextureType textureType, const aiColor3D& color);
-        void ReadBoneChannels(aiAnimation *animation, std::vector<Components::Bone>& outBones, std::map<std::string, Components::BoneInfo>& boneInfoMap, int& boneCount);
-        void LoadKeyPositions(aiNodeAnim* channel, std::vector<Components::KeyPosition>& outPositions);
-        void LoadKeyRotations(aiNodeAnim* channel, std::vector<Components::KeyRotation>& outRotations);
-        void LoadKeyScales(aiNodeAnim* channel, std::vector<Components::KeyScale>& outScales);
+        static std::shared_ptr<entt::registry> registry;
+        static std::string basePath;
+        static std::string userPath;
+
+        static void LoadAnimation(const aiScene *scene, aiAnimation *animation, entt::entity modelEntity);
+        static void ReadHeirarchyData(Components::AssimpNodeData &dest, const aiNode *src);
+        static void ProcessNode(std::string path, aiNode *node, const aiScene *scene, entt::entity modelEntity);
+        static void ProcessMesh(std::string path, aiMesh *mesh, const aiScene *scene, entt::entity meshEntity, entt::entity modelEntity);
+        static void ExtractBoneWeightForVertices(aiMesh *mesh, Components::MeshHost &meshHost, const aiScene *scene, entt::entity modelEntity);
+        static void LoadMaterial(std::string path, aiMaterial *material, entt::entity modelEntity);
+        static entt::entity createTextureEntity(const std::string &texturePath, aiTextureType textureType);
+        static entt::entity createColorTextureEntity(const std::string &directory, aiTextureType textureType, const aiColor3D &color);
+        static void ReadBoneChannels(aiAnimation *animation, std::vector<Components::Bone> &outBones, std::map<std::string, Components::BoneInfo> &boneInfoMap, int &boneCount);
+        static void LoadKeyPositions(aiNodeAnim *channel, std::vector<Components::KeyPosition> &outPositions);
+        static void LoadKeyRotations(aiNodeAnim *channel, std::vector<Components::KeyRotation> &outRotations);
+        static void LoadKeyScales(aiNodeAnim *channel, std::vector<Components::KeyScale> &outScales);
     };
 } // namespace ECS
