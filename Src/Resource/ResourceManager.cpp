@@ -84,6 +84,11 @@ namespace ECS
         userPath = path;
     }
 
+    void ResourceManager::setShaderPath(const std::string &path)
+    {
+        shaderPath = path;
+    }
+
     std::string ResourceManager::getBasePath()
     {
         return basePath;
@@ -94,6 +99,10 @@ namespace ECS
         return userPath;
     }
 
+    std::string ResourceManager::getShaderPath()
+    {
+        return shaderPath;
+    }
 
     void ResourceManager::LoadAnimation(const aiScene *scene, aiAnimation *animation, entt::entity modelEntity)
     {
