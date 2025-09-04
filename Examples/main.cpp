@@ -26,7 +26,7 @@ std::string shaderPath = [] {
         }
     }
     std::ranges::replace(resultPath, '\\', '/');
-    return resultPath + "/Examples/model/armadillo.obj";
+    return resultPath + "/Examples/assest/model/dancing_vampire.dae";
 }();
 
 int main()

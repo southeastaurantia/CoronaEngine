@@ -155,10 +155,10 @@ void RenderingSystem::updateEngine(entt::entity scene)
 //   gbufferPipelineObj["gbufferBaseColor"] = gbufferBaseColorImage;
 //   gbufferPipelineObj["gbufferNormal"] = gbufferNormalImage;
 //   gbufferPipelineObj["gbufferMotionVector"] = gbufferMotionVectorImage;
-//   gbufferPipelineObj.executePipeline(gbufferSize);
+//   //gbufferPipelineObj.executePipeline(gbufferSize);
 //}
-
-
+//
+//
 //void RenderingSystem::compositePipeline(ECS::Components::Scene scene,ktm::fvec3 sunDir) 
 //{
 //   compositePipelineObj["pushConsts.gbufferSize"] = gbufferSize;
@@ -176,5 +176,5 @@ void RenderingSystem::updateEngine(entt::entity scene)
 //   uniformBuffer.copyFromData(&uniformBufferObjects, sizeof(uniformBufferObjects));
 //   compositePipelineObj["pushConsts.uniformBufferIndex"] = uniformBuffer.storeDescriptor();
 //
-//   compositePipelineObj.executePipeline(ktm::uvec3(gbufferSize.x / 8, gbufferSize.y / 8, 1));
+//   //compositePipelineObj.executePipeline(ktm::uvec3(gbufferSize.x / 8, gbufferSize.y / 8, 1));
 //}

@@ -199,6 +199,9 @@ namespace ECS::Components
         double ticksPerSecond;
         std::vector<Bone> bones;
         AssimpNodeData rootNode;
+
+        // std::string name;
+        // std::vector<std::pair<double, std::string>> events;
     };
 
     struct BoneInfo
@@ -207,11 +210,24 @@ namespace ECS::Components
         ktm::fmat4x4 offsetMatrix;
     };
 
+    struct AnimationState
+    {
+        int animationInde;
+        float currentTime;
+        float playbackSpeed;
+        bool isPlaying;
+        bool isLooping;
+        float weight;
+    };
+
     struct Animations
     {
         std::vector<SkeletalAnimation> skeletalAnimations;
         std::map<std::string, BoneInfo> boneInfoMap;
         int boneCount;
+
+        // std::vector<AnimationState> animationStates;
+        // int activeAnimationCount;
     };
 
 } // namespace ECS::Components

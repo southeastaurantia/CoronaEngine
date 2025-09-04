@@ -342,10 +342,9 @@ namespace ECS
 
             if (boneInfoMap.find(boneName) == boneInfoMap.end())
             {
-                registry->emplace<Components::BoneInfo>(modelEntity, Components::BoneInfo{
-                                                                         .id = boneCount,
-                                                                         .offsetMatrix = ConvertMatrixToKTFormat(mesh->mBones[boneIndex]->mOffsetMatrix)});
-                boneInfoMap[boneName] = registry->get<Components::BoneInfo>(modelEntity);
+                boneInfoMap[boneName] = Components::BoneInfo{
+                    .id = boneCount,
+                    .offsetMatrix = ConvertMatrixToKTFormat(mesh->mBones[boneIndex]->mOffsetMatrix)};
                 boneID = boneCount;
                 boneCount++;
             }
