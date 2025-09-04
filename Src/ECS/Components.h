@@ -16,7 +16,7 @@ namespace ECS::Components
 
     struct Scene
     {
-        void* displaySurface;
+        void *displaySurface;
         HardwareDisplayer displayer;
         HardwareImage finalOutputImage;
     };
@@ -55,6 +55,18 @@ namespace ECS::Components
         ktm::fvec3 aabbMaxXYZ = ktm::fvec3(0.0f, 0.0f, 0.0f);
     };
 
+    // Actor的组件
+    struct ModelRef
+    {
+        //uuid model_resource
+    };
+
+    // struct ModelResource
+    // {
+    //     std::string path;
+    //     std::vector<Mesh> meshes;
+    // }
+
     struct BoneMatrixHost
     {
         std::vector<ktm::fmat4x4> matrices;
@@ -89,6 +101,12 @@ namespace ECS::Components
         HardwareBuffer texCoordsBuffer;
         HardwareBuffer boneIndicesBuffer;
         HardwareBuffer boneWeightsBuffer;
+    };
+
+    struct Mesh
+    {
+        MeshHost host;
+        MeshDevice device;
     };
 
     struct Material

@@ -7,12 +7,12 @@
 #include <filesystem>
 #include <format>
 
-static ECS::Core core{};
-std::shared_ptr<entt::registry> ECS::ResourceManager::registry = core.getRegistry();
-std::string ECS::ResourceManager::basePath;
-std::string ECS::ResourceManager::userPath;
+// static ECS::Core core{};
+// std::shared_ptr<entt::registry> ECS::ResourceManager::registry = core.getRegistry();
+// std::string ECS::ResourceManager::basePath;
+// std::string ECS::ResourceManager::userPath;
 
-struct CabbageFramework::ActorImpl final
+struct CabbageFW::ActorImpl final
 {
     friend struct Actor;
     friend struct SceneImpl;
@@ -84,7 +84,7 @@ struct CabbageFramework::ActorImpl final
     entt::entity id;
 };
 
-struct CabbageFramework::SceneImpl final
+struct CabbageFW::SceneImpl final
 {
     friend struct Scene;
 
@@ -151,13 +151,13 @@ struct CabbageFramework::SceneImpl final
 
 /************************************ 以下是API ********************************************/
 
-CabbageFramework::Actor::Actor(const std::string &path)
+CabbageFW::Actor::Actor(const std::string &path)
     : impl(new ActorImpl(path)),
       ref_count(new int(1))
 {
 }
 
-CabbageFramework::Actor::Actor(const Actor &other)
+CabbageFW::Actor::Actor(const Actor &other)
     : impl(other.impl),
       ref_count(other.ref_count)
 {
@@ -167,7 +167,7 @@ CabbageFramework::Actor::Actor(const Actor &other)
     }
 }
 
-CabbageFramework::Actor::Actor(Actor &&other) noexcept
+CabbageFW::Actor::Actor(Actor &&other) noexcept
     : impl(other.impl),
       ref_count(other.ref_count)
 {
@@ -175,7 +175,7 @@ CabbageFramework::Actor::Actor(Actor &&other) noexcept
     other.ref_count = nullptr;
 }
 
-CabbageFramework::Actor::~Actor()
+CabbageFW::Actor::~Actor()
 {
     if (ref_count && (--(*ref_count) == 0))
     {
@@ -186,7 +186,7 @@ CabbageFramework::Actor::~Actor()
     }
 }
 
-CabbageFramework::Actor &CabbageFramework::Actor::operator=(const Actor &other)
+CabbageFW::Actor &CabbageFW::Actor::operator=(const Actor &other)
 {
     if (this != &other)
     {
@@ -207,7 +207,7 @@ CabbageFramework::Actor &CabbageFramework::Actor::operator=(const Actor &other)
     return *this;
 }
 
-CabbageFramework::Actor &CabbageFramework::Actor::operator=(Actor &&other) noexcept
+CabbageFW::Actor &CabbageFW::Actor::operator=(Actor &&other) noexcept
 {
     if (this != &other)
     {
@@ -226,63 +226,63 @@ CabbageFramework::Actor &CabbageFramework::Actor::operator=(Actor &&other) noexc
     return *this;
 }
 
-void CabbageFramework::Actor::move(const std::array<float, 3> &pos) const
+void CabbageFW::Actor::move(const std::array<float, 3> &pos) const
 {
     impl->move(pos);
 }
 
-void CabbageFramework::Actor::rotate(const std::array<float, 3> &euler) const
+void CabbageFW::Actor::rotate(const std::array<float, 3> &euler) const
 {
     impl->rotate(euler);
 }
 
-void CabbageFramework::Actor::scale(const std::array<float, 3> &size) const
+void CabbageFW::Actor::scale(const std::array<float, 3> &size) const
 {
     impl->scale(size);
 }
 
-void CabbageFramework::Actor::setWorldMatrix(const std::array<std::array<float, 4>, 4> &worldMartix) const
+void CabbageFW::Actor::setWorldMatrix(const std::array<std::array<float, 4>, 4> &worldMartix) const
 {
     impl->setWorldMatrix(worldMartix);
 }
 
-std::array<std::array<float, 4>, 4> CabbageFramework::Actor::getWorldMatrix() const
+std::array<std::array<float, 4>, 4> CabbageFW::Actor::getWorldMatrix() const
 {
     return impl->getWorldMatrix();
 }
 
-void CabbageFramework::Actor::setMeshShape(const std::string &path) const
+void CabbageFW::Actor::setMeshShape(const std::string &path) const
 {
     impl->setMeshShape(path);
 }
 
-void CabbageFramework::Actor::setSkeletalAnimation(const std::string &path) const
+void CabbageFW::Actor::setSkeletalAnimation(const std::string &path) const
 {
     impl->setSkeletalAnimation(path);
 }
 
-uint64_t CabbageFramework::Actor::detectCollision(const ActorImpl &other)
+uint64_t CabbageFW::Actor::detectCollision(const ActorImpl &other)
 {
     return impl->detectCollision(other);
 }
 
-uint64_t CabbageFramework::Actor::getID() const
+uint64_t CabbageFW::Actor::getID() const
 {
     return impl->getID();
 }
 
-CabbageFramework::ActorImpl *CabbageFramework::Actor::get() const
+CabbageFW::ActorImpl *CabbageFW::Actor::get() const
 {
     return impl;
 }
 
-CabbageFramework::Scene::Scene(void *surface, const bool lightField)
+CabbageFW::Scene::Scene(void *surface, const bool lightField)
     : impl(new SceneImpl(surface, lightField)),
       ref_count(new int(1))
 {
 }
 
-CabbageFramework::Scene::Scene(const Scene &other)
+CabbageFW::Scene::Scene(const Scene &other)
     : impl(other.impl),
       ref_count(other.ref_count)
 {
@@ -292,7 +292,7 @@ CabbageFramework::Scene::Scene(const Scene &other)
     }
 }
 
-CabbageFramework::Scene::Scene(Scene &&other) noexcept
+CabbageFW::Scene::Scene(Scene &&other) noexcept
     : impl(other.impl),
       ref_count(other.ref_count)
 {
@@ -300,7 +300,7 @@ CabbageFramework::Scene::Scene(Scene &&other) noexcept
     other.ref_count = nullptr;
 }
 
-CabbageFramework::Scene::~Scene()
+CabbageFW::Scene::~Scene()
 {
     if (ref_count && (--(*ref_count) == 0))
     {
@@ -311,7 +311,7 @@ CabbageFramework::Scene::~Scene()
     }
 }
 
-CabbageFramework::Scene &CabbageFramework::Scene::operator=(const Scene &other)
+CabbageFW::Scene &CabbageFW::Scene::operator=(const Scene &other)
 {
     if (this != &other)
     {
@@ -332,7 +332,7 @@ CabbageFramework::Scene &CabbageFramework::Scene::operator=(const Scene &other)
     return *this;
 }
 
-CabbageFramework::Scene &CabbageFramework::Scene::operator=(Scene &&other) noexcept
+CabbageFW::Scene &CabbageFW::Scene::operator=(Scene &&other) noexcept
 {
     if (this != &other)
     {
@@ -351,42 +351,42 @@ CabbageFramework::Scene &CabbageFramework::Scene::operator=(Scene &&other) noexc
     return *this;
 }
 
-void CabbageFramework::Scene::setCamera(const std::array<float, 3> &pos, const std::array<float, 3> &forward, const std::array<float, 3> &worldup, const float &fov) const
+void CabbageFW::Scene::setCamera(const std::array<float, 3> &pos, const std::array<float, 3> &forward, const std::array<float, 3> &worldup, const float &fov) const
 {
     impl->setCamera(pos, forward, worldup, fov);
 }
 
-void CabbageFramework::Scene::setSunDirection(const std::array<float, 3> &direction) const
+void CabbageFW::Scene::setSunDirection(const std::array<float, 3> &direction) const
 {
     impl->setSunDirection(direction);
 }
 
-void CabbageFramework::Scene::setDisplaySurface(void *surface) const
+void CabbageFW::Scene::setDisplaySurface(void *surface) const
 {
     impl->setDisplaySurface(surface);
 }
 
-uint64_t CabbageFramework::Scene::detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir) const
+uint64_t CabbageFW::Scene::detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir) const
 {
     return entt::to_entity(impl->detectActorByRay(origin, dir));
 }
 
-void CabbageFramework::Scene::addActor(const Actor &actor) const
+void CabbageFW::Scene::addActor(const Actor &actor) const
 {
     impl->addActor(actor.get());
 }
 
-void CabbageFramework::Scene::removeActor(const Actor &actor) const
+void CabbageFW::Scene::removeActor(const Actor &actor) const
 {
     impl->removeActor(actor.get());
 }
 
-uint64_t CabbageFramework::Scene::getID() const
+uint64_t CabbageFW::Scene::getID() const
 {
     return impl->getID();
 }
 
-CabbageFramework::SceneImpl *CabbageFramework::Scene::get() const
+CabbageFW::SceneImpl *CabbageFW::Scene::get() const
 {
     return impl;
 }

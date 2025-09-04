@@ -1,9 +1,13 @@
 ﻿#pragma once
 
+#include <Multimedia/Animation/AnimationSystemDefault.hpp>
+#include <Multimedia/Audio/AudioSystemDefault.hpp>
+#include <Multimedia/Display/DisplaySystemDefault.hpp>
+#include <Multimedia/Rendering/RenderingSystemDefault.hpp>
 #include <array>
 #include <string>
 
-namespace CabbageFramework
+namespace CabbageFW
 {
     struct ActorImpl;
     struct SceneImpl;
@@ -64,4 +68,4 @@ namespace CabbageFramework
         SceneImpl *impl;
         int *ref_count;
     };
-}; // namespace CabbageFramework
+}; // namespace CabbageFW

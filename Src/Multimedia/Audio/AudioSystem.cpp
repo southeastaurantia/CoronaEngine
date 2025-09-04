@@ -3,25 +3,11 @@
 //
 
 #include "AudioSystem.h"
+#include "Utils/CabbageLogger.hpp"
 
 #include <ECS/BackBridge.h>
 
 #include <chrono>
-#include <iostream>
-#include <utility>
-
-#define LOG_DEBUG(message)       \
-    if constexpr (LOG_LEVEL < 1) \
-    std::cout << std::format("[DEBUG][Audio] {}", message) << std::endl
-#define LOG_INFO(message)        \
-    if constexpr (LOG_LEVEL < 2) \
-    std::cout << std::format("[INFO ][Audio] {}", message) << std::endl
-#define LOG_WARNING(message)     \
-    if constexpr (LOG_LEVEL < 3) \
-    std::cout << std::format("[WARN ][Audio] {}", message) << std::endl
-#define LOG_ERROR(message)       \
-    if constexpr (LOG_LEVEL < 4) \
-    std::cerr << std::format("[ERROR][Audio] {}", message) << std::endl
 
 AudioSystem::AudioSystem(const std::shared_ptr<entt::registry> &registry)
     : running(false), registry(registry)

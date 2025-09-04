@@ -5,7 +5,6 @@
 
 #include "CabbageFramework.h"
 #include <filesystem>
-#include <map>
 #include <regex>
 #include <thread>
 #include <vector>
@@ -32,45 +31,41 @@ std::string shaderPath = [] {
 
 int main()
 {
+    CabbageFW::AnimationSystemDefault::get_singleton().start();
+    CabbageFW::AudioSystemDefault::get_singleton().start();
+    CabbageFW::RenderingSystemDefault::get_singleton().start();
+    CabbageFW::DisplaySystemDefault::get_singleton().start();
+
     if (glfwInit() >= 0)
     {
-        const std::vector<CabbageFramework::Actor> Actors{
-            CabbageFramework::Actor(shaderPath),
-            CabbageFramework::Actor(shaderPath)};
-
-        const std::vector<CabbageFramework::Scene> Scenes(4);
-
-        const std::vector<CabbageFramework::Actor> Actors2{
-            CabbageFramework::Actor(shaderPath),
-            CabbageFramework::Actor(shaderPath)};
+        // const std::vector<CabbageFW::Actor> Actors{
+        //     CabbageFW::Actor(shaderPath),
+        //     CabbageFW::Actor(shaderPath)};
+        //
+        // const std::vector<CabbageFW::Scene> Scenes(4);
+        //
+        // const std::vector<CabbageFW::Actor> Actors2{
+        //     CabbageFW::Actor(shaderPath),
+        //     CabbageFW::Actor(shaderPath)};
 
         std::vector<GLFWwindow *> windows(4);
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        for (size_t i = 0; i < Scenes.size(); i++)
+        for (size_t i = 0; i < windows.size(); i++)
         {
             windows[i] = glfwCreateWindow(800, 800, "Cabbage Engine", nullptr, nullptr);
-            Scenes[i].setDisplaySurface(glfwGetWin32Window(windows[i]));
+            // Scenes[i].setDisplaySurface(glfwGetWin32Window(windows[i]));
 
-            for (const auto &actor : Actors)
-            {
-                Scenes[i].addActor(actor);
-            }
 
-            for (const auto &actor : Actors2)
-            {
-                Scenes[i].addActor(actor);
-            }
-
-            Scenes[i].setCamera(
-                {2.0f, 2.0f, 2.0f},
-                {-1.0f, -1.0f, -1.0f},
-                {0.0f, 1.0f, 0.0f},
-                45.0f);
+            // Scenes[i].setCamera(
+            //     {2.0f, 2.0f, 2.0f},
+            //     {-1.0f, -1.0f, -1.0f},
+            //     {0.0f, 1.0f, 0.0f},
+            //     45.0f);
         }
 
         auto shouldClosed = [&]() {
-            for (const auto & window : windows)
+            for (const auto &window : windows)
             {
                 if (glfwWindowShouldClose(window))
                 {
@@ -100,12 +95,17 @@ int main()
                 std::this_thread::sleep_for(std::chrono::milliseconds(TIME - Spend));
             }
         }
-        for (const auto & window : windows)
+        for (const auto &window : windows)
         {
             glfwDestroyWindow(window);
         }
         glfwTerminate();
     }
+
+    CabbageFW::AnimationSystemDefault::get_singleton().stop();
+    CabbageFW::AudioSystemDefault::get_singleton().stop();
+    CabbageFW::RenderingSystemDefault::get_singleton().stop();
+    CabbageFW::DisplaySystemDefault::get_singleton().stop();
 
     return 0;
 }
