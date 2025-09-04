@@ -35,8 +35,9 @@ namespace CabbageFW
 
     void BaseMultimediaSystem::start()
     {
-        engine_is_running.store(true);
+        this->_start();
 
+        engine_is_running.store(true);
         worker = std::make_unique<std::thread>([this] {
             const int MinFrameSpendTimeSec = 1 / max_fps.load();
             while (engine_is_running.load())
@@ -58,8 +59,9 @@ namespace CabbageFW
 
     void BaseMultimediaSystem::stop()
     {
-        engine_is_running.store(false);
+        this->_stop();
 
+        engine_is_running.store(false);
         if (worker && worker->joinable())
             worker->join();
         LOG_DEBUG(std::format("System '{}' stopped", this->name()));
