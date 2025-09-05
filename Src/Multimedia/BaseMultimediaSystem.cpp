@@ -7,7 +7,7 @@
 
 #include <chrono>
 
-namespace CabbageFW
+namespace CoronaEngine
 {
     BaseMultimediaSystem::BaseMultimediaSystem(const FPS fps)
         : max_fps(fps), engine_is_running(false)
@@ -66,4 +66,4 @@ namespace CabbageFW
             worker->join();
         LOG_DEBUG(std::format("System '{}' stopped", this->name()));
     }
-} // namespace CabbageFW
+} // namespace CoronaEngine

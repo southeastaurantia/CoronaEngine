@@ -5,13 +5,13 @@
 #ifndef CABBAGEFRAMEWORK_MULTIMEDIA_H
 #define CABBAGEFRAMEWORK_MULTIMEDIA_H
 
-namespace CabbageFW
+namespace CoronaEngine
 {
 
     class Multimedia
     {
     };
 
-} // namespace CabbageFW
+} // namespace CoronaEngine
 
 #endif // CABBAGEFRAMEWORK_MULTIMEDIA_H

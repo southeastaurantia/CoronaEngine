@@ -7,7 +7,7 @@
 #include <array>
 #include <string>
 
-namespace CabbageFW
+namespace CoronaEngine
 {
     struct ActorImpl;
     struct SceneImpl;
@@ -68,4 +68,4 @@ namespace CabbageFW
         SceneImpl *impl;
         int *ref_count;
     };
-}; // namespace CabbageFW
+}; // namespace CoronaEngine

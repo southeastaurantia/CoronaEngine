@@ -6,7 +6,7 @@
 #define CABBAGEFRAMEWORK_DISPLAYSYSTEMDEFAULT_HPP
 #include "Multimedia/BaseDisplaySystem.hpp"
 
-namespace CabbageFW
+namespace CoronaEngine
 {
 
     class DisplaySystemDefault final : public BaseDisplaySystem
@@ -25,6 +25,6 @@ namespace CabbageFW
         void _stop() override;
     };
 
-} // namespace CabbageFW
+} // namespace CoronaEngine
 
 #endif // CABBAGEFRAMEWORK_DISPLAYSYSTEMDEFAULT_HPP

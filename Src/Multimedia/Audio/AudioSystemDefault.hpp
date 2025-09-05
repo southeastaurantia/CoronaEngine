@@ -6,7 +6,7 @@
 #define CABBAGEFRAMEWORK_AUDIOSYSTEMDEFAULT_HPP
 #include "Multimedia/BaseAudioSystem.hpp"
 
-namespace CabbageFW
+namespace CoronaEngine
 {
 
     class AudioSystemDefault final : public BaseAudioSystem
@@ -25,6 +25,6 @@ namespace CabbageFW
         void _stop() override;
     };
 
-} // namespace CabbageFW
+} // namespace CoronaEngine
 
 #endif // CABBAGEFRAMEWORK_AUDIOSYSTEMDEFAULT_HPP

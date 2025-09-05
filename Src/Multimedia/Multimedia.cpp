@@ -4,6 +4,6 @@
 
 #include "Multimedia.h"
 
-namespace CabbageFW
+namespace CoronaEngine
 {
-} // namespace CabbageFW
+} // namespace CoronaEngine

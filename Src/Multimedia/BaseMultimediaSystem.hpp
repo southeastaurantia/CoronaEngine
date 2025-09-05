@@ -8,7 +8,7 @@
 #include <memory>
 #include <thread>
 
-namespace CabbageFW
+namespace CoronaEngine
 {
 
     class BaseMultimediaSystem
@@ -37,6 +37,6 @@ namespace CabbageFW
         std::unique_ptr<std::thread> worker;
     };
 
-} // namespace CabbageFW
+} // namespace CoronaEngine
 
 #endif // CABBAGEFRAMEWORK_BASEMULTIMEDIASYSTEM_HPP

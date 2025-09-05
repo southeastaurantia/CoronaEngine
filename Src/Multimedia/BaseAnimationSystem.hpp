@@ -6,7 +6,7 @@
 #define CABBAGEFRAMEWORK_BASEANIMATIONSYSTEM_HPP
 #include "BaseMultimediaSystem.hpp"
 
-namespace CabbageFW
+namespace CoronaEngine
 {
     class BaseAnimationSystem : public BaseMultimediaSystem
     {
@@ -16,6 +16,6 @@ namespace CabbageFW
         // TODO: 后续添加其他抽象方法用于拓展
         // virtual void else_abstract_method() = 0;
     };
-} // namespace CabbageFW
+} // namespace CoronaEngine
 
 #endif // CABBAGEFRAMEWORK_BASEANIMATIONSYSTEM_HPP

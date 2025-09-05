@@ -7,7 +7,7 @@
 #include <functional>
 #include <oneapi/tbb.h>
 
-namespace CabbageFW
+namespace CoronaEngine
 {
     class SafeCommandQueue
     {
@@ -63,6 +63,6 @@ namespace CabbageFW
       private:
         tbb::concurrent_queue<Command> safe_queue;
     };
-} // namespace CabbageFW
+} // namespace CoronaEngine
 
 #endif // CABBAGEFRAMEWORK_THREADSAFECOMMANDQUEUE_H

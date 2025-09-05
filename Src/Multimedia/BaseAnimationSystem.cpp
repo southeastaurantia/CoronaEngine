@@ -4,11 +4,11 @@
 
 #include "BaseAnimationSystem.hpp"
 
-namespace CabbageFW
+namespace CoronaEngine
 {
     BaseAnimationSystem::BaseAnimationSystem(const FPS fps)
         : BaseMultimediaSystem(fps)
     {
     }
 
-} // namespace CabbageFW
+} // namespace CoronaEngine

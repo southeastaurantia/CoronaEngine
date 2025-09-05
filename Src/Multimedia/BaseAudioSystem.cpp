@@ -4,11 +4,11 @@
 
 #include "BaseAudioSystem.hpp"
 
-namespace CabbageFW
+namespace CoronaEngine
 {
     BaseAudioSystem::BaseAudioSystem(const FPS fps)
         : BaseMultimediaSystem(fps)
     {
     }
 
-} // namespace CabbageFW
+} // namespace CoronaEngine

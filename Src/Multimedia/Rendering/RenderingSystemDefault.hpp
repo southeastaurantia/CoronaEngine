@@ -6,7 +6,7 @@
 #define CABBAGEFRAMEWORK_RENDERSYSTEMDEFAULT_HPP
 #include "Multimedia/BaseRenderingSystem.hpp"
 
-namespace CabbageFW
+namespace CoronaEngine
 {
 
     class RenderingSystemDefault final : public BaseRenderingSystem
@@ -25,6 +25,6 @@ namespace CabbageFW
         void _stop() override;
     };
 
-} // namespace CabbageFW
+} // namespace CoronaEngine
 
 #endif // CABBAGEFRAMEWORK_RENDERSYSTEMDEFAULT_HPP

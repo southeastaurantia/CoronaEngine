@@ -31,22 +31,22 @@ std::string shaderPath = [] {
 
 int main()
 {
-    CabbageFW::AnimationSystemDefault::get_singleton().start();
-    CabbageFW::AudioSystemDefault::get_singleton().start();
-    CabbageFW::RenderingSystemDefault::get_singleton().start();
-    CabbageFW::DisplaySystemDefault::get_singleton().start();
+    CoronaEngine::AnimationSystemDefault::get_singleton().start();
+    CoronaEngine::AudioSystemDefault::get_singleton().start();
+    CoronaEngine::RenderingSystemDefault::get_singleton().start();
+    CoronaEngine::DisplaySystemDefault::get_singleton().start();
 
     if (glfwInit() >= 0)
     {
-        // const std::vector<CabbageFW::Actor> Actors{
-        //     CabbageFW::Actor(shaderPath),
-        //     CabbageFW::Actor(shaderPath)};
+        // const std::vector<CoronaEngine::Actor> Actors{
+        //     CoronaEngine::Actor(shaderPath),
+        //     CoronaEngine::Actor(shaderPath)};
         //
-        // const std::vector<CabbageFW::Scene> Scenes(4);
+        // const std::vector<CoronaEngine::Scene> Scenes(4);
         //
-        // const std::vector<CabbageFW::Actor> Actors2{
-        //     CabbageFW::Actor(shaderPath),
-        //     CabbageFW::Actor(shaderPath)};
+        // const std::vector<CoronaEngine::Actor> Actors2{
+        //     CoronaEngine::Actor(shaderPath),
+        //     CoronaEngine::Actor(shaderPath)};
 
         std::vector<GLFWwindow *> windows(4);
 
@@ -102,10 +102,10 @@ int main()
         glfwTerminate();
     }
 
-    CabbageFW::AnimationSystemDefault::get_singleton().stop();
-    CabbageFW::AudioSystemDefault::get_singleton().stop();
-    CabbageFW::RenderingSystemDefault::get_singleton().stop();
-    CabbageFW::DisplaySystemDefault::get_singleton().stop();
+    CoronaEngine::AnimationSystemDefault::get_singleton().stop();
+    CoronaEngine::AudioSystemDefault::get_singleton().stop();
+    CoronaEngine::RenderingSystemDefault::get_singleton().stop();
+    CoronaEngine::DisplaySystemDefault::get_singleton().stop();
 
     return 0;
 }

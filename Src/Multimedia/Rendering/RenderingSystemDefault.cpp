@@ -4,7 +4,7 @@
 
 #include "RenderingSystemDefault.hpp"
 
-namespace CabbageFW
+namespace CoronaEngine
 {
     RenderingSystemDefault &RenderingSystemDefault::get_singleton()
     {
@@ -32,4 +32,4 @@ namespace CabbageFW
     void RenderingSystemDefault::_stop()
     {
     }
-} // namespace CabbageFW
+} // namespace CoronaEngine

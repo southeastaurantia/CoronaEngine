@@ -4,7 +4,7 @@
 
 #include "DisplaySystemDefault.hpp"
 
-namespace CabbageFW
+namespace CoronaEngine
 {
     DisplaySystemDefault &DisplaySystemDefault::get_singleton()
     {
@@ -31,4 +31,4 @@ namespace CabbageFW
     void DisplaySystemDefault::_stop()
     {
     }
-} // namespace CabbageFW
+} // namespace CoronaEngine

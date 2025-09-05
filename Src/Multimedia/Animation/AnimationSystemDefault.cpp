@@ -4,7 +4,7 @@
 
 #include "AnimationSystemDefault.hpp"
 
-namespace CabbageFW
+namespace CoronaEngine
 {
     AnimationSystemDefault &AnimationSystemDefault::get_singleton()
     {
@@ -31,4 +31,4 @@ namespace CabbageFW
     void AnimationSystemDefault::_stop()
     {
     }
-} // namespace CabbageFW
+} // namespace CoronaEngine

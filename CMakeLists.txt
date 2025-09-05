@@ -3,14 +3,14 @@ cmake_minimum_required(VERSION 4.0)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 project(
-    CabbageFramework
+    CoronaEngine
     VERSION 0.5.0
-    HOMEPAGE_URL "https://github.com/CoronaEngine/CabbageFramework"
+    HOMEPAGE_URL "https://github.com/CoronaEngine/CoronaEngine"
     LANGUAGES C CXX
 )
 
 function(cabbage_install_runtime_deps target_name)
-    get_target_property(CABBAGE_DEPS CabbageFramework INTERFACE_CABBAGE_RUNTIME_DEPS)
+    get_target_property(CABBAGE_DEPS CoronaEngine INTERFACE_CABBAGE_RUNTIME_DEPS)
 
     if(NOT CABBAGE_DEPS)
         message(WARNING "Cabbage library did not specify any runtime dependencies.")

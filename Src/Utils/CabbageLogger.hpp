@@ -10,15 +10,15 @@
 
 #define LOG_DEBUG(message)       \
     if constexpr (LOG_LEVEL < 1) \
-    std::cout << std::format("[DEBUG][CabbageFW] {}", message) << std::endl
+    std::cout << std::format("[DEBUG][CoronaEngine] {}", message) << std::endl
 #define LOG_INFO(message)        \
     if constexpr (LOG_LEVEL < 2) \
-    std::cout << std::format("[INFO ][CabbageFW] {}", message) << std::endl
+    std::cout << std::format("[INFO ][CoronaEngine] {}", message) << std::endl
 #define LOG_WARNING(message)     \
     if constexpr (LOG_LEVEL < 3) \
-    std::cout << std::format("[WARN ][CabbageFW] {}", message) << std::endl
+    std::cout << std::format("[WARN ][CoronaEngine] {}", message) << std::endl
 #define LOG_ERROR(message)       \
     if constexpr (LOG_LEVEL < 4) \
-    std::cerr << std::format("[ERROR][CabbageFW] {}", message) << std::endl
+    std::cerr << std::format("[ERROR][CoronaEngine] {}", message) << std::endl
 
 #endif // CABBAGEFRAMEWORK_UTILS_H

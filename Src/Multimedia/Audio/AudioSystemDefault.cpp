@@ -4,7 +4,7 @@
 
 #include "AudioSystemDefault.hpp"
 
-namespace CabbageFW
+namespace CoronaEngine
 {
     AudioSystemDefault &AudioSystemDefault::get_singleton()
     {
@@ -32,4 +32,4 @@ namespace CabbageFW
     void AudioSystemDefault::_stop()
     {
     }
-} // namespace CabbageFW
+} // namespace CoronaEngine

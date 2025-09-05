@@ -6,7 +6,7 @@
 #define CABBAGEFRAMEWORK_ANIMATIONSYSTEMDEFAULT_HPP
 #include "Multimedia/BaseAnimationSystem.hpp"
 
-namespace CabbageFW
+namespace CoronaEngine
 {
 
     class AnimationSystemDefault final : public BaseAnimationSystem
@@ -25,6 +25,6 @@ namespace CabbageFW
         void _stop() override;
     };
 
-} // namespace CabbageFW
+} // namespace CoronaEngine
 
 #endif // CABBAGEFRAMEWORK_ANIMATIONSYSTEMDEFAULT_HPP
