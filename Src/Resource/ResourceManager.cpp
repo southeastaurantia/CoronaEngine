@@ -58,14 +58,19 @@ namespace ECS
             auto &meshes = registry->get<Components::Meshes>(modelEntity);
             if (meshes.data.size() > 0)
             {
-                //for(const auto &meshEntity : meshes.data)
-                //{
-                //    if(registry->try_get<Components::AABB>(meshEntity))
-                //    {
-                //        const auto &meshAABB = registry->get<Components::AABB>(meshEntity);
-                //        meshAABB.aabbMaxXYZ = ktm::fvec3(ktm::max())
-                //    }
-                //}
+                auto &meshAABB = registry->get<Components::AABB>(meshes.data[0]);
+                minXYZ = meshAABB.aabbMinXYZ;
+                maxXYZ = meshAABB.aabbMaxXYZ;
+            }
+            for (size_t i = 0; i < meshes.data.size(); i++)
+            {
+                auto &meshAABB = registry->get<Components::AABB>(meshes.data[i]);
+                maxXYZ = ktm::fvec3(ktm::max(meshAABB.aabbMaxXYZ.x, maxXYZ.x),
+                                    ktm::max(meshAABB.aabbMaxXYZ.y, maxXYZ.y),
+                                    ktm::max(meshAABB.aabbMaxXYZ.z, maxXYZ.z));
+                minXYZ = ktm::fvec3(ktm::min(meshAABB.aabbMinXYZ.x, minXYZ.x),
+                                    ktm::min(meshAABB.aabbMinXYZ.y, minXYZ.y),
+                                    ktm::min(meshAABB.aabbMinXYZ.z, minXYZ.z));
             }
 
             registry->emplace<Components::ResLoadedTag>(modelEntity);
@@ -259,6 +264,12 @@ namespace ECS
     void ResourceManager::ProcessMesh(std::string path, aiMesh *mesh, const aiScene *scene, entt::entity meshEntity, entt::entity modelEntity)
     {
         auto &meshHost = registry->emplace<Components::MeshHost>(meshEntity);
+        auto &meshAABB = registry->emplace<Components::AABB>(meshEntity);
+
+        if (mesh->mNumVertices > 0)
+        {
+            meshAABB.aabbMinXYZ = meshAABB.aabbMaxXYZ = ktm::fvec3(mesh->mVertices[0].x, mesh->mVertices[0].y, mesh->mVertices[0].z);
+        }
 
         meshHost.positions.reserve(mesh->mNumVertices * 3);
         meshHost.normals.reserve(mesh->mNumVertices * 3);
@@ -271,6 +282,14 @@ namespace ECS
             meshHost.positions.push_back(mesh->mVertices[i].x);
             meshHost.positions.push_back(mesh->mVertices[i].y);
             meshHost.positions.push_back(mesh->mVertices[i].z);
+
+            meshAABB.aabbMaxXYZ = ktm::fvec3(ktm::max(mesh->mVertices[i].x, meshAABB.aabbMaxXYZ.x),
+                                           ktm::max(mesh->mVertices[i].y, meshAABB.aabbMaxXYZ.y),
+                                           ktm::max(mesh->mVertices[i].z, meshAABB.aabbMaxXYZ.z));
+
+            meshAABB.aabbMinXYZ = ktm::fvec3(ktm::min(mesh->mVertices[i].x, meshAABB.aabbMinXYZ.x),
+                                           ktm::min(mesh->mVertices[i].y, meshAABB.aabbMinXYZ.y),
+                                           ktm::min(mesh->mVertices[i].z, meshAABB.aabbMinXYZ.z));
 
             if (mesh->HasNormals())
             {

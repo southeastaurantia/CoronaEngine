@@ -34,6 +34,8 @@ namespace ECS
         static std::string basePath;
         static std::string userPath;
         static std::string shaderPath;
+        static inline ktm::fvec3 minXYZ = ktm::fvec3(0.0f, 0.0f, 0.0f);
+        static inline ktm::fvec3 maxXYZ = ktm::fvec3(0.0f, 0.0f, 0.0f);
 
         static void LoadAnimation(const aiScene *scene, aiAnimation *animation, entt::entity modelEntity);
         static void ReadHeirarchyData(Components::AssimpNodeData &dest, const aiNode *src);
