@@ -55,6 +55,19 @@ namespace ECS
                 LoadAnimation(scene, scene->mAnimations[i], modelEntity);
             }
 
+            auto &meshes = registry->get<Components::Meshes>(modelEntity);
+            if (meshes.data.size() > 0)
+            {
+                //for(const auto &meshEntity : meshes.data)
+                //{
+                //    if(registry->try_get<Components::AABB>(meshEntity))
+                //    {
+                //        const auto &meshAABB = registry->get<Components::AABB>(meshEntity);
+                //        meshAABB.aabbMaxXYZ = ktm::fvec3(ktm::max())
+                //    }
+                //}
+            }
+
             registry->emplace<Components::ResLoadedTag>(modelEntity);
         }
     }

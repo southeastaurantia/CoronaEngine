@@ -27,6 +27,7 @@ namespace CabbageFW
     }
     void RenderingSystemDefault::_tick()
     {
+        
     }
     void RenderingSystemDefault::_stop()
     {
