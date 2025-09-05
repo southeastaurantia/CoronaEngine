@@ -31,7 +31,7 @@ namespace CoronaEngine
         virtual void _tick() = 0;
         virtual void _stop() = 0;
 
-      protected:
+    private:
         std::atomic<FPS> max_fps;
         std::atomic<bool> engine_is_running; // 运行标志, start时置为true, stop时置为false
         std::unique_ptr<std::thread> worker;
