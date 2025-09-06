@@ -2,29 +2,30 @@
 // Created by 47226 on 2025/9/5.
 //
 
-#ifndef CABBAGEFRAMEWORK_DISPLAYSYSTEMDEFAULT_HPP
-#define CABBAGEFRAMEWORK_DISPLAYSYSTEMDEFAULT_HPP
-#include "Multimedia/BaseDisplaySystem.hpp"
+#ifndef CORONAENGINE_DISPLAYSYSTEMDEFAULT_HPP
+#define CORONAENGINE_DISPLAYSYSTEMDEFAULT_HPP
+#include "Multimedia/BaseMultimediaSystem.hpp"
 
 namespace CoronaEngine
 {
 
-    class DisplaySystemDefault final : public BaseDisplaySystem
+    class DisplaySystemDefault final : public BaseMultimediaSystem
     {
       public:
-        static DisplaySystemDefault& get_singleton();
+        static DisplaySystemDefault &get_singleton();
 
         const char *name() override;
 
       protected:
-        explicit DisplaySystemDefault(FPS fps);
+        explicit DisplaySystemDefault();
         ~DisplaySystemDefault() override;
 
-        void _start() override;
-        void _tick() override;
-        void _stop() override;
+      public:
+        void start() override;
+        void tick() override;
+        void stop() override;
     };
 
 } // namespace CoronaEngine
 
-#endif // CABBAGEFRAMEWORK_DISPLAYSYSTEMDEFAULT_HPP
+#endif // CORONAENGINE_DISPLAYSYSTEMDEFAULT_HPP

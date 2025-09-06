@@ -2,14 +2,14 @@
 // Created by 47226 on 2025/9/4.
 //
 
-#ifndef CABBAGEFRAMEWORK_ANIMATIONSYSTEMDEFAULT_HPP
-#define CABBAGEFRAMEWORK_ANIMATIONSYSTEMDEFAULT_HPP
-#include "Multimedia/BaseAnimationSystem.hpp"
+#ifndef CORONAENGINE_ANIMATIONSYSTEMDEFAULT_HPP
+#define CORONAENGINE_ANIMATIONSYSTEMDEFAULT_HPP
+#include "Multimedia/BaseMultimediaSystem.hpp"
 
 namespace CoronaEngine
 {
 
-    class AnimationSystemDefault final : public BaseAnimationSystem
+    class AnimationSystemDefault final : public BaseMultimediaSystem
     {
       public:
         static AnimationSystemDefault &get_singleton();
@@ -17,14 +17,15 @@ namespace CoronaEngine
         const char *name() override;
 
       protected:
-        explicit AnimationSystemDefault(FPS fps);
+        explicit AnimationSystemDefault();
         ~AnimationSystemDefault() override;
 
-        void _start() override;
-        void _tick() override;
-        void _stop() override;
+      public:
+        void start() override;
+        void tick() override;
+        void stop() override;
     };
 
 } // namespace CoronaEngine
 
-#endif // CABBAGEFRAMEWORK_ANIMATIONSYSTEMDEFAULT_HPP
+#endif // CORONAENGINE_ANIMATIONSYSTEMDEFAULT_HPP

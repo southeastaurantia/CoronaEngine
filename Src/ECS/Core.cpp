@@ -1,213 +1,213 @@
-﻿#include "Core.h"
-
-#include "BackBridge.h"
-#include "Components.h"
-#include "FrontBridge.h"
-
-#include <format>
-
-#define LOG_DEBUG(message)       \
-    if constexpr (LOG_LEVEL < 1) \
-    std::cout << std::format("[DEBUG][Core] {}", message) << std::endl
-#define LOG_INFO(message)        \
-    if constexpr (LOG_LEVEL < 2) \
-    std::cout << std::format("[INFO ][Core] {}", message) << std::endl
-#define LOG_WARNING(message)     \
-    if constexpr (LOG_LEVEL < 3) \
-    std::cout << std::format("[WARN ][Core] {}", message) << std::endl
-#define LOG_ERROR(message)       \
-    if constexpr (LOG_LEVEL < 4) \
-    std::cerr << std::format("[ERROR][Core] {}", message) << std::endl
-
-namespace ECS
-{
-    Core::Core()
-        : registry(std::make_shared<entt::registry>()),
-          animation_system(registry),
-          audio_system(registry),
-          rendering_system(registry)
-    {
-        // TODO: FrontBridge事件注册
-        FrontBridge::dispatcher().sink<Events::SceneCreateRequest>().connect<&Core::onSceneCreate>(this);
-        FrontBridge::dispatcher().sink<Events::SceneDestroy>().connect<&Core::onSceneDestroy>(this);
-        FrontBridge::dispatcher().sink<Events::SceneSetDisplaySurface>().connect<&Core::onSceneSetDisplaySurface>(this);
-        FrontBridge::dispatcher().sink<Events::SceneAddActor>().connect<&Core::onSceneAddActor>(this);
-        FrontBridge::dispatcher().sink<Events::SceneRemoveActor>().connect<&Core::onSceneRemoveActor>(this);
-        FrontBridge::dispatcher().sink<Events::SceneSetCamera>().connect<&Core::onSceneSetCamera>(this);
-
-        FrontBridge::dispatcher().sink<Events::ActorCreateRequest>().connect<&Core::onActorCreate>(this);
-        FrontBridge::dispatcher().sink<Events::ActorDestroy>().connect<&Core::onActorDestroy>(this);
-        FrontBridge::dispatcher().sink<Events::ActorRotate>().connect<&Core::onActorRotate>(this);
-
-        animation_system.start();
-        audio_system.start();
-        rendering_system.start();
-
-        LOG_INFO("ECS::Core initialized");
-    };
-
-    Core::~Core()
-    {
-        animation_system.stop();
-        audio_system.stop();
-        rendering_system.stop();
-
-        registry->clear();
-        BackBridge::scene_to_actors().clear();
-        BackBridge::actor_to_scenes().clear();
-        BackBridge::anim_dispatcher().clear();
-        BackBridge::audio_dispatcher().clear();
-        BackBridge::render_dispatcher().clear();
-
-        LOG_INFO("ECS::Core destroyed");
-    }
-
-    std::shared_ptr<entt::registry> Core::getRegistry()
-    {
-        return registry;
-    }
-
-    void Core::onSceneCreate(Events::SceneCreateRequest event)
-    {
-        auto scene = registry->create();
-        registry->emplace<Components::Scene>(scene, Components::Scene{});
-        registry->emplace<Components::Camera>(scene, Components::Camera{});
-        registry->emplace<Components::SunLight>(scene, Components::SunLight{});
-        event.scene_id_promise->set_value(scene);
-        BackBridge::scene_to_actors().insert(std::make_pair(scene, BackBridge::SceneToActorsMap::value_type::second_type()));
-        LOG_INFO(std::format("Scene {} created", entt::to_entity(scene)));
-    }
-
-    void Core::onSceneDestroy(Events::SceneDestroy event)
-    {
-        if (BackBridge::scene_to_actors().contains(event.scene))
-        {
-            for (auto const &actor : BackBridge::scene_to_actors().at(event.scene))
-            {
-                if (BackBridge::actor_to_scenes().contains(actor))
-                {
-                    BackBridge::actor_to_scenes().at(actor).unsafe_erase(event.scene);
-                }
-                LOG_DEBUG(std::format("Before scene {} destroyed, remove reference from actor {}", entt::to_entity(event.scene), entt::to_entity(actor)));
-            }
-            BackBridge::scene_to_actors().unsafe_erase(event.scene);
-        }
-        registry->destroy(event.scene);
-        LOG_INFO(std::format("Scene {} destroyed", entt::to_entity(event.scene)));
-    }
-
-    void Core::onSceneSetDisplaySurface(Events::SceneSetDisplaySurface event)
-    {
-        LOG_DEBUG(std::format("Scene {} published event 'SceneSetDisplaySurface'", entt::to_entity(event.scene)));
-        auto &scene = registry->get<Components::Scene>(event.scene);
-        scene.displaySurface = event.surface;
-        BackBridge::render_dispatcher().enqueue(event);
-    }
-
-    void Core::onSceneAddActor(Events::SceneAddActor event)
-    {
-        if (BackBridge::scene_to_actors().contains(event.actor))
-        {
-            return;
-        }
-
-        BackBridge::scene_to_actors().at(event.scene).insert(event.actor);
-        BackBridge::actor_to_scenes().at(event.actor).insert(event.scene);
-
-        LOG_INFO(std::format("Scene {} added actor {}", entt::to_entity(event.scene), entt::to_entity(event.actor)));
-    }
-
-    void Core::onSceneRemoveActor(Events::SceneRemoveActor event)
-    {
-        if (!BackBridge::scene_to_actors().contains(event.actor))
-        {
-            return;
-        }
-
-        BackBridge::scene_to_actors().at(event.scene).unsafe_erase(event.actor);
-        BackBridge::actor_to_scenes().at(event.actor).unsafe_erase(event.scene);
-
-        LOG_DEBUG(std::format("Scene {} removed actor {}", entt::to_entity(event.scene), entt::to_entity(event.actor)));
-    }
-
-    void Core::onSceneSetCamera(Events::SceneSetCamera event)
-    {
-        auto &camera = registry->get<Components::Camera>(event.scene);
-        camera.pos = {event.pos[0], event.pos[1], event.pos[2]};
-        camera.forward = {event.forward[0], event.forward[1], event.forward[2]};
-        camera.worldUp = {event.worldup[0], event.worldup[1], event.worldup[2]};
-        camera.fov = event.fov;
-        LOG_DEBUG(std::format("Scene {} processed event 'SceneSetCamera'", entt::to_entity(event.scene)));
-    }
-
-    void Core::onActorCreate(Events::ActorCreateRequest event)
-    {
-        auto actor = registry->create();
-        registry->emplace<Components::ActorPose>(actor, Components::ActorPose{});
-        registry->emplace<Components::Model>(actor, Components::Model{});
-        event.actor_id_promise->set_value(actor);
-        BackBridge::actor_to_scenes().insert(std::make_pair(actor, BackBridge::SceneToActorsMap::value_type::second_type()));
-
-        if (!event.path.empty())
-        {
-            entt::entity sharedModelEntity = entt::null;
-
-            registry->view<Components::Meshes>().each([&](entt::entity modelEntity, Components::Meshes &meshes) {
-                if (meshes.path == event.path)
-                {
-                    sharedModelEntity = modelEntity;
-                }
-            });
-
-            if (sharedModelEntity != entt::null)
-            {
-                auto &modelComponent = registry->get<Components::Model>(actor);
-                modelComponent.model = sharedModelEntity;
-                LOG_INFO(std::format("Actor {} reused model from path: {}", entt::to_entity(actor), event.path));
-            }
-            else
-            {
-                auto modelEntity = registry->create();
-
-                registry->emplace<Components::Animations>(modelEntity, Components::Animations{
-                                                                           .skeletalAnimations = {},
-                                                                           .boneInfoMap = {},
-                                                                           .boneCount = 0});
-
-                ResourceManager::LoadModel(modelEntity, event.path);
-
-                auto &modelComponent = registry->get<Components::Model>(actor);
-                modelComponent.model = modelEntity;
-                LOG_INFO(std::format("Actor {} created new model from path: {}", entt::to_entity(actor), event.path));
-            }
-        }
-
-        LOG_INFO(std::format("Actor {} created", entt::to_entity(actor)));
-    }
-
-    void Core::onActorDestroy(Events::ActorDestroy event)
-    {
-        if (BackBridge::actor_to_scenes().contains(event.actor))
-        {
-            for (auto const &scene : BackBridge::actor_to_scenes().at(event.actor))
-            {
-                BackBridge::scene_to_actors().at(scene).unsafe_erase(event.actor);
-                LOG_DEBUG(std::format("Before actor {} destroyed, remove reference from scene {}", entt::to_entity(event.actor), entt::to_entity(scene)));
-            }
-            BackBridge::actor_to_scenes().unsafe_erase(event.actor);
-        }
-        registry->destroy(event.actor);
-        LOG_INFO(std::format("Actor {} destroyed", entt::to_entity(event.actor)));
-    }
-
-    void Core::onActorRotate(Events::ActorRotate event)
-    {
-        auto &pose = registry->get<Components::ActorPose>(event.actor);
-        pose.rotate = {
-            event.euler[0],
-            event.euler[1],
-            event.euler[2]};
-        LOG_DEBUG(std::format("Actor {} processed event 'ActorRotate'", entt::to_entity(event.actor)));
-    }
-
-} // namespace ECS
+﻿// #include "Core.h"
+//
+// #include "BackBridge.h"
+// #include "Components.h"
+// #include "FrontBridge.h"
+//
+// #include <format>
+//
+// #define LOG_DEBUG(message)       \
+//     if constexpr (LOG_LEVEL < 1) \
+//     std::cout << std::format("[DEBUG][Core] {}", message) << std::endl
+// #define LOG_INFO(message)        \
+//     if constexpr (LOG_LEVEL < 2) \
+//     std::cout << std::format("[INFO ][Core] {}", message) << std::endl
+// #define LOG_WARNING(message)     \
+//     if constexpr (LOG_LEVEL < 3) \
+//     std::cout << std::format("[WARN ][Core] {}", message) << std::endl
+// #define LOG_ERROR(message)       \
+//     if constexpr (LOG_LEVEL < 4) \
+//     std::cerr << std::format("[ERROR][Core] {}", message) << std::endl
+//
+// namespace ECS
+// {
+//     Core::Core()
+//         : registry(std::make_shared<entt::registry>()),
+//           animation_system(registry),
+//           audio_system(registry),
+//           rendering_system(registry)
+//     {
+//         // TODO: FrontBridge事件注册
+//         FrontBridge::dispatcher().sink<Events::SceneCreateRequest>().connect<&Core::onSceneCreate>(this);
+//         FrontBridge::dispatcher().sink<Events::SceneDestroy>().connect<&Core::onSceneDestroy>(this);
+//         FrontBridge::dispatcher().sink<Events::SceneSetDisplaySurface>().connect<&Core::onSceneSetDisplaySurface>(this);
+//         FrontBridge::dispatcher().sink<Events::SceneAddActor>().connect<&Core::onSceneAddActor>(this);
+//         FrontBridge::dispatcher().sink<Events::SceneRemoveActor>().connect<&Core::onSceneRemoveActor>(this);
+//         FrontBridge::dispatcher().sink<Events::SceneSetCamera>().connect<&Core::onSceneSetCamera>(this);
+//
+//         FrontBridge::dispatcher().sink<Events::ActorCreateRequest>().connect<&Core::onActorCreate>(this);
+//         FrontBridge::dispatcher().sink<Events::ActorDestroy>().connect<&Core::onActorDestroy>(this);
+//         FrontBridge::dispatcher().sink<Events::ActorRotate>().connect<&Core::onActorRotate>(this);
+//
+//         animation_system.start();
+//         audio_system.start();
+//         rendering_system.start();
+//
+//         LOG_INFO("ECS::Core initialized");
+//     };
+//
+//     Core::~Core()
+//     {
+//         animation_system.stop();
+//         audio_system.stop();
+//         rendering_system.stop();
+//
+//         registry->clear();
+//         BackBridge::scene_to_actors().clear();
+//         BackBridge::actor_to_scenes().clear();
+//         BackBridge::anim_dispatcher().clear();
+//         BackBridge::audio_dispatcher().clear();
+//         BackBridge::render_dispatcher().clear();
+//
+//         LOG_INFO("ECS::Core destroyed");
+//     }
+//
+//     std::shared_ptr<entt::registry> Core::getRegistry()
+//     {
+//         return registry;
+//     }
+//
+//     void Core::onSceneCreate(Events::SceneCreateRequest event)
+//     {
+//         auto scene = registry->create();
+//         registry->emplace<Components::Scene>(scene, Components::Scene{});
+//         registry->emplace<Components::Camera>(scene, Components::Camera{});
+//         registry->emplace<Components::SunLight>(scene, Components::SunLight{});
+//         event.scene_id_promise->set_value(scene);
+//         BackBridge::scene_to_actors().insert(std::make_pair(scene, BackBridge::SceneToActorsMap::value_type::second_type()));
+//         LOG_INFO(std::format("Scene {} created", entt::to_entity(scene)));
+//     }
+//
+//     void Core::onSceneDestroy(Events::SceneDestroy event)
+//     {
+//         if (BackBridge::scene_to_actors().contains(event.scene))
+//         {
+//             for (auto const &actor : BackBridge::scene_to_actors().at(event.scene))
+//             {
+//                 if (BackBridge::actor_to_scenes().contains(actor))
+//                 {
+//                     BackBridge::actor_to_scenes().at(actor).unsafe_erase(event.scene);
+//                 }
+//                 LOG_DEBUG(std::format("Before scene {} destroyed, remove reference from actor {}", entt::to_entity(event.scene), entt::to_entity(actor)));
+//             }
+//             BackBridge::scene_to_actors().unsafe_erase(event.scene);
+//         }
+//         registry->destroy(event.scene);
+//         LOG_INFO(std::format("Scene {} destroyed", entt::to_entity(event.scene)));
+//     }
+//
+//     void Core::onSceneSetDisplaySurface(Events::SceneSetDisplaySurface event)
+//     {
+//         LOG_DEBUG(std::format("Scene {} published event 'SceneSetDisplaySurface'", entt::to_entity(event.scene)));
+//         auto &scene = registry->get<Components::Scene>(event.scene);
+//         scene.displaySurface = event.surface;
+//         BackBridge::render_dispatcher().enqueue(event);
+//     }
+//
+//     void Core::onSceneAddActor(Events::SceneAddActor event)
+//     {
+//         if (BackBridge::scene_to_actors().contains(event.actor))
+//         {
+//             return;
+//         }
+//
+//         BackBridge::scene_to_actors().at(event.scene).insert(event.actor);
+//         BackBridge::actor_to_scenes().at(event.actor).insert(event.scene);
+//
+//         LOG_INFO(std::format("Scene {} added actor {}", entt::to_entity(event.scene), entt::to_entity(event.actor)));
+//     }
+//
+//     void Core::onSceneRemoveActor(Events::SceneRemoveActor event)
+//     {
+//         if (!BackBridge::scene_to_actors().contains(event.actor))
+//         {
+//             return;
+//         }
+//
+//         BackBridge::scene_to_actors().at(event.scene).unsafe_erase(event.actor);
+//         BackBridge::actor_to_scenes().at(event.actor).unsafe_erase(event.scene);
+//
+//         LOG_DEBUG(std::format("Scene {} removed actor {}", entt::to_entity(event.scene), entt::to_entity(event.actor)));
+//     }
+//
+//     void Core::onSceneSetCamera(Events::SceneSetCamera event)
+//     {
+//         auto &camera = registry->get<Components::Camera>(event.scene);
+//         camera.pos = {event.pos[0], event.pos[1], event.pos[2]};
+//         camera.forward = {event.forward[0], event.forward[1], event.forward[2]};
+//         camera.worldUp = {event.worldup[0], event.worldup[1], event.worldup[2]};
+//         camera.fov = event.fov;
+//         LOG_DEBUG(std::format("Scene {} processed event 'SceneSetCamera'", entt::to_entity(event.scene)));
+//     }
+//
+//     void Core::onActorCreate(Events::ActorCreateRequest event)
+//     {
+//         auto actor = registry->create();
+//         registry->emplace<Components::ActorPose>(actor, Components::ActorPose{});
+//         registry->emplace<Components::Model>(actor, Components::Model{});
+//         event.actor_id_promise->set_value(actor);
+//         BackBridge::actor_to_scenes().insert(std::make_pair(actor, BackBridge::SceneToActorsMap::value_type::second_type()));
+//
+//         if (!event.path.empty())
+//         {
+//             entt::entity sharedModelEntity = entt::null;
+//
+//             registry->view<Components::Meshes>().each([&](entt::entity modelEntity, Components::Meshes &meshes) {
+//                 if (meshes.path == event.path)
+//                 {
+//                     sharedModelEntity = modelEntity;
+//                 }
+//             });
+//
+//             if (sharedModelEntity != entt::null)
+//             {
+//                 auto &modelComponent = registry->get<Components::Model>(actor);
+//                 modelComponent.model = sharedModelEntity;
+//                 LOG_INFO(std::format("Actor {} reused model from path: {}", entt::to_entity(actor), event.path));
+//             }
+//             else
+//             {
+//                 auto modelEntity = registry->create();
+//
+//                 registry->emplace<Components::Animations>(modelEntity, Components::Animations{
+//                                                                            .skeletalAnimations = {},
+//                                                                            .boneInfoMap = {},
+//                                                                            .boneCount = 0});
+//
+//                 ResourceManager::LoadModel(modelEntity, event.path);
+//
+//                 auto &modelComponent = registry->get<Components::Model>(actor);
+//                 modelComponent.model = modelEntity;
+//                 LOG_INFO(std::format("Actor {} created new model from path: {}", entt::to_entity(actor), event.path));
+//             }
+//         }
+//
+//         LOG_INFO(std::format("Actor {} created", entt::to_entity(actor)));
+//     }
+//
+//     void Core::onActorDestroy(Events::ActorDestroy event)
+//     {
+//         if (BackBridge::actor_to_scenes().contains(event.actor))
+//         {
+//             for (auto const &scene : BackBridge::actor_to_scenes().at(event.actor))
+//             {
+//                 BackBridge::scene_to_actors().at(scene).unsafe_erase(event.actor);
+//                 LOG_DEBUG(std::format("Before actor {} destroyed, remove reference from scene {}", entt::to_entity(event.actor), entt::to_entity(scene)));
+//             }
+//             BackBridge::actor_to_scenes().unsafe_erase(event.actor);
+//         }
+//         registry->destroy(event.actor);
+//         LOG_INFO(std::format("Actor {} destroyed", entt::to_entity(event.actor)));
+//     }
+//
+//     void Core::onActorRotate(Events::ActorRotate event)
+//     {
+//         auto &pose = registry->get<Components::ActorPose>(event.actor);
+//         pose.rotate = {
+//             event.euler[0],
+//             event.euler[1],
+//             event.euler[2]};
+//         LOG_DEBUG(std::format("Actor {} processed event 'ActorRotate'", entt::to_entity(event.actor)));
+//     }
+//
+// } // namespace ECS

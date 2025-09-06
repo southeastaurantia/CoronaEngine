@@ -4,32 +4,35 @@
 
 #include "AudioSystemDefault.hpp"
 
+#include "Utils/CabbageLogger.hpp"
+
 namespace CoronaEngine
 {
     AudioSystemDefault &AudioSystemDefault::get_singleton()
     {
-        static AudioSystemDefault inst(120);
+        static AudioSystemDefault inst;
         return inst;
     }
-    AudioSystemDefault::AudioSystemDefault(const FPS fps)
-        : BaseAudioSystem(fps)
+    const char *AudioSystemDefault::name()
+    {
+        return "AudioSystemDefault";
+    }
+    AudioSystemDefault::AudioSystemDefault()
     {
     }
     AudioSystemDefault::~AudioSystemDefault()
     {
     }
 
-    const char *AudioSystemDefault::name()
+    void AudioSystemDefault::start()
     {
-        return "AudioSystemDefault";
+        LOG_DEBUG(std::format("{} started", name()));
     }
-    void AudioSystemDefault::_start()
-    {
-    }
-    void AudioSystemDefault::_tick()
+    void AudioSystemDefault::tick()
     {
     }
-    void AudioSystemDefault::_stop()
+    void AudioSystemDefault::stop()
     {
+        LOG_DEBUG(std::format("{} stopped", name()));
     }
 } // namespace CoronaEngine

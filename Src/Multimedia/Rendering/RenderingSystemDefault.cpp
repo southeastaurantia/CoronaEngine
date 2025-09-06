@@ -4,32 +4,34 @@
 
 #include "RenderingSystemDefault.hpp"
 
+#include "Utils/CabbageLogger.hpp"
+
 namespace CoronaEngine
 {
     RenderingSystemDefault &RenderingSystemDefault::get_singleton()
     {
-        static RenderingSystemDefault inst(120);
+        static RenderingSystemDefault inst;
         return inst;
-    }
-    RenderingSystemDefault::RenderingSystemDefault(const FPS fps)
-        : BaseRenderingSystem(fps)
-    {
-    }
-    RenderingSystemDefault::~RenderingSystemDefault()
-    {
     }
     const char *RenderingSystemDefault::name()
     {
         return "RenderingSystemDefault";
     }
-    void RenderingSystemDefault::_start()
+    RenderingSystemDefault::RenderingSystemDefault()
     {
     }
-    void RenderingSystemDefault::_tick()
+    RenderingSystemDefault::~RenderingSystemDefault()
     {
-        
     }
-    void RenderingSystemDefault::_stop()
+    void RenderingSystemDefault::start()
     {
+        LOG_DEBUG(std::format("{} started", name()));
+    }
+    void RenderingSystemDefault::tick()
+    {
+    }
+    void RenderingSystemDefault::stop()
+    {
+        LOG_DEBUG(std::format("{} stopped", name()));
     }
 } // namespace CoronaEngine

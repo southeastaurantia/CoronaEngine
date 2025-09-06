@@ -4,31 +4,35 @@
 
 #include "DisplaySystemDefault.hpp"
 
+#include "Utils/CabbageLogger.hpp"
+
 namespace CoronaEngine
 {
     DisplaySystemDefault &DisplaySystemDefault::get_singleton()
     {
-        static DisplaySystemDefault inst(240);
+        static DisplaySystemDefault inst;
         return inst;
     }
-    DisplaySystemDefault::DisplaySystemDefault(const FPS fps)
-        : BaseDisplaySystem(fps)
+
+    const char *DisplaySystemDefault::name()
+    {
+        return "DisplaySystemDefault";
+    }
+    DisplaySystemDefault::DisplaySystemDefault()
     {
     }
     DisplaySystemDefault::~DisplaySystemDefault()
     {
     }
-    const char *DisplaySystemDefault::name()
+    void DisplaySystemDefault::start()
     {
-        return "DisplaySystemDefault";
+        LOG_DEBUG(std::format("{} started", name()));
     }
-    void DisplaySystemDefault::_start()
-    {
-    }
-    void DisplaySystemDefault::_tick()
+    void DisplaySystemDefault::tick()
     {
     }
-    void DisplaySystemDefault::_stop()
+    void DisplaySystemDefault::stop()
     {
+        LOG_DEBUG(std::format("{} stopped", name()));
     }
 } // namespace CoronaEngine

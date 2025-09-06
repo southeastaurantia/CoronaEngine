@@ -4,31 +4,34 @@
 
 #include "AnimationSystemDefault.hpp"
 
+#include "Utils/CabbageLogger.hpp"
+
 namespace CoronaEngine
 {
     AnimationSystemDefault &AnimationSystemDefault::get_singleton()
     {
-        static AnimationSystemDefault inst(120);
+        static AnimationSystemDefault inst;
         return inst;
-    }
-    AnimationSystemDefault::AnimationSystemDefault(const FPS fps)
-        : BaseAnimationSystem(fps)
-    {
-    }
-    AnimationSystemDefault::~AnimationSystemDefault()
-    {
     }
     const char *AnimationSystemDefault::name()
     {
         return "AnimationSystemDefault";
     }
-    void AnimationSystemDefault::_start()
+    AnimationSystemDefault::AnimationSystemDefault()
     {
     }
-    void AnimationSystemDefault::_tick()
+    AnimationSystemDefault::~AnimationSystemDefault()
     {
     }
-    void AnimationSystemDefault::_stop()
+    void AnimationSystemDefault::start()
     {
+        LOG_DEBUG(std::format("{} started.", name()));
+    }
+    void AnimationSystemDefault::tick()
+    {
+    }
+    void AnimationSystemDefault::stop()
+    {
+        LOG_DEBUG(std::format("{} stopped.", name()));
     }
 } // namespace CoronaEngine
