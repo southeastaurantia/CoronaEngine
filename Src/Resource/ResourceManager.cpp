@@ -547,13 +547,3 @@
 //     }
 //
 // } // namespace ECS
-CoronaEngine::ResourceManager::ResourceManager() = default;
-CoronaEngine::ResourceManager::~ResourceManager()
-{
-    tbb_task_group.wait();
-}
-CoronaEngine::ResourceManager &CoronaEngine::ResourceManager::get_singleton()
-{
-    static ResourceManager inst;
-    return inst;
-}

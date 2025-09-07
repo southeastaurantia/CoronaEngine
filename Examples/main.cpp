@@ -57,12 +57,12 @@ class TextureLoader final : public CoronaEngine::ResourceLoader<Texture>
 
 int main()
 {
-    CoronaEngine::ResourceManager::get_singleton().register_loader<Texture, TextureLoader>();
+    CoronaEngine::ResourceManager<Texture>::get_singleton().register_loader<TextureLoader>();
 
-    auto player_texture = CoronaEngine::ResourceManager::get_singleton().load<Texture>("res://assets/player.png");
-    auto player2_texture = CoronaEngine::ResourceManager::get_singleton().load<Texture>("res://assets/player.png");
-    auto player3_texture = CoronaEngine::ResourceManager::get_singleton().load<Texture>("res://assets/player.png");
-    auto player4_texture = CoronaEngine::ResourceManager::get_singleton().load<Texture>("res://assets/player.png");
+    auto player_texture = CoronaEngine::ResourceManager<Texture>::get_singleton().load("res://assets/player.png");
+    auto player2_texture = CoronaEngine::ResourceManager<Texture>::get_singleton().load("res://assets/player.png");
+    auto player3_texture = CoronaEngine::ResourceManager<Texture>::get_singleton().load("res://assets/player.png");
+    auto player4_texture = CoronaEngine::ResourceManager<Texture>::get_singleton().load("res://assets/player.png");
 
     // 此处的get会阻塞直到资源加载完成
     std::cout << std::chrono::system_clock::now() << " -- " << player4_texture.get()->width << std::endl;

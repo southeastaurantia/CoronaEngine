@@ -14,6 +14,8 @@ namespace CoronaEngine
     class Resource
     {
       public:
+        template <typename ResourceType>
+            requires std::is_base_of_v<Resource, ResourceType> && std::default_initializable<ResourceType>
         friend class ResourceManager;
 
         enum class Status

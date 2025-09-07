@@ -5,9 +5,7 @@
 #include "oneapi/tbb/concurrent_unordered_map.h"
 #include "oneapi/tbb/task_group.h"
 
-#include <any>
 #include <future>
-#include <typeindex>
 
 // TODO: 资源缓存，资源uid
 // TODO: 移除ECS操作, 解析后的资源数据不存储在ECS中, ECS中存储资源的uid
@@ -71,47 +69,40 @@
 
 namespace CoronaEngine
 {
+    template <typename ResourceType>
+        requires std::is_base_of_v<Resource, ResourceType> && std::default_initializable<ResourceType>
     class ResourceManager final
     {
-        // 使用 std::any 来存储不同资源类型的 future，以实现类型擦除
-        using ResourceCache = tbb::concurrent_unordered_map<std::string, std::any>;
-        using LoaderCache = std::unordered_map<std::type_index, std::shared_ptr<IResourceLoader>>;
+        using ResourceHandle = typename ResourceLoader<ResourceType>::ResourceHandle;
+        using ResourceFuture = std::shared_future<ResourceHandle>;
+        using ResourceCache = tbb::concurrent_unordered_map<std::string, ResourceFuture>;
 
       public:
-        explicit ResourceManager();
-        ~ResourceManager();
-
-        static ResourceManager &get_singleton();
-
-        template <typename ResourceType>
-            requires std::is_base_of_v<Resource, ResourceType> && std::default_initializable<ResourceType>
-        std::shared_future<typename ResourceLoader<ResourceType>::ResourceHandle> load(const std::string &path)
+        explicit ResourceManager() = default;
+        ~ResourceManager()
         {
-            using ResourceHandle = typename ResourceLoader<ResourceType>::ResourceHandle;
+            tbb_task_group.wait();
+        }
 
+        // 为每种资源类型提供一个单例
+        static ResourceManager &get_singleton()
+        {
+            static ResourceManager inst;
+            return inst;
+        }
+
+        ResourceFuture load(const std::string &path)
+        {
             // 1. 检查资源是否已在缓存中
             if (auto it = res_caches.find(path); it != res_caches.end())
             {
                 LOG_DEBUG(std::format("Get cache resource future: {}", path));
-                try
-                {
-                    // 尝试将 std::any 转换为具体的 future 类型
-                    return std::any_cast<std::shared_future<ResourceHandle>>(it->second);
-                }
-                catch (const std::bad_any_cast &e)
-                {
-                    // 如果转换失败，说明同一路径被请求为不同的资源类型，这是一个严重错误
-                    auto error_msg = std::format("Resource type mismatch for path: {}. Requested type does not match cached type.", path);
-                    LOG_ERROR(error_msg);
-                    auto promise = std::make_shared<std::promise<ResourceHandle>>();
-                    promise->set_exception(std::make_exception_ptr(std::runtime_error(error_msg)));
-                    return promise->get_future().share();
-                }
+                return it->second;
             }
 
             // 2. 如果资源未缓存，则创建一个新的 promise 和 future
             auto promise = std::make_shared<std::promise<ResourceHandle>>();
-            std::shared_future<ResourceHandle> future = promise->get_future().share();
+            ResourceFuture future = promise->get_future().share();
 
             // 3. 尝试将新创建的 future 插入缓存。这是一个原子操作，可以防止竞态条件
             auto [iter, inserted] = res_caches.emplace(path, future);
@@ -120,18 +111,16 @@ namespace CoronaEngine
             {
                 // 如果插入成功，说明当前线程是第一个请求该资源的线程
                 LOG_DEBUG(std::format("Creating new loading task for: {}", path));
-                const auto res_type_id = std::type_index(typeid(ResourceType));
-                auto loader_it = res_loaders.find(res_type_id);
 
-                if (loader_it == res_loaders.end())
+                if (!res_loader)
                 {
-                    auto error_msg = std::format("Resource type '{}' load failed: Not register resource loader", res_type_id.name());
+                    auto error_msg = std::format("Resource type '{}' load failed: Not register resource loader", typeid(ResourceType).name());
                     LOG_ERROR(error_msg);
                     promise->set_exception(std::make_exception_ptr(std::runtime_error(error_msg)));
                     return future;
                 }
 
-                auto loader = loader_it->second;
+                auto loader = res_loader;
 
                 // 4. 在TBB任务组中异步执行资源加载
                 tbb_task_group.run([path, loader, promise] {
@@ -164,38 +153,25 @@ namespace CoronaEngine
             {
                 // 如果插入失败，说明有其他线程已经创建了该资源的加载任务
                 LOG_DEBUG(std::format("Another thread is already loading resource: {}", path));
-                try
-                {
-                    // 返回已存在于缓存中的 future
-                    return std::any_cast<std::shared_future<ResourceHandle>>(iter->second);
-                }
-                catch (const std::bad_any_cast &e)
-                {
-                    auto error_msg = std::format("Resource type mismatch for path: {}. Requested type does not match cached type.", path);
-                    LOG_ERROR(error_msg);
-                    auto p_err = std::make_shared<std::promise<ResourceHandle>>();
-                    p_err->set_exception(std::make_exception_ptr(std::runtime_error(error_msg)));
-                    return p_err->get_future().share();
-                }
+                // 返回已存在于缓存中的 future
+                return iter->second;
             }
         }
 
-        template <typename ResourceType, typename LoaderType>
-            requires std::is_base_of_v<Resource, ResourceType> &&
-                     std::is_base_of_v<ResourceLoader<ResourceType>, LoaderType> &&
-                     std::default_initializable<ResourceType> &&
+        template <typename LoaderType>
+            requires std::is_base_of_v<ResourceLoader<ResourceType>, LoaderType> &&
                      std::default_initializable<LoaderType>
         void register_loader()
         {
-            const auto id = std::type_index(typeid(ResourceType));
-            if (res_loaders.contains(id))
+            if (res_loader)
                 return;
-            res_loaders.insert(std::make_pair(id, std::static_pointer_cast<IResourceLoader>(std::make_shared<LoaderType>())));
-            LOG_DEBUG(std::format("Register resource loader '{}'", std::type_index(typeid(LoaderType)).name()));
+            res_loader = std::make_shared<LoaderType>();
+            LOG_DEBUG(std::format("Register resource loader '{}' for resource type '{}'",
+                                  typeid(LoaderType).name(), typeid(ResourceType).name()));
         }
 
       private:
-        LoaderCache res_loaders{};
+        std::shared_ptr<IResourceLoader> res_loader{};
         ResourceCache res_caches{};
         tbb::task_group tbb_task_group{};
     };
