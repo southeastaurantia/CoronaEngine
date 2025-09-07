@@ -2,8 +2,8 @@
 // Created by 47226 on 2025/9/3.
 //
 
-#ifndef CABBAGEFRAMEWORK_UTILS_H
-#define CABBAGEFRAMEWORK_UTILS_H
+#ifndef CORONAENGINE_UTILS_HPP
+#define CORONAENGINE_UTILS_HPP
 
 #include <chrono>
 #include <format>
@@ -22,4 +22,4 @@
     if constexpr (LOG_LEVEL < 4) \
     std::cerr << std::format("[{0:%F}T{0:%T}][ERROR][CoronaEngine] {1}", std::chrono::system_clock::now(), message) << std::endl
 
-#endif // CABBAGEFRAMEWORK_UTILS_H
+#endif // CORONAENGINE_UTILS_HPP

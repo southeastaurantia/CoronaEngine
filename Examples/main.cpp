@@ -48,7 +48,6 @@ class TextureLoader final : public CoronaEngine::ResourceLoader<Texture>
   public:
     bool on_load(const std::string &path, ResourceHandle resource) override
     {
-        std::cout << std::chrono::system_clock::now() << " -- Load texture: " << path << std::endl;
         resource->width = 10;
         resource->height = 20;
         std::this_thread::sleep_for(std::chrono::milliseconds(3000));
@@ -65,11 +64,11 @@ int main()
     auto player3_texture = CoronaEngine::ResourceManager::get_singleton().load<Texture>("res://assets/player.png");
     auto player4_texture = CoronaEngine::ResourceManager::get_singleton().load<Texture>("res://assets/player.png");
 
-    // 目前完全无阻塞加载，下方资源是未加载完成的资源
-    std::cout << std::chrono::system_clock::now() << " -- " << player_texture->width << std::endl;
-    std::cout << std::chrono::system_clock::now() << " -- " << player2_texture->width << std::endl;
-    std::cout << std::chrono::system_clock::now() << " -- " << player3_texture->width << std::endl;
-    std::cout << std::chrono::system_clock::now() << " -- " << player4_texture->width << std::endl;
+    // 此处的get会阻塞直到资源加载完成
+    std::cout << std::chrono::system_clock::now() << " -- " << player4_texture.get()->width << std::endl;
+    std::cout << std::chrono::system_clock::now() << " -- " << player3_texture.get()->width << std::endl;
+    std::cout << std::chrono::system_clock::now() << " -- " << player2_texture.get()->width << std::endl;
+    std::cout << std::chrono::system_clock::now() << " -- " << player_texture.get()->width << std::endl;
 
     CoronaEngine::AnimationSystemDefault::get_singleton().start();
     CoronaEngine::AudioSystemDefault::get_singleton().start();

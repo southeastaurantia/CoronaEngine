@@ -2,8 +2,8 @@
 // Created by 47226 on 2025/9/4.
 //
 
-#ifndef CABBAGEFRAMEWORK_THREADSAFECOMMANDQUEUE_H
-#define CABBAGEFRAMEWORK_THREADSAFECOMMANDQUEUE_H
+#ifndef CORONAENGINE_SAFECOMMANDQUEUE_HPP
+#define CORONAENGINE_SAFECOMMANDQUEUE_HPP
 #include <functional>
 #include <oneapi/tbb.h>
 
@@ -62,7 +62,8 @@ namespace CoronaEngine
 
       private:
         tbb::concurrent_queue<Command> safe_queue;
+        
     };
 } // namespace CoronaEngine
 
-#endif // CABBAGEFRAMEWORK_THREADSAFECOMMANDQUEUE_H
+#endif // CORONAENGINE_SAFECOMMANDQUEUE_HPP

@@ -5,6 +5,8 @@
 #include "oneapi/tbb/concurrent_unordered_map.h"
 #include "oneapi/tbb/task_group.h"
 
+#include <any>
+#include <future>
 #include <typeindex>
 
 // TODO: 资源缓存，资源uid
@@ -71,7 +73,8 @@ namespace CoronaEngine
 {
     class ResourceManager final
     {
-        using ResourceCache = tbb::concurrent_unordered_map<std::string, std::shared_ptr<Resource>>;
+        // 使用 std::any 来存储不同资源类型的 future，以实现类型擦除
+        using ResourceCache = tbb::concurrent_unordered_map<std::string, std::any>;
         using LoaderCache = std::unordered_map<std::type_index, std::shared_ptr<IResourceLoader>>;
 
       public:
@@ -81,43 +84,100 @@ namespace CoronaEngine
         static ResourceManager &get_singleton();
 
         template <typename ResourceType>
-            requires std::is_base_of_v<Resource, ResourceType> &&
-                     std::default_initializable<ResourceType>
-        ResourceLoader<ResourceType>::ResourceHandle load(const std::string &path)
+            requires std::is_base_of_v<Resource, ResourceType> && std::default_initializable<ResourceType>
+        std::shared_future<typename ResourceLoader<ResourceType>::ResourceHandle> load(const std::string &path)
         {
-            // 资源已缓存
-            if (res_caches.contains(path))
+            using ResourceHandle = typename ResourceLoader<ResourceType>::ResourceHandle;
+
+            // 1. 检查资源是否已在缓存中
+            if (auto it = res_caches.find(path); it != res_caches.end())
             {
-                LOG_DEBUG(std::format("Get cache resource: {}", path));
-                return std::static_pointer_cast<ResourceType>(res_caches[path]);
+                LOG_DEBUG(std::format("Get cache resource future: {}", path));
+                try
+                {
+                    // 尝试将 std::any 转换为具体的 future 类型
+                    return std::any_cast<std::shared_future<ResourceHandle>>(it->second);
+                }
+                catch (const std::bad_any_cast &e)
+                {
+                    // 如果转换失败，说明同一路径被请求为不同的资源类型，这是一个严重错误
+                    auto error_msg = std::format("Resource type mismatch for path: {}. Requested type does not match cached type.", path);
+                    LOG_ERROR(error_msg);
+                    auto promise = std::make_shared<std::promise<ResourceHandle>>();
+                    promise->set_exception(std::make_exception_ptr(std::runtime_error(error_msg)));
+                    return promise->get_future().share();
+                }
             }
 
-            const auto res_type_id = std::type_index(typeid(ResourceType));
-            auto loader = res_loaders.find(res_type_id);
-            // 未注册加载器
-            if (loader == res_loaders.end())
+            // 2. 如果资源未缓存，则创建一个新的 promise 和 future
+            auto promise = std::make_shared<std::promise<ResourceHandle>>();
+            std::shared_future<ResourceHandle> future = promise->get_future().share();
+
+            // 3. 尝试将新创建的 future 插入缓存。这是一个原子操作，可以防止竞态条件
+            auto [iter, inserted] = res_caches.emplace(path, future);
+
+            if (inserted)
             {
-                LOG_ERROR(std::format("Resource type '{}' load failed: Not register resource loader", res_type_id.name()));
-                return nullptr;
+                // 如果插入成功，说明当前线程是第一个请求该资源的线程
+                LOG_DEBUG(std::format("Creating new loading task for: {}", path));
+                const auto res_type_id = std::type_index(typeid(ResourceType));
+                auto loader_it = res_loaders.find(res_type_id);
+
+                if (loader_it == res_loaders.end())
+                {
+                    auto error_msg = std::format("Resource type '{}' load failed: Not register resource loader", res_type_id.name());
+                    LOG_ERROR(error_msg);
+                    promise->set_exception(std::make_exception_ptr(std::runtime_error(error_msg)));
+                    return future;
+                }
+
+                auto loader = loader_it->second;
+
+                // 4. 在TBB任务组中异步执行资源加载
+                tbb_task_group.run([path, loader, promise] {
+                    try
+                    {
+                        auto res = std::make_shared<ResourceType>();
+                        res->res_id = path;
+                        res->res_status.store(Resource::Status::LOADING);
+
+                        if (loader->load(path, res))
+                        {
+                            res->res_status.store(Resource::Status::OK);
+                            promise->set_value(res); // 加载成功，设置 promise 的值
+                        }
+                        else
+                        {
+                            res->res_status.store(Resource::Status::FAILED);
+                            throw std::runtime_error(std::format("Resource loader failed for path: {}", path));
+                        }
+                    }
+                    catch (...)
+                    {
+                        // 捕获任何异常，并通过 promise 传递
+                        promise->set_exception(std::current_exception());
+                    }
+                });
+                return future;
             }
-
-            auto res = std::make_shared<ResourceType>();
-            res->res_id = path;
-            res->res_status.store(Resource::Status::LOADING);
-
-            res_caches.insert(std::make_pair(res->res_id, res));
-            tbb_task_group.run([this, loader, res] {
-                if (loader->second->load(res->res_id, res))
+            else
+            {
+                // 如果插入失败，说明有其他线程已经创建了该资源的加载任务
+                LOG_DEBUG(std::format("Another thread is already loading resource: {}", path));
+                try
                 {
-                    res->res_status.store(Resource::Status::OK);
+                    // 返回已存在于缓存中的 future
+                    return std::any_cast<std::shared_future<ResourceHandle>>(iter->second);
                 }
-                else
+                catch (const std::bad_any_cast &e)
                 {
-                    res->res_status.store(Resource::Status::FAILED);
+                    auto error_msg = std::format("Resource type mismatch for path: {}. Requested type does not match cached type.", path);
+                    LOG_ERROR(error_msg);
+                    auto p_err = std::make_shared<std::promise<ResourceHandle>>();
+                    p_err->set_exception(std::make_exception_ptr(std::runtime_error(error_msg)));
+                    return p_err->get_future().share();
                 }
-            });
-
-            return res;
+            }
         }
 
         template <typename ResourceType, typename LoaderType>
