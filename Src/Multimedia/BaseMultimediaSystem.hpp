@@ -25,6 +25,6 @@ namespace Corona
         virtual void stop() = 0;
     };
 
-} // namespace CoronaEngine
+} // namespace Corona
 
 #endif // CORONAENGINE_BASEMULTIMEDIASYSTEM_HPP
