@@ -1,9 +1,9 @@
+// //
+// // Created by 47226 on 2025/9/7.
+// //
 //
-// Created by 47226 on 2025/9/7.
+// #include "ResourceLoader.hpp"
 //
-
-#include "ResourceLoader.hpp"
-
-namespace Corona
-{
-} // namespace CoronaEngine
+// namespace Corona
+// {
+// } // namespace CoronaEngine
