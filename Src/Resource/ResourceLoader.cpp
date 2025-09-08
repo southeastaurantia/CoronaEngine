@@ -4,6 +4,6 @@
 
 #include "ResourceLoader.hpp"
 
-namespace CoronaEngine
+namespace Corona
 {
 } // namespace CoronaEngine

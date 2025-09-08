@@ -8,7 +8,7 @@
 #include <memory>
 #include <thread>
 
-namespace CoronaEngine
+namespace Corona
 {
 
     class BaseMultimediaSystem

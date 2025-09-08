@@ -4,11 +4,11 @@
 
 #include "AnimationSystemDefault.hpp"
 
-#include "Utils/CabbageLogger.hpp"
+#include "Core/Logger.h"
 
-namespace CoronaEngine
+namespace Corona
 {
-    AnimationSystemDefault &AnimationSystemDefault::get_singleton()
+    AnimationSystemDefault &AnimationSystemDefault::inst()
     {
         static AnimationSystemDefault inst;
         return inst;
@@ -25,13 +25,13 @@ namespace CoronaEngine
     }
     void AnimationSystemDefault::start()
     {
-        LOG_DEBUG(std::format("{} started.", name()));
+        LOG_DEBUG("{} started.", name());
     }
     void AnimationSystemDefault::tick()
     {
     }
     void AnimationSystemDefault::stop()
     {
-        LOG_DEBUG(std::format("{} stopped.", name()));
+        LOG_DEBUG("{} stopped.", name());
     }
 } // namespace CoronaEngine

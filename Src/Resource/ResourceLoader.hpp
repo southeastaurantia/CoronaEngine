@@ -6,7 +6,7 @@
 #define CORONAENGINE_RESOURCELOADER_HPP
 #include "Resource.hpp"
 
-namespace CoronaEngine
+namespace Corona
 {
     // 类型擦除
     class IResourceLoader

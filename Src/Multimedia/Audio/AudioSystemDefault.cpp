@@ -4,11 +4,11 @@
 
 #include "AudioSystemDefault.hpp"
 
-#include "Utils/CabbageLogger.hpp"
+#include "Core/Logger.h"
 
-namespace CoronaEngine
+namespace Corona
 {
-    AudioSystemDefault &AudioSystemDefault::get_singleton()
+    AudioSystemDefault &AudioSystemDefault::inst()
     {
         static AudioSystemDefault inst;
         return inst;
@@ -26,13 +26,13 @@ namespace CoronaEngine
 
     void AudioSystemDefault::start()
     {
-        LOG_DEBUG(std::format("{} started", name()));
+        LOG_DEBUG("{} started", name());
     }
     void AudioSystemDefault::tick()
     {
     }
     void AudioSystemDefault::stop()
     {
-        LOG_DEBUG(std::format("{} stopped", name()));
+        LOG_DEBUG("{} stopped", name());
     }
 } // namespace CoronaEngine

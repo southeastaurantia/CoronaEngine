@@ -11,6 +11,7 @@ target_include_directories(CoronaEngine PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}"
         "${stb_SOURCE_DIR}"
         "${PROJECT_SOURCE_DIR}/Env/oneapi-tbb-2022.2.0/include"
+        "${PROJECT_SOURCE_DIR}/Env/spdlog-1.15.3/include"
 )
 
 target_link_directories(CoronaEngine PUBLIC

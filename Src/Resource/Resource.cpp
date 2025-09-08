@@ -4,7 +4,7 @@
 
 #include "Resource.hpp"
 
-namespace CoronaEngine
+namespace Corona
 {
 
     const std::string &Resource::get_id() const

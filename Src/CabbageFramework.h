@@ -7,7 +7,7 @@
 #include <array>
 #include <string>
 
-namespace CoronaEngine
+namespace Corona
 {
     struct ActorImpl;
     struct SceneImpl;

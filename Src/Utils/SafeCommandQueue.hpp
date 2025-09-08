@@ -7,7 +7,7 @@
 #include <functional>
 #include <oneapi/tbb.h>
 
-namespace CoronaEngine
+namespace Corona
 {
     class SafeCommandQueue
     {

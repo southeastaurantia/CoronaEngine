@@ -4,11 +4,11 @@
 
 #include "RenderingSystemDefault.hpp"
 
-#include "Utils/CabbageLogger.hpp"
+#include "Core/Logger.h"
 
-namespace CoronaEngine
+namespace Corona
 {
-    RenderingSystemDefault &RenderingSystemDefault::get_singleton()
+    RenderingSystemDefault &RenderingSystemDefault::inst()
     {
         static RenderingSystemDefault inst;
         return inst;
@@ -25,13 +25,13 @@ namespace CoronaEngine
     }
     void RenderingSystemDefault::start()
     {
-        LOG_DEBUG(std::format("{} started", name()));
+        LOG_DEBUG("{} started", name());
     }
     void RenderingSystemDefault::tick()
     {
     }
     void RenderingSystemDefault::stop()
     {
-        LOG_DEBUG(std::format("{} stopped", name()));
+        LOG_DEBUG("{} stopped", name());
     }
 } // namespace CoronaEngine

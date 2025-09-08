@@ -6,13 +6,13 @@
 #define CORONAENGINE_DISPLAYSYSTEMDEFAULT_HPP
 #include "Multimedia/BaseMultimediaSystem.hpp"
 
-namespace CoronaEngine
+namespace Corona
 {
 
     class DisplaySystemDefault final : public BaseMultimediaSystem
     {
       public:
-        static DisplaySystemDefault &get_singleton();
+        static DisplaySystemDefault &inst();
 
         const char *name() override;
 

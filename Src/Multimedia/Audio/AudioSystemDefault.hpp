@@ -6,13 +6,13 @@
 #define CORONAENGINE_AUDIOSYSTEMDEFAULT_HPP
 #include "Multimedia/BaseMultimediaSystem.hpp"
 
-namespace CoronaEngine
+namespace Corona
 {
 
     class AudioSystemDefault final : public BaseMultimediaSystem
     {
       public:
-        static AudioSystemDefault &get_singleton();
+        static AudioSystemDefault &inst();
 
         const char *name() override;
 

@@ -6,13 +6,13 @@
 #define CORONAENGINE_ANIMATIONSYSTEMDEFAULT_HPP
 #include "Multimedia/BaseMultimediaSystem.hpp"
 
-namespace CoronaEngine
+namespace Corona
 {
 
     class AnimationSystemDefault final : public BaseMultimediaSystem
     {
       public:
-        static AnimationSystemDefault &get_singleton();
+        static AnimationSystemDefault &inst();
 
         const char *name() override;
 

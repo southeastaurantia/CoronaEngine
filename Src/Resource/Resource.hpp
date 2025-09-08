@@ -8,7 +8,7 @@
 #include <memory>
 #include <string>
 
-namespace CoronaEngine
+namespace Corona
 {
 
     class Resource

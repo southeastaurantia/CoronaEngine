@@ -1,7 +1,7 @@
 ﻿#pragma once
+#include "Core/Logger.h"
 #include "Resource.hpp"
 #include "ResourceLoader.hpp"
-#include "Utils/CabbageLogger.hpp"
 #include "oneapi/tbb/concurrent_unordered_map.h"
 #include "oneapi/tbb/task_group.h"
 
@@ -67,7 +67,7 @@
 //   }();
 // } // namespace ECS
 
-namespace CoronaEngine
+namespace Corona
 {
     template <typename ResourceType>
         requires std::is_base_of_v<Resource, ResourceType> && std::default_initializable<ResourceType>
@@ -85,7 +85,7 @@ namespace CoronaEngine
         }
 
         // 为每种资源类型提供一个单例
-        static ResourceManager &get_singleton()
+        static ResourceManager &inst()
         {
             static ResourceManager inst;
             return inst;
@@ -96,7 +96,7 @@ namespace CoronaEngine
             // 1. 检查资源是否已在缓存中
             if (auto it = res_caches.find(path); it != res_caches.end())
             {
-                LOG_DEBUG(std::format("Get cache resource future: {}", path));
+                LOG_DEBUG("Get cache resource future: {}", path);
                 return it->second;
             }
 
@@ -110,12 +110,12 @@ namespace CoronaEngine
             if (inserted)
             {
                 // 如果插入成功，说明当前线程是第一个请求该资源的线程
-                LOG_DEBUG(std::format("Creating new loading task for: {}", path));
+                LOG_DEBUG("Creating new loading task for: {}", path);
 
                 if (!res_loader)
                 {
-                    auto error_msg = std::format("Resource type '{}' load failed: Not register resource loader", typeid(ResourceType).name());
-                    LOG_ERROR(error_msg);
+                    auto const &error_msg = fmt::format("Resource type '{}' load failed: Not register resource loader", typeid(ResourceType).name());
+                    LOG_ERROR(error_msg.c_str());
                     promise->set_exception(std::make_exception_ptr(std::runtime_error(error_msg)));
                     return future;
                 }
@@ -138,7 +138,7 @@ namespace CoronaEngine
                         else
                         {
                             res->res_status.store(Resource::Status::FAILED);
-                            throw std::runtime_error(std::format("Resource loader failed for path: {}", path));
+                            throw std::runtime_error(fmt::format("Resource '{}' load failed: {}", path));
                         }
                     }
                     catch (...)
@@ -152,7 +152,7 @@ namespace CoronaEngine
             else
             {
                 // 如果插入失败，说明有其他线程已经创建了该资源的加载任务
-                LOG_DEBUG(std::format("Another thread is already loading resource: {}", path));
+                LOG_DEBUG("Another thread is already loading resource: {}", path);
                 // 返回已存在于缓存中的 future
                 return iter->second;
             }
@@ -166,8 +166,7 @@ namespace CoronaEngine
             if (res_loader)
                 return;
             res_loader = std::make_shared<LoaderType>();
-            LOG_DEBUG(std::format("Register resource loader '{}' for resource type '{}'",
-                                  typeid(LoaderType).name(), typeid(ResourceType).name()));
+            LOG_DEBUG("Register resource loader '{}' for resource type '{}'", typeid(LoaderType).name(), typeid(ResourceType).name());
         }
 
       private:
@@ -175,4 +174,4 @@ namespace CoronaEngine
         ResourceCache res_caches{};
         tbb::task_group tbb_task_group{};
     };
-} // namespace CoronaEngine
+} // namespace Corona

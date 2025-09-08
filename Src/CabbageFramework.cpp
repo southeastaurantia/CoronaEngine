@@ -12,7 +12,7 @@
 // std::string ECS::ResourceManager::basePath;
 // std::string ECS::ResourceManager::userPath;
 
-struct CoronaEngine::ActorImpl final
+struct Corona::ActorImpl final
 {
     friend struct Actor;
     friend struct SceneImpl;
@@ -84,7 +84,7 @@ struct CoronaEngine::ActorImpl final
     entt::entity id;
 };
 
-struct CoronaEngine::SceneImpl final
+struct Corona::SceneImpl final
 {
     friend struct Scene;
 
@@ -151,13 +151,13 @@ struct CoronaEngine::SceneImpl final
 
 /************************************ 以下是API ********************************************/
 
-CoronaEngine::Actor::Actor(const std::string &path)
+Corona::Actor::Actor(const std::string &path)
     : impl(new ActorImpl(path)),
       ref_count(new int(1))
 {
 }
 
-CoronaEngine::Actor::Actor(const Actor &other)
+Corona::Actor::Actor(const Actor &other)
     : impl(other.impl),
       ref_count(other.ref_count)
 {
@@ -167,7 +167,7 @@ CoronaEngine::Actor::Actor(const Actor &other)
     }
 }
 
-CoronaEngine::Actor::Actor(Actor &&other) noexcept
+Corona::Actor::Actor(Actor &&other) noexcept
     : impl(other.impl),
       ref_count(other.ref_count)
 {
@@ -175,7 +175,7 @@ CoronaEngine::Actor::Actor(Actor &&other) noexcept
     other.ref_count = nullptr;
 }
 
-CoronaEngine::Actor::~Actor()
+Corona::Actor::~Actor()
 {
     if (ref_count && (--(*ref_count) == 0))
     {
@@ -186,7 +186,7 @@ CoronaEngine::Actor::~Actor()
     }
 }
 
-CoronaEngine::Actor &CoronaEngine::Actor::operator=(const Actor &other)
+Corona::Actor &Corona::Actor::operator=(const Actor &other)
 {
     if (this != &other)
     {
@@ -207,7 +207,7 @@ CoronaEngine::Actor &CoronaEngine::Actor::operator=(const Actor &other)
     return *this;
 }
 
-CoronaEngine::Actor &CoronaEngine::Actor::operator=(Actor &&other) noexcept
+Corona::Actor &Corona::Actor::operator=(Actor &&other) noexcept
 {
     if (this != &other)
     {
@@ -226,63 +226,63 @@ CoronaEngine::Actor &CoronaEngine::Actor::operator=(Actor &&other) noexcept
     return *this;
 }
 
-void CoronaEngine::Actor::move(const std::array<float, 3> &pos) const
+void Corona::Actor::move(const std::array<float, 3> &pos) const
 {
     impl->move(pos);
 }
 
-void CoronaEngine::Actor::rotate(const std::array<float, 3> &euler) const
+void Corona::Actor::rotate(const std::array<float, 3> &euler) const
 {
     impl->rotate(euler);
 }
 
-void CoronaEngine::Actor::scale(const std::array<float, 3> &size) const
+void Corona::Actor::scale(const std::array<float, 3> &size) const
 {
     impl->scale(size);
 }
 
-void CoronaEngine::Actor::setWorldMatrix(const std::array<std::array<float, 4>, 4> &worldMartix) const
+void Corona::Actor::setWorldMatrix(const std::array<std::array<float, 4>, 4> &worldMartix) const
 {
     impl->setWorldMatrix(worldMartix);
 }
 
-std::array<std::array<float, 4>, 4> CoronaEngine::Actor::getWorldMatrix() const
+std::array<std::array<float, 4>, 4> Corona::Actor::getWorldMatrix() const
 {
     return impl->getWorldMatrix();
 }
 
-void CoronaEngine::Actor::setMeshShape(const std::string &path) const
+void Corona::Actor::setMeshShape(const std::string &path) const
 {
     impl->setMeshShape(path);
 }
 
-void CoronaEngine::Actor::setSkeletalAnimation(const std::string &path) const
+void Corona::Actor::setSkeletalAnimation(const std::string &path) const
 {
     impl->setSkeletalAnimation(path);
 }
 
-uint64_t CoronaEngine::Actor::detectCollision(const ActorImpl &other)
+uint64_t Corona::Actor::detectCollision(const ActorImpl &other)
 {
     return impl->detectCollision(other);
 }
 
-uint64_t CoronaEngine::Actor::getID() const
+uint64_t Corona::Actor::getID() const
 {
     return impl->getID();
 }
 
-CoronaEngine::ActorImpl *CoronaEngine::Actor::get() const
+Corona::ActorImpl *Corona::Actor::get() const
 {
     return impl;
 }
 
-CoronaEngine::Scene::Scene(void *surface, const bool lightField)
+Corona::Scene::Scene(void *surface, const bool lightField)
     : impl(new SceneImpl(surface, lightField)),
       ref_count(new int(1))
 {
 }
 
-CoronaEngine::Scene::Scene(const Scene &other)
+Corona::Scene::Scene(const Scene &other)
     : impl(other.impl),
       ref_count(other.ref_count)
 {
@@ -292,7 +292,7 @@ CoronaEngine::Scene::Scene(const Scene &other)
     }
 }
 
-CoronaEngine::Scene::Scene(Scene &&other) noexcept
+Corona::Scene::Scene(Scene &&other) noexcept
     : impl(other.impl),
       ref_count(other.ref_count)
 {
@@ -300,7 +300,7 @@ CoronaEngine::Scene::Scene(Scene &&other) noexcept
     other.ref_count = nullptr;
 }
 
-CoronaEngine::Scene::~Scene()
+Corona::Scene::~Scene()
 {
     if (ref_count && (--(*ref_count) == 0))
     {
@@ -311,7 +311,7 @@ CoronaEngine::Scene::~Scene()
     }
 }
 
-CoronaEngine::Scene &CoronaEngine::Scene::operator=(const Scene &other)
+Corona::Scene &Corona::Scene::operator=(const Scene &other)
 {
     if (this != &other)
     {
@@ -332,7 +332,7 @@ CoronaEngine::Scene &CoronaEngine::Scene::operator=(const Scene &other)
     return *this;
 }
 
-CoronaEngine::Scene &CoronaEngine::Scene::operator=(Scene &&other) noexcept
+Corona::Scene &Corona::Scene::operator=(Scene &&other) noexcept
 {
     if (this != &other)
     {
@@ -351,42 +351,42 @@ CoronaEngine::Scene &CoronaEngine::Scene::operator=(Scene &&other) noexcept
     return *this;
 }
 
-void CoronaEngine::Scene::setCamera(const std::array<float, 3> &pos, const std::array<float, 3> &forward, const std::array<float, 3> &worldup, const float &fov) const
+void Corona::Scene::setCamera(const std::array<float, 3> &pos, const std::array<float, 3> &forward, const std::array<float, 3> &worldup, const float &fov) const
 {
     impl->setCamera(pos, forward, worldup, fov);
 }
 
-void CoronaEngine::Scene::setSunDirection(const std::array<float, 3> &direction) const
+void Corona::Scene::setSunDirection(const std::array<float, 3> &direction) const
 {
     impl->setSunDirection(direction);
 }
 
-void CoronaEngine::Scene::setDisplaySurface(void *surface) const
+void Corona::Scene::setDisplaySurface(void *surface) const
 {
     impl->setDisplaySurface(surface);
 }
 
-uint64_t CoronaEngine::Scene::detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir) const
+uint64_t Corona::Scene::detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir) const
 {
     return entt::to_entity(impl->detectActorByRay(origin, dir));
 }
 
-void CoronaEngine::Scene::addActor(const Actor &actor) const
+void Corona::Scene::addActor(const Actor &actor) const
 {
     impl->addActor(actor.get());
 }
 
-void CoronaEngine::Scene::removeActor(const Actor &actor) const
+void Corona::Scene::removeActor(const Actor &actor) const
 {
     impl->removeActor(actor.get());
 }
 
-uint64_t CoronaEngine::Scene::getID() const
+uint64_t Corona::Scene::getID() const
 {
     return impl->getID();
 }
 
-CoronaEngine::SceneImpl *CoronaEngine::Scene::get() const
+Corona::SceneImpl *Corona::Scene::get() const
 {
     return impl;
 }

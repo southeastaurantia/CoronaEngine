@@ -4,6 +4,7 @@
 #include <GLFW/glfw3native.h>
 
 #include "CabbageFramework.h"
+#include "Engine.h"
 #include "spirv_cross.hpp"
 
 #include <filesystem>
@@ -31,19 +32,17 @@ std::string shaderPath = [] {
     return resultPath + "/Examples/assest/model/dancing_vampire.dae";
 }();
 
-#define LOG_LEVEL 0
-
 #include <Resource/ResourceManager.h>
 #include <iostream>
 
-class Texture final : public CoronaEngine::Resource
+class Texture final : public Corona::Resource
 {
   public:
     int width;
     int height;
 };
 
-class TextureLoader final : public CoronaEngine::ResourceLoader<Texture>
+class TextureLoader final : public Corona::ResourceLoader<Texture>
 {
   public:
     bool on_load(const std::string &path, ResourceHandle resource) override
@@ -55,25 +54,15 @@ class TextureLoader final : public CoronaEngine::ResourceLoader<Texture>
     }
 };
 
+#include <Core/Logger.h>
+
 int main()
 {
-    CoronaEngine::ResourceManager<Texture>::get_singleton().register_loader<TextureLoader>();
+    Corona::Engine::inst().init();
 
-    auto player_texture = CoronaEngine::ResourceManager<Texture>::get_singleton().load("res://assets/player.png");
-    auto player2_texture = CoronaEngine::ResourceManager<Texture>::get_singleton().load("res://assets/player.png");
-    auto player3_texture = CoronaEngine::ResourceManager<Texture>::get_singleton().load("res://assets/player.png");
-    auto player4_texture = CoronaEngine::ResourceManager<Texture>::get_singleton().load("res://assets/player.png");
-
-    // 此处的get会阻塞直到资源加载完成
-    std::cout << std::chrono::system_clock::now() << " -- " << player4_texture.get()->width << std::endl;
-    std::cout << std::chrono::system_clock::now() << " -- " << player3_texture.get()->width << std::endl;
-    std::cout << std::chrono::system_clock::now() << " -- " << player2_texture.get()->width << std::endl;
-    std::cout << std::chrono::system_clock::now() << " -- " << player_texture.get()->width << std::endl;
-
-    CoronaEngine::AnimationSystemDefault::get_singleton().start();
-    CoronaEngine::AudioSystemDefault::get_singleton().start();
-    CoronaEngine::RenderingSystemDefault::get_singleton().start();
-    CoronaEngine::DisplaySystemDefault::get_singleton().start();
+    LOG_INFO("Application starting with decoupled logger.");
+    LOG_WARN("This is a test warning: {}.", "some value");
+    LOG_ERROR("File not found at '{}'", "/path/to/file.txt");
 
     std::cin.get();
 
@@ -145,11 +134,6 @@ int main()
     //     }
     //     glfwTerminate();
     // }
-
-    CoronaEngine::AnimationSystemDefault::get_singleton().stop();
-    CoronaEngine::AudioSystemDefault::get_singleton().stop();
-    CoronaEngine::RenderingSystemDefault::get_singleton().stop();
-    CoronaEngine::DisplaySystemDefault::get_singleton().stop();
 
     return 0;
 }
