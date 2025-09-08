@@ -14,8 +14,13 @@ namespace Corona
     {
         using id_type = uint64_t;
 
+        static id_type get_next_id();
+
         tbb::concurrent_hash_map<id_type, std::shared_ptr<ECS::Components::ActorPose>> actor_pose;
         tbb::concurrent_hash_map<id_type, std::mutex> actor_pose_mutex;
+
+      private:
+        static std::atomic<id_type> id_counter;
     };
 
     class Engine final

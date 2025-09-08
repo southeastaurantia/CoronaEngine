@@ -4,6 +4,8 @@
 
 #include "Engine.h"
 
+std::atomic<Corona::DataCache::id_type> Corona::DataCache::id_counter = 0;
+
 namespace Corona
 {
     Engine::Engine()
@@ -12,6 +14,12 @@ namespace Corona
     Engine::~Engine()
     {
     }
+
+    DataCache::id_type DataCache::get_next_id()
+    {
+        return id_counter.fetch_add(1);
+    }
+
     Engine &Engine::inst()
     {
         static Engine engine;
