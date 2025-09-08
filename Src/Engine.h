@@ -5,16 +5,27 @@
 #ifndef CORONAENGINE_ENGINE_H
 #define CORONAENGINE_ENGINE_H
 #include <Core/Logger.h>
+#include <ECS/Components.h>
+#include <oneapi/tbb.h>
 
 namespace Corona
 {
+    struct DataCache
+    {
+        using id_type = uint64_t;
+
+        tbb::concurrent_hash_map<id_type, std::shared_ptr<ECS::Components::ActorPose>> actor_pose;
+        tbb::concurrent_hash_map<id_type, std::mutex> actor_pose_mutex;
+    };
 
     class Engine final
     {
       public:
-        static Engine& inst();
+        static Engine &inst();
 
         void init();
+        DataCache &data_cache();
+        const DataCache &data_cache() const;
 
       private:
         Engine();
@@ -22,6 +33,7 @@ namespace Corona
         Engine(const Engine &other) = delete;
         Engine &operator=(const Engine &other) = delete;
 
+        DataCache data;
     };
 
 } // namespace Corona

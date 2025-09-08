@@ -20,4 +20,12 @@ namespace Corona
     void Engine::init()
     {
     }
+    DataCache &Engine::data_cache()
+    {
+        return this->data;
+    }
+    const DataCache &Engine::data_cache() const
+    {
+        return this->data;
+    }
 } // namespace Corona
