@@ -13,11 +13,9 @@ namespace Corona
     class DisplaySystemDefault final : public BaseMultimediaSystem
     {
       public:
-        static DisplaySystemDefault &inst();
-
         const char *name() override;
 
-      protected:
+      public:
         explicit DisplaySystemDefault();
         ~DisplaySystemDefault() override;
 

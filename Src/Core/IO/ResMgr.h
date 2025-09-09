@@ -5,6 +5,7 @@
 #ifndef CORONAENGINE_RESOURCECACHE_H
 #define CORONAENGINE_RESOURCECACHE_H
 #include "Core/Logger.h"
+#include "Engine.h"
 #include "ResourceLoader.h"
 #include "oneapi/tbb/concurrent_hash_map.h"
 #include "oneapi/tbb/task_group.h"

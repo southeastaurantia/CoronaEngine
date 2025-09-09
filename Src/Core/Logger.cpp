@@ -85,12 +85,6 @@ namespace Corona
         std::shared_ptr<spdlog::logger> logger;
     };
 
-    // --- Logger类的实现 ---
-    Logger &Logger::inst()
-    {
-        static Logger instance;
-        return instance;
-    }
 
     Logger::Logger()
     {

@@ -4,6 +4,7 @@
 
 #ifndef CORONAENGINE_SAFEDATACACHE_H
 #define CORONAENGINE_SAFEDATACACHE_H
+#include "Engine.h"
 #include "Logger.h"
 #include "oneapi/tbb/concurrent_hash_map.h"
 

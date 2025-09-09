@@ -8,22 +8,20 @@
 
 namespace Corona
 {
-    AnimationSystemDefault &AnimationSystemDefault::inst()
-    {
-        static AnimationSystemDefault inst;
-        return inst;
-    }
     const char *AnimationSystemDefault::name()
     {
         return "AnimationSystemDefault";
     }
     AnimationSystemDefault::AnimationSystemDefault()
+        : running(false)
+        , currentTime(0.0f)
+        , boneMatrices(100,{})
+        , animationTimeMap({})
     {
-        boneMatrices.resize(100);
-        currentTime = 0.0f;
     }
     AnimationSystemDefault::~AnimationSystemDefault()
     {
+        LOG_DEBUG("AnimationSystemDefault::~AnimationSystemDefault()");
         boneMatrices.clear();
         animationTimeMap.clear();
     }
@@ -32,25 +30,43 @@ namespace Corona
         currentTime = 0.0f;
         for (int i = 0; i < 100; i++)
             boneMatrices.push_back(ktm::fmat4x4::from_eye());
+        running.store(true);
+        constexpr int64_t TARGET_FRAME_TIME_US = 1000000 / 120;
+
+        animationThread = std::thread([&] {
+            while (running.load())
+            {
+                auto begin = std::chrono::high_resolution_clock::now();
+                tick();
+                auto end = std::chrono::high_resolution_clock::now();
+
+                // 计算当前帧执行所花费的时间（微秒）
+                auto frameTimeUs = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
+
+                // 计算需要等待的时间以达到目标帧率
+                auto waitTimeUs = TARGET_FRAME_TIME_US - frameTimeUs;
+
+                // 如果计算结果为正，则等待相应时间
+                if (waitTimeUs > 0)
+                {
+                    // 使用高精度sleep等待，确保微秒级精度
+                    std::this_thread::sleep_for(std::chrono::microseconds(waitTimeUs));
+                }
+            }
+        });
         LOG_DEBUG("{} started.", name());
     }
     void AnimationSystemDefault::tick()
     {
-        while (!unhandled_data_keys.empty())
-        {
-            auto id = unhandled_data_keys.front();
-            unhandled_data_keys.pop();
 
-            processAnimation(id);
-        }
-
-        for (auto id: data_keys)
-        {
-            processAnimation(id);
-        }
     }
     void AnimationSystemDefault::stop()
     {
+        running.store(false);
+        if (animationThread.joinable())
+        {
+            animationThread.join();
+        }
         LOG_DEBUG("{} stopped.", name());
     }
 

@@ -4,9 +4,12 @@
 
 #ifndef CORONAENGINE_ENGINE_H
 #define CORONAENGINE_ENGINE_H
+#include "Multimedia/BaseMultimediaSystem.hpp"
+
 #include <Core/Components.h>
 #include <Core/Logger.h>
 #include <oneapi/tbb.h>
+#include <typeindex>
 
 namespace Corona
 {
@@ -35,11 +38,35 @@ namespace Corona
         DataCache &data_cache();
         const DataCache &data_cache() const;
 
+        Logger &logger() const;
+
+        template<typename T>
+            requires std::is_base_of_v<Corona::BaseMultimediaSystem, T>
+        void register_system()
+        {
+            if (systems.contains(std::type_index(typeid(T))))
+            {
+                return;
+            }
+            systems.emplace(std::type_index(typeid(T)), std::make_shared<T>());
+            LOG_DEBUG("Registered system {}", std::type_index(typeid(T)).name());
+        }
+
+        template<typename T>
+            requires std::is_base_of_v<Corona::BaseMultimediaSystem, T>
+        T &get_system() const
+        {
+            return *std::static_pointer_cast<T>(systems.at(std::type_index(typeid(T))));
+        }
+
       private:
         Engine();
         ~Engine();
         Engine(const Engine &other) = delete;
         Engine &operator=(const Engine &other) = delete;
+
+        std::shared_ptr<Corona::Logger> engineLogger;
+        std::unordered_map<std::type_index, std::shared_ptr<Corona::BaseMultimediaSystem>> systems;
 
         DataCache data;
     };

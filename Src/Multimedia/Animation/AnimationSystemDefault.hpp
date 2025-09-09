@@ -4,6 +4,7 @@
 
 #ifndef CORONAENGINE_ANIMATIONSYSTEMDEFAULT_HPP
 #define CORONAENGINE_ANIMATIONSYSTEMDEFAULT_HPP
+#include "Core/SafeDataCache.h"
 #include "Engine.h"
 #include "Multimedia/BaseMultimediaSystem.hpp"
 
@@ -15,11 +16,10 @@ namespace Corona
     class AnimationSystemDefault final : public BaseMultimediaSystem
     {
       public:
-        static AnimationSystemDefault &inst();
 
         const char *name() override;
 
-      protected:
+      public:
         explicit AnimationSystemDefault();
         ~AnimationSystemDefault() override;
 
@@ -29,8 +29,9 @@ namespace Corona
         void stop() override;
 
       private:
+        std::thread animationThread;
+        std::atomic<bool> running;
         std::unordered_set<DataCache::id_type> data_keys;   // 全局DataCache的所有key
-        std::queue<DataCache::id_type> unhandled_data_keys; // 当前帧未处理的key
         std::unordered_map<DataCache::id_type, float> animationTimeMap;
         std::vector<ktm::fmat4x4> boneMatrices;
         float currentTime;

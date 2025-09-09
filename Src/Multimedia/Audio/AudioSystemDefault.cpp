@@ -8,11 +8,6 @@
 
 namespace Corona
 {
-    AudioSystemDefault &AudioSystemDefault::inst()
-    {
-        static AudioSystemDefault inst;
-        return inst;
-    }
     const char *AudioSystemDefault::name()
     {
         return "AudioSystemDefault";
@@ -30,20 +25,7 @@ namespace Corona
     }
     void AudioSystemDefault::tick()
     {
-        auto& cache = Engine::inst().data_cache();
 
-        while (!unhandled_data_keys.empty())
-        {
-            auto id = unhandled_data_keys.front();
-            unhandled_data_keys.pop();
-
-            processAudio(id);
-        }
-
-        for (auto id: data_keys)
-        {
-            processAudio(id);
-        }
     }
     void AudioSystemDefault::stop()
     {
