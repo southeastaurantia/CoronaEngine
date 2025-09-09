@@ -49,7 +49,7 @@ int main()
     Corona::SafeDataCache<Texture> texture_caches;
     std::unordered_set<uint64_t> keys2{}, keys3{};
 
-    for (int i = 0; i < 1000; ++i)
+    for (int i = 0; i < 100000; ++i)
     {
         int val = i + 1;
         auto texture = std::make_shared<Texture>();
@@ -63,19 +63,17 @@ int main()
 
     std::atomic<uint64_t> total_spend_time = 0;
 
-    bool used_safe_loop_foreach = true;
+    constexpr bool used_safe_loop_foreach = true;
 
-    std::thread worker2 = std::thread([&] {
-        auto queue = std::queue<uint64_t>();
-        auto now = std::chrono::high_resolution_clock::now();
-        if (!used_safe_loop_foreach)
+    auto worker2 = std::thread([&] {
+        const auto now = std::chrono::high_resolution_clock::now();
+        if constexpr (!used_safe_loop_foreach)
         {
             for (int i = 0; i < texture_caches.size(); ++i)
             {
                 texture_caches.modify(i, [&](const std::shared_ptr<Texture> &texture) {
                     texture->width = 555;
                     texture->height = 555;
-                    LOG_INFO("Worker2 process texture {}", texture->id);
                 });
             }
         }
@@ -84,27 +82,24 @@ int main()
             texture_caches.safe_loop_foreach(keys2, [&](const std::shared_ptr<Texture> &texture) {
                 texture->width = 555;
                 texture->height = 555;
-                LOG_INFO("Worker2 process texture {}", texture->id);
             });
         }
 
-        auto end = std::chrono::high_resolution_clock::now();
-        auto spend = std::chrono::duration_cast<std::chrono::microseconds>(end - now).count();
+        const auto end = std::chrono::high_resolution_clock::now();
+        const auto spend = std::chrono::duration_cast<std::chrono::microseconds>(end - now).count();
         total_spend_time.fetch_add(spend);
-        LOG_INFO("Worker2 finish: {}us, use safe loop foreach: {}", spend, used_safe_loop_foreach ? "true" : "false");
+        LOG_INFO("Worker2 finish: {}ms, use safe loop foreach: {}", spend / 1000.0f, used_safe_loop_foreach ? "true" : "false");
     });
 
-    std::thread worker3 = std::thread([&] {
-        auto queue = std::queue<uint64_t>();
-        auto now = std::chrono::high_resolution_clock::now();
-        if (!used_safe_loop_foreach)
+    auto worker3 = std::thread([&] {
+        const auto now = std::chrono::high_resolution_clock::now();
+        if constexpr (!used_safe_loop_foreach)
         {
             for (int i = 0; i < texture_caches.size(); ++i)
             {
                 texture_caches.modify(i, [&](const std::shared_ptr<Texture> &texture) {
                     texture->width = 666;
                     texture->height = 666;
-                    LOG_INFO("Worker3 process texture {}", texture->id);
                 });
             }
         }
@@ -113,21 +108,48 @@ int main()
             texture_caches.safe_loop_foreach(keys3, [&](const std::shared_ptr<Texture> &texture) {
                 texture->width = 666;
                 texture->height = 666;
-                LOG_INFO("Worker3 process texture {}", texture->id);
             });
         }
-        auto end = std::chrono::high_resolution_clock::now();
-        auto spend = std::chrono::duration_cast<std::chrono::microseconds>(end - now).count();
+        const auto end = std::chrono::high_resolution_clock::now();
+        const auto spend = std::chrono::duration_cast<std::chrono::microseconds>(end - now).count();
         total_spend_time.fetch_add(spend);
-        LOG_INFO("Worker3 finish: {}us, use safe loop foreach: {}", spend, used_safe_loop_foreach ? "true" : "false");
+        LOG_INFO("Worker3 finish: {}ms, use safe loop foreach: {}", spend / 1000.0f, used_safe_loop_foreach ? "true" : "false");
+    });
+
+    auto worker4 = std::thread([&] {
+        const auto now = std::chrono::high_resolution_clock::now();
+        if constexpr (!used_safe_loop_foreach)
+        {
+            for (int i = 0; i < texture_caches.size(); ++i)
+            {
+                texture_caches.modify(i, [&](const std::shared_ptr<Texture> &texture) {
+                    texture->width = 777;
+                    texture->height = 777;
+                });
+            }
+        }
+        else
+        {
+            texture_caches.safe_loop_foreach(keys3, [&](const std::shared_ptr<Texture> &texture) {
+                texture->width = 666;
+                texture->height = 666;
+            });
+        }
+        const auto end = std::chrono::high_resolution_clock::now();
+        const auto spend = std::chrono::duration_cast<std::chrono::microseconds>(end - now).count();
+        total_spend_time.fetch_add(spend);
+        LOG_INFO("Worker4 finish: {}ms, use safe loop foreach: {}", spend / 1000.0f, used_safe_loop_foreach ? "true" : "false");
     });
 
     auto texture = texture_caches.get(5);
     // texture->width = 5 // not allowed, used texture_caches.modify
-    LOG_INFO("Texture get id 5, {}:{}", texture->width, texture->height);
+    LOG_INFO("=======Texture get id 5, {}:{}", texture->width, texture->height);
 
     worker2.join();
     worker3.join();
+    worker4.join();
+
+    LOG_INFO("=======Texture get id 5, {}:{}", texture->width, texture->height);
 
     std::cin.get();
 
