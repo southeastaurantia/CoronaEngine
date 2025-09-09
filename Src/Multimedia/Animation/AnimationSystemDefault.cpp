@@ -78,7 +78,7 @@ namespace Corona
         return boneMatrices;
     }
 
-    void AnimationSystemDefault::calculateBoneTransform(const ECS::Components::AssimpNodeData *node, ktm::fmat4x4 parentTransform)
+    void AnimationSystemDefault::calculateBoneTransform(const ECS::Components::AssimpNodeData *node, ktm::fmat4x4 &parentTransform)
     {
        std::string nodeName = node->name;
        ktm::fmat4x4 nodeTransform = node->transformation;
@@ -87,7 +87,7 @@ namespace Corona
 
        if (bone)
        {
-           nodeTransform = updateBone(bone, currentTime);
+           nodeTransform = updateBone(bone, 0.016f);
        }
     }
 
@@ -101,15 +101,15 @@ namespace Corona
 
     ECS::Components::Bone *AnimationSystemDefault::findBone(const std::string &name)
     {
-        for (auto& anim : currentAnimComp->skeletalAnimations)
-        {
-            auto iter = std::find_if(anim.bones.begin(), anim.bones.end(),
-                                        [&](const ECS::Components::Bone &bone) {
-                                            return bone.name == name;
-                                        });
-            if (iter != anim.bones.end())
-                return &(*iter);
-        }
+        // for (auto& anim : currentAnimComp->skeletalAnimations)
+        // {
+        //     auto iter = std::find_if(anim.bones.begin(), anim.bones.end(),
+        //                                 [&](const ECS::Components::Bone &bone) {
+        //                                     return bone.name == name;
+        //                                 });
+        //     if (iter != anim.bones.end())
+        //         return &(*iter);
+        // }
         return nullptr;
     }
 
