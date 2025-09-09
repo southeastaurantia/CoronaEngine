@@ -211,3 +211,92 @@
 //     scaleFactor = midWayLength / framesDiff;
 //     return scaleFactor;
 // }
+// void AnimationSystem::updatePhysical()
+// {
+//     // registry->view<ECS::Components::Physics, ECS::Components::Transform, ECS::Components::Collider>().each(
+//     //     [&](auto entity, ECS::Components::Physics& physics, ECS::Components::Transform& transform, ECS::Components::Collider& collider) {
+//     //
+//     //
+//     //     // 更新位置
+//     //     transform.position += physics.velocity;
+//     //
+//     //     // 计算当前实体的AABB包围盒顶点
+//     //     auto currentVertices = calculateVertices(
+//     //         transform.position + collider.boundsMin,
+//     //         transform.position + collider.boundsMax
+//     //     );
+//     //
+//     //     // 检测与其他实体的碰撞
+//     //     registry->view<ECS::Components::Transform, ECS::Components::Collider>().each(
+//     //         [&](auto otherEntity, ECS::Components::Transform& otherTransform, ECS::Components::Collider& otherCollider) {
+//     //             if (entity == otherEntity) return; // 跳过自身
+//     //
+//     //             auto otherVertices = calculateVertices(
+//     //                 otherTransform.position + otherCollider.boundsMin,
+//     //                 otherTransform.position + otherCollider.boundsMax
+//     //             );
+//     //
+//     //             // 如果发生碰撞
+//     //             if (checkCollision(currentVertices, otherVertices))
+//     //             {
+//     //                 // 简单碰撞响应：反弹
+//     //                 physics.velocity = physics.velocity * -physics.restitution;
+//     //
+//     //                 // 触发碰撞事件
+//     //                 BackBridge::physics_dispatcher().onCollision(entity, otherEntity);
+//     //             }
+//     //         }
+//     //     );
+//     // });
+// }
+//
+// bool AnimationSystem::checkCollision(const std::vector<ktm::fvec3> &vertices1, const std::vector<ktm::fvec3> &vertices2)
+// {
+//     if (vertices1.empty() || vertices2.empty()) return false;
+//
+//     // 计算第一个包围盒的min和max
+//     ktm::fvec3 min1 = vertices1[0], max1 = vertices1[0];
+//     for (const auto &v : vertices1)
+//     {
+//         min1.x = std::min(min1.x, v.x);
+//         min1.y = std::min(min1.y, v.y);
+//         min1.z = std::min(min1.z, v.z);
+//         max1.x = std::max(max1.x, v.x);
+//         max1.y = std::max(max1.y, v.y);
+//         max1.z = std::max(max1.z, v.z);
+//     }
+//
+//     // 计算第二个包围盒的min和max
+//     ktm::fvec3 min2 = vertices2[0], max2 = vertices2[0];
+//     for (const auto &v : vertices2)
+//     {
+//         min2.x = std::min(min2.x, v.x);
+//         min2.y = std::min(min2.y, v.y);
+//         min2.z = std::min(min2.z, v.z);
+//         max2.x = std::max(max2.x, v.x);
+//         max2.y = std::max(max2.y, v.y);
+//         max2.z = std::max(max2.z, v.z);
+//     }
+//
+//     // AABB碰撞检测核心算法：所有轴都重叠才碰撞
+//     return (min1.x <= max2.x && max1.x >= min2.x) &&
+//            (min1.y <= max2.y && max1.y >= min2.y) &&
+//            (min1.z <= max2.z && max1.z >= min2.z);
+// }
+//
+// std::vector<ktm::fvec3> AnimationSystem::calculateVertices(const ktm::fvec3 &startMin, const ktm::fvec3 &startMax)
+// {
+//     std::vector<ktm::fvec3> vertices;
+//     vertices.reserve(8);
+//
+//     vertices.emplace_back(startMin.x, startMin.y, startMin.z);
+//     vertices.emplace_back(startMin.x, startMin.y, startMax.z);
+//     vertices.emplace_back(startMin.x, startMax.y, startMin.z);
+//     vertices.emplace_back(startMin.x, startMax.y, startMax.z);
+//     vertices.emplace_back(startMax.x, startMin.y, startMin.z);
+//     vertices.emplace_back(startMax.x, startMin.y, startMax.z);
+//     vertices.emplace_back(startMax.x, startMax.y, startMin.z);
+//     vertices.emplace_back(startMax.x, startMax.y, startMax.z);
+//
+//     return vertices;
+// }

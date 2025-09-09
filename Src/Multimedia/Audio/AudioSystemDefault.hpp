@@ -29,6 +29,8 @@ namespace Corona
       private:
         std::unordered_set<DataCache::id_type> data_keys;   // 全局DataCache的所有key
         std::queue<DataCache::id_type> unhandled_data_keys; // 当前帧未处理的key
+
+        void processAudio(DataCache::id_type id);
     };
 
 } // namespace Corona

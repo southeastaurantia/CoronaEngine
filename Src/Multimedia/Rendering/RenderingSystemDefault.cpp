@@ -29,6 +29,20 @@ namespace Corona
     }
     void RenderingSystemDefault::tick()
     {
+        auto& cache = Engine::inst().data_cache();
+
+        while (!unhandled_data_keys.empty())
+        {
+            auto id = unhandled_data_keys.front();
+            unhandled_data_keys.pop();
+
+            processRender(id);
+        }
+
+        for (auto id: data_keys)
+        {
+            processRender(id);
+        }
     }
     void RenderingSystemDefault::stop()
     {
