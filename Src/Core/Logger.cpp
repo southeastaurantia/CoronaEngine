@@ -19,11 +19,11 @@ namespace Corona
             {
                 std::vector<spdlog::sink_ptr> sinks;
                 const auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-                console_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
+                console_sink->set_pattern("[%Y-%m-%dT%H:%M:%S.%e] [%^%l%$] %v");
                 sinks.push_back(console_sink);
 
                 const auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>("logs/corona-engine.log", 1024 * 1024 * 5, 10);
-                file_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] %v");
+                file_sink->set_pattern("[%Y-%m-%dT%H:%M:%S.%e] [%l] %v");
                 sinks.push_back(file_sink);
 
                 logger = std::make_shared<spdlog::logger>("CoronaEngine", begin(sinks), end(sinks));
