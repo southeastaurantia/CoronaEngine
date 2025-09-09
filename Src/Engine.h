@@ -16,9 +16,11 @@ namespace Corona
 
         static id_type get_next_id();
 
-        tbb::concurrent_hash_map<id_type, std::shared_ptr<Corona::Components::ActorPose>> actor_pose;
+        tbb::concurrent_hash_map<id_type, std::mutex> animations_mutex;
         tbb::concurrent_hash_map<id_type, std::shared_ptr<Corona::Components::Animations>> animations;
+
         tbb::concurrent_hash_map<id_type, std::mutex> actor_pose_mutex;
+        tbb::concurrent_hash_map<id_type, std::shared_ptr<Corona::Components::ActorPose>> actor_pose;
 
       private:
         static std::atomic<id_type> id_counter;
