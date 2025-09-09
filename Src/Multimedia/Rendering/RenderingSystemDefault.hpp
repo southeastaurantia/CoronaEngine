@@ -4,7 +4,7 @@
 
 #ifndef CORONAENGINE_RENDERSYSTEMDEFAULT_HPP
 #define CORONAENGINE_RENDERSYSTEMDEFAULT_HPP
-#include "Engine.h"
+#include "Core/Engine.h"
 #include "Multimedia/BaseMultimediaSystem.hpp"
 
 namespace Corona

@@ -4,8 +4,8 @@
 
 #ifndef CORONAENGINE_ANIMATIONSYSTEMDEFAULT_HPP
 #define CORONAENGINE_ANIMATIONSYSTEMDEFAULT_HPP
-#include "Core/SafeDataCache.h"
-#include "Engine.h"
+#include "Core/Engine.h"
+#include "Core/Thread/SafeDataCache.h"
 #include "Multimedia/BaseMultimediaSystem.hpp"
 
 #include <unordered_set>
