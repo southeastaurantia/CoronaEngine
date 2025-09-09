@@ -47,7 +47,7 @@ int main()
     LOG_INFO("Player3 texture {}:{}", player3_texture->width, player3_texture->height);
 
     Corona::SafeDataCache<Texture> texture_caches;
-    std::unordered_set<uint64_t> keys2{}, keys3{};
+    std::unordered_set<uint64_t> keys2{}, keys3{}, keys4{};
 
     for (int i = 0; i < 100000; ++i)
     {
@@ -59,6 +59,7 @@ int main()
         texture_caches.insert(i, texture);
         keys2.insert(i);
         keys3.insert(i);
+        keys4.insert(i);
     }
 
     std::atomic<uint64_t> total_spend_time = 0;
@@ -69,9 +70,9 @@ int main()
         const auto now = std::chrono::high_resolution_clock::now();
         if constexpr (!used_safe_loop_foreach)
         {
-            for (int i = 0; i < texture_caches.size(); ++i)
+            for (auto const &id : keys2)
             {
-                texture_caches.modify(i, [&](const std::shared_ptr<Texture> &texture) {
+                texture_caches.modify(id, [&](const std::shared_ptr<Texture> &texture) {
                     texture->width = 555;
                     texture->height = 555;
                 });
@@ -95,9 +96,9 @@ int main()
         const auto now = std::chrono::high_resolution_clock::now();
         if constexpr (!used_safe_loop_foreach)
         {
-            for (int i = 0; i < texture_caches.size(); ++i)
+            for (auto const &id : keys3)
             {
-                texture_caches.modify(i, [&](const std::shared_ptr<Texture> &texture) {
+                texture_caches.modify(id, [&](const std::shared_ptr<Texture> &texture) {
                     texture->width = 666;
                     texture->height = 666;
                 });
@@ -120,9 +121,9 @@ int main()
         const auto now = std::chrono::high_resolution_clock::now();
         if constexpr (!used_safe_loop_foreach)
         {
-            for (int i = 0; i < texture_caches.size(); ++i)
+            for (auto const &id : keys4)
             {
-                texture_caches.modify(i, [&](const std::shared_ptr<Texture> &texture) {
+                texture_caches.modify(id, [&](const std::shared_ptr<Texture> &texture) {
                     texture->width = 777;
                     texture->height = 777;
                 });
