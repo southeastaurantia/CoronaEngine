@@ -33,18 +33,19 @@ namespace Corona
         std::queue<DataCache::id_type> unhandled_data_keys; // 当前帧未处理的key
         std::unordered_map<DataCache::id_type, float> animationTimeMap;
         std::vector<ktm::fmat4x4> boneMatrices;
+        float currentTime;
 
         void processAnimation(DataCache::id_type id);
-        const std::vector<ktm::fmat4x4> &updateBoneAnimation(Corona::Components::Animations *animComp, float dt);
-        void calculateBoneTransform(const Corona::Components::AssimpNodeData *node, ktm::fmat4x4 &transform);
-        Corona::Components::Bone *findBone(const std::string &name);
-        ktm::fmat4x4 updateBone(Corona::Components::Bone *bone, float time);
-        ktm::fmat4x4 interpolatePosition(Corona::Components::Bone *bone, float time);
-        ktm::fmat4x4 interpolateRotation(Corona::Components::Bone *bone, float time);
-        ktm::fmat4x4 interpolateScale(Corona::Components::Bone *bone, float time);
-        int getPositionIndex(Corona::Components::Bone *bone, float time);
-        int getRotationIndex(Corona::Components::Bone *bone, float time);
-        int getScaleIndex(Corona::Components::Bone *bone, float time);
+        const std::vector<ktm::fmat4x4> &updateBoneAnimation(const Corona::Components::Animations *animComp, float dt);
+        void calculateBoneTransform(const Corona::Components::Animations *animComp, ktm::fmat4x4 &parentTransform);
+        Corona::Components::Bone *findBone(const Corona::Components::Animations *animComp, const std::string &name);
+        ktm::fmat4x4 updateBone(const Corona::Components::Bone *bone, float time);
+        ktm::fmat4x4 interpolatePosition(const Corona::Components::Bone *bone, float time);
+        ktm::fmat4x4 interpolateRotation(const Corona::Components::Bone *bone, float time);
+        ktm::fmat4x4 interpolateScale(const Corona::Components::Bone *bone, float time);
+        int getPositionIndex(const Corona::Components::Bone *bone, float time);
+        int getRotationIndex(const Corona::Components::Bone *bone, float time);
+        int getScaleIndex(const Corona::Components::Bone *bone, float time);
         float getScaleFactor(float lastTimeStamp, float nextTimeStamp, float time);
     };
 
