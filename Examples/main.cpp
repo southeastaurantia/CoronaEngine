@@ -64,7 +64,7 @@ int main()
 
     std::atomic<uint64_t> total_spend_time = 0;
 
-    constexpr bool used_safe_loop_foreach = true;
+    constexpr bool used_safe_loop_foreach = false;
 
     auto worker2 = std::thread([&] {
         const auto now = std::chrono::high_resolution_clock::now();
@@ -73,16 +73,22 @@ int main()
             for (auto const &id : keys2)
             {
                 texture_caches.modify(id, [&](const std::shared_ptr<Texture> &texture) {
-                    texture->width = 555;
-                    texture->height = 555;
+                    for (int i = 0; i < 10000; ++i)
+                    {
+                        texture->width = 555;
+                        texture->height = 555;
+                    }
                 });
             }
         }
         else
         {
             texture_caches.safe_loop_foreach(keys2, [&](const std::shared_ptr<Texture> &texture) {
-                texture->width = 555;
-                texture->height = 555;
+                for (int i = 0; i < 10000; ++i)
+                {
+                    texture->width = 555;
+                    texture->height = 555;
+                }
             });
         }
 
@@ -99,16 +105,22 @@ int main()
             for (auto const &id : keys3)
             {
                 texture_caches.modify(id, [&](const std::shared_ptr<Texture> &texture) {
-                    texture->width = 666;
-                    texture->height = 666;
+                    for (int i = 0; i < 9000; ++i)
+                    {
+                        texture->width = 666;
+                        texture->height = 666;
+                    }
                 });
             }
         }
         else
         {
             texture_caches.safe_loop_foreach(keys3, [&](const std::shared_ptr<Texture> &texture) {
-                texture->width = 666;
-                texture->height = 666;
+                for (int i = 0; i < 9000; ++i)
+                {
+                    texture->width = 666;
+                    texture->height = 666;
+                }
             });
         }
         const auto end = std::chrono::high_resolution_clock::now();
@@ -124,16 +136,22 @@ int main()
             for (auto const &id : keys4)
             {
                 texture_caches.modify(id, [&](const std::shared_ptr<Texture> &texture) {
-                    texture->width = 777;
-                    texture->height = 777;
+                    for (int i = 0; i < 8000; ++i)
+                    {
+                        texture->width = 777;
+                        texture->height = 777;
+                    }
                 });
             }
         }
         else
         {
             texture_caches.safe_loop_foreach(keys3, [&](const std::shared_ptr<Texture> &texture) {
-                texture->width = 666;
-                texture->height = 666;
+                for (int i = 0; i < 8000; ++i)
+                {
+                    texture->width = 777;
+                    texture->height = 777;
+                }
             });
         }
         const auto end = std::chrono::high_resolution_clock::now();
