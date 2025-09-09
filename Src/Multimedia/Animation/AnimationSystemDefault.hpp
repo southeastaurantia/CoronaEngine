@@ -31,19 +31,21 @@ namespace Corona
       private:
         std::unordered_set<DataCache::id_type> data_keys;   // 全局DataCache的所有key
         std::queue<DataCache::id_type> unhandled_data_keys; // 当前帧未处理的key
+        std::unordered_map<DataCache::id_type, float> animationTimeMap;
+        std::vector<ktm::fmat4x4> boneMatrices;
 
         void processAnimation(DataCache::id_type id);
-        // const std::vector<ktm::fmat4x4> &updateBoneAnimation(Animations *animComp, float dt);
-        // void CalculateBoneTransform(const AssimpNodeData *node, ktm::fmat4x4 &transform);
-        // Bone *FindBone(const std::string &name);
-        // ktm::fmat4x4 updateBone(Bone *bone, float time);
-        // ktm::fmat4x4 interpolatePosition(Bone *bone, float time);
-        // ktm::fmat4x4 interpolateRotation(Bone *bone, float time);
-        // ktm::fmat4x4 interpolateScale(Bone *bone, float time);
-        // int getPositionIndex(Bone *bone, float time);
-        // int getRotationIndex(Bone *bone, float time);
-        // int getScaleIndex(Bone *bone, float time);
-        // float getScaleFactor(float lastTimeStamp, float nextTimeStamp, float time);
+        const std::vector<ktm::fmat4x4> &updateBoneAnimation(ECS::Components::Animations *animComp, float dt);
+        void calculateBoneTransform(const ECS::Components::AssimpNodeData *node, ktm::fmat4x4 &transform);
+        ECS::Components::Bone *findBone(const std::string &name);
+        ktm::fmat4x4 updateBone(ECS::Components::Bone *bone, float time);
+        ktm::fmat4x4 interpolatePosition(ECS::Components::Bone *bone, float time);
+        ktm::fmat4x4 interpolateRotation(ECS::Components::Bone *bone, float time);
+        ktm::fmat4x4 interpolateScale(ECS::Components::Bone *bone, float time);
+        int getPositionIndex(ECS::Components::Bone *bone, float time);
+        int getRotationIndex(ECS::Components::Bone *bone, float time);
+        int getScaleIndex(ECS::Components::Bone *bone, float time);
+        float getScaleFactor(float lastTimeStamp, float nextTimeStamp, float time);
     };
 
 } // namespace Corona
