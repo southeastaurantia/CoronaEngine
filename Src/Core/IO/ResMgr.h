@@ -16,7 +16,7 @@ namespace Corona
 {
 
     template <typename TRes>
-        requires std::default_initializable<TRes> && std::is_base_of_v<Resource, TRes>
+        requires std::default_initializable<TRes> && std::is_base_of_v<Corona::Resource, TRes>
     class ResMgr
     {
       public:
