@@ -189,7 +189,7 @@ namespace Corona::Components
     {
         std::string name;
         ktm::fmat4x4 transformation;
-        int childrenCount;
+        int boneId;
         std::vector<AssimpNodeData> children;
     };
 
@@ -199,6 +199,7 @@ namespace Corona::Components
         double ticksPerSecond;
         std::vector<Bone> bones;
         AssimpNodeData rootNode;
+        int rootBoneId;
 
         // std::string name;
         // std::vector<std::pair<double, std::string>> events;
@@ -208,6 +209,7 @@ namespace Corona::Components
     {
         int id;
         ktm::fmat4x4 offsetMatrix;
+        int parentId;
     };
 
     struct AnimationState
