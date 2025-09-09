@@ -53,7 +53,7 @@ namespace Corona
     void AnimationSystemDefault::processAnimation(DataCache::id_type id)
     {
         auto &cache = Engine::inst().data_cache();
-        tbb::concurrent_hash_map<DataCache::id_type, std::shared_ptr<ECS::Components::Animations>>::accessor it;
+        tbb::concurrent_hash_map<DataCache::id_type, std::shared_ptr<Corona::Components::Animations>>::accessor it;
 
         if (cache.animations.find(it, id))
         {
@@ -65,7 +65,7 @@ namespace Corona
         }
     }
 
-    const std::vector<ktm::fmat4x4> &AnimationSystemDefault::updateBoneAnimation(ECS::Components::Animations *animComp, float dt)
+    const std::vector<ktm::fmat4x4> &AnimationSystemDefault::updateBoneAnimation(Corona::Components::Animations *animComp, float dt)
     {
         if (!animComp || animComp->skeletalAnimations.empty())
         {
@@ -78,12 +78,12 @@ namespace Corona
         return boneMatrices;
     }
 
-    void AnimationSystemDefault::calculateBoneTransform(const ECS::Components::AssimpNodeData *node, ktm::fmat4x4 &parentTransform)
+    void AnimationSystemDefault::calculateBoneTransform(const Corona::Components::AssimpNodeData *node, ktm::fmat4x4 &parentTransform)
     {
        std::string nodeName = node->name;
        ktm::fmat4x4 nodeTransform = node->transformation;
 
-       ECS::Components::Bone *bone = findBone(nodeName);
+       Corona::Components::Bone *bone = findBone(nodeName);
 
        if (bone)
        {
@@ -91,7 +91,7 @@ namespace Corona
        }
     }
 
-    ktm::fmat4x4 AnimationSystemDefault::updateBone(ECS::Components::Bone *bone, float time)
+    ktm::fmat4x4 AnimationSystemDefault::updateBone(Corona::Components::Bone *bone, float time)
     {
         ktm::fmat4x4 translation = interpolatePosition(bone, time);
         ktm::fmat4x4 rotation = interpolateRotation(bone, time);
@@ -99,7 +99,7 @@ namespace Corona
         return translation * rotation * scale;
     }
 
-    ECS::Components::Bone *AnimationSystemDefault::findBone(const std::string &name)
+    Corona::Components::Bone *AnimationSystemDefault::findBone(const std::string &name)
     {
         // for (auto& anim : currentAnimComp->skeletalAnimations)
         // {
@@ -113,7 +113,7 @@ namespace Corona
         return nullptr;
     }
 
-    ktm::fmat4x4 AnimationSystemDefault::interpolatePosition(ECS::Components::Bone *bone, float time)
+    ktm::fmat4x4 AnimationSystemDefault::interpolatePosition(Corona::Components::Bone *bone, float time)
     {
         if (1 == bone->NumPositions)
             return ktm::translate3d(bone->keyPositions[0].position);
@@ -125,7 +125,7 @@ namespace Corona
         return ktm::translate3d(finalPosition);
     }
 
-    ktm::fmat4x4 AnimationSystemDefault::interpolateRotation(ECS::Components::Bone *bone, float time)
+    ktm::fmat4x4 AnimationSystemDefault::interpolateRotation(Corona::Components::Bone *bone, float time)
     {
         if (1 == bone->NumRotations)
         {
@@ -141,7 +141,7 @@ namespace Corona
         return finalRotation.matrix4x4();
     }
 
-    ktm::fmat4x4 AnimationSystemDefault::interpolateScale(ECS::Components::Bone *bone, float time)
+    ktm::fmat4x4 AnimationSystemDefault::interpolateScale(Corona::Components::Bone *bone, float time)
     {
         if (1 == bone->NumScales)
             return ktm::scale3d(bone->keyScales[0].scale);
@@ -153,7 +153,7 @@ namespace Corona
         return ktm::scale3d(finalScale);
     }
 
-    int AnimationSystemDefault::getPositionIndex(ECS::Components::Bone *bone, float time)
+    int AnimationSystemDefault::getPositionIndex(Corona::Components::Bone *bone, float time)
     {
         for (int index = 0; index < bone->NumPositions - 1; ++index)
         {
@@ -163,7 +163,7 @@ namespace Corona
         return -1;
     }
 
-    int AnimationSystemDefault::getRotationIndex(ECS::Components::Bone *bone, float time)
+    int AnimationSystemDefault::getRotationIndex(Corona::Components::Bone *bone, float time)
     {
         for (int index = 0; index < bone->NumRotations - 1; ++index)
         {
@@ -173,7 +173,7 @@ namespace Corona
         return -1;
     }
 
-    int AnimationSystemDefault::getScaleIndex(ECS::Components::Bone *bone, float time)
+    int AnimationSystemDefault::getScaleIndex(Corona::Components::Bone *bone, float time)
     {
         for (int index = 0; index < bone->NumScales - 1; ++index)
         {

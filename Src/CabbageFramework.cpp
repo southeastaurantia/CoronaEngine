@@ -24,13 +24,13 @@ struct Corona::ActorImpl final
         const auto id_promise = std::make_shared<std::promise<entt::entity>>();
         std::future<entt::entity> id_future = id_promise->get_future();
 
-        FrontBridge::dispatcher().trigger(ECS::Events::ActorCreateRequest{.path = path, .actor_id_promise = id_promise});
+        FrontBridge::dispatcher().trigger(Corona::Events::ActorCreateRequest{.path = path, .actor_id_promise = id_promise});
         id = id_future.get();
     }
 
     ~ActorImpl()
     {
-        FrontBridge::dispatcher().trigger(ECS::Events::ActorDestroy{.actor = id});
+        FrontBridge::dispatcher().trigger(Corona::Events::ActorDestroy{.actor = id});
     }
 
     void move(const std::array<float, 3> &pos)
@@ -40,7 +40,7 @@ struct Corona::ActorImpl final
 
     void rotate(const std::array<float, 3> &euler)
     {
-        FrontBridge::dispatcher().trigger(ECS::Events::ActorRotate{.actor = id, .euler = euler});
+        FrontBridge::dispatcher().trigger(Corona::Events::ActorRotate{.actor = id, .euler = euler});
     }
 
     void scale(const std::array<float, 3> &size)
@@ -95,7 +95,7 @@ struct Corona::SceneImpl final
         const auto id_promise = std::make_shared<std::promise<entt::entity>>();
         std::future<entt::entity> id_future = id_promise->get_future();
 
-        FrontBridge::dispatcher().trigger(ECS::Events::SceneCreateRequest{.surface = surface, .lightField = lightField, .scene_id_promise = id_promise});
+        FrontBridge::dispatcher().trigger(Corona::Events::SceneCreateRequest{.surface = surface, .lightField = lightField, .scene_id_promise = id_promise});
         id = id_future.get();
 
         if (surface)
@@ -106,13 +106,13 @@ struct Corona::SceneImpl final
 
     ~SceneImpl()
     {
-        FrontBridge::dispatcher().trigger(ECS::Events::SceneDestroy{.scene = id});
+        FrontBridge::dispatcher().trigger(Corona::Events::SceneDestroy{.scene = id});
     }
 
     void setCamera(const std::array<float, 3> &pos, const std::array<float, 3> &forward, const std::array<float, 3> &worldup, const float &fov)
     {
         // 设置相机参数
-        FrontBridge::dispatcher().trigger(ECS::Events::SceneSetCamera{.scene = id, .pos = pos, .forward = forward, .worldup = worldup, .fov = fov});
+        FrontBridge::dispatcher().trigger(Corona::Events::SceneSetCamera{.scene = id, .pos = pos, .forward = forward, .worldup = worldup, .fov = fov});
     }
 
     void setSunDirection(const std::array<float, 3> &direction)
@@ -122,7 +122,7 @@ struct Corona::SceneImpl final
 
     void setDisplaySurface(void *surface)
     {
-        FrontBridge::dispatcher().trigger(ECS::Events::SceneSetDisplaySurface{.scene = id, .surface = surface});
+        FrontBridge::dispatcher().trigger(Corona::Events::SceneSetDisplaySurface{.scene = id, .surface = surface});
     }
 
     entt::entity detectActorByRay(const std::array<float, 3> &origin, const std::array<float, 3> &dir)
@@ -132,12 +132,12 @@ struct Corona::SceneImpl final
 
     void addActor(const ActorImpl *actor)
     {
-        FrontBridge::dispatcher().trigger(ECS::Events::SceneAddActor{.scene = id, .actor = actor->id});
+        FrontBridge::dispatcher().trigger(Corona::Events::SceneAddActor{.scene = id, .actor = actor->id});
     }
 
     void removeActor(const ActorImpl *actor)
     {
-        FrontBridge::dispatcher().trigger(ECS::Events::SceneRemoveActor{.scene = id, .actor = actor->id});
+        FrontBridge::dispatcher().trigger(Corona::Events::SceneRemoveActor{.scene = id, .actor = actor->id});
     }
 
     [[nodiscard]] uint64_t getID() const

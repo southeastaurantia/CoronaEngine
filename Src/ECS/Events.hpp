@@ -4,7 +4,7 @@
 
 #include <future>
 
-namespace ECS::Events
+namespace Corona::Events
 {
     struct SceneCreateRequest
     {

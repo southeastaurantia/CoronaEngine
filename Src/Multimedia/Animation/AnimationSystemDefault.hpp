@@ -35,16 +35,16 @@ namespace Corona
         std::vector<ktm::fmat4x4> boneMatrices;
 
         void processAnimation(DataCache::id_type id);
-        const std::vector<ktm::fmat4x4> &updateBoneAnimation(ECS::Components::Animations *animComp, float dt);
-        void calculateBoneTransform(const ECS::Components::AssimpNodeData *node, ktm::fmat4x4 &transform);
-        ECS::Components::Bone *findBone(const std::string &name);
-        ktm::fmat4x4 updateBone(ECS::Components::Bone *bone, float time);
-        ktm::fmat4x4 interpolatePosition(ECS::Components::Bone *bone, float time);
-        ktm::fmat4x4 interpolateRotation(ECS::Components::Bone *bone, float time);
-        ktm::fmat4x4 interpolateScale(ECS::Components::Bone *bone, float time);
-        int getPositionIndex(ECS::Components::Bone *bone, float time);
-        int getRotationIndex(ECS::Components::Bone *bone, float time);
-        int getScaleIndex(ECS::Components::Bone *bone, float time);
+        const std::vector<ktm::fmat4x4> &updateBoneAnimation(Corona::Components::Animations *animComp, float dt);
+        void calculateBoneTransform(const Corona::Components::AssimpNodeData *node, ktm::fmat4x4 &transform);
+        Corona::Components::Bone *findBone(const std::string &name);
+        ktm::fmat4x4 updateBone(Corona::Components::Bone *bone, float time);
+        ktm::fmat4x4 interpolatePosition(Corona::Components::Bone *bone, float time);
+        ktm::fmat4x4 interpolateRotation(Corona::Components::Bone *bone, float time);
+        ktm::fmat4x4 interpolateScale(Corona::Components::Bone *bone, float time);
+        int getPositionIndex(Corona::Components::Bone *bone, float time);
+        int getRotationIndex(Corona::Components::Bone *bone, float time);
+        int getScaleIndex(Corona::Components::Bone *bone, float time);
         float getScaleFactor(float lastTimeStamp, float nextTimeStamp, float time);
     };
 

@@ -7,7 +7,7 @@
 #include <ktm/ktm.h>
 #include <tbb/tbb.h>
 
-namespace ECS::Components
+namespace Corona::Components
 {
     // 资源加载完成标签
     struct ResLoadedTag
