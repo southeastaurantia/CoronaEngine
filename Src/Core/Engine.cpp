@@ -25,7 +25,6 @@ namespace Corona
             system->stop();
         }
     }
-
     DataCache::id_type DataCache::get_next_id()
     {
         return id_counter.fetch_add(1);
