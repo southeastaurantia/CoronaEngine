@@ -30,16 +30,15 @@ namespace Corona
     class ModelLoader : public ResourceLoader<Model>
     {
         public:
-            using Handle = ResourceLoader<Model>::Handle;
-            bool load(const std::string &path, Handle &handle) override;
+            bool load(const std::string &path, const Handle &handle) override;
 
         private:
-            void processMesh(const std::string& path, const aiMesh* mesh, const aiScene* scene, Handle &handle, Mesh &resultMesh);
-            void processNode(const std::string& path, const aiNode* node, const aiScene* scene, Handle &handle);
+            void processMesh(const std::string& path, const aiMesh* mesh, const aiScene* scene, const Handle &handle, Mesh &resultMesh);
+            void processNode(const std::string& path, const aiNode* node, const aiScene* scene, const Handle &handle);
             void loadMaterial(const std::string& path, const aiMaterial* material, Mesh& resultMesh);
-            void extractBoneWeightForVertices(Mesh& resultMesh, const aiMesh* mesh, const aiScene* scene, Handle &handle);
+            void extractBoneWeightForVertices(Mesh& resultMesh, const aiMesh* mesh, const aiScene* scene, const Handle &handle);
             std::unordered_map<std::string, std::shared_ptr<Texture>> texturePathHash;
-            uint32_t attributeToImageIndex = 0;                       ///< 属性转图片的索引
+            uint32_t attributeToImageIndex = 0;
     };
 }// Corona
 

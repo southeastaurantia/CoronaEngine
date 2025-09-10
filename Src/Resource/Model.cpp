@@ -18,11 +18,12 @@
 #include <regex>
 
 namespace Corona {
-    bool ModelLoader::load(const std::string &path, Handle &handle)
+
+    bool ModelLoader::load(const std::string &path, const Handle &handle)
     {
         if (!handle)
         {
-            handle = std::make_shared<Model>();
+            return false;
         }
 
         Assimp::Importer importer;
@@ -60,7 +61,7 @@ namespace Corona {
         return true;
     }
 
-    void ModelLoader::processNode(const std::string &path, const aiNode *node, const aiScene *scene, Handle &handle)
+    void ModelLoader::processNode(const std::string &path, const aiNode *node, const aiScene *scene, const Handle &handle)
     {
         for (unsigned int i = 0; i < node->mNumMeshes; i++)
         {
@@ -74,7 +75,7 @@ namespace Corona {
         }
     }
 
-    void ModelLoader::processMesh(const std::string &path, const aiMesh *mesh, const aiScene *scene, Handle &handle, Mesh &resultMesh)
+    void ModelLoader::processMesh(const std::string &path, const aiMesh *mesh, const aiScene *scene, const Handle &handle, Mesh &resultMesh)
     {
         if (mesh->mNumVertices > 0)
         {
@@ -135,7 +136,7 @@ namespace Corona {
             loadMaterial(path, scene->mMaterials[mesh->mMaterialIndex], resultMesh);
     }
 
-    void ModelLoader::extractBoneWeightForVertices(Mesh& resultMesh, const aiMesh* mesh, const aiScene* scene, Handle &handle)
+    void ModelLoader::extractBoneWeightForVertices(Mesh& resultMesh, const aiMesh* mesh, const aiScene* scene, const Handle &handle)
     {
         auto &boneInfoMap = handle->m_BoneInfoMap;
         int &boneCount = handle->m_BoneCounter;
@@ -163,7 +164,7 @@ namespace Corona {
 
         for (uint32_t boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
         {
-            int boneID = -1;
+            int boneID;
             if (std::string boneName = mesh->mBones[boneIndex]->mName.C_Str(); !boneInfoMap.contains(boneName))
             {
                 auto boneInfo = std::make_shared<BoneInfo>();

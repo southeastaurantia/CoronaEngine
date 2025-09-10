@@ -6,6 +6,7 @@
 #define CORONAENGINE_RESOURCELOADER_H
 #include "Resource.h"
 
+#include <complex.h>
 #include <string>
 #include <vector>
 
@@ -21,7 +22,7 @@ namespace Corona
 
         virtual ~ResourceLoader() = default;
         // 修改这里：不再返回 Handle，而是通过引用修改传入的 handle
-        virtual bool load(const std::string &path, Handle &handle) = 0;
+        virtual bool load(const std::string &path, const Handle &handle) = 0;
     };
 
 } // namespace Corona
