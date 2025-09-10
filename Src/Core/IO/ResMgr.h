@@ -79,19 +79,18 @@ namespace Corona
                 if (loader->load(path, res))
                 {
                     res->set_status(Resource::Status::OK);
+                    LOG_DEBUG("Load resource '{}' ok", path);
+                }
+                else
+                {
+                    res = std::make_shared<TRes>();
+                    res->set_status(Resource::Status::FAILED);
+                    LOG_ERROR("Failed to load resource '{}'", path);
                 }
             });
 
             tasks.wait();
 
-            if (res == nullptr)
-            {
-                LOG_ERROR("Load resource '{}' failed, get null handle", path);
-                cache_res.erase(path);
-                return nullptr;
-            }
-
-            LOG_DEBUG("Load resource '{}' ok", path);
             return res;
         }
 
