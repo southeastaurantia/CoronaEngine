@@ -21,18 +21,21 @@ namespace Corona
 
         using RID = uint64_t;
 
-        ~Resource() = default;
+        Resource() = default;
+        Resource(const Resource &other);
+        Resource &operator=(const Resource &other);
+        virtual ~Resource() = default;
 
-        RID get_rid() const;
+        // RID get_rid() const;
         Status get_status() const;
         void set_status(Status value);
 
       private:
-        const RID rid{get_next_id()};
+        // const RID rid{get_next_id()};
         std::atomic<Status> status{Status::NOT_FOUND};
 
-        static RID get_next_id();
-        static std::atomic<RID> id_counter;
+        // static RID get_next_id();
+        // static std::atomic<RID> id_counter;
     };
 
 } // namespace Corona

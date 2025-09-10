@@ -223,7 +223,7 @@ namespace Corona {
 
         for (size_t index = 0; index < allTextureTypes.size(); index++)
         {
-            std::vector<Texture> textures;
+            std::vector<std::shared_ptr<Texture>> textures;
             for (unsigned int i = 0; i < material->GetTextureCount(allTextureTypes[index]); i++)
             {
                 aiString str;
@@ -238,11 +238,11 @@ namespace Corona {
                     texture->path = texturePath;
                     texture->data = stbi_load(texturePath.c_str(), &texture->width, &texture->height, &texture->nrChannels, 0);
                     texturePathHash[texturePath] = texture;
-                    textures.push_back(*texture);
+                    textures.push_back(texture);
                 }
                 else
                 {
-                    textures.push_back(*texturePathHash[texturePath]);
+                    textures.push_back(texturePathHash[texturePath]);
                 }
             }
 

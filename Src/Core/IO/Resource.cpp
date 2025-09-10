@@ -4,14 +4,26 @@
 
 #include "Resource.h"
 
-std::atomic<Corona::Resource::RID> Corona::Resource::id_counter = 0;
+// std::atomic<Corona::Resource::RID> Corona::Resource::id_counter = 0;
 
 namespace Corona
 {
-    Resource::RID Resource::get_rid() const
+    Resource::Resource(const Resource &other)
+        : status(other.status.load())
     {
-        return rid;
     }
+    Resource &Resource::operator=(const Resource &other)
+    {
+        if (this != &other)
+        {
+            status.store(other.status.load());
+        }
+        return *this;
+    }
+    // Resource::RID Resource::get_rid() const
+    // {
+    //     return rid;
+    // }
     Resource::Status Resource::get_status() const
     {
         return status.load();
@@ -23,8 +35,8 @@ namespace Corona
             this->status.store(value);
         }
     }
-    Resource::RID Resource::get_next_id()
-    {
-        return id_counter.fetch_add(1);
-    }
+    // Resource::RID Resource::get_next_id()
+    // {
+    //     return id_counter.fetch_add(1);
+    // }
 } // namespace Corona

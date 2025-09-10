@@ -23,8 +23,7 @@ namespace Corona {
                     boneInfoMap[boneName]->ID = boneCount;
                     boneCount++;
                 }
-                m_Bones.emplace_back(channel->mNodeName.data,
-                                       boneInfoMap[channel->mNodeName.data]->ID, channel);
+                m_Bones.emplace_back(channel->mNodeName.data, boneInfoMap[channel->mNodeName.data]->ID, channel);
             }
         };
 
