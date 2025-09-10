@@ -203,8 +203,7 @@ namespace Corona {
     {
         std::string meshRootPath = "";
         std::regex rexPattern("(.*)((\\\\)|(/))");
-        std::smatch matchPath;
-        if (regex_search(path, matchPath, rexPattern))
+        if (std::smatch matchPath; regex_search(path, matchPath, rexPattern))
         {
             meshRootPath = matchPath[1].str();
         }
