@@ -22,3 +22,12 @@ target_link_libraries(CoronaEngineExamples PRIVATE
 
 helicon_install_runtime_deps(CoronaEngineExamples)
 cabbage_install_runtime_deps(CoronaEngineExamples)
+
+add_custom_command(
+        TARGET CoronaEngineExamples POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/assets
+        $<TARGET_FILE_DIR:CoronaEngineExamples>/assets
+        COMMENT "Copying assets to ${CoronaEngineExamples} output directory"
+        VERBATIM
+)
