@@ -38,7 +38,7 @@ namespace Corona
             LOG_DEBUG("Register resource loader '{}'", loader_type);
         }
 
-        static ResourceLoader<TRes>::Handle load(const std::string &path)
+        static typename ResourceLoader<TRes>::Handle load(const std::string &path)
         {
             if (typename Cache::accessor accessor;
                 cache_res.find(accessor, path) &&
