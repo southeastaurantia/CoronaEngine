@@ -2,7 +2,7 @@
 // Created by 47226 on 2025/9/4.
 //
 
-#include "AnimationSystemDefault.hpp"
+#include "AnimationSystemDefault.h"
 
 #include "Core/Logger.h"
 

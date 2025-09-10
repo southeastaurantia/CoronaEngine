@@ -2,7 +2,7 @@
 // Created by 47226 on 2025/9/5.
 //
 
-#include "DisplaySystemDefault.hpp"
+#include "DisplaySystemDefault.h"
 
 #include "Core/Logger.h"
 

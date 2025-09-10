@@ -4,10 +4,10 @@
 
 #include "Engine.h"
 
-#include "Multimedia/Animation/AnimationSystemDefault.hpp"
-#include "Multimedia/Audio/AudioSystemDefault.hpp"
-#include "Multimedia/Display/DisplaySystemDefault.hpp"
-#include "Multimedia/Rendering/RenderingSystemDefault.hpp"
+#include "Multimedia/Animation/AnimationSystemDefault.h"
+#include "Multimedia/Audio/AudioSystemDefault.h"
+#include "Multimedia/Display/DisplaySystemDefault.h"
+#include "Multimedia/Rendering/RenderingSystemDefault.h"
 
 std::atomic<Corona::DataCache::id_type> Corona::DataCache::id_counter = 0;
 

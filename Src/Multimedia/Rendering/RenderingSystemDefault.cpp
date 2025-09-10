@@ -2,7 +2,7 @@
 // Created by 47226 on 2025/9/5.
 //
 
-#include "RenderingSystemDefault.hpp"
+#include "RenderingSystemDefault.h"
 
 #include "Core/Logger.h"
 
