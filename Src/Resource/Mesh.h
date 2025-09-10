@@ -31,14 +31,6 @@ namespace Corona {
             std::vector<uint32_t> boneIndices;                ///< 骨骼索引（每个顶点最多4个骨骼）
             std::vector<float> boneWeights;                   ///< 骨骼权重（与boneIndices一一对应）
             std::vector<std::shared_ptr<Texture>> textures;                    ///< 网格使用的所有纹理
-
-        private:
-            HardwareBuffer indicesBuffer;
-            HardwareBuffer positionsBuffer;
-            HardwareBuffer normalsBuffer;
-            HardwareBuffer texCoordsBuffer;
-            HardwareBuffer boneIndicesBuffer;
-            HardwareBuffer boneWeightsBuffer;
     };
 
 } // Corona
