@@ -1,5 +1,6 @@
 ﻿#include "Core/Engine.h"
 #include "Core/IO/ResMgr.h"
+#include "GLFW/glfw3.h"
 #include "Resource/Model.h"
 #include "filesystem"
 
@@ -7,35 +8,83 @@ int main()
 {
     Corona::Engine::inst().init();
 
-    Corona::ResMgr<Corona::Model>::register_loader<Corona::ModelLoader>();
+    if (glfwInit() >= 0)
+    {
+        std::vector<GLFWwindow *> windows(4);
 
-    std::thread workthread([&]() {
-        std::shared_ptr<Corona::Model> model = Corona::ResMgr<Corona::Model>::load((std::filesystem::current_path()/"assets/model/armadillo.obj").string());
-        LOG_INFO("Thread 1 Model loaded");
-        LOG_INFO("Thread 1 Model meshes count : {}", model->meshes.size());
-    });
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        for (size_t i = 0; i < windows.size(); i++)
+        {
+            windows[i] = glfwCreateWindow(800, 800, "Cabbage Engine", nullptr, nullptr);
+        }
 
-    std::thread workthread2([&]() {
-        std::shared_ptr<Corona::Model> model = Corona::ResMgr<Corona::Model>::load((std::filesystem::current_path()/"assets/model/armadillo1.obj").string());
-        LOG_INFO("Thread 2 Model loaded");
-        LOG_INFO("Thread 2 Model meshes count : {}", model->meshes.size());
-    });
+        auto shouldClosed = [&]() {
+            for (const auto &window : windows)
+            {
+                if (glfwWindowShouldClose(window))
+                {
+                    return true;
+                }
+            }
+            return false;
+        };
 
-    std::thread workthread3([&]() {
-        std::shared_ptr<Corona::Model> model = Corona::ResMgr<Corona::Model>::load((std::filesystem::current_path()/"assets/model/armadillo1.obj").string());
-        LOG_INFO("Thread 3 Model loaded");
-        LOG_INFO("Thread 3 Model meshes count : {}", model->meshes.size());
-    });
+        while (!shouldClosed())
+        {
+            static constexpr uint64_t FPS = 120;
+            static constexpr uint64_t TIME = 1000 / FPS;
 
-    workthread.join();
-    workthread2.join();
-    workthread3.join();
+            auto now = std::chrono::high_resolution_clock::now();
 
-    std::shared_ptr<Corona::Model> model = Corona::ResMgr<Corona::Model>::load((std::filesystem::current_path()/"assets/model/armadillo.obj").string());
-    LOG_INFO("Model loaded");
-    LOG_INFO("Model meshes count : {}", model->meshes.size());
+            glfwPollEvents();
 
-    std::cin.get();
+            // DO SOMETHING
+            {
+
+            }
+
+            auto end = std::chrono::high_resolution_clock::now();
+            if (const auto Spend = std::chrono::duration_cast<std::chrono::milliseconds>(end - now).count();
+                Spend < TIME)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(TIME - Spend));
+            }
+        }
+        for (const auto &window : windows)
+        {
+            glfwDestroyWindow(window);
+        }
+        glfwTerminate();
+    }
+
+
+    // Corona::ResMgr<Corona::Model>::register_loader<Corona::ModelLoader>();
+    //
+    // std::thread workthread([&]() {
+    //     std::shared_ptr<Corona::Model> model = Corona::ResMgr<Corona::Model>::load((std::filesystem::current_path()/"assets/model/armadillo.obj").string());
+    //     LOG_INFO("Thread 1 Model loaded");
+    //     LOG_INFO("Thread 1 Model meshes count : {}", model->meshes.size());
+    // });
+    //
+    // std::thread workthread2([&]() {
+    //     std::shared_ptr<Corona::Model> model = Corona::ResMgr<Corona::Model>::load((std::filesystem::current_path()/"assets/model/armadillo1.obj").string());
+    //     LOG_INFO("Thread 2 Model loaded");
+    //     LOG_INFO("Thread 2 Model meshes count : {}", model->meshes.size());
+    // });
+    //
+    // std::thread workthread3([&]() {
+    //     std::shared_ptr<Corona::Model> model = Corona::ResMgr<Corona::Model>::load((std::filesystem::current_path()/"assets/model/armadillo1.obj").string());
+    //     LOG_INFO("Thread 3 Model loaded");
+    //     LOG_INFO("Thread 3 Model meshes count : {}", model->meshes.size());
+    // });
+    //
+    // workthread.join();
+    // workthread2.join();
+    // workthread3.join();
+    //
+    // std::shared_ptr<Corona::Model> model = Corona::ResMgr<Corona::Model>::load((std::filesystem::current_path()/"assets/model/armadillo.obj").string());
+    // LOG_INFO("Model loaded");
+    // LOG_INFO("Model meshes count : {}", model->meshes.size());
 
     return 0;
 }

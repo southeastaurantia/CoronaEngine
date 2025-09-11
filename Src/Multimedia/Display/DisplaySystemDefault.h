@@ -26,7 +26,6 @@ namespace Corona
 
       private:
         std::unordered_set<DataCache::id_type> data_keys;   // 全局DataCache的所有key
-        std::queue<DataCache::id_type> unhandled_data_keys; // 当前帧未处理的key
 
         std::thread displayThread;
         std::atomic<bool> running;
