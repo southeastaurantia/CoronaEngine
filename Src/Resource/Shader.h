@@ -3,26 +3,29 @@
 //
 
 #pragma once
-#include "Core/IO/ResourceLoader.h"
-#include "Pipeline/RasterizerPipeline.h"
-#include "Pipeline/ComputePipeline.h"
+#include "Core/IO/IResource.h"
+#include "Core/IO/IResourceLoader.h"
+#include "Core/IO/ResourceTypes.h"
 
-namespace Corona {
+namespace Corona
+{
 
-    class Shader final : public Resource {
-        public:
-            std::string vertCode;
-            std::string fragCode;
-            std::string computeCode;
-    };
-
-    class ShaderLoader final : public ResourceLoader<Shader>
+    class Shader final : public IResource
     {
-        public:
-            bool load(const std::string &path, const Handle &handle) override;
-
-        private:
-            std::string readStringFile(const std::string_view &path);
+      public:
+        std::string vertCode;
+        std::string fragCode;
+        std::string computeCode;
     };
 
-} // Corona
+    class ShaderLoader final : public IResourceLoader
+    {
+      public:
+        bool supports(const ResourceId &id) const override;
+        std::shared_ptr<IResource> load(const ResourceId &id) override;
+
+      private:
+        std::string readStringFile(const std::string_view &path);
+    };
+
+} // namespace Corona

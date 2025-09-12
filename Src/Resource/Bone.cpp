@@ -3,6 +3,7 @@
 //
 
 #include "Bone.h"
+#include <assimp/anim.h>
 
 namespace Corona {
     Bone::Bone(const std::string &name, const int ID, const aiNodeAnim *channel) : m_Name(name), m_ID(ID)

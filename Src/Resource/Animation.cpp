@@ -4,8 +4,12 @@
 
 #include "Animation.h"
 
-namespace Corona {
-    Animation::Animation(const aiScene* scene, const aiAnimation* animation, std::map<std::string, std::shared_ptr<BoneInfo>> boneInfoMap, int &boneCount)
+#include <assimp/anim.h>
+#include <assimp/scene.h>
+
+namespace Corona
+{
+    Animation::Animation(const aiScene *scene, const aiAnimation *animation, std::map<std::string, std::shared_ptr<BoneInfo>> boneInfoMap, int &boneCount)
         : boneInfoMap(boneInfoMap)
     {
         m_Duration = animation->mDuration;
@@ -65,4 +69,4 @@ namespace Corona {
             dest.children.push_back(newData);
         }
     }
-} // Corona
+} // namespace Corona

@@ -5,11 +5,13 @@
 #include "Model.h"
 
 #include "Codegen/AST/Enum.hpp"
-#include "Core/Engine.h"
-#include "Core/Logger.h"
-#include "assimp/Importer.hpp"
-#include "assimp/Vertex.h"
-#include "assimp/postprocess.h"
+#include <Core/Log.h>
+#include <algorithm>
+#include <assimp/Importer.hpp>
+#include <assimp/Vertex.h>
+#include <assimp/postprocess.h>
+#include <assimp/scene.h>
+#include <cctype>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -17,27 +19,42 @@
 #include <format>
 #include <regex>
 
-namespace Corona {
+namespace Corona
+{
 
-    bool ModelLoader::load(const std::string &path, const Handle &handle)
+    bool ModelLoader::supports(const ResourceId &id) const
     {
-        if (!handle)
-        {
+        if (id.type == "model")
+            return true;
+        auto dot = id.path.find_last_of('.');
+        if (dot == std::string::npos)
             return false;
-        }
+        std::string ext = id.path.substr(dot + 1);
+        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+        static const char *kExts[] = {"obj", "fbx", "dae", "gltf", "glb"};
+        for (auto e : kExts)
+            if (ext == e)
+                return true;
+        return false;
+    }
+
+    std::shared_ptr<IResource> ModelLoader::load(const ResourceId &id)
+    {
+        const std::string &path = id.path;
+        auto handle = std::make_shared<Model>();
 
         Assimp::Importer importer;
         const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs);
 
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
         {
-            LOG_ERROR("Assimp Error: {}", importer.GetErrorString());
-            return false;
+            CE_LOG_ERROR("Assimp Error: {}", importer.GetErrorString());
+            return nullptr;
         }
 
         processNode(path, scene->mRootNode, scene, handle);
 
-        handle->skeletalAnimations.resize(scene->mNumAnimations);
+        handle->skeletalAnimations.reserve(scene->mNumAnimations);
         for (unsigned int i = 0; i < scene->mNumAnimations; i++)
         {
             handle->skeletalAnimations.emplace_back(scene, scene->mAnimations[i], handle->m_BoneInfoMap, handle->m_BoneCounter);
@@ -51,31 +68,31 @@ namespace Corona {
         for (size_t i = 0; i < handle->meshes.size(); i++)
         {
             handle->maxXYZ = ktm::fvec3(ktm::max(handle->meshes[i].maxXYZ.x, handle->maxXYZ.x),
-                            ktm::max(handle->meshes[i].maxXYZ.y, handle->maxXYZ.y),
-                            ktm::max(handle->meshes[i].maxXYZ.z, handle->maxXYZ.z));
+                                        ktm::max(handle->meshes[i].maxXYZ.y, handle->maxXYZ.y),
+                                        ktm::max(handle->meshes[i].maxXYZ.z, handle->maxXYZ.z));
             handle->minXYZ = ktm::fvec3(ktm::min(handle->meshes[i].minXYZ.x, handle->minXYZ.x),
-                            ktm::min(handle->meshes[i].minXYZ.y, handle->minXYZ.y),
-                            ktm::min(handle->meshes[i].minXYZ.z, handle->minXYZ.z));
+                                        ktm::min(handle->meshes[i].minXYZ.y, handle->minXYZ.y),
+                                        ktm::min(handle->meshes[i].minXYZ.z, handle->minXYZ.z));
         }
 
-        return true;
+        return std::static_pointer_cast<IResource>(handle);
     }
 
-    void ModelLoader::processNode(const std::string &path, const aiNode *node, const aiScene *scene, const Handle &handle)
+    void ModelLoader::processNode(const std::string &path, const aiNode *node, const aiScene *scene, const ModelPtr &model)
     {
         for (unsigned int i = 0; i < node->mNumMeshes; i++)
         {
             aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
-            handle->meshes.emplace_back();
-            processMesh(path, mesh, scene, handle, handle->meshes.back());
+            model->meshes.emplace_back();
+            processMesh(path, mesh, scene, model, model->meshes.back());
         }
         for (unsigned int i = 0; i < node->mNumChildren; i++)
         {
-            processNode(path, node->mChildren[i], scene, handle);
+            processNode(path, node->mChildren[i], scene, model);
         }
     }
 
-    void ModelLoader::processMesh(const std::string &path, const aiMesh *mesh, const aiScene *scene, const Handle &handle, Mesh &resultMesh)
+    void ModelLoader::processMesh(const std::string &path, const aiMesh *mesh, const aiScene *scene, const ModelPtr &model, Mesh &resultMesh)
     {
         if (mesh->mNumVertices > 0)
         {
@@ -84,16 +101,17 @@ namespace Corona {
 
         for (unsigned int i = 0; i < mesh->mNumVertices; i++)
         {
-            resultMesh.points.push_back(mesh->mVertices[i].x);;
+            resultMesh.points.push_back(mesh->mVertices[i].x);
+            ;
             resultMesh.points.push_back(mesh->mVertices[i].y);
             resultMesh.points.push_back(mesh->mVertices[i].z);
 
             resultMesh.minXYZ = ktm::fvec3(ktm::min(resultMesh.minXYZ.x, mesh->mVertices[i].x),
-                                            ktm::min(resultMesh.minXYZ.y, mesh->mVertices[i].y),
-                                            ktm::min(resultMesh.minXYZ.z, mesh->mVertices[i].z));
+                                           ktm::min(resultMesh.minXYZ.y, mesh->mVertices[i].y),
+                                           ktm::min(resultMesh.minXYZ.z, mesh->mVertices[i].z));
             resultMesh.maxXYZ = ktm::fvec3(ktm::max(resultMesh.maxXYZ.x, mesh->mVertices[i].x),
-                                            ktm::max(resultMesh.maxXYZ.y, mesh->mVertices[i].y),
-                                            ktm::max(resultMesh.maxXYZ.z, mesh->mVertices[i].z));
+                                           ktm::max(resultMesh.maxXYZ.y, mesh->mVertices[i].y),
+                                           ktm::max(resultMesh.maxXYZ.z, mesh->mVertices[i].z));
 
             if (mesh->HasNormals())
             {
@@ -106,7 +124,8 @@ namespace Corona {
             {
                 resultMesh.texCoords.push_back(mesh->mTextureCoords[0][i].x);
                 resultMesh.texCoords.push_back(mesh->mTextureCoords[0][i].y);
-            }else
+            }
+            else
             {
                 resultMesh.texCoords.push_back(0.0f);
                 resultMesh.texCoords.push_back(0.0f);
@@ -123,7 +142,7 @@ namespace Corona {
             resultMesh.boneWeights.push_back(0.0f);
         }
 
-        extractBoneWeightForVertices(resultMesh, mesh, scene, handle);
+        extractBoneWeightForVertices(resultMesh, mesh, scene, model);
 
         for (unsigned int i = 0; i < mesh->mNumFaces; i++)
         {
@@ -136,10 +155,10 @@ namespace Corona {
             loadMaterial(path, scene->mMaterials[mesh->mMaterialIndex], resultMesh);
     }
 
-    void ModelLoader::extractBoneWeightForVertices(Mesh& resultMesh, const aiMesh* mesh, const aiScene* scene, const Handle &handle)
+    void ModelLoader::extractBoneWeightForVertices(Mesh &resultMesh, const aiMesh *mesh, const aiScene *scene, const ModelPtr &model)
     {
-        auto &boneInfoMap = handle->m_BoneInfoMap;
-        int &boneCount = handle->m_BoneCounter;
+        auto &boneInfoMap = model->m_BoneInfoMap;
+        int &boneCount = model->m_BoneCounter;
 
         auto ConvertMatrixToGLMFormat = [](const aiMatrix4x4 &from) -> ktm::fmat4x4 {
             ktm::fmat4x4 to;
@@ -200,7 +219,7 @@ namespace Corona {
         }
     }
 
-    void ModelLoader::loadMaterial(const std::string &path, const aiMaterial *material, Mesh& resultMesh)
+    void ModelLoader::loadMaterial(const std::string &path, const aiMaterial *material, Mesh &resultMesh)
     {
         std::string meshRootPath = "";
         std::regex rexPattern("(.*)((\\\\)|(/))");
@@ -210,7 +229,7 @@ namespace Corona {
         }
         else
         {
-            throw "mesh path invalid in python";
+            throw std::runtime_error("mesh path invalid in python");
         }
         std::string directory = meshRootPath;
 
@@ -355,4 +374,4 @@ namespace Corona {
         material->Get(AI_MATKEY_GLOSSINESS_FACTOR, Glossiness);
     }
 
-} // Corona
+} // namespace Corona

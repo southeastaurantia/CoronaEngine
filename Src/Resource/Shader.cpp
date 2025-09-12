@@ -3,23 +3,36 @@
 //
 
 #include "Shader.h"
-
 #include <fstream>
+#include <sstream>
+#include <string>
 
-namespace Corona {
+namespace Corona
+{
 
-    bool ShaderLoader::load(const std::string &path, const Handle &handle)
+    bool ShaderLoader::supports(const ResourceId &id) const
     {
-        if (!handle)
+        if (id.type == "shader")
+            return true;
+        // 简单判断：路径包含"/shaders"目录
+        return id.path.find("/shaders") != std::string::npos || id.path.find("\\shaders") != std::string::npos;
+    }
+
+    std::shared_ptr<IResource> ShaderLoader::load(const ResourceId &id)
+    {
+        auto shader = std::make_shared<Shader>();
+        const std::string &root = id.path;
+        try
         {
-            return false;
+            shader->vertCode = readStringFile(root + "/shaders/test.vert.glsl");
+            shader->fragCode = readStringFile(root + "/shaders/test.frag.glsl");
+            shader->computeCode = readStringFile(root + "/shaders/test.comp.glsl");
         }
-
-        handle->vertCode = readStringFile(path+"/shaders/test.vert.glsl");
-        handle->fragCode = readStringFile(path+"/shaders/test.frag.glsl");
-        handle->computeCode = readStringFile(path+"/shaders/test.comp.glsl");
-
-        return true;
+        catch (...)
+        {
+            return nullptr;
+        }
+        return shader;
     }
 
     std::string ShaderLoader::readStringFile(const std::string_view &path)
@@ -36,4 +49,4 @@ namespace Corona {
         file.close();
         return buffer.str();
     }
-} // Corona
+} // namespace Corona

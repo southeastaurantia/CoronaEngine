@@ -4,16 +4,22 @@
 
 #pragma once
 #include "Bone.h"
-#include "Core/IO/Resource.h"
-#include "assimp/scene.h"
-#include "ktm/ktm.h"
+#include "Core/IO/IResource.h"
+#include <vector>
+#include <map>
+#include <memory>
+#include <string>
+// forward declarations to avoid heavy headers in public header
+struct aiScene;
+struct aiAnimation;
+struct aiNode;
 
 #include <map>
 #include <string>
 
 namespace Corona {
 
-    class Animation final : public Resource {
+    class Animation final : public IResource {
         public:
             struct AssimpNodeData
             {
