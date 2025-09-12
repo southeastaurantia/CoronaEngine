@@ -13,7 +13,6 @@ namespace Corona
     class AudioSystemDefault final : public BaseMultimediaSystem
     {
       public:
-
         const char *name() override;
 
       public:

@@ -1,12 +1,21 @@
 ﻿#include "Core/Engine.h"
 #include "Core/IO/ResMgr.h"
 #include "GLFW/glfw3.h"
+#include "Multimedia/Rendering/RenderingSystemDefault.h"
 #include "Resource/Model.h"
+#include "Resource/Shader.h"
 #include "filesystem"
 
 int main()
 {
-    Corona::Engine::inst().init();
+    auto& engine = Corona::Engine::inst();
+    engine.init();
+
+    Corona::ResMgr<Corona::Shader>::register_loader<Corona::ShaderLoader>();
+
+    std::shared_ptr<Corona::Shader> shader = Corona::ResMgr<Corona::Shader>::load((std::filesystem::current_path()/"assets").string());
+
+    auto& renderSystem = engine.get_system<Corona::RenderingSystemDefault>();
 
     if (glfwInit() >= 0)
     {

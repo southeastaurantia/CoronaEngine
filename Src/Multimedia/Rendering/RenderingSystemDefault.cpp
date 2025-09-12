@@ -15,6 +15,7 @@ namespace Corona
     RenderingSystemDefault::RenderingSystemDefault()
         : running(false)
     {
+        Engine::inst().add_cmd_queue("RenderingSystemDefault",std::make_unique<SafeCommandQueue>());
     }
     RenderingSystemDefault::~RenderingSystemDefault()
     {

@@ -16,7 +16,6 @@ namespace Corona
     class AnimationSystemDefault final : public BaseMultimediaSystem
     {
       public:
-
         const char *name() override;
 
       public:
