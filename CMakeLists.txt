@@ -49,6 +49,7 @@ add_compile_definitions(
     NOMINMAX
     ENTT_ID_TYPE=uint64_t # 定义 ENTT 的 ID 类型为 uint64_t
     ENTT_USE_ATOMIC # 使用 ENTT 原子操作
+    FMT_HEADER_ONLY=1 # 使用 fmt header-only 版本
 
     $<$<CONFIG:Debug>:CABBAGE_ENGINE_DEBUG>
     $<$<CONFIG:RelWithDebInfo>:CABBAGE_ENGINE_DEBUG>
