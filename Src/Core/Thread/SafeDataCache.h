@@ -2,10 +2,9 @@
 // Created by 47226 on 2025/9/9.
 //
 
-#ifndef CORONAENGINE_SAFEDATACACHE_H
-#define CORONAENGINE_SAFEDATACACHE_H
-#include "../Engine.h"
-#include "../Logger.h"
+#pragma once
+
+#include "Core/Engine.h"
 #include "oneapi/tbb/concurrent_hash_map.h"
 
 #include <cstdint>
@@ -134,5 +133,3 @@ namespace Corona
         mutexes_type foreach_mutex{};
     };
 } // namespace Corona
-
-#endif // CORONAENGINE_SAFEDATACACHE_H

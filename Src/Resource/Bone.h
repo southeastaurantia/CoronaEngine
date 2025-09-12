@@ -2,8 +2,7 @@
 // Created by 25473 on 25-9-9.
 //
 
-#ifndef BONE_H
-#define BONE_H
+#pragma once
 #include "Core/IO/Resource.h"
 #include "assimp/anim.h"
 #include "ktm/ktm.h"
@@ -53,5 +52,3 @@ namespace Corona {
     };
 
 } // Corona
-
-#endif //BONE_H

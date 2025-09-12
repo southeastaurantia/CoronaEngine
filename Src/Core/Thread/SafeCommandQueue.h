@@ -2,8 +2,7 @@
 // Created by 47226 on 2025/9/4.
 //
 
-#ifndef CORONAENGINE_SAFECOMMANDQUEUE_HPP
-#define CORONAENGINE_SAFECOMMANDQUEUE_HPP
+#pragma once
 #include <functional>
 #include <oneapi/tbb.h>
 
@@ -66,4 +65,3 @@ namespace Corona
     };
 } // namespace CoronaEngine
 
-#endif // CORONAENGINE_SAFECOMMANDQUEUE_HPP

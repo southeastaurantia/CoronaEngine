@@ -2,8 +2,7 @@
 // Created by 25473 on 25-9-9.
 //
 
-#ifndef MODEL_H
-#define MODEL_H
+#pragma once
 
 #include "Animation.h"
 #include "Bone.h"
@@ -42,4 +41,3 @@ namespace Corona
     };
 }// Corona
 
-#endif //MODEL_H

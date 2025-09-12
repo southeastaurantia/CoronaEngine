@@ -2,8 +2,7 @@
 // Created by 25473 on 25-9-9.
 //
 
-#ifndef MESH_H
-#define MESH_H
+#pragma once
 #include "CabbageDisplayer.h"
 #include "Core/IO/Resource.h"
 #include "assimp/material.h"
@@ -35,4 +34,3 @@ namespace Corona {
 
 } // Corona
 
-#endif //MESH_H

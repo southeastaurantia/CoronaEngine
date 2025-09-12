@@ -44,34 +44,34 @@ namespace Corona
     }
     void Engine::init()
     {
-        inst().register_system<AnimationSystemDefault>();
-        inst().register_system<RenderingSystemDefault>();
-        inst().register_system<AudioSystemDefault>();
-        inst().register_system<DisplaySystemDefault>();
-        for (const auto system : systems | std::views::values)
+        for (const auto &system : systems | std::views::values)
         {
             system->start();
         }
     }
-    SafeCommandQueue* Engine::get_cmd_queue(const std::string& system_name) const
+    SafeCommandQueue &Engine::get_cmd_queue(const std::string &name) const
     {
-        auto it = system_cmd_queues.find(system_name);
-        if (it != system_cmd_queues.end())
+        if (const auto it = system_cmd_queues.find(name);
+            it != system_cmd_queues.end())
         {
-            return it->second.get();
+            return *it->second;
         }
-        LOG_WARN("Command queue for system '{}' not found", system_name);
-        return nullptr;
+        throw std::runtime_error("Unknown system command queue name");
     }
-    void Engine::add_cmd_queue(const std::string& system_name, std::unique_ptr<SafeCommandQueue> queue)
+    void Engine::add_cmd_queue(const std::string &name, std::unique_ptr<SafeCommandQueue> cmd_queue)
     {
-        if (!queue)
+        if (!cmd_queue)
         {
-            LOG_ERROR("Cannot add null command queue for system '{}'", system_name);
+            LOG_ERROR("Cannot add null command queue for '{}'", name);
             return;
         }
-        system_cmd_queues[system_name] = std::move(queue);
-        LOG_DEBUG("Added command queue for system '{}'", system_name);
+        if (system_cmd_queues.contains(name))
+        {
+            LOG_WARN("Cannot add command queue for '{}' twice", name);
+            return;
+        }
+        system_cmd_queues[name] = std::move(cmd_queue);
+        LOG_DEBUG("Added command queue for '{}'", name);
     }
     DataCache &Engine::data_cache()
     {

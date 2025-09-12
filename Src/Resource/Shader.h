@@ -2,8 +2,7 @@
 // Created by 25473 on 25-9-11.
 //
 
-#ifndef SHADER_H
-#define SHADER_H
+#pragma once
 #include "Core/IO/ResourceLoader.h"
 #include "Pipeline/RasterizerPipeline.h"
 #include "Pipeline/ComputePipeline.h"
@@ -27,5 +26,3 @@ namespace Corona {
     };
 
 } // Corona
-
-#endif //SHADER_H

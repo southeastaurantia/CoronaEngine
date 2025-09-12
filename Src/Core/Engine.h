@@ -2,10 +2,10 @@
 // Created by 47226 on 2025/9/8.
 //
 
-#ifndef CORONAENGINE_ENGINE_H
-#define CORONAENGINE_ENGINE_H
+#pragma once
 #include "Multimedia/BaseMultimediaSystem.hpp"
-#include "Thread/SafeCommandQueue.hpp"
+#include "Thread/SafeCommandQueue.h"
+#include "Thread/SafeDataCache.h"
 
 #include <Core/Components.h>
 #include <Core/Logger.h>
@@ -41,7 +41,7 @@ namespace Corona
 
         Logger &logger() const;
 
-        template<typename T>
+        template <typename T>
             requires std::is_base_of_v<BaseMultimediaSystem, T>
         void register_system()
         {
@@ -53,29 +53,33 @@ namespace Corona
             LOG_DEBUG("Registered system {}", std::type_index(typeid(T)).name());
         }
 
-        template<typename T>
+        template <typename T>
             requires std::is_base_of_v<BaseMultimediaSystem, T>
         T &get_system() const
         {
-            return *std::static_pointer_cast<T>(systems.at(std::type_index(typeid(T))));
+            if (const auto it = systems.find(std::type_index(typeid(T)));
+                it != systems.end())
+            {
+                return *std::static_pointer_cast<T>(it->second);
+            }
+            throw std::runtime_error("System not registered: " + std::string(std::type_index(typeid(T)).name()));
         }
 
-        SafeCommandQueue* get_cmd_queue(const std::string& system_name) const;
-        void add_cmd_queue(const std::string& system_name, std::unique_ptr<SafeCommandQueue> cmd_queue);
+        SafeCommandQueue &get_cmd_queue(const std::string &name) const;
+        void add_cmd_queue(const std::string &name, std::unique_ptr<SafeCommandQueue> cmd_queue);
+
+        Engine(const Engine &other) = delete;
+        Engine &operator=(const Engine &other) = delete;
 
       private:
         Engine();
         ~Engine();
-        Engine(const Engine &other) = delete;
-        Engine &operator=(const Engine &other) = delete;
 
-        tbb::concurrent_unordered_map<std::string, std::unique_ptr<SafeCommandQueue>> system_cmd_queues;
         std::shared_ptr<Logger> engineLogger;
-        std::unordered_map<std::string, std::shared_ptr<BaseMultimediaSystem>> systems;
+        std::unordered_map<std::string, std::unique_ptr<SafeCommandQueue>> system_cmd_queues;
+        std::unordered_map<std::type_index, std::shared_ptr<BaseMultimediaSystem>> systems;
 
         DataCache data;
     };
 
 } // namespace Corona
-
-#endif // CORONAENGINE_ENGINE_H

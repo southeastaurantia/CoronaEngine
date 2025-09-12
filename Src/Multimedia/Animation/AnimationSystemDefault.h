@@ -2,8 +2,7 @@
 // Created by 47226 on 2025/9/4.
 //
 
-#ifndef CORONAENGINE_ANIMATIONSYSTEMDEFAULT_HPP
-#define CORONAENGINE_ANIMATIONSYSTEMDEFAULT_HPP
+#pragma once
 #include "Core/Engine.h"
 #include "Core/Thread/SafeDataCache.h"
 #include "Multimedia/BaseMultimediaSystem.hpp"
@@ -50,5 +49,3 @@ namespace Corona
     };
 
 } // namespace Corona
-
-#endif // CORONAENGINE_ANIMATIONSYSTEMDEFAULT_HPP

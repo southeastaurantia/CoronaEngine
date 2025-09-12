@@ -1,6 +1,9 @@
 ﻿#include "Core/Engine.h"
-#include "Core/IO/ResMgr.h"
+#include "Core/IO/ResourceManager.h"
 #include "GLFW/glfw3.h"
+#include "Multimedia/Animation/AnimationSystemDefault.h"
+#include "Multimedia/Audio/AudioSystemDefault.h"
+#include "Multimedia/Display/DisplaySystemDefault.h"
 #include "Multimedia/Rendering/RenderingSystemDefault.h"
 #include "Resource/Model.h"
 #include "Resource/Shader.h"
@@ -8,14 +11,22 @@
 
 int main()
 {
-    auto& engine = Corona::Engine::inst();
+    auto &engine = Corona::Engine::inst();
+    engine.register_system<Corona::AnimationSystemDefault>();
+    engine.register_system<Corona::AudioSystemDefault>();
+    engine.register_system<Corona::DisplaySystemDefault>();
+    engine.register_system<Corona::RenderingSystemDefault>();
     engine.init();
 
-    Corona::ResMgr<Corona::Shader>::register_loader<Corona::ShaderLoader>();
+    Corona::SafeDataCache<Corona::Texture> textureCache;
+    Corona::SafeDataCache<Corona::Shader> shaderCache;
+    Corona::SafeDataCache<Corona::Model> modelCache;
 
-    std::shared_ptr<Corona::Shader> shader = Corona::ResMgr<Corona::Shader>::load((std::filesystem::current_path()/"assets").string());
+    Corona::ResourceManager<Corona::Shader>::register_loader<Corona::ShaderLoader>();
 
-    auto& renderSystem = engine.get_system<Corona::RenderingSystemDefault>();
+    std::shared_ptr<Corona::Shader> shader = Corona::ResourceManager<Corona::Shader>::load((std::filesystem::current_path() / "assets").string());
+
+    auto &renderSystem = engine.get_system<Corona::RenderingSystemDefault>();
 
     if (glfwInit() >= 0)
     {
@@ -49,7 +60,6 @@ int main()
 
             // DO SOMETHING
             {
-
             }
 
             auto end = std::chrono::high_resolution_clock::now();
@@ -66,23 +76,22 @@ int main()
         glfwTerminate();
     }
 
-
-    // Corona::ResMgr<Corona::Model>::register_loader<Corona::ModelLoader>();
+    // Corona::ResourceManager<Corona::Model>::register_loader<Corona::ModelLoader>();
     //
     // std::thread workthread([&]() {
-    //     std::shared_ptr<Corona::Model> model = Corona::ResMgr<Corona::Model>::load((std::filesystem::current_path()/"assets/model/armadillo.obj").string());
+    //     std::shared_ptr<Corona::Model> model = Corona::ResourceManager<Corona::Model>::load((std::filesystem::current_path()/"assets/model/armadillo.obj").string());
     //     LOG_INFO("Thread 1 Model loaded");
     //     LOG_INFO("Thread 1 Model meshes count : {}", model->meshes.size());
     // });
     //
     // std::thread workthread2([&]() {
-    //     std::shared_ptr<Corona::Model> model = Corona::ResMgr<Corona::Model>::load((std::filesystem::current_path()/"assets/model/armadillo1.obj").string());
+    //     std::shared_ptr<Corona::Model> model = Corona::ResourceManager<Corona::Model>::load((std::filesystem::current_path()/"assets/model/armadillo1.obj").string());
     //     LOG_INFO("Thread 2 Model loaded");
     //     LOG_INFO("Thread 2 Model meshes count : {}", model->meshes.size());
     // });
     //
     // std::thread workthread3([&]() {
-    //     std::shared_ptr<Corona::Model> model = Corona::ResMgr<Corona::Model>::load((std::filesystem::current_path()/"assets/model/armadillo1.obj").string());
+    //     std::shared_ptr<Corona::Model> model = Corona::ResourceManager<Corona::Model>::load((std::filesystem::current_path()/"assets/model/armadillo1.obj").string());
     //     LOG_INFO("Thread 3 Model loaded");
     //     LOG_INFO("Thread 3 Model meshes count : {}", model->meshes.size());
     // });
@@ -91,7 +100,7 @@ int main()
     // workthread2.join();
     // workthread3.join();
     //
-    // std::shared_ptr<Corona::Model> model = Corona::ResMgr<Corona::Model>::load((std::filesystem::current_path()/"assets/model/armadillo.obj").string());
+    // std::shared_ptr<Corona::Model> model = Corona::ResourceManager<Corona::Model>::load((std::filesystem::current_path()/"assets/model/armadillo.obj").string());
     // LOG_INFO("Model loaded");
     // LOG_INFO("Model meshes count : {}", model->meshes.size());
 

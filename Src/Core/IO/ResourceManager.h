@@ -2,8 +2,7 @@
 // Created by 47226 on 2025/9/8.
 //
 
-#ifndef CORONAENGINE_RESOURCECACHE_H
-#define CORONAENGINE_RESOURCECACHE_H
+#pragma once
 #include "Core/Engine.h"
 #include "Core/Logger.h"
 #include "ResourceLoader.h"
@@ -18,7 +17,7 @@ namespace Corona
 
     template <typename TRes>
         requires std::default_initializable<TRes> && std::is_base_of_v<Corona::Resource, TRes>
-    class ResMgr
+    class ResourceManager
     {
       public:
         using Cache = tbb::concurrent_hash_map<std::string, typename ResourceLoader<TRes>::Handle>;
@@ -105,18 +104,16 @@ namespace Corona
 
 template <typename TRes>
     requires std::default_initializable<TRes> && std::is_base_of_v<Corona::Resource, TRes>
-Corona::ResMgr<TRes>::Cache Corona::ResMgr<TRes>::cache_res = {};
+Corona::ResourceManager<TRes>::Cache Corona::ResourceManager<TRes>::cache_res = {};
 
 template <typename TRes>
     requires std::default_initializable<TRes> && std::is_base_of_v<Corona::Resource, TRes>
-std::unique_ptr<Corona::ResourceLoader<TRes>> Corona::ResMgr<TRes>::loader = nullptr;
+std::unique_ptr<Corona::ResourceLoader<TRes>> Corona::ResourceManager<TRes>::loader = nullptr;
 
 template <typename TRes>
     requires std::default_initializable<TRes> && std::is_base_of_v<Corona::Resource, TRes>
-std::mutex Corona::ResMgr<TRes>::loader_mutex = {};
+std::mutex Corona::ResourceManager<TRes>::loader_mutex = {};
 
 template <typename TRes>
     requires std::default_initializable<TRes> && std::is_base_of_v<Corona::Resource, TRes>
-tbb::task_group Corona::ResMgr<TRes>::tasks = {};
-
-#endif // CORONAENGINE_RESOURCECACHE_H
+tbb::task_group Corona::ResourceManager<TRes>::tasks = {};

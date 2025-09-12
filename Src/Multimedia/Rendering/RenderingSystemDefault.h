@@ -2,10 +2,9 @@
 // Created by 47226 on 2025/9/5.
 //
 
-#ifndef CORONAENGINE_RENDERSYSTEMDEFAULT_HPP
-#define CORONAENGINE_RENDERSYSTEMDEFAULT_HPP
+#pragma once
 #include "Core/Engine.h"
-#include "Core/Thread/SafeCommandQueue.hpp"
+#include "Core/Thread/SafeCommandQueue.h"
 #include "Multimedia/BaseMultimediaSystem.hpp"
 
 namespace Corona
@@ -40,4 +39,3 @@ namespace Corona
 
 } // namespace Corona
 
-#endif // CORONAENGINE_RENDERSYSTEMDEFAULT_HPP

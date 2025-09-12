@@ -2,8 +2,7 @@
 // Created by 47226 on 2025/9/4.
 //
 
-#ifndef CORONAENGINE_BASEMULTIMEDIASYSTEM_HPP
-#define CORONAENGINE_BASEMULTIMEDIASYSTEM_HPP
+#pragma once
 #include <atomic>
 #include <memory>
 #include <thread>
@@ -27,4 +26,3 @@ namespace Corona
 
 } // namespace Corona
 
-#endif // CORONAENGINE_BASEMULTIMEDIASYSTEM_HPP

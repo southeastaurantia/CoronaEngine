@@ -2,8 +2,7 @@
 // Created by 47226 on 2025/9/8.
 //
 
-#ifndef CORONAENGINE_RESOURCE_H
-#define CORONAENGINE_RESOURCE_H
+#pragma once
 #include <memory>
 
 namespace Corona
@@ -40,4 +39,3 @@ namespace Corona
 
 } // namespace Corona
 
-#endif // CORONAENGINE_RESOURCE_H

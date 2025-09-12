@@ -2,8 +2,7 @@
 // Created by 47226 on 2025/9/5.
 //
 
-#ifndef CORONAENGINE_AUDIOSYSTEMDEFAULT_HPP
-#define CORONAENGINE_AUDIOSYSTEMDEFAULT_HPP
+#pragma once
 #include "Core/Engine.h"
 #include "Multimedia/BaseMultimediaSystem.hpp"
 
@@ -35,4 +34,3 @@ namespace Corona
 
 } // namespace Corona
 
-#endif // CORONAENGINE_AUDIOSYSTEMDEFAULT_HPP

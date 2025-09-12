@@ -21,7 +21,6 @@ namespace Corona
     }
     AnimationSystemDefault::~AnimationSystemDefault()
     {
-        LOG_DEBUG("AnimationSystemDefault::~AnimationSystemDefault()");
         boneMatrices.clear();
         animationTimeMap.clear();
     }

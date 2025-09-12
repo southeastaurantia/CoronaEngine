@@ -2,8 +2,7 @@
 // Created by 47226 on 2025/9/8.
 //
 
-#ifndef CORONAENGINE_RESOURCELOADER_H
-#define CORONAENGINE_RESOURCELOADER_H
+#pragma once
 #include "Resource.h"
 
 #include <complex.h>
@@ -26,5 +25,3 @@ namespace Corona
     };
 
 } // namespace Corona
-
-#endif // CORONAENGINE_RESOURCELOADER_H

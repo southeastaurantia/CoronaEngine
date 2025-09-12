@@ -2,8 +2,7 @@
 // Created by 25473 on 25-9-9.
 //
 
-#ifndef ANIMATION_H
-#define ANIMATION_H
+#pragma once
 #include "Bone.h"
 #include "Core/IO/Resource.h"
 #include "assimp/scene.h"
@@ -39,4 +38,3 @@ namespace Corona {
 
 } // Corona
 
-#endif //ANIMATION_H
