@@ -4,10 +4,13 @@
 
 #pragma once
 
-#include "Core/Engine.h"
+#include "Core/Log.h"
 #include "oneapi/tbb/concurrent_hash_map.h"
 
 #include <cstdint>
+#include <functional>
+#include <memory>
+#include <mutex>
 #include <queue>
 #include <typeindex>
 #include <unordered_set>
@@ -31,7 +34,7 @@ namespace Corona
         {
             if (!data_cache.emplace(id, data))
             {
-                LOG_WARN("Data id:{} type:{} insert failed", id, std::type_index(typeid(TData)).name());
+                CE_LOG_WARN("Data id:{} type:{} insert failed", id, std::type_index(typeid(TData)).name());
                 return false;
             }
             foreach_mutex.emplace(id, std::make_shared<std::mutex>());
@@ -42,7 +45,7 @@ namespace Corona
         {
             if (!data_cache.erase(id))
             {
-                LOG_WARN("Data id:{} type:{} erase failed", id, std::type_index(typeid(TData)).name());
+                CE_LOG_WARN("Data id:{} type:{} erase failed", id, std::type_index(typeid(TData)).name());
                 return false;
             }
             foreach_mutex.erase(id);
@@ -54,7 +57,7 @@ namespace Corona
             typename caches_type::accessor data_it;
             if (!data_cache.find(data_it, id))
             {
-                LOG_WARN("Data id:{} type:{} get failed", id, std::type_index(typeid(TData)).name());
+                CE_LOG_WARN("Data id:{} type:{} get failed", id, std::type_index(typeid(TData)).name());
                 return nullptr;
             }
             return data_it->second;
@@ -67,12 +70,12 @@ namespace Corona
 
             if (!data_cache.find(data_it, id))
             {
-                LOG_WARN("Data id:{} type:{} modify failed, data not found", id, std::type_index(typeid(TData)).name());
+                CE_LOG_WARN("Data id:{} type:{} modify failed, data not found", id, std::type_index(typeid(TData)).name());
                 return false;
             }
             if (!foreach_mutex.find(foreach_it, id))
             {
-                LOG_WARN("Data id:{} type:{} modify failed, mutex not found", id, std::type_index(typeid(TData)).name());
+                CE_LOG_WARN("Data id:{} type:{} modify failed, mutex not found", id, std::type_index(typeid(TData)).name());
                 return false;
             }
             std::lock_guard lock(*foreach_it->second);

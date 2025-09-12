@@ -176,7 +176,7 @@ namespace Corona
 #endif
 
 #ifndef CE_LOG_LEVEL_DEBUG
-#if LOG_LEVEL <= 0
+#if LOG_LEVEL <= 1
 #define CE_LOG_LEVEL_DEBUG 1
 #else
 #define CE_LOG_LEVEL_DEBUG 0
@@ -184,7 +184,7 @@ namespace Corona
 #endif
 
 #ifndef CE_LOG_LEVEL_INFO
-#if LOG_LEVEL <= 1
+#if LOG_LEVEL <= 2
 #define CE_LOG_LEVEL_INFO 1
 #else
 #define CE_LOG_LEVEL_INFO 0
@@ -192,7 +192,7 @@ namespace Corona
 #endif
 
 #ifndef CE_LOG_LEVEL_WARN
-#if LOG_LEVEL <= 2
+#if LOG_LEVEL <= 3
 #define CE_LOG_LEVEL_WARN 1
 #else
 #define CE_LOG_LEVEL_WARN 0
@@ -200,7 +200,7 @@ namespace Corona
 #endif
 
 #ifndef CE_LOG_LEVEL_ERROR
-#if LOG_LEVEL <= 3
+#if LOG_LEVEL <= 4
 #define CE_LOG_LEVEL_ERROR 1
 #else
 #define CE_LOG_LEVEL_ERROR 0
@@ -208,7 +208,7 @@ namespace Corona
 #endif
 
 #ifndef CE_LOG_LEVEL_CRITICAL
-#if LOG_LEVEL <= 3
+#if LOG_LEVEL <= 5
 #define CE_LOG_LEVEL_CRITICAL 1
 #else
 #define CE_LOG_LEVEL_CRITICAL 0
@@ -247,7 +247,9 @@ namespace Corona
 #endif
 
 #if CE_LOG_LEVEL_CRITICAL
-#define CE_LOG_CRITICAL(...) ::Corona::Logger::Critical(std::source_location::current(), __VA_ARGS__)
+#define CE_LOG_CRITICAL(...)                                                  \
+    ::Corona::Logger::Critical(std::source_location::current(), __VA_ARGS__); \
+    throw std::runtime_error("Critical error occurred!")
 #else
 #define CE_LOG_CRITICAL(...) (void)0
 #endif

@@ -6,7 +6,7 @@
             "name": "Launch",
             "program": "${command:cmake.launchTargetPath}",
             "args": [],
-            "cwd": "${command:cmake.buildDirectory}"
+            "cwd": "${command:cmake.launchTargetDirectory}"
         }
     ]
 }

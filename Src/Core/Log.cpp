@@ -17,8 +17,8 @@
 
 // Singleton-like storage
 static std::mutex g_mutex{};
-static std::shared_ptr<Corona::ILogBackend> g_backend = nullptr;
-static std::atomic_bool g_inited{false};
+static std::shared_ptr<Corona::ILogBackend> g_backend{nullptr};
+static std::atomic<bool> g_inited{false};
 
 namespace Corona
 {

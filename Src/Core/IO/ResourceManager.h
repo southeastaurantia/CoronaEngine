@@ -1,106 +1,77 @@
-//
-// Created by 47226 on 2025/9/8.
-//
-
 #pragma once
-#include "Core/Logger.h"
-#include "ResourceLoader.h"
-#include "oneapi/tbb/concurrent_hash_map.h"
-#include "oneapi/tbb/task_group.h"
 
-#include <string>
-#include <typeindex>
+#include "IResource.h"
+#include "IResourceLoader.h"
+#include "ResourceTypes.h"
+
+#include <oneapi/tbb/concurrent_unordered_map.h>
+#include <oneapi/tbb/task_group.h>
+
+#include <functional>
+#include <future>
+#include <memory>
+#include <mutex>
+#include <shared_mutex>
+#include <vector>
 
 namespace Corona
 {
-    class IResourceManager
-    {
-    public:
-        virtual ~IResourceManager() = default;
-    };
-
-    template <typename TRes>
-        requires std::default_initializable<TRes> && std::is_base_of_v<Corona::Resource, TRes>
-    class ResourceManager final : public IResourceManager
+    // 简要契约：
+    // 输入：ResourceId/type/path，回调可选
+    // 输出：shared_ptr<IResource> 或 typed 指针
+    // 错误：返回空指针并记录日志
+    class ResourceManager
     {
       public:
-        using Cache = tbb::concurrent_hash_map<std::string, typename ResourceLoader<TRes>::Handle>;
+        using LoadCallback = std::function<void(const ResourceId &, std::shared_ptr<IResource>)>; // nullptr 表示失败
 
-        template <typename TLoader>
-            requires std::is_base_of_v<ResourceLoader<TRes>, TLoader> && std::default_initializable<TLoader>
-        void register_loader()
+        ResourceManager();
+        ~ResourceManager();
+
+        // 注册/取消注册加载器
+        void registerLoader(std::shared_ptr<IResourceLoader> loader);
+        void unregisterLoader(std::shared_ptr<IResourceLoader> loader);
+
+        // 同步加载（带缓存）
+        std::shared_ptr<IResource> load(const ResourceId &id);
+
+        template <typename T>
+        std::shared_ptr<T> loadTyped(const ResourceId &id)
         {
-            auto loader_type = std::type_index(typeid(TLoader)).name();
-            std::lock_guard lock(loader_mutex);
-            if (loader != nullptr)
-            {
-                LOG_WARN("Resource loader '{}' already registered", loader_type);
-                return;
-            }
-            loader = std::make_unique<TLoader>();
-            LOG_DEBUG("Register resource loader '{}'", loader_type);
+            auto r = load(id);
+            return std::static_pointer_cast<T>(r);
         }
 
-        typename ResourceLoader<TRes>::Handle load(const std::string &path)
-        {
-            if (typename Cache::accessor accessor;
-                cache_res.find(accessor, path) &&
-                (accessor->second->get_status() == Resource::Status::OK ||
-                 accessor->second->get_status() == Resource::Status::LOADING))
-            {
-                LOG_DEBUG("Load cache resource '{}'", path);
-                return accessor->second;
-            }
+        // 异步加载，返回 future 或使用回调
+        std::future<std::shared_ptr<IResource>> loadAsync(const ResourceId &id);
+        void loadAsync(const ResourceId &id, LoadCallback cb);
 
-            if (loader == nullptr)
-            {
-                LOG_ERROR("Resource type '{}' not registered a loader", std::type_index(typeid(TRes)).name());
-                return nullptr;
-            }
+        // 预加载：并行排队加载，尽量复用缓存
+        void preload(const std::vector<ResourceId> &ids);
 
-            typename ResourceLoader<TRes>::Handle res = std::make_shared<TRes>();
-            res->set_status(Resource::Status::LOADING);
-            auto is_inserted = cache_res.emplace(path, res);
+        // 等待所有排队任务完成
+        void wait();
 
-            // 如果插入失败，说明在第一次检查后，有另一个线程插入了占位符
-            if (!is_inserted)
-            {
-                LOG_DEBUG("Load cache2 resource '{}'", path);
-                // 再次查找以获取已存在的句柄
-                if (typename Cache::accessor accessor; cache_res.find(accessor, path))
-                {
-                    return accessor->second;
-                }
-                // 这是一个理论上可能但极少发生的竞争条件：
-                // emplace 失败后，资源马上被另一个线程移除了。
-                // 在这种情况下，返回空指针是比较安全的处理方式。
-                LOG_ERROR("Inconsistent cache state for resource '{}'", path);
-                return nullptr;
-            }
-
-            tasks.run([&, path, res] {
-                if (loader->load(path, res))
-                {
-                    res->set_status(Resource::Status::OK);
-                    LOG_DEBUG("Load resource '{}' ok", path);
-                }
-                else
-                {
-                    // 在加载失败时，从缓存中移除占位符
-                    cache_res.erase(path);
-                    res->set_status(Resource::Status::FAILED);
-                    LOG_ERROR("Failed to load resource '{}'", path);
-                }
-            });
-
-            return res;
-        }
+        // 缓存管理
+        void clear();
+        bool contains(const ResourceId &id) const;
 
       private:
-        Cache cache_res;
-        std::unique_ptr<ResourceLoader<TRes>> loader;
-        std::mutex loader_mutex;
-        tbb::task_group tasks;
-    };
+        std::shared_ptr<IResource> loadInternal(const ResourceId &id);
+        std::shared_ptr<IResourceLoader> findLoader(const ResourceId &id);
 
+      private:
+        // 缓存：ResourceId -> IResource
+        tbb::concurrent_unordered_map<ResourceId, std::shared_ptr<IResource>, ResourceIdHash> cache_;
+
+        // In-flight 锁：防止同一资源被并发重复加载
+        tbb::concurrent_unordered_map<ResourceId, std::shared_ptr<std::mutex>, ResourceIdHash> locks_;
+
+        // 加载器集合（读多写少，用 shared_mutex）
+        mutable std::shared_mutex loadersMutex_;
+        std::vector<std::shared_ptr<IResourceLoader>> loaders_;
+
+        // 异步加载组
+        tbb::task_group tasks_;
+    };
 } // namespace Corona

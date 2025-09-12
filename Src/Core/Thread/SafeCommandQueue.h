@@ -61,7 +61,5 @@ namespace Corona
 
       private:
         tbb::concurrent_queue<Command> safe_queue;
-        
     };
-} // namespace CoronaEngine
-
+} // namespace Corona

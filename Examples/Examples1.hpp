@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Core/Engine.h>
+#include <Core/Engine/Engine.h>
 #include <Core/IO/Loaders/TextResource.h>
 #include <Core/Log.h>
 
@@ -24,8 +24,10 @@ namespace demo
             auto endsWith = [](const std::string &s, const std::string &suf) {
                 return s.size() >= suf.size() && std::equal(suf.rbegin(), suf.rend(), s.rbegin());
             };
-            if (id.type == "config") return true;         // 按类型匹配
-            if (endsWith(id.path, ".cfg")) return true;   // 或按扩展名匹配
+            if (id.type == "config")
+                return true; // 按类型匹配
+            if (endsWith(id.path, ".cfg"))
+                return true; // 或按扩展名匹配
             return false;
         }
 
@@ -42,9 +44,11 @@ namespace demo
             std::string line;
             while (std::getline(ifs, line))
             {
-                if (line.empty() || line[0] == '#') continue;
+                if (line.empty() || line[0] == '#')
+                    continue;
                 auto pos = line.find('=');
-                if (pos == std::string::npos) continue;
+                if (pos == std::string::npos)
+                    continue;
                 std::string key = line.substr(0, pos);
                 std::string val = line.substr(pos + 1);
                 res->kv.emplace(std::move(key), std::move(val));

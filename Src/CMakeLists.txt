@@ -45,13 +45,6 @@ target_link_libraries(CoronaEngine PUBLIC
         $<$<CONFIG:MinSizeRel>:tbbmalloc_proxy>
 )
 
-# 日志级别
-# 0 - Debug
-# 1 - Info
-# 2 - Warn
-# 3 - Error
-target_compile_definitions(CoronaEngine PRIVATE LOG_LEVEL=0)
-
 file(GLOB TBB_DLLS "${PROJECT_SOURCE_DIR}/Env/oneapi-tbb-2022.2.0/redist/intel64/vc14/*.dll")
 file(GLOB TBB_PDBS "${PROJECT_SOURCE_DIR}/Env/oneapi-tbb-2022.2.0/redist/intel64/vc14/*.pdb")
 
