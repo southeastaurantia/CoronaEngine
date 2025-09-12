@@ -3,7 +3,6 @@
 //
 
 #pragma once
-#include "Core/Engine.h"
 #include "Core/Logger.h"
 #include "ResourceLoader.h"
 #include "oneapi/tbb/concurrent_hash_map.h"
@@ -14,17 +13,22 @@
 
 namespace Corona
 {
+    class IResourceManager
+    {
+    public:
+        virtual ~IResourceManager() = default;
+    };
 
     template <typename TRes>
         requires std::default_initializable<TRes> && std::is_base_of_v<Corona::Resource, TRes>
-    class ResourceManager
+    class ResourceManager final : public IResourceManager
     {
       public:
         using Cache = tbb::concurrent_hash_map<std::string, typename ResourceLoader<TRes>::Handle>;
 
         template <typename TLoader>
             requires std::is_base_of_v<ResourceLoader<TRes>, TLoader> && std::default_initializable<TLoader>
-        static void register_loader()
+        void register_loader()
         {
             auto loader_type = std::type_index(typeid(TLoader)).name();
             std::lock_guard lock(loader_mutex);
@@ -37,7 +41,7 @@ namespace Corona
             LOG_DEBUG("Register resource loader '{}'", loader_type);
         }
 
-        static typename ResourceLoader<TRes>::Handle load(const std::string &path)
+        typename ResourceLoader<TRes>::Handle load(const std::string &path)
         {
             if (typename Cache::accessor accessor;
                 cache_res.find(accessor, path) &&
@@ -74,7 +78,7 @@ namespace Corona
                 return nullptr;
             }
 
-            tasks.run([&] {
+            tasks.run([&, path, res] {
                 if (loader->load(path, res))
                 {
                     res->set_status(Resource::Status::OK);
@@ -82,38 +86,21 @@ namespace Corona
                 }
                 else
                 {
-                    res = std::make_shared<TRes>();
+                    // 在加载失败时，从缓存中移除占位符
+                    cache_res.erase(path);
                     res->set_status(Resource::Status::FAILED);
                     LOG_ERROR("Failed to load resource '{}'", path);
                 }
             });
 
-            tasks.wait();
-
             return res;
         }
 
       private:
-        static Cache cache_res;
-        static std::unique_ptr<ResourceLoader<TRes>> loader;
-        static std::mutex loader_mutex;
-        static tbb::task_group tasks;
+        Cache cache_res;
+        std::unique_ptr<ResourceLoader<TRes>> loader;
+        std::mutex loader_mutex;
+        tbb::task_group tasks;
     };
 
 } // namespace Corona
-
-template <typename TRes>
-    requires std::default_initializable<TRes> && std::is_base_of_v<Corona::Resource, TRes>
-Corona::ResourceManager<TRes>::Cache Corona::ResourceManager<TRes>::cache_res = {};
-
-template <typename TRes>
-    requires std::default_initializable<TRes> && std::is_base_of_v<Corona::Resource, TRes>
-std::unique_ptr<Corona::ResourceLoader<TRes>> Corona::ResourceManager<TRes>::loader = nullptr;
-
-template <typename TRes>
-    requires std::default_initializable<TRes> && std::is_base_of_v<Corona::Resource, TRes>
-std::mutex Corona::ResourceManager<TRes>::loader_mutex = {};
-
-template <typename TRes>
-    requires std::default_initializable<TRes> && std::is_base_of_v<Corona::Resource, TRes>
-tbb::task_group Corona::ResourceManager<TRes>::tasks = {};

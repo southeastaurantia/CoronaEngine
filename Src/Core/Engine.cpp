@@ -22,10 +22,14 @@ namespace Corona
     Engine::~Engine()
     {
         LOG_DEBUG("Engine destroyed");
-        for (const auto system : systems | std::views::values)
+        for (const auto& system : systems | std::views::values)
         {
             system->stop();
         }
+        resource_managers.clear();
+        systems.clear();
+        system_cmd_queues.clear();
+        engineLogger.reset();
     }
     DataCache::id_type DataCache::get_next_id()
     {

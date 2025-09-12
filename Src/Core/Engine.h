@@ -65,6 +65,36 @@ namespace Corona
             throw std::runtime_error("System not registered: " + std::string(std::type_index(typeid(T)).name()));
         }
 
+        template <typename TRes>
+            requires std::is_base_of_v<Resource, TRes> && std::default_initializable<TRes>
+        void register_resource_manager()
+        {
+            auto type_idx = std::type_index(typeid(TRes));
+            if (resource_managers.contains(type_idx))
+            {
+                return;
+            }
+            resource_managers[type_idx] = std::make_shared<ResourceManager<TRes>>();
+        }
+
+        template <typename TRes>
+            requires std::is_base_of_v<Resource, TRes> && std::default_initializable<TRes>
+        ResourceManager<TRes> &get_resource_manager() const
+        {
+            auto type_idx = std::type_index(typeid(TRes));
+            if (!resource_managers.contains(type_idx))
+            {
+                throw std::runtime_error("Resource manager not registered for type: " + std::string(type_idx.name()));
+            }
+            return *std::static_pointer_cast<ResourceManager<TRes>>(resource_managers.at(type_idx));
+        }
+
+        template <typename TRes>
+        ResourceLoader<TRes>::Handle load(const std::string &path) const
+        {
+            return get_resource_manager<TRes>().load(path);
+        }
+
         SafeCommandQueue &get_cmd_queue(const std::string &name) const;
         void add_cmd_queue(const std::string &name, std::unique_ptr<SafeCommandQueue> cmd_queue);
 
@@ -78,6 +108,7 @@ namespace Corona
         std::shared_ptr<Logger> engineLogger;
         std::unordered_map<std::string, std::unique_ptr<SafeCommandQueue>> system_cmd_queues;
         std::unordered_map<std::type_index, std::shared_ptr<BaseMultimediaSystem>> systems;
+        std::unordered_map<std::type_index, std::shared_ptr<IResourceManager>> resource_managers;
 
         DataCache data;
     };

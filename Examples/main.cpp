@@ -16,15 +16,19 @@ int main()
     engine.register_system<Corona::AudioSystemDefault>();
     engine.register_system<Corona::DisplaySystemDefault>();
     engine.register_system<Corona::RenderingSystemDefault>();
+    engine.register_resource_manager<Corona::Model>();
+    engine.register_resource_manager<Corona::Shader>();
+    engine.get_resource_manager<Corona::Model>().register_loader<Corona::ModelLoader>();
+    engine.get_resource_manager<Corona::Shader>().register_loader<Corona::ShaderLoader>();
     engine.init();
+
+    const std::string model_path = (std::filesystem::current_path() / "assets/model/armadillo.obj").string();
+
+    auto model = engine.load<Corona::Model>(model_path);
 
     Corona::SafeDataCache<Corona::Texture> textureCache;
     Corona::SafeDataCache<Corona::Shader> shaderCache;
     Corona::SafeDataCache<Corona::Model> modelCache;
-
-    Corona::ResourceManager<Corona::Shader>::register_loader<Corona::ShaderLoader>();
-
-    std::shared_ptr<Corona::Shader> shader = Corona::ResourceManager<Corona::Shader>::load((std::filesystem::current_path() / "assets").string());
 
     auto &renderSystem = engine.get_system<Corona::RenderingSystemDefault>();
 
