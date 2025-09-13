@@ -5,7 +5,11 @@
 #include <Core/Engine/Systems/AudioSystem.h>
 #include <Core/Engine/Systems/DisplaySystem.h>
 #include <Core/Engine/Systems/RenderingSystem.h>
+
+#define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
+
 #include <Resource/Mesh.h>
 #include <Resource/Model.h>
 #include <chrono>
@@ -70,6 +74,12 @@ inline void Examples2()
         for (size_t i = 0; i < windows.size(); i++)
         {
             windows[i] = glfwCreateWindow(800, 800, "Cabbage Engine", nullptr, nullptr);
+            // 注意：这里传入的窗口句柄仅用于 DisplaySystem 创建显示表面
+            auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
+            auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
+            render_queue.enqueue([surface = glfwGetWin32Window(windows[i]), &rs = renderingSystem]() {
+                rs.setDisplaySurface(surface);
+            });
         }
 
         auto shouldClosed = [&]() {
