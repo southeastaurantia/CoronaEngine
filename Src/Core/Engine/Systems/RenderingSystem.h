@@ -4,6 +4,7 @@
 #include "Core/Engine/ThreadedSystem.h"
 #include "Pipeline/ComputePipeline.h"
 #include "Pipeline/RasterizerPipeline.h"
+#include "Resource/Shader.h"
 #include "ktm/type_vec.h"
 
 #include <unordered_set>
@@ -22,6 +23,7 @@ namespace Corona
         static void UnwatchMesh(uint64_t id); // 取消关注
         static void ClearWatched();           // 清空关注集合
         static void setDisplaySurface(void *surface);
+        static void initShader(std::shared_ptr<Shader> shader);
 
       protected:
         void onStart() override;
@@ -55,8 +57,10 @@ namespace Corona
         HardwareImage gbufferNormalImage;
         HardwareImage gbufferMotionVectorImage;
 
-        // RasterizerPipeline gbufferPipeline;
-        // ComputePipeline compositePipeline;
+        RasterizerPipeline rasterizerPipeline;
+        ComputePipeline computePipeline;
+
+        HardwareImage finalOutputImage;
 
         HardwareBuffer uniformBuffer;
         HardwareBuffer gbufferUniformBuffer;

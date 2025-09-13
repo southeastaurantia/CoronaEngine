@@ -53,6 +53,13 @@ void RenderingSystem::init()
     gbufferUniformBuffer = HardwareBuffer(sizeof(gbufferUniformBufferObject), BufferUsage::UniformBuffer);
 }
 
+void RenderingSystem::initShader(std::shared_ptr<Shader> shader)
+{
+    rasterizerPipeline.initialize(shader->vertCode, shader->fragCode);
+    computePipeline.initialize(shader->computeCode);
+}
+
+
 void RenderingSystem::setDisplaySurface(void *surface)
 {
     HardwareDisplayer displayer(surface);
@@ -62,7 +69,6 @@ void RenderingSystem::setDisplaySurface(void *surface)
 
 void RenderingSystem::updateEngine()
 {
-    // 按旧逻辑分阶段：GBuffer -> Composite
     gbufferPipeline();
     compositePipeline();
 }
@@ -72,60 +78,58 @@ void RenderingSystem::gbufferPipeline()
     // uniformBufferObjects.eyeDir = ktm::normalize(scene->getCamera().forward);
     //
     // uniformBufferObjects.eyeViewMatrix = ktm::look_at_lh(uniformBufferObjects.eyePosition, ktm::normalize(camera.forward), camera.worldUp);
-    // uniformBufferObjects.eyeProjMatrix = ktm::perspective_lh(ktm::radians(45.0f), (float)gbufferSize.x / (float)gbufferSize.y, 0.1f, 100.0f);
-    //
-    // gbufferUniformBufferObjects.viewProjMatrix = uniformBufferObjects.eyeProjMatrix * uniformBufferObjects.eyeViewMatrix;
-    // gbufferUniformBuffer.copyFromData(&gbufferUniformBufferObjects, sizeof(gbufferUniformBufferObjects));
-    //
-    // std::set<CabbageEngine::Actor *> actors = scene->getActors();
+    uniformBufferObjects.eyeProjMatrix = ktm::perspective_lh(ktm::radians(45.0f), (float)gbufferSize.x / (float)gbufferSize.y, 0.1f, 100.0f);
+
+    gbufferUniformBufferObjects.viewProjMatrix = uniformBufferObjects.eyeProjMatrix * uniformBufferObjects.eyeViewMatrix;
+    gbufferUniformBuffer.copyFromData(&gbufferUniformBufferObjects, sizeof(gbufferUniformBufferObjects));
+
     // for (auto &actor : actors)
     // {
     //     ktm::fmat4x4 actorMatrix = actor->getActorMatrix();
-    //     gbufferPipleLine["pushConsts.modelMatrix"] = actorMatrix;
+    //     rasterizerPipeline["pushConsts.modelMatrix"] = actorMatrix;
     //
     //     HardwareBuffer bonesMatrixBuffer = actor->getBonesMatrixBuffer();
-    //     gbufferPipleLine["pushConsts.uniformBufferIndex"] = gbufferUniformBuffer.storeDescriptor();
-    //     gbufferPipleLine["pushConsts.boneIndex"] = bonesMatrixBuffer.storeDescriptor();
+    //     rasterizerPipeline["pushConsts.uniformBufferIndex"] = gbufferUniformBuffer.storeDescriptor();
+    //     rasterizerPipeline["pushConsts.boneIndex"] = bonesMatrixBuffer.storeDescriptor();
     //
-    //     std::vector<CabbageEngine::Actor::MeshDeviceData> deviceMeshes = actor->getDeviceMeshes();
     //     for (auto &geom : deviceMeshes)
     //     {
-    //         gbufferPipleLine["inPosition"] = geom.pointsBuffer;
-    //         gbufferPipleLine["inNormal"] = geom.normalsBuffer;
-    //         gbufferPipleLine["inTexCoord"] = geom.texCoordsBuffer;
-    //         gbufferPipleLine["boneIndexes"] = geom.boneIndexesBuffer;
-    //         gbufferPipleLine["jointWeights"] = geom.boneWeightsBuffer;
-    //         gbufferPipleLine["pushConsts.textureIndex"] = geom.textureIndex;
+    //         rasterizerPipeline["inPosition"] = geom.pointsBuffer;
+    //         rasterizerPipeline["inNormal"] = geom.normalsBuffer;
+    //         rasterizerPipeline["inTexCoord"] = geom.texCoordsBuffer;
+    //         rasterizerPipeline["boneIndexes"] = geom.boneIndexesBuffer;
+    //         rasterizerPipeline["jointWeights"] = geom.boneWeightsBuffer;
+    //         rasterizerPipeline["pushConsts.textureIndex"] = geom.textureIndex;
     //
-    //         gbufferPipleLine.recordGeomMesh(geom.indexBuffer);
+    //         rasterizerPipeline.recordGeomMesh(geom.indexBuffer);
     //     }
     // }
-    //
-    // gbufferPipleLine["gbufferPostion"] = gbufferPostionImage;
-    // gbufferPipleLine["gbufferBaseColor"] = gbufferBaseColorImage;
-    // gbufferPipleLine["gbufferNormal"] = gbufferNormalImage;
-    // gbufferPipleLine["gbufferMotionVector"] = gbufferMotionVectorImage;
-    // gbufferPipleLine.executePipeline(gbufferSize);
+
+    rasterizerPipeline["gbufferPostion"] = gbufferPostionImage;
+    rasterizerPipeline["gbufferBaseColor"] = gbufferBaseColorImage;
+    rasterizerPipeline["gbufferNormal"] = gbufferNormalImage;
+    rasterizerPipeline["gbufferMotionVector"] = gbufferMotionVectorImage;
+    // rasterizerPipeline.executePipeline(gbufferSize);
     CE_LOG_DEBUG("RenderingSystem: gbufferPipeline executed");
 }
 void RenderingSystem::compositePipeline()
 {
-    // rendererPipleLine["pushConsts.gbufferSize"] = gbufferSize;
-    // rendererPipleLine["pushConsts.gbufferPostionImage"] = gbufferPostionImage.storeDescriptor();
-    // rendererPipleLine["pushConsts.gbufferBaseColorImage"] = gbufferBaseColorImage.storeDescriptor();
-    // rendererPipleLine["pushConsts.gbufferNormalImage"] = gbufferNormalImage.storeDescriptor();
-    // rendererPipleLine["pushConsts.gbufferDepthImage"] = gbufferPipleLine.getDepthImage().storeDescriptor();
-    //
-    // rendererPipleLine["pushConsts.finalOutputImage"] = finalOutputImage.storeDescriptor();
-    //
-    // rendererPipleLine["pushConsts.sun_dir"] = ktm::normalize(sunDir);
-    //
-    // rendererPipleLine["pushConsts.lightColor"] = ktm::fvec3(23.47f, 21.31f, 20.79f);
-    //
-    // uniformBuffer.copyFromData(&uniformBufferObjects, sizeof(uniformBufferObjects));
-    // rendererPipleLine["pushConsts.uniformBufferIndex"] = uniformBuffer.storeDescriptor();
-    //
-    // rendererPipleLine.executePipeline(ktm::uvec3(gbufferSize.x / 8, gbufferSize.y / 8, 1));
+    computePipeline["pushConsts.gbufferSize"] = gbufferSize;
+    computePipeline["pushConsts.gbufferPostionImage"] = gbufferPostionImage.storeDescriptor();
+    computePipeline["pushConsts.gbufferBaseColorImage"] = gbufferBaseColorImage.storeDescriptor();
+    computePipeline["pushConsts.gbufferNormalImage"] = gbufferNormalImage.storeDescriptor();
+    computePipeline["pushConsts.gbufferDepthImage"] = rasterizerPipeline.getDepthImage().storeDescriptor();
+
+    computePipeline["pushConsts.finalOutputImage"] = finalOutputImage.storeDescriptor();
+
+    // computePipeline["pushConsts.sun_dir"] = ktm::normalize(sunDir);
+
+    computePipeline["pushConsts.lightColor"] = ktm::fvec3(23.47f, 21.31f, 20.79f);
+
+    uniformBuffer.copyFromData(&uniformBufferObjects, sizeof(uniformBufferObjects));
+    computePipeline["pushConsts.uniformBufferIndex"] = uniformBuffer.storeDescriptor();
+
+    // computePipeline.executePipeline(ktm::uvec3(gbufferSize.x / 8, gbufferSize.y / 8, 1));
     CE_LOG_DEBUG("RenderingSystem: compositePipeline executed");
 }
 

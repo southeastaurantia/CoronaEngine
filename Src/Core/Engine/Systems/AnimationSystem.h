@@ -32,7 +32,9 @@ namespace Corona
 
       private:
         std::vector<float> boneMatrices_; // 占位：后续替换为矩阵类型
-        float currentTime_ = 0.0f;
+        float currentTime = 0.0f;
+        std::chrono::high_resolution_clock::time_point last_tick_time;
+        float playback_speed = 1.0f; // 播放速度倍数
         std::unordered_map<uint64_t, float> animationTime_{};
         std::unordered_set<uint64_t> data_keys_{};
         void processAnimation(uint64_t id);

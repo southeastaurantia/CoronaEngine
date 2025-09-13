@@ -122,7 +122,8 @@ AnimationSystem::AnimationSystem()
 
 void AnimationSystem::onStart()
 {
-    currentTime_ = 0.0f;
+    currentTime = 0.0f;
+    last_tick_time = std::chrono::high_resolution_clock::now();
 }
 
 void AnimationSystem::onTick()
@@ -135,6 +136,21 @@ void AnimationSystem::onTick()
             continue;
         ++spun;
     }
+
+    const auto now = std::chrono::high_resolution_clock::now();
+    float dt = std::chrono::duration<float>(now - last_tick_time).count();
+    last_tick_time = now;
+    if (dt < 0.0f)
+        dt = 0.0f;
+    const float max_dt = 0.1f;
+    if (dt > max_dt)
+        dt = max_dt;
+
+    dt *= playback_speed;
+
+    if (dt <= 0.0f)
+        return;
+
     // 遍历关注的 AnimationState 并推进
     auto &cache = Engine::Instance().Cache<AnimationState>();
     cache.safe_loop_foreach(data_keys_, [&](std::shared_ptr<AnimationState> st) {
