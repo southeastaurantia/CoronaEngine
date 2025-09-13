@@ -4,7 +4,6 @@
 
 #include "Model.h"
 
-#include "Codegen/AST/Enum.hpp"
 #include <Core/Log.h>
 #include <algorithm>
 #include <assimp/Importer.hpp>
@@ -16,7 +15,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-#include <format>
 #include <regex>
 
 namespace Corona
