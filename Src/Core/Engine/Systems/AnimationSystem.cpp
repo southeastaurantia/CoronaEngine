@@ -127,6 +127,14 @@ void AnimationSystem::onStart()
 
 void AnimationSystem::onTick()
 {
+    auto &rq = Engine::Instance().GetQueue(name());
+    int spun = 0;
+    while (spun < 100 && !rq.empty())
+    {
+        if (!rq.try_execute())
+            continue;
+        ++spun;
+    }
     // 遍历关注的 AnimationState 并推进
     auto &cache = Engine::Instance().Cache<AnimationState>();
     cache.safe_loop_foreach(data_keys_, [&](std::shared_ptr<AnimationState> st) {
