@@ -1,7 +1,3 @@
-//
-// Created by 25473 on 25-9-9.
-//
-
 #pragma once
 #include "CabbageDisplayer.h"
 #include "Core/IO/IResource.h"

@@ -1,9 +1,9 @@
 #include "TextResource.h"
 
-#include <Core/Log.h>
+#include "Core/Log.h"
+
 #include <algorithm>
 #include <fstream>
-
 
 namespace Corona
 {

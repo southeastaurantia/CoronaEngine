@@ -14,7 +14,7 @@ namespace Corona
         return inst;
     }
 
-    // --- DataId ---
+    // --- DataId：简单自增 ID 生成器 ---
     std::atomic<DataId::id_type> DataId::counter_ = 0;
     DataId::id_type DataId::Next()
     {
@@ -26,14 +26,14 @@ namespace Corona
         if (inited_)
             return;
 
-        // Init logging
+        // 初始化日志
         Logger::Init(cfg);
 
-        // Create ResourceManager and register default loaders
+        // 创建资源管理器并注册默认加载器
         resMgr_ = std::make_unique<ResourceManager>();
         resMgr_->registerLoader(std::make_shared<TextResourceLoader>());
         resMgr_->registerLoader(std::make_shared<BinaryResourceLoader>());
-        // Register engine resource loaders
+        // 引擎资源加载器（模型/着色器）
         resMgr_->registerLoader(std::make_shared<ModelLoader>());
         resMgr_->registerLoader(std::make_shared<ShaderLoader>());
 

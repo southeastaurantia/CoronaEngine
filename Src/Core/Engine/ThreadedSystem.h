@@ -1,12 +1,11 @@
-// A reusable base for threaded systems that mirrors the old Multimedia systems' pattern
 #pragma once
+
+#include "Core/Engine/ISystem.h"
+#include "Core/Log.h"
 
 #include <atomic>
 #include <chrono>
 #include <thread>
-
-#include "Core/Engine/ISystem.h"
-#include "Core/Log.h"
 
 namespace Corona
 {
@@ -56,13 +55,14 @@ namespace Corona
             CE_LOG_DEBUG("{} stopped", name());
         }
 
-        // Default tick dispatches to onTick so subclasses only override onTick
+        // 默认 tick 转发到 onTick，子类通常只需覆写 onTick
         void tick() override
         {
             onTick();
         }
 
       protected:
+        // 设置目标帧率（fps<=0 时回退到 60）
         void SetTargetFps(int fps)
         {
             if (fps <= 0)
@@ -70,12 +70,15 @@ namespace Corona
             targetFrameTimeUs_ = 1'000'000 / fps;
         }
 
+        // 生命周期：线程启动前回调
         virtual void onStart()
         {
         }
+        // 生命周期：每帧逻辑（由专用线程以固定节奏调用）
         virtual void onTick()
         {
         }
+        // 生命周期：线程停止后回调
         virtual void onStop()
         {
         }

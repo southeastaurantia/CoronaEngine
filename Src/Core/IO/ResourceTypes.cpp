@@ -7,6 +7,7 @@
 namespace Corona
 {
 
+    // 规范化并计算 64 位 FNV-1a 哈希：确保同一路径的不同大小写/分隔符形式得到相同 uid
     std::uint64_t ResourceId::ComputeUid(const ResourceType &type, const ResourcePath &path)
     {
         auto normType = type;
@@ -19,7 +20,7 @@ namespace Corona
             normPath.pop_back();
         std::transform(normPath.begin(), normPath.end(), normPath.begin(), [](unsigned char c) { return std::tolower(c); });
 
-        const std::uint64_t FNV_OFFSET = 1469598103934665603ull;
+        const std::uint64_t FNV_OFFSET = 1469598103934665603ull; // FNV-1a 偏移
         const std::uint64_t FNV_PRIME = 1099511628211ull;
 
         auto fnv1a64 = [&](const std::string &s, std::uint64_t seed) {
@@ -32,7 +33,7 @@ namespace Corona
             return h;
         };
 
-        std::uint64_t h = FNV_OFFSET;
+        std::uint64_t h = FNV_OFFSET; // hash(type) + "\n" + hash(path)
         h = fnv1a64(normType, h);
         h = fnv1a64(std::string("\n"), h);
         h = fnv1a64(normPath, h);

@@ -1,17 +1,15 @@
-// CoronaEngine - Core logging facade
-// Header keeps backend details private to allow future swap of logging library.
+// CoronaEngine - 日志API（Facade）
+// 仅暴露统一接口，隐藏具体后端，便于后续替换日志库。
 
 #pragma once
 
 #include <cstdint>
 #include <memory>
+#include <source_location>
 #include <string>
 #include <string_view>
-// C++20 source location for capturing file/line/function at callsite
-#include <source_location>
 
-// Use spdlog's bundled fmt for safe, header-only formatting without adding a new dependency.
-// This avoids exposing spdlog itself while enabling type-safe formatting APIs.
+// 使用 spdlog 自带的 fmt（头文件实现），提供类型安全的格式化能力，同时不在接口层暴露 spdlog。
 #include <spdlog/fmt/bundled/core.h>
 #include <spdlog/fmt/bundled/format.h>
 
@@ -32,20 +30,19 @@ namespace Corona
     {
         bool enableConsole = true;
         bool enableFile = false;
-        // Rotating file sink settings (used when enableFile = true)
+        // 滚动文件输出配置（当 enableFile = true 生效）
         std::string filePath = "logs/Corona.log";
         std::size_t maxFileSizeBytes = 5 * 1024 * 1024; // 5MB
         std::size_t maxFiles = 3;
 
-        // Async logging (if supported by backend)
+        // 异步日志（若后端支持）
         bool async = false;
 
-        // Pattern string, see backend docs (e.g., spdlog pattern syntax)
-        // Header: [time][LEVEL][file:line] message
-        // LEVEL is uppercased and fixed 5 chars (via custom level names below), also padded in pattern.
+        // 日志格式字符串（参见后端语法，如 spdlog）：
+        // 形如：[时间][Logger名][级别][文件:行] 消息
         std::string pattern = "%^[%Y-%m-%d %H:%M:%S.%e][%n][%-5!l][%g:%#] %v%$";
 
-        // Initial level
+        // 初始日志级别
         LogLevel level = LogLevel::Debug;
     };
 
@@ -55,21 +52,21 @@ namespace Corona
     class Logger
     {
       public:
-        // Initialize global logger with configuration (idempotent)
+        // 以配置初始化全局日志器（幂等）
         static void Init(const LogConfig &config = {});
         static void Shutdown();
 
         static void SetLevel(LogLevel level);
         static LogLevel GetLevel();
 
-        // Formatted logging helpers (fmt-style). Avoid exposing backend types.
+        // 格式化日志（fmt 风格），不暴露后端类型
         template <typename... Args>
         static void Trace(fmt::format_string<Args...> fmtStr, Args &&...args)
         {
             LogFormatted(LogLevel::Trace, fmtStr, std::forward<Args>(args)...);
         }
 
-        // Location-aware overloads (location first to allow defaulted macro injection)
+        // 带位置信息重载（便于日志宏自动注入 source_location）
         template <typename... Args>
         static void Trace(const std::source_location &loc, fmt::format_string<Args...> fmtStr, Args &&...args)
         {
@@ -138,7 +135,7 @@ namespace Corona
 
         static void Flush();
 
-        // Raw string logging (already formatted)
+        // 原始字符串日志（已格式化）
         static void Log(LogLevel level, std::string_view message);
         static void Log(LogLevel level, std::string_view message, const std::source_location &loc);
 
@@ -159,10 +156,8 @@ namespace Corona
     };
 } // namespace Corona
 
-// Compile-time filtering
-// New: independent per-level switches CE_LOG_LEVEL_TRACE/DEBUG/INFO/WARN/ERROR/CRITICAL (1=enabled, 0=disabled)
-// Backward compatible: if not provided, derive from legacy LOG_LEVEL threshold
-// Legacy mapping: 0-Debug(Trace,Debug enabled), 1-Info, 2-Warn, 3-Error (Error+Critical), 4-Off
+// 编译期日志开关：
+// - 独立的级别开关 CE_LOG_LEVEL_TRACE/DEBUG/INFO/WARN/ERROR/CRITICAL（1 开启 / 0 关闭）
 #ifndef LOG_LEVEL
 #define LOG_LEVEL 0
 #endif

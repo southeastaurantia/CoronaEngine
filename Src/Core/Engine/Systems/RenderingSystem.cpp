@@ -1,10 +1,9 @@
 #include "RenderingSystem.h"
-
 #include "Core/Engine/Engine.h"
 #include "Core/Log.h"
 #include "Resource/Mesh.h"
-#include <memory>
 
+#include <memory>
 
 using namespace Corona;
 
@@ -106,7 +105,6 @@ void RenderingSystem::gbufferPipeline()
     // gbufferPipleLine["gbufferNormal"] = gbufferNormalImage;
     // gbufferPipleLine["gbufferMotionVector"] = gbufferMotionVectorImage;
     // gbufferPipleLine.executePipeline(gbufferSize);
-    CE_LOG_DEBUG("RenderingSystem: gbufferPipeline executed");
 }
 void RenderingSystem::compositePipeline()
 {
@@ -126,7 +124,6 @@ void RenderingSystem::compositePipeline()
     // rendererPipleLine["pushConsts.uniformBufferIndex"] = uniformBuffer.storeDescriptor();
     //
     // rendererPipleLine.executePipeline(ktm::uvec3(gbufferSize.x / 8, gbufferSize.y / 8, 1));
-    CE_LOG_DEBUG("RenderingSystem: compositePipeline executed");
 }
 
 // static

@@ -3,6 +3,7 @@
 #include "Resource/Animation.h"
 #include "Resource/Bone.h"
 #include "Resource/Model.h"
+
 #include <cmath>
 
 namespace

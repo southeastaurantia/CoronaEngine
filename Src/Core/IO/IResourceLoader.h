@@ -6,7 +6,7 @@
 
 namespace Corona
 {
-    // 可插拔资源加载器接口：按类型或扩展名匹配，返回 IResource 智能指针
+    // 可插拔资源加载器接口：按类型/扩展名/路径匹配，返回 IResource 智能指针
     struct IResourceLoader
     {
         virtual ~IResourceLoader() = default;

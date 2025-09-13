@@ -2,13 +2,9 @@
 
 #include "CabbageDisplayer.h"
 #include "Core/Engine/ThreadedSystem.h"
-#include "Pipeline/ComputePipeline.h"
-#include "Pipeline/RasterizerPipeline.h"
 #include "ktm/type_vec.h"
 
 #include <unordered_set>
-
-
 
 namespace Corona
 {
@@ -55,8 +51,8 @@ namespace Corona
         HardwareImage gbufferNormalImage;
         HardwareImage gbufferMotionVectorImage;
 
-        // RasterizerPipeline gbufferPipeline;
-        // ComputePipeline compositePipeline;
+        // RasterizerPipeline gbufferPipeline; // 保留占位
+        // ComputePipeline compositePipeline;  // 保留占位
 
         HardwareBuffer uniformBuffer;
         HardwareBuffer gbufferUniformBuffer;

@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../IResourceLoader.h"
+#include "Core/IO/IResourceLoader.h"
+
 #include <string>
 #include <vector>
 
