@@ -58,6 +58,10 @@ void RenderingSystem::initShader(std::shared_ptr<Shader> shader)
     computePipeline.initialize(shader->computeCode);
 }
 
+void RenderingSystem::getShader(RenderingSystem &system, std::shared_ptr<Shader> shader)
+{
+    system.initShader(shader);
+}
 
 void RenderingSystem::setDisplaySurface(void *surface)
 {
@@ -73,10 +77,10 @@ void RenderingSystem::updateEngine()
 }
 void RenderingSystem::gbufferPipeline()
 {
-    // uniformBufferObjects.eyePosition = scene->getCamera().pos;
-    // uniformBufferObjects.eyeDir = ktm::normalize(scene->getCamera().forward);
-    //
-    // uniformBufferObjects.eyeViewMatrix = ktm::look_at_lh(uniformBufferObjects.eyePosition, ktm::normalize(camera.forward), camera.worldUp);
+    uniformBufferObjects.eyePosition = ktm::fvec3(1.0f, 1.0f, 1.0f);
+    uniformBufferObjects.eyeDir = ktm::normalize(ktm::fvec3(-1.0f, -1.0f, -1.0f));
+
+    uniformBufferObjects.eyeViewMatrix = ktm::look_at_lh(uniformBufferObjects.eyePosition, ktm::normalize(ktm::fvec3(-1.0f, -1.0f, -1.0f)), ktm::fvec3(0.0f, 1.0f, 0.0f));
     uniformBufferObjects.eyeProjMatrix = ktm::perspective_lh(ktm::radians(45.0f), (float)gbufferSize.x / (float)gbufferSize.y, 0.1f, 100.0f);
 
     gbufferUniformBufferObjects.viewProjMatrix = uniformBufferObjects.eyeProjMatrix * uniformBufferObjects.eyeViewMatrix;

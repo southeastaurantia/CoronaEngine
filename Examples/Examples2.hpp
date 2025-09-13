@@ -43,7 +43,7 @@ inline void Examples2()
     auto shaderCode = Corona::Engine::Instance().Resources().load({"shader", (std::filesystem::current_path() / "assets").string()});
     std::shared_ptr<Corona::Shader> shader = std::static_pointer_cast<Corona::Shader>(shaderCode);
     render_queue.enqueue([shader, &rs = renderingSystem]() {
-        rs.initShader(shader);
+        rs.getShader(rs, shader);
     });
 
 

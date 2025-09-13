@@ -21,7 +21,8 @@ namespace Corona
         static void UnwatchMesh(uint64_t id); // 取消关注
         static void ClearWatched();           // 清空关注集合
         static void setDisplaySurface(void *surface);
-        static void initShader(std::shared_ptr<Shader> shader);
+        static void getShader(RenderingSystem &system, std::shared_ptr<Shader> shader);
+        void initShader(std::shared_ptr<Shader> shader);
 
       protected:
         void onStart() override;
