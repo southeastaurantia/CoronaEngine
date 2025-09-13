@@ -87,6 +87,22 @@ namespace Corona
         return loadInternal(id);
     }
 
+    std::shared_ptr<IResource> ResourceManager::loadOnce(const ResourceId &id)
+    {
+        auto loader = findLoader(id);
+        if (!loader)
+        {
+            CE_LOG_ERROR("No loader for type='{}' path='{}' (loadOnce)", id.type, id.path);
+            return nullptr;
+        }
+        auto res = loader->load(id);
+        if (!res)
+        {
+            CE_LOG_ERROR("LoadOnce failed for type='{}' path='{}'", id.type, id.path);
+        }
+        return res;
+    }
+
     std::future<std::shared_ptr<IResource>> ResourceManager::loadAsync(const ResourceId &id)
     {
         auto prom = std::make_shared<std::promise<std::shared_ptr<IResource>>>();
@@ -97,10 +113,29 @@ namespace Corona
         return fut;
     }
 
+    std::future<std::shared_ptr<IResource>> ResourceManager::loadOnceAsync(const ResourceId &id)
+    {
+        auto prom = std::make_shared<std::promise<std::shared_ptr<IResource>>>();
+        auto fut = prom->get_future();
+        tasks_.run([this, id, prom] {
+            prom->set_value(this->loadOnce(id));
+        });
+        return fut;
+    }
+
     void ResourceManager::loadAsync(const ResourceId &id, LoadCallback cb)
     {
         tasks_.run([this, id, cb] {
             auto res = loadInternal(id);
+            if (cb)
+                cb(id, res);
+        });
+    }
+
+    void ResourceManager::loadOnceAsync(const ResourceId &id, LoadCallback cb)
+    {
+        tasks_.run([this, id, cb] {
+            auto res = loadOnce(id);
             if (cb)
                 cb(id, res);
         });

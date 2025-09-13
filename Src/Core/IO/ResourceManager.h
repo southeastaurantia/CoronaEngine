@@ -46,6 +46,13 @@ namespace Corona
         std::future<std::shared_ptr<IResource>> loadAsync(const ResourceId &id);
         void loadAsync(const ResourceId &id, LoadCallback cb);
 
+  // 一次性加载（不进入缓存）
+  // 同步版本：直接通过匹配的 loader 读取并返回（失败返回 nullptr）。
+  std::shared_ptr<IResource> loadOnce(const ResourceId &id);
+  // 异步版本：不进入缓存。
+  std::future<std::shared_ptr<IResource>> loadOnceAsync(const ResourceId &id);
+  void loadOnceAsync(const ResourceId &id, LoadCallback cb);
+
         // 预加载：并行排队加载，尽量复用缓存
         void preload(const std::vector<ResourceId> &ids);
 
