@@ -75,7 +75,11 @@ inline void Examples2()
         {
             windows[i] = glfwCreateWindow(800, 800, "Cabbage Engine", nullptr, nullptr);
             // 注意：这里传入的窗口句柄仅用于 DisplaySystem 创建显示表面
-            Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>().setDisplaySurface(glfwGetWin32Window(windows[i]));
+            auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
+            auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
+            render_queue.enqueue([surface = glfwGetWin32Window(windows[i]), &rs = renderingSystem]() {
+                rs.setDisplaySurface(surface);
+            });
         }
 
         auto shouldClosed = [&]() {

@@ -24,8 +24,12 @@ void RenderingSystem::onTick()
     // 最小消费命令队列，避免无限增长
     auto &rq = Engine::Instance().GetQueue(name());
     int spun = 0;
-    while (spun < 16 && rq.try_execute())
+    while (spun < 100 && !rq.empty())
+    {
+        if (!rq.try_execute())
+            continue;
         ++spun;
+    }
 
     // 遍历 data_keys_ 示例：从 Cache<Mesh> 读取并执行占位渲染操作
     auto &meshCache = Engine::Instance().Cache<Mesh>();
