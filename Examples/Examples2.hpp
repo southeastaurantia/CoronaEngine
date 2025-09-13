@@ -42,9 +42,7 @@ inline void Examples2()
     auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
     auto shaderCode = Corona::Engine::Instance().Resources().load({"shader", (std::filesystem::current_path() / "assets").string()});
     std::shared_ptr<Corona::Shader> shader = std::static_pointer_cast<Corona::Shader>(shaderCode);
-    render_queue.enqueue([shader, &rs = renderingSystem]() {
-        rs.getShader(rs, shader);
-    });
+    render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::initShader, shader);
 
 
     // 使用数据缓存：加载模型并构建动画状态（若资源存在）

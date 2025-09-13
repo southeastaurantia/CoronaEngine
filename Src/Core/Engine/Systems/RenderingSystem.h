@@ -21,7 +21,6 @@ namespace Corona
         static void UnwatchMesh(uint64_t id); // 取消关注
         static void ClearWatched();           // 清空关注集合
         static void setDisplaySurface(void *surface);
-        static void getShader(RenderingSystem &system, std::shared_ptr<Shader> shader);
         void initShader(std::shared_ptr<Shader> shader);
 
       protected:
@@ -32,7 +31,9 @@ namespace Corona
       private:
         // 迁移保留：全局DataCache的所有key集合（后续用于 foreach）
         std::unordered_set<uint64_t> data_keys_{};
+        std::vector<std::unique_ptr<HardwareDisplayer>> displayers_{};
 
+        bool shaderHasInit = false;
         struct UniformBufferObject
         {
             ktm::fvec3 lightPostion;

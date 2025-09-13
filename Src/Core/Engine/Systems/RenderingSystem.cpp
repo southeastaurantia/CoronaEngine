@@ -34,6 +34,7 @@ void RenderingSystem::onTick()
     auto &meshCache = Engine::Instance().Cache<Mesh>();
     meshCache.safe_loop_foreach(data_keys_, [&](std::shared_ptr<Mesh> m) {
         (void)m; // TODO: 真正的渲染逻辑
+        updateEngine();
     });
 }
 
@@ -50,30 +51,37 @@ void RenderingSystem::init()
 
     uniformBuffer = HardwareBuffer(sizeof(UniformBufferObject), BufferUsage::UniformBuffer);
     gbufferUniformBuffer = HardwareBuffer(sizeof(gbufferUniformBufferObject), BufferUsage::UniformBuffer);
+
+    finalOutputImage = HardwareImage(gbufferSize, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
 }
 
 void RenderingSystem::initShader(std::shared_ptr<Shader> shader)
 {
     rasterizerPipeline.initialize(shader->vertCode, shader->fragCode);
     computePipeline.initialize(shader->computeCode);
-}
-
-void RenderingSystem::getShader(RenderingSystem &system, std::shared_ptr<Shader> shader)
-{
-    system.initShader(shader);
+    shaderHasInit = true;
 }
 
 void RenderingSystem::setDisplaySurface(void *surface)
 {
-    HardwareDisplayer displayer(surface);
-    HardwareImage finalOutputImage(ktm::uvec2(1920, 1080), ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
-    displayer = finalOutputImage;
+    auto &q = Engine::Instance().GetQueue("RenderingSystem");
+    q.enqueue([surface]() mutable {
+        auto &sys = Engine::Instance().GetSystem<RenderingSystem>();
+        sys.displayers_.emplace_back(std::make_unique<HardwareDisplayer>(surface));
+    });
 }
 
 void RenderingSystem::updateEngine()
 {
-    gbufferPipeline();
-    compositePipeline();
+    if (shaderHasInit)
+    {
+        for (auto &dptr : displayers_)
+        {
+            gbufferPipeline();
+            compositePipeline();
+            *dptr = finalOutputImage;
+        }
+    }
 }
 void RenderingSystem::gbufferPipeline()
 {
@@ -113,7 +121,6 @@ void RenderingSystem::gbufferPipeline()
     rasterizerPipeline["gbufferNormal"] = gbufferNormalImage;
     rasterizerPipeline["gbufferMotionVector"] = gbufferMotionVectorImage;
     // rasterizerPipeline.executePipeline(gbufferSize);
-    CE_LOG_DEBUG("RenderingSystem: gbufferPipeline executed");
 }
 void RenderingSystem::compositePipeline()
 {
@@ -125,15 +132,14 @@ void RenderingSystem::compositePipeline()
 
     computePipeline["pushConsts.finalOutputImage"] = finalOutputImage.storeDescriptor();
 
-    // computePipeline["pushConsts.sun_dir"] = ktm::normalize(sunDir);
+    computePipeline["pushConsts.sun_dir"] = ktm::normalize(ktm::fvec3(0.0f, 1.0f, 0.0f));
 
     computePipeline["pushConsts.lightColor"] = ktm::fvec3(23.47f, 21.31f, 20.79f);
 
     uniformBuffer.copyFromData(&uniformBufferObjects, sizeof(uniformBufferObjects));
     computePipeline["pushConsts.uniformBufferIndex"] = uniformBuffer.storeDescriptor();
 
-    // computePipeline.executePipeline(ktm::uvec3(gbufferSize.x / 8, gbufferSize.y / 8, 1));
-    CE_LOG_DEBUG("RenderingSystem: compositePipeline executed");
+    computePipeline.executePipeline(ktm::uvec3(gbufferSize.x / 8, gbufferSize.y / 8, 1));
 }
 
 // static
