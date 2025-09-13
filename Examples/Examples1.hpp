@@ -3,6 +3,7 @@
 #include <Core/Engine/Engine.h>
 #include <Core/IO/Loaders/TextResource.h>
 #include <Core/Log.h>
+#include <Core/Thread/SafeCommandQueue.h>
 
 #include <filesystem>
 #include <fstream>
@@ -145,6 +146,51 @@ inline void Examples1()
     else
     {
         CE_LOG_ERROR("Custom cfg load failed: {}", idCfg.path);
+    }
+
+    // 6) SafeCommandQueue 示例：值/指针/引用包装/shared_ptr + 成员函数指针
+    {
+        using Corona::SafeCommandQueue;
+        SafeCommandQueue q;
+
+        struct Foo
+        {
+            int n = 0;
+            void bar(const char *tag)
+            {
+                ++n;
+                CE_LOG_INFO("Foo::bar called n={} tag={}", n, tag);
+            }
+            void baz(int x) const
+            {
+                CE_LOG_INFO("Foo::baz (const) called x={}", x);
+            }
+        };
+
+        Foo a;
+        Foo *p = &a;
+        auto sp = std::make_shared<Foo>();
+
+        // 以值传递（会复制/移动对象）
+        q.enqueue(a, &Foo::bar, "by-value");
+        // 以指针传递
+        q.enqueue(p, &Foo::bar, "by-pointer");
+        // 引用包装（不复制对象）
+        q.enqueue(std::ref(a), &Foo::bar, "by-ref");
+        // shared_ptr 专用重载，自动 sp.get()
+        q.enqueue(sp, &Foo::baz, 42);
+        // 通用可调用对象（lambda）
+        q.enqueue([] {
+            CE_LOG_INFO("Generic callable executed via queue");
+        });
+
+        // Drain 队列并执行命令
+        while (!q.empty())
+        {
+            q.try_execute();
+        }
+
+        CE_LOG_INFO("After queue: a.n = {} (expect 2)", a.n);
     }
 
     // Clean shutdown
