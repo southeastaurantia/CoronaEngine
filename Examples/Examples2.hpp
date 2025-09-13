@@ -44,7 +44,6 @@ inline void Examples2()
     std::shared_ptr<Corona::Shader> shader = std::static_pointer_cast<Corona::Shader>(shaderCode);
     render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::initShader, shader);
 
-
     // 使用数据缓存：加载模型并构建动画状态（若资源存在）
     std::shared_ptr<Corona::Model> model;
     {

@@ -120,7 +120,7 @@ void RenderingSystem::gbufferPipeline()
     rasterizerPipeline["gbufferBaseColor"] = gbufferBaseColorImage;
     rasterizerPipeline["gbufferNormal"] = gbufferNormalImage;
     rasterizerPipeline["gbufferMotionVector"] = gbufferMotionVectorImage;
-    // rasterizerPipeline.executePipeline(gbufferSize);
+    rasterizerPipeline.startRecord(gbufferSize) << rasterizerPipeline.endRecord();
 }
 void RenderingSystem::compositePipeline()
 {
