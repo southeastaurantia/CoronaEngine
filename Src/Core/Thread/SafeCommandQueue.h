@@ -1,13 +1,11 @@
-//
-// Created by 47226 on 2025/9/4.
-//
-
 #pragma once
 #include <functional>
+// 依赖 oneTBB 并发队列实现线程安全命令投递
 #include <oneapi/tbb.h>
 
 namespace Corona
 {
+    // 线程安全命令队列：支持跨线程投递与消费，常用于系统线程之间通信
     class SafeCommandQueue
     {
       public:
@@ -41,7 +39,7 @@ namespace Corona
             safe_queue.push(std::move(cmd));
         }
 
-        // 从队列中取出一个命令并执行
+        // 从队列中取出一个命令并执行（无阻塞）
         bool try_execute()
         {
             if (Command cmd; safe_queue.try_pop(cmd))
@@ -52,7 +50,7 @@ namespace Corona
             return false;
         }
 
-        // 检查队列是否为空
+        // 检查队列是否为空（无锁快查）
         [[nodiscard]]
         bool empty() const
         {

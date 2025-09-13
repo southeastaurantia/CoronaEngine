@@ -16,10 +16,10 @@
 
 namespace Corona
 {
-    // 简要契约：
-    // 输入：ResourceId/type/path，回调可选
-    // 输出：shared_ptr<IResource> 或 typed 指针
-    // 错误：返回空指针并记录日志
+    // 资源管理契约：
+    // - 输入：ResourceId（type/path/uid）
+    // - 输出：shared_ptr<IResource>（失败返回 nullptr，并记录日志）
+    // - 线程安全：内部具备并发缓存/任务分发，单资源加载以互斥锁去重
     class ResourceManager
     {
       public:
@@ -46,12 +46,12 @@ namespace Corona
         std::future<std::shared_ptr<IResource>> loadAsync(const ResourceId &id);
         void loadAsync(const ResourceId &id, LoadCallback cb);
 
-  // 一次性加载（不进入缓存）
-  // 同步版本：直接通过匹配的 loader 读取并返回（失败返回 nullptr）。
-  std::shared_ptr<IResource> loadOnce(const ResourceId &id);
-  // 异步版本：不进入缓存。
-  std::future<std::shared_ptr<IResource>> loadOnceAsync(const ResourceId &id);
-  void loadOnceAsync(const ResourceId &id, LoadCallback cb);
+        // 一次性加载（不进入缓存）
+        // 同步版本：直接通过匹配的 loader 读取并返回（失败返回 nullptr）。
+        std::shared_ptr<IResource> loadOnce(const ResourceId &id);
+        // 异步版本：不进入缓存。
+        std::future<std::shared_ptr<IResource>> loadOnceAsync(const ResourceId &id);
+        void loadOnceAsync(const ResourceId &id, LoadCallback cb);
 
         // 预加载：并行排队加载，尽量复用缓存
         void preload(const std::vector<ResourceId> &ids);
@@ -71,10 +71,10 @@ namespace Corona
         // 缓存：ResourceId -> IResource
         tbb::concurrent_unordered_map<ResourceId, std::shared_ptr<IResource>, ResourceIdHash> cache_;
 
-        // In-flight 锁：防止同一资源被并发重复加载
+        // 正在加载的资源锁：防止并发重复加载
         tbb::concurrent_unordered_map<ResourceId, std::shared_ptr<std::mutex>, ResourceIdHash> locks_;
 
-        // 加载器集合（读多写少，用 shared_mutex）
+        // 加载器集合（读多写少）
         mutable std::shared_mutex loadersMutex_;
         std::vector<std::shared_ptr<IResourceLoader>> loaders_;
 

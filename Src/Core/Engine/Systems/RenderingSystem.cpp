@@ -1,10 +1,9 @@
 #include "RenderingSystem.h"
-
 #include "Core/Engine/Engine.h"
 #include "Core/Log.h"
 #include "Resource/Mesh.h"
-#include <memory>
 
+#include <memory>
 
 using namespace Corona;
 

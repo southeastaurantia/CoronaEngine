@@ -1,21 +1,20 @@
-// CoronaEngine - Core logging implementation (spdlog backend)
+// CoronaEngine - 日志实现（spdlog 后端）
 
 #include "Log.h"
 
 #include <atomic>
 #include <mutex>
-#include <vector>
-// C++20 source_location
 #include <source_location>
+#include <vector>
 
-// Only this file includes spdlog; keeps it out of public headers.
+// 只有该实现文件包含 spdlog，避免在公共头中暴露依赖。
 #include <spdlog/async.h>
 #include <spdlog/sinks/base_sink.h>
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
-// Singleton-like storage
+// 类单例存储
 static std::mutex g_mutex{};
 static std::shared_ptr<Corona::ILogBackend> g_backend{nullptr};
 static std::atomic<bool> g_inited{false};

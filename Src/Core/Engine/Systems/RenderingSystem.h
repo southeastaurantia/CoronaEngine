@@ -9,8 +9,6 @@
 
 #include <unordered_set>
 
-
-
 namespace Corona
 {
     class RenderingSystem final : public ThreadedSystem

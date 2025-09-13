@@ -1,7 +1,7 @@
-//
-// Created by 47226 on 2025/9/9.
-//
-
+// 线程安全数据缓存：
+// - 提供按 id 存取共享_ptr 数据，支持并发读写
+// - 为每个 id 维护独立互斥，保障 foreach/tick 与外部修改的互斥
+// - safe_loop_foreach 尝试无阻塞处理，无法立即加锁的 id 会排队重试
 #pragma once
 
 #include "Core/Log.h"
@@ -25,11 +25,13 @@ namespace Corona
         using mutexes_type = tbb::concurrent_hash_map<id_type, std::shared_ptr<std::mutex>>;
         using caches_type = tbb::concurrent_hash_map<id_type, std::shared_ptr<TData>>;
 
+        // 当前缓存的元素个数
         auto size() const
         {
             return data_cache.size();
         }
 
+        // 插入数据；若 id 已存在则返回 false 并记录日志
         bool insert(const id_type &id, std::shared_ptr<TData> data)
         {
             if (!data_cache.emplace(id, data))
@@ -41,6 +43,7 @@ namespace Corona
             return true;
         }
 
+        // 删除数据；若不存在返回 false 并记录日志
         bool erase(const id_type &id)
         {
             if (!data_cache.erase(id))
@@ -52,6 +55,7 @@ namespace Corona
             return true;
         }
 
+        // 读取只读共享_ptr；失败返回 nullptr
         std::shared_ptr<const TData> get(const id_type &id) const
         {
             typename caches_type::accessor data_it;
@@ -63,6 +67,9 @@ namespace Corona
             return data_it->second;
         }
 
+        // 修改指定 id 的数据：
+        // - 内部获取专用互斥，保障与 foreach 的互斥
+        // - 回调在持锁状态下执行，请避免长耗时
         bool modify(const id_type &id, std::function<void(std::shared_ptr<TData>)> callback)
         {
             typename caches_type::accessor data_it;
@@ -83,6 +90,9 @@ namespace Corona
             return true;
         }
 
+        // 遍历一组 id 并对可立即加锁的项执行回调：
+        // - 优先 try_lock 成功的项，失败的 id 放入队列稍后重试
+        // - 回调不应抛异常/长时间阻塞
         void safe_loop_foreach(const std::unordered_set<id_type> &data_ids, std::function<void(std::shared_ptr<TData>)> callback)
         {
             std::queue<id_type> unhandled_data_ids;

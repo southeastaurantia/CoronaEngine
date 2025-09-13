@@ -1,7 +1,3 @@
-//
-// Created by 25473 on 25-9-11.
-//
-
 #pragma once
 #include "Core/IO/IResource.h"
 #include "Core/IO/IResourceLoader.h"

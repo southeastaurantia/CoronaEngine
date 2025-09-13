@@ -1,5 +1,11 @@
 #pragma once
 
+#include "Core/Engine/ISystem.h"
+#include "Core/IO/ResourceManager.h"
+#include "Core/Log.h"
+#include "Core/Thread/SafeCommandQueue.h"
+#include "Core/Thread/SafeDataCache.h"
+
 #include <atomic>
 #include <memory>
 #include <mutex>
@@ -7,12 +13,6 @@
 #include <string>
 #include <typeindex>
 #include <unordered_map>
-
-#include "Core/Engine/ISystem.h"
-#include "Core/IO/ResourceManager.h"
-#include "Core/Log.h"
-#include "Core/Thread/SafeCommandQueue.h"
-#include "Core/Thread/SafeDataCache.h"
 
 namespace Corona
 {

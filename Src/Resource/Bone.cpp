@@ -1,11 +1,8 @@
-//
-// Created by 25473 on 25-9-9.
-//
-
 #include "Bone.h"
 #include <assimp/anim.h>
 
-namespace Corona {
+namespace Corona
+{
     Bone::Bone(const std::string &name, const int ID, const aiNodeAnim *channel) : m_Name(name), m_ID(ID)
     {
         // 读取位置关键帧
@@ -44,4 +41,4 @@ namespace Corona {
             m_Scales.push_back(data);
         }
     }
-} // Corona
+} // namespace Corona

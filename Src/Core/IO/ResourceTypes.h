@@ -6,8 +6,8 @@
 
 namespace Corona
 {
-    using ResourceType = std::string; // 资源类型标识（如"texture","mesh"），可自定义
-    using ResourcePath = std::string; // 资源路径或URI
+    using ResourceType = std::string; // 资源类型标识（如 "texture"、"mesh"），由调用方定义
+    using ResourcePath = std::string; // 资源路径或 URI
 
     struct ResourceId
     {
@@ -15,7 +15,7 @@ namespace Corona
         ResourcePath path;
         std::uint64_t uid{0};
 
-        // 计算规范化 uid（纯函数）
+        // 计算规范化 uid（纯函数）：小写化 type/path，归一化分隔符并去重
         static std::uint64_t ComputeUid(const ResourceType &type, const ResourcePath &path);
         // 按规范化规则创建带 uid 的 ResourceId
         static ResourceId From(ResourceType type, ResourcePath path);
@@ -32,7 +32,7 @@ namespace Corona
     template <typename T>
     using ResourcePtr = std::shared_ptr<T>;
 
-    // 通用子资源标识（与具体解析库无关）
+    // 通用子资源标识（与具体解析库无关），可唯一标识父资源内部的某个元素
     enum class SubResourceKind : std::uint32_t
     {
         Unknown = 0,
