@@ -34,8 +34,8 @@ void RenderingSystem::onTick()
     auto &meshCache = Engine::Instance().Cache<Mesh>();
     meshCache.safe_loop_foreach(data_keys_, [&](std::shared_ptr<Mesh> m) {
         (void)m; // TODO: 真正的渲染逻辑
-        updateEngine();
     });
+    updateEngine();
 }
 
 void RenderingSystem::onStop()
@@ -49,8 +49,8 @@ void RenderingSystem::init()
     gbufferNormalImage = HardwareImage(gbufferSize, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
     gbufferMotionVectorImage = HardwareImage(gbufferSize, ImageFormat::RG32_FLOAT, ImageUsage::StorageImage);
 
-    uniformBuffer = HardwareBuffer(sizeof(UniformBufferObject), BufferUsage::UniformBuffer);
-    gbufferUniformBuffer = HardwareBuffer(sizeof(gbufferUniformBufferObject), BufferUsage::UniformBuffer);
+    computeUniformBuffer = HardwareBuffer(sizeof(ComputeUniformBufferObject), BufferUsage::UniformBuffer);
+    rasterizerUniformBuffer = HardwareBuffer(sizeof(RasterizerUniformBufferObject), BufferUsage::UniformBuffer);
 
     finalOutputImage = HardwareImage(gbufferSize, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
 }
@@ -77,7 +77,7 @@ void RenderingSystem::updateEngine()
     {
         for (auto &dptr : displayers_)
         {
-            gbufferPipeline();
+            // gbufferPipeline();
             compositePipeline();
             *dptr = finalOutputImage;
         }
@@ -85,61 +85,23 @@ void RenderingSystem::updateEngine()
 }
 void RenderingSystem::gbufferPipeline()
 {
-    uniformBufferObjects.eyePosition = ktm::fvec3(1.0f, 1.0f, 1.0f);
-    uniformBufferObjects.eyeDir = ktm::normalize(ktm::fvec3(-1.0f, -1.0f, -1.0f));
-
-    uniformBufferObjects.eyeViewMatrix = ktm::look_at_lh(uniformBufferObjects.eyePosition, ktm::normalize(ktm::fvec3(-1.0f, -1.0f, -1.0f)), ktm::fvec3(0.0f, 1.0f, 0.0f));
-    uniformBufferObjects.eyeProjMatrix = ktm::perspective_lh(ktm::radians(45.0f), (float)gbufferSize.x / (float)gbufferSize.y, 0.1f, 100.0f);
-
-    gbufferUniformBufferObjects.viewProjMatrix = uniformBufferObjects.eyeProjMatrix * uniformBufferObjects.eyeViewMatrix;
-    gbufferUniformBuffer.copyFromData(&gbufferUniformBufferObjects, sizeof(gbufferUniformBufferObjects));
-
-    // for (auto &actor : actors)
-    // {
-    //     ktm::fmat4x4 actorMatrix = actor->getActorMatrix();
-    //     rasterizerPipeline["pushConsts.modelMatrix"] = actorMatrix;
-    //
-    //     HardwareBuffer bonesMatrixBuffer = actor->getBonesMatrixBuffer();
-    //     rasterizerPipeline["pushConsts.uniformBufferIndex"] = gbufferUniformBuffer.storeDescriptor();
-    //     rasterizerPipeline["pushConsts.boneIndex"] = bonesMatrixBuffer.storeDescriptor();
-    //
-    //     for (auto &geom : deviceMeshes)
-    //     {
-    //         rasterizerPipeline["inPosition"] = geom.pointsBuffer;
-    //         rasterizerPipeline["inNormal"] = geom.normalsBuffer;
-    //         rasterizerPipeline["inTexCoord"] = geom.texCoordsBuffer;
-    //         rasterizerPipeline["boneIndexes"] = geom.boneIndexesBuffer;
-    //         rasterizerPipeline["jointWeights"] = geom.boneWeightsBuffer;
-    //         rasterizerPipeline["pushConsts.textureIndex"] = geom.textureIndex;
-    //
-    //         rasterizerPipeline.recordGeomMesh(geom.indexBuffer);
-    //     }
-    // }
-
-    rasterizerPipeline["gbufferPostion"] = gbufferPostionImage;
-    rasterizerPipeline["gbufferBaseColor"] = gbufferBaseColorImage;
-    rasterizerPipeline["gbufferNormal"] = gbufferNormalImage;
-    rasterizerPipeline["gbufferMotionVector"] = gbufferMotionVectorImage;
     rasterizerPipeline.startRecord(gbufferSize) << rasterizerPipeline.endRecord();
 }
 void RenderingSystem::compositePipeline()
 {
-    computePipeline["pushConsts.gbufferSize"] = gbufferSize;
-    computePipeline["pushConsts.gbufferPostionImage"] = gbufferPostionImage.storeDescriptor();
-    computePipeline["pushConsts.gbufferBaseColorImage"] = gbufferBaseColorImage.storeDescriptor();
-    computePipeline["pushConsts.gbufferNormalImage"] = gbufferNormalImage.storeDescriptor();
-    computePipeline["pushConsts.gbufferDepthImage"] = rasterizerPipeline.getDepthImage().storeDescriptor();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(std::chrono::high_resolution_clock::now() - startTime).count();
 
-    computePipeline["pushConsts.finalOutputImage"] = finalOutputImage.storeDescriptor();
+    computeUniformData.imageID = finalOutputImage.storeDescriptor();
+    computeUniformData.sunParams0.x = 0.0f;   // center X (compute shader flips Y)
+    computeUniformData.sunParams0.y = 0.9f;   // near top in flipped space
+    computeUniformData.sunParams0.z = 0.06f;  // smaller radius
+    computeUniformData.sunParams0.w = time;   // pass time for cloud animation
+    // sunset warm HDR color
+    computeUniformData.sunColor = ktm::fvec4(12.0f, 6.0f, 2.0f, 0.0f);
+    computeUniformBuffer.copyFromData(&computeUniformData, sizeof(computeUniformData));
+    computePipeline["pushConsts.uniformBufferIndex"] = computeUniformBuffer.storeDescriptor();
 
-    computePipeline["pushConsts.sun_dir"] = ktm::normalize(ktm::fvec3(0.0f, 1.0f, 0.0f));
-
-    computePipeline["pushConsts.lightColor"] = ktm::fvec3(23.47f, 21.31f, 20.79f);
-
-    uniformBuffer.copyFromData(&uniformBufferObjects, sizeof(uniformBufferObjects));
-    computePipeline["pushConsts.uniformBufferIndex"] = uniformBuffer.storeDescriptor();
-
-    computePipeline.executePipeline(ktm::uvec3(gbufferSize.x / 8, gbufferSize.y / 8, 1));
+    computePipeline.executePipeline(ktm::uvec3(1920 / 8, 1080 / 8, 1));
 }
 
 // static
