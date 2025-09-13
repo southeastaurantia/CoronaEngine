@@ -21,6 +21,7 @@ namespace Corona
         static void WatchMesh(uint64_t id);   // 关注某个 Mesh 数据 id
         static void UnwatchMesh(uint64_t id); // 取消关注
         static void ClearWatched();           // 清空关注集合
+        static void setDisplaySurface(void *surface);
 
       protected:
         void onStart() override;
@@ -62,7 +63,6 @@ namespace Corona
 
         // 对应旧版的渲染流程拆分
         void init();
-        void processRender(uint64_t id);
         void updateEngine();
         void gbufferPipeline();
         void compositePipeline();

@@ -49,9 +49,11 @@ void RenderingSystem::init()
     gbufferUniformBuffer = HardwareBuffer(sizeof(gbufferUniformBufferObject), BufferUsage::UniformBuffer);
 }
 
-void RenderingSystem::processRender(uint64_t /*id*/)
+void RenderingSystem::setDisplaySurface(void *surface)
 {
-    updateEngine();
+    HardwareDisplayer displayer(surface);
+    HardwareImage finalOutputImage(ktm::uvec2(1920, 1080), ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
+    displayer = finalOutputImage;
 }
 
 void RenderingSystem::updateEngine()
