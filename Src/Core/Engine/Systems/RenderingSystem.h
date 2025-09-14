@@ -4,6 +4,7 @@
 #include "Core/Engine/ThreadedSystem.h"
 #include "Pipeline/ComputePipeline.h"
 #include "Pipeline/RasterizerPipeline.h"
+#include "Resource/Scene.h"
 #include "Resource/Shader.h"
 #include "ktm/type_vec.h"
 
@@ -19,9 +20,11 @@ namespace Corona
         // 向渲染系统队列投递数据关注/取消命令
         void WatchModel(uint64_t id);
         void UnwatchModel(uint64_t id);
+        void WatchScene(uint64_t id);
+        void UnwatchScene(uint64_t id);
         void ClearModelWatched(); // 清空关注集合
 
-        void setDisplaySurface(void *surface);
+        void setDisplaySurface(std::shared_ptr<Scene> scene);
         void initShader(std::shared_ptr<Shader> shader);
 
       protected:
@@ -32,7 +35,7 @@ namespace Corona
       private:
         // 迁移保留：全局DataCache的所有key集合（后续用于 foreach）
         std::unordered_set<uint64_t> model_cache_keys_{};
-        std::vector<std::unique_ptr<HardwareDisplayer>> displayers_{};
+        std::unordered_set<uint64_t> scene_cache_keys_{};
 
         bool shaderHasInit = false;
         std::chrono::high_resolution_clock::time_point startTime = std::chrono::high_resolution_clock::now();

@@ -62,21 +62,26 @@ void RenderingSystem::initShader(std::shared_ptr<Shader> shader)
     shaderHasInit = true;
 }
 
-void RenderingSystem::setDisplaySurface(void *surface)
+void RenderingSystem::setDisplaySurface(std::shared_ptr<Scene> scene)
 {
-    displayers_.emplace_back(std::make_unique<HardwareDisplayer>(surface));
+    scene->displayer.surface = scene->displaySurface;
+    scene->displayer = finalOutputImage;
 }
 
 void RenderingSystem::updateEngine()
 {
     if (shaderHasInit)
     {
-        for (auto &dptr : displayers_)
-        {
+        auto &sceneCache = Engine::Instance().Cache<Scene>();
+        sceneCache.safe_loop_foreach(scene_cache_keys_, [&](std::shared_ptr<Scene> scene) {
+            if (!scene)
+                return;
+
             gbufferPipeline();
             compositePipeline();
-            *dptr = finalOutputImage;
-        }
+
+            scene->displayer = finalOutputImage;
+        });
     }
 }
 void RenderingSystem::gbufferPipeline()
@@ -127,6 +132,16 @@ void RenderingSystem::WatchModel(uint64_t id)
 void RenderingSystem::UnwatchModel(uint64_t id)
 {
     model_cache_keys_.erase(id);
+}
+
+void RenderingSystem::WatchScene(uint64_t id)
+{
+    scene_cache_keys_.insert(id);
+}
+
+void RenderingSystem::UnwatchScene(uint64_t id)
+{
+    scene_cache_keys_.erase(id);
 }
 
 void RenderingSystem::ClearModelWatched()

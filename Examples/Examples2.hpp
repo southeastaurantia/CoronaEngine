@@ -7,6 +7,8 @@
 #include <Core/Engine/Systems/RenderingSystem.h>
 
 #define GLFW_EXPOSE_NATIVE_WIN32
+#include "Resource/Scene.h"
+
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 
@@ -31,6 +33,7 @@ inline void Examples2()
     // 启动
     Corona::Engine::Instance().StartSystems();
 
+    auto &sceneCache = Corona::Engine::Instance().Cache<Corona::Scene>();
     auto &modelCache = Corona::Engine::Instance().Cache<Corona::Model>();
     auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
     auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
@@ -68,8 +71,12 @@ inline void Examples2()
         for (size_t i = 0; i < windows.size(); i++)
         {
             windows[i] = glfwCreateWindow(800, 800, "Cabbage Engine", nullptr, nullptr);
-            // 注意：这里传入的窗口句柄仅用于 DisplaySystem 创建显示表面
-            render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::setDisplaySurface, glfwGetWin32Window(windows[i]));
+            auto scene = std::make_shared<Corona::Scene>();
+            auto sceneId = Corona::DataId::Next();
+            sceneCache.insert(sceneId, scene);
+            scene->displaySurface = glfwGetWin32Window(windows[i]);
+            render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchScene, sceneId);
+            render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::setDisplaySurface, scene);
         }
 
         auto shouldClosed = [&]() {
