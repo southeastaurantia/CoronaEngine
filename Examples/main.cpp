@@ -5,7 +5,8 @@
 int main()
 {
     // Examples1();
-    Examples3();
+    Examples2();
+    // Examples3();
 
     return 0;
 }

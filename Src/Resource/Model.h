@@ -50,6 +50,7 @@ namespace Corona
         void loadMaterial(const std::string &path, const aiMaterial *material, Mesh &resultMesh);
         void extractBoneWeightForVertices(Mesh &resultMesh, const aiMesh *mesh, const aiScene *scene, const ModelPtr &model);
         std::unordered_map<std::string, std::shared_ptr<Texture>> texturePathHash;
+        std::unordered_map<std::string, HardwareImage> textureImageHash;
         uint32_t attributeToImageIndex = 0;
     };
 } // namespace Corona

@@ -145,8 +145,14 @@ namespace Corona
                 resultMesh.Indices.push_back(face.mIndices[j]);
         }
 
-        if (mesh->mMaterialIndex > 0)
+        if (mesh->mMaterialIndex >= 0)
             loadMaterial(path, scene->mMaterials[mesh->mMaterialIndex], resultMesh);
+
+        for (auto &texture : resultMesh.textures)
+        {
+            HardwareImage tempImage = HardwareImage(ktm::uvec2(texture->width, texture->height), ImageFormat::RGBA8_SRGB, ImageUsage::SampledImage, 1, texture->data);
+            textureImageHash.insert(std::make_pair(texture->path, tempImage));
+        }
 
         resultMesh.meshDevice = std::make_shared<MeshDevice>();
         resultMesh.meshDevice->pointsBuffer = HardwareBuffer(resultMesh.points, BufferUsage::VertexBuffer);
@@ -157,7 +163,7 @@ namespace Corona
         resultMesh.meshDevice->indexBuffer = HardwareBuffer(resultMesh.Indices, BufferUsage::IndexBuffer);
 
         resultMesh.meshDevice->materialIndex = 0;
-        resultMesh.meshDevice->textureIndex = 0;
+        resultMesh.meshDevice->textureIndex = textureImageHash[resultMesh.textures[0]->path].storeDescriptor();
     }
 
     void ModelLoader::extractBoneWeightForVertices(Mesh &resultMesh, const aiMesh *mesh, const aiScene *scene, const ModelPtr &model)

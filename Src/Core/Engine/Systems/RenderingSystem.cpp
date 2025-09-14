@@ -49,8 +49,8 @@ void RenderingSystem::init()
     gbufferNormalImage = HardwareImage(gbufferSize, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
     gbufferMotionVectorImage = HardwareImage(gbufferSize, ImageFormat::RG32_FLOAT, ImageUsage::StorageImage);
 
-    computeUniformBuffer = HardwareBuffer(sizeof(ComputeUniformBufferObject), BufferUsage::UniformBuffer);
-    rasterizerUniformBuffer = HardwareBuffer(sizeof(RasterizerUniformBufferObject), BufferUsage::UniformBuffer);
+    uniformBuffer = HardwareBuffer(sizeof(UniformBufferObject), BufferUsage::UniformBuffer);
+    gbufferUniformBuffer = HardwareBuffer(sizeof(gbufferUniformBufferObject), BufferUsage::UniformBuffer);
 
     finalOutputImage = HardwareImage(gbufferSize, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
 }
@@ -86,40 +86,55 @@ void RenderingSystem::updateEngine()
 }
 void RenderingSystem::gbufferPipeline(std::shared_ptr<Scene> scene)
 {
-    auto &modelCache = Engine::Instance().Cache<Model>();
-    modelCache.safe_loop_foreach(model_cache_keys_, [&](std::shared_ptr<Model> model) {
-        if (!model)
-            return;
 
-        // rasterizerUniformBuffer.copyFromData(&rasterizerUniformBufferObject, sizeof(rasterizerUniformBufferObject));
-        // rasterizerPipeline["pushConsts.modelMatrix"] = model->modelMatrix;
-        // rasterizerPipeline["pushConsts.uniformBufferIndex"] = rasterizerUniformBuffer.storeDescriptor();
-        // for (const auto &m : model->meshes)
-        // {
-        //     rasterizerPipeline["inPosition"] = m.meshDevice->pointsBuffer;
-        //     rasterizerPipeline["inNormal"] = m.meshDevice->normalsBuffer;
-        //     rasterizerPipeline["inTexCoord"] = m.meshDevice->texCoordsBuffer;
-        //     rasterizerPipeline["boneIndexes"] = m.meshDevice->boneIndexesBuffer;
-        //     rasterizerPipeline["boneWeights"] = m.meshDevice->boneWeightsBuffer;
-        //     rasterizerPipeline["pushConsts.textureIndex"] = m.meshDevice->textureIndex;
-        // }
-
-        // rasterizerPipeline.startRecord(gbufferSize) << rasterizerPipeline.endRecord();
-    });
+    // uniformBufferObjects.eyePosition = scene->camera.pos;
+    // uniformBufferObjects.eyeDir = ktm::normalize(scene->camera.forward);
+    // uniformBufferObjects.eyeViewMatrix = ktm::look_at_lh(uniformBufferObjects.eyePosition, ktm::normalize(scene->camera.forward), scene->camera.worldUp);
+    // uniformBufferObjects.eyeProjMatrix = ktm::perspective_lh(ktm::radians(scene->camera.fov), (float)gbufferSize.x / (float)gbufferSize.y, 0.1f, 100.0f);
+    //
+    // gbufferUniformBufferObjects.viewProjMatrix = uniformBufferObjects.eyeProjMatrix * uniformBufferObjects.eyeViewMatrix;
+    // gbufferUniformBuffer.copyFromData(&gbufferUniformBufferObjects, sizeof(gbufferUniformBufferObjects));
+    //
+    // auto &modelCache = Engine::Instance().Cache<Model>();
+    // modelCache.safe_loop_foreach(model_cache_keys_, [&](std::shared_ptr<Model> model) {
+    //     if (!model)
+    //         return;
+    //
+    //     ktm::fmat4x4 actorMatrix = model->modelMatrix;
+    //     rasterizerPipeline["pushConsts.modelMatrix"] = actorMatrix;
+    //
+    //     rasterizerPipeline["pushConsts.uniformBufferIndex"] = gbufferUniformBuffer.storeDescriptor();
+    //
+    //     for (auto &m : model->meshes)
+    //     {
+    //         rasterizerPipeline["inPosition"] = m.meshDevice->pointsBuffer;
+    //         rasterizerPipeline["inNormal"] = m.meshDevice->normalsBuffer;
+    //         rasterizerPipeline["inTexCoord"] = m.meshDevice->texCoordsBuffer;
+    //         rasterizerPipeline["boneIndexes"] = m.meshDevice->boneIndexesBuffer;
+    //         rasterizerPipeline["jointWeights"] = m.meshDevice->boneWeightsBuffer;
+    //         rasterizerPipeline["pushConsts.textureIndex"] = m.meshDevice->textureIndex;
+    //
+    //         rasterizerPipeline.startRecord(gbufferSize) << m.meshDevice->indexBuffer << rasterizerPipeline.endRecord();
+    //     }
+    // });
 }
-void RenderingSystem::compositePipeline()
+void RenderingSystem::compositePipeline(ktm::fvec3 sunDir)
 {
-    float time = std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - startTime).count();
 
-    computeUniformData.imageID = finalOutputImage.storeDescriptor();
-    computeUniformData.sunParams0.x = 0.0f;  // center X (compute shader flips Y)
-    computeUniformData.sunParams0.y = 0.9f;  // near top in flipped space
-    computeUniformData.sunParams0.z = 0.06f; // smaller radius
-    computeUniformData.sunParams0.w = time;  // pass time for cloud animation
-    // sunset warm HDR color
-    computeUniformData.sunColor = ktm::fvec4(12.0f, 6.0f, 2.0f, 0.0f);
-    computeUniformBuffer.copyFromData(&computeUniformData, sizeof(computeUniformData));
-    computePipeline["pushConsts.uniformBufferIndex"] = computeUniformBuffer.storeDescriptor();
+    computePipeline["pushConsts.gbufferSize"] = gbufferSize;
+    computePipeline["pushConsts.gbufferPostionImage"] = gbufferPostionImage.storeDescriptor();
+    computePipeline["pushConsts.gbufferBaseColorImage"] = gbufferBaseColorImage.storeDescriptor();
+    computePipeline["pushConsts.gbufferNormalImage"] = gbufferNormalImage.storeDescriptor();
+    computePipeline["pushConsts.gbufferDepthImage"] = rasterizerPipeline.getDepthImage().storeDescriptor();
+
+    computePipeline["pushConsts.finalOutputImage"] = finalOutputImage.storeDescriptor();
+
+    computePipeline["pushConsts.sun_dir"] = ktm::normalize(sunDir);
+
+    computePipeline["pushConsts.lightColor"] = ktm::fvec3(23.47f, 21.31f, 20.79f);
+
+    uniformBuffer.copyFromData(&uniformBufferObjects, sizeof(uniformBufferObjects));
+    computePipeline["pushConsts.uniformBufferIndex"] = uniformBuffer.storeDescriptor();
 
     computePipeline.executePipeline(ktm::uvec3(1920 / 8, 1080 / 8, 1));
 }
