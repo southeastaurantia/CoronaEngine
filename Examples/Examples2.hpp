@@ -37,6 +37,9 @@ inline void Examples2()
     auto &modelCache = Corona::Engine::Instance().Cache<Corona::Model>();
     auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
     auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
+    auto shaderCode = Corona::Engine::Instance().Resources().load({"shader", (std::filesystem::current_path() / "assets").string()});
+    std::shared_ptr<Corona::Shader> shader = std::static_pointer_cast<Corona::Shader>(shaderCode);
+    render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::initShader, shader);
 
     // 使用数据缓存：加载模型并构建动画状态（若资源存在）
     std::shared_ptr<Corona::Model> model;
@@ -44,12 +47,7 @@ inline void Examples2()
         // 这里假设 ResourceManager 已配置了模型加载器；路径按工程实际
         auto res = Corona::Engine::Instance().Resources().load({"model", (std::filesystem::current_path() / "assets/model/dancing_vampire.dae").string()});
         model = std::static_pointer_cast<Corona::Model>(res);
-        CE_LOG_INFO("Model loaded");
     }
-
-    auto shaderCode = Corona::Engine::Instance().Resources().load({"shader", (std::filesystem::current_path() / "assets").string()});
-    std::shared_ptr<Corona::Shader> shader = std::static_pointer_cast<Corona::Shader>(shaderCode);
-    render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::initShader, shader);
 
     if (model)
     {
@@ -57,6 +55,10 @@ inline void Examples2()
         modelCache.insert(modelId, model);
         render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchModel, modelId);
     }
+
+    CE_LOG_INFO("Model loaded: {}", model ? "yes" : "no");
+    CE_LOG_INFO(" - Meshes: {}", model ? model->meshes.size() : 0);
+    CE_LOG_INFO(" - SkeletalAnimations: {}", model ? model->skeletalAnimations.size() : 0);
 
     std::optional<uint64_t> animStateId;
 

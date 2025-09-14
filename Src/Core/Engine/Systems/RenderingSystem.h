@@ -40,22 +40,24 @@ namespace Corona
         bool shaderHasInit = false;
         std::chrono::high_resolution_clock::time_point startTime = std::chrono::high_resolution_clock::now();
 
-        struct UniformBufferObject
+        struct RasterizerUniformBufferObject
         {
-            ktm::fvec3 lightPostion;
-            ktm::fmat4x4 lightViewMatrix;
-            ktm::fmat4x4 lightProjMatrix;
+            uint32_t textureIndex;
+            // ktm::fmat4x4 model = ktm::rotate3d_axis(ktm::radians(90.0f), ktm::fvec3(0.0f, 0.0f, 1.0f));
+            ktm::fmat4x4 view = ktm::look_at_lh(ktm::fvec3(2.0f, 2.0f, 2.0f), ktm::fvec3(0.0f, 0.0f, 0.0f), ktm::fvec3(0.0f, 0.0f, 1.0f));
+            ktm::fmat4x4 proj = ktm::perspective_lh(ktm::radians(45.0f), 1920.0f / 1080.0f, 0.1f, 10.0f);
+            ktm::fvec3 viewPos = ktm::fvec3(2.0f, 2.0f, 2.0f);
+            ktm::fvec3 lightColor = ktm::fvec3(10.0f, 10.0f, 10.0f);
+            ktm::fvec3 lightPos = ktm::fvec3(1.0f, 1.0f, 1.0f);
+        } rasterizerUniformBufferObject;
 
-            ktm::fvec3 eyePosition;
-            ktm::fvec3 eyeDir;
-            ktm::fmat4x4 eyeViewMatrix;
-            ktm::fmat4x4 eyeProjMatrix;
-        } uniformBufferObjects;
-
-        struct gbufferUniformBufferObject
+        struct ComputeUniformBufferObject
         {
-            ktm::fmat4x4 viewProjMatrix;
-        } gbufferUniformBufferObjects;
+            uint32_t imageID;
+            uint32_t _pad0[3] = {0, 0, 0};
+            ktm::fvec4 sunParams0 = ktm::fvec4(0.6f, 0.6f, 0.12f, 0.0f); // x,y = NDC center; z = radius in NDC
+            ktm::fvec4 sunColor = ktm::fvec4(8.0f, 7.0f, 5.0f, 0.0f);    // HDR radiance (pre-tonemap)
+        } computeUniformData;
 
         ktm::uvec2 gbufferSize = ktm::uvec2(800, 800);
         HardwareImage gbufferPostionImage;
@@ -68,13 +70,13 @@ namespace Corona
 
         HardwareImage finalOutputImage;
 
-        HardwareBuffer uniformBuffer;
-        HardwareBuffer gbufferUniformBuffer;
+        HardwareBuffer computeUniformBuffer;
+        HardwareBuffer rasterizerUniformBuffer;
 
         // 对应旧版的渲染流程拆分
         void init();
         void updateEngine();
         void gbufferPipeline(std::shared_ptr<Scene> scene);
-        void compositePipeline(ktm::fvec3 sunDir = ktm::fvec3(0.0, 1.0, 0.0));
+        void compositePipeline();
     };
 } // namespace Corona
