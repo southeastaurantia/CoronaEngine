@@ -76,7 +76,7 @@ namespace Corona
         // 对应旧版的渲染流程拆分
         void init();
         void updateEngine();
-        void gbufferPipeline();
+        void gbufferPipeline(std::shared_ptr<Scene> scene);
         void compositePipeline();
     };
 } // namespace Corona

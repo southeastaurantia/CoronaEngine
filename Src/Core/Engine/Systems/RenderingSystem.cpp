@@ -64,7 +64,7 @@ void RenderingSystem::initShader(std::shared_ptr<Shader> shader)
 
 void RenderingSystem::setDisplaySurface(std::shared_ptr<Scene> scene)
 {
-    scene->displayer.surface = scene->displaySurface;
+    scene->displayer.setSurface(scene->displaySurface);
     scene->displayer = finalOutputImage;
 }
 
@@ -77,14 +77,14 @@ void RenderingSystem::updateEngine()
             if (!scene)
                 return;
 
-            gbufferPipeline();
+            gbufferPipeline(scene);
             compositePipeline();
 
             scene->displayer = finalOutputImage;
         });
     }
 }
-void RenderingSystem::gbufferPipeline()
+void RenderingSystem::gbufferPipeline(std::shared_ptr<Scene> scene)
 {
     auto &modelCache = Engine::Instance().Cache<Model>();
     modelCache.safe_loop_foreach(model_cache_keys_, [&](std::shared_ptr<Model> model) {
