@@ -142,11 +142,22 @@ namespace Corona
         {
             aiFace face = mesh->mFaces[i];
             for (unsigned int j = 0; j < face.mNumIndices; j++)
-                resultMesh.triangulatedIndices.push_back(face.mIndices[j]);
+                resultMesh.Indices.push_back(face.mIndices[j]);
         }
 
         if (mesh->mMaterialIndex > 0)
             loadMaterial(path, scene->mMaterials[mesh->mMaterialIndex], resultMesh);
+
+        resultMesh.meshDevice = std::make_shared<MeshDevice>();
+        resultMesh.meshDevice->pointsBuffer = HardwareBuffer(resultMesh.points, BufferUsage::VertexBuffer);
+        resultMesh.meshDevice->normalsBuffer = HardwareBuffer(resultMesh.normals, BufferUsage::VertexBuffer);
+        resultMesh.meshDevice->texCoordsBuffer = HardwareBuffer(resultMesh.texCoords, BufferUsage::VertexBuffer);
+        resultMesh.meshDevice->boneIndexesBuffer = HardwareBuffer(resultMesh.boneIndices, BufferUsage::VertexBuffer);
+        resultMesh.meshDevice->boneWeightsBuffer = HardwareBuffer(resultMesh.boneWeights, BufferUsage::VertexBuffer);
+        resultMesh.meshDevice->indexBuffer = HardwareBuffer(resultMesh.Indices, BufferUsage::IndexBuffer);
+
+        resultMesh.meshDevice->materialIndex = 0;
+        resultMesh.meshDevice->textureIndex = 0;
     }
 
     void ModelLoader::extractBoneWeightForVertices(Mesh &resultMesh, const aiMesh *mesh, const aiScene *scene, const ModelPtr &model)

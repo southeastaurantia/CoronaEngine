@@ -19,6 +19,8 @@ namespace Corona
         // 提供静态便捷方法，向渲染系统队列投递数据关注/取消命令
         static void WatchMesh(uint64_t id);   // 关注某个 Mesh 数据 id
         static void UnwatchMesh(uint64_t id); // 取消关注
+        static void WatchModel(uint64_t id);
+        static void UnwatchModel(uint64_t id);
         static void ClearWatched();           // 清空关注集合
         static void setDisplaySurface(void *surface);
         void initShader(std::shared_ptr<Shader> shader);
@@ -39,7 +41,7 @@ namespace Corona
         struct RasterizerUniformBufferObject
         {
             uint32_t textureIndex;
-            ktm::fmat4x4 model = ktm::rotate3d_axis(ktm::radians(90.0f), ktm::fvec3(0.0f, 0.0f, 1.0f));
+            // ktm::fmat4x4 model = ktm::rotate3d_axis(ktm::radians(90.0f), ktm::fvec3(0.0f, 0.0f, 1.0f));
             ktm::fmat4x4 view = ktm::look_at_lh(ktm::fvec3(2.0f, 2.0f, 2.0f), ktm::fvec3(0.0f, 0.0f, 0.0f), ktm::fvec3(0.0f, 0.0f, 1.0f));
             ktm::fmat4x4 proj = ktm::perspective_lh(ktm::radians(45.0f), 1920.0f / 1080.0f, 0.1f, 10.0f);
             ktm::fvec3 viewPos = ktm::fvec3(2.0f, 2.0f, 2.0f);
@@ -55,7 +57,7 @@ namespace Corona
             ktm::fvec4 sunColor = ktm::fvec4(8.0f, 7.0f, 5.0f, 0.0f);   // HDR radiance (pre-tonemap)
         }computeUniformData;
 
-        ktm::uvec2 gbufferSize = ktm::uvec2(1920, 1080);
+        ktm::uvec2 gbufferSize = ktm::uvec2(800, 800);
         HardwareImage gbufferPostionImage;
         HardwareImage gbufferBaseColorImage;
         HardwareImage gbufferNormalImage;

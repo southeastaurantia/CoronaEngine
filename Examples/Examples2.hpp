@@ -32,11 +32,13 @@ inline void Examples2()
     Corona::Engine::Instance().StartSystems();
 
     // 使用数据缓存：Mesh 示例
-    using MeshData = Corona::Mesh;
-    auto &meshCache = Corona::Engine::Instance().Cache<MeshData>();
-    auto meshId = Corona::DataId::Next();
-    meshCache.insert(meshId, std::make_shared<MeshData>());
-    Corona::RenderingSystem::WatchMesh(meshId);
+    // using MeshData = Corona::Mesh;
+    // auto &meshCache = Corona::Engine::Instance().Cache<MeshData>();
+    // auto meshId = Corona::DataId::Next();
+    // meshCache.insert(meshId, std::make_shared<MeshData>());
+    // Corona::RenderingSystem::WatchMesh(meshId);
+    using ModelData = Corona::Model;
+    auto &modelCache = Corona::Engine::Instance().Cache<ModelData>();
 
     auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
     auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
@@ -52,24 +54,18 @@ inline void Examples2()
         model = std::static_pointer_cast<Corona::Model>(res);
     }
 
+    if (model)
+    {
+        auto modelId = Corona::DataId::Next();
+        modelCache.insert(modelId, model);
+        Corona::RenderingSystem::WatchModel(modelId);
+    }
+
     CE_LOG_INFO("Model loaded: {}", model ? "yes" : "no");
     CE_LOG_INFO(" - Meshes: {}", model ? model->meshes.size() : 0);
     CE_LOG_INFO(" - SkeletalAnimations: {}", model ? model->skeletalAnimations.size() : 0);
 
     std::optional<uint64_t> animStateId;
-    if (model && !model->skeletalAnimations.empty())
-    {
-        auto &animCache = Corona::Engine::Instance().Cache<Corona::AnimationState>();
-        auto id = Corona::DataId::Next();
-        auto st = std::make_shared<Corona::AnimationState>();
-        st->model = model;
-        st->animationIndex = 0;
-        st->currentTime = 0.0f;
-        st->bones.clear();
-        animCache.insert(id, st);
-        Corona::AnimationSystem::WatchState(id);
-        animStateId = id;
-    }
 
     // 旧的模拟客户端：GLFW 多窗口主循环（无 OpenGL 上下文，便于与 Vulkan/自研渲染对接）
     if (glfwInit() >= 0)
@@ -124,18 +120,18 @@ inline void Examples2()
 
                 // 简易键盘控制：数字键 1/2 观察/取消观察 meshId
                 // 注意：GLFW 需窗口上下文，这里取第一个窗口
-                if (!windows.empty())
-                {
-                    auto *w = windows[0];
-                    if (glfwGetKey(w, GLFW_KEY_1) == GLFW_PRESS)
-                    {
-                        Corona::RenderingSystem::WatchMesh(meshId);
-                    }
-                    if (glfwGetKey(w, GLFW_KEY_2) == GLFW_PRESS)
-                    {
-                        Corona::RenderingSystem::UnwatchMesh(meshId);
-                    }
-                }
+                // if (!windows.empty())
+                // {
+                //     auto *w = windows[0];
+                //     if (glfwGetKey(w, GLFW_KEY_1) == GLFW_PRESS)
+                //     {
+                //         Corona::RenderingSystem::WatchMesh(meshId);
+                //     }
+                //     if (glfwGetKey(w, GLFW_KEY_2) == GLFW_PRESS)
+                //     {
+                //         Corona::RenderingSystem::UnwatchMesh(meshId);
+                //     }
+                // }
                 ++frameCount;
             }
 

@@ -1,7 +1,7 @@
 #include "RenderingSystem.h"
 #include "Core/Engine/Engine.h"
-#include "Core/Log.h"
 #include "Resource/Mesh.h"
+#include "Resource/Model.h"
 
 #include <memory>
 
@@ -31,10 +31,10 @@ void RenderingSystem::onTick()
     }
 
     // 遍历 data_keys_ 示例：从 Cache<Mesh> 读取并执行占位渲染操作
-    auto &meshCache = Engine::Instance().Cache<Mesh>();
-    meshCache.safe_loop_foreach(data_keys_, [&](std::shared_ptr<Mesh> m) {
-        (void)m; // TODO: 真正的渲染逻辑
-    });
+    // auto &meshCache = Engine::Instance().Cache<Mesh>();
+    // meshCache.safe_loop_foreach(data_keys_, [&](std::shared_ptr<Mesh> m) {
+    //     (void)m; // TODO: 真正的渲染逻辑
+    // });
     updateEngine();
 }
 
@@ -77,7 +77,7 @@ void RenderingSystem::updateEngine()
     {
         for (auto &dptr : displayers_)
         {
-            // gbufferPipeline();
+            gbufferPipeline();
             compositePipeline();
             *dptr = finalOutputImage;
         }
@@ -85,11 +85,32 @@ void RenderingSystem::updateEngine()
 }
 void RenderingSystem::gbufferPipeline()
 {
-    rasterizerPipeline.startRecord(gbufferSize) << rasterizerPipeline.endRecord();
+    auto &modelCache = Engine::Instance().Cache<Model>();
+    modelCache.safe_loop_foreach(data_keys_, [&](std::shared_ptr<Model> model) {
+        if (!model)
+            return;
+
+        rasterizerUniformBuffer.copyFromData(&rasterizerUniformBufferObject, sizeof(rasterizerUniformBufferObject));
+        rasterizerPipeline["pushConsts.modelMatrix"] = model->modelMatrix;
+        rasterizerPipeline["pushConsts.uniformBufferIndex"] = rasterizerUniformBuffer.storeDescriptor();
+        for (const auto &m : model->meshes)
+        {
+            rasterizerPipeline["inPosition"] = m.meshDevice->pointsBuffer;
+            rasterizerPipeline["inNormal"] = m.meshDevice->normalsBuffer;
+            rasterizerPipeline["inTexCoord"] = m.meshDevice->texCoordsBuffer;
+            rasterizerPipeline["boneIndexes"] = m.meshDevice->boneIndexesBuffer;
+            rasterizerPipeline["boneWeights"] = m.meshDevice->boneWeightsBuffer;
+            rasterizerPipeline["pushConsts.textureIndex"] = m.meshDevice->textureIndex;
+
+            rasterizerPipeline.
+        }
+
+    rasterizerPipeline.startRecord(gbufferSize) << m->meshDevice->indexBuffer << rasterizerPipeline.endRecord();
+    });
 }
 void RenderingSystem::compositePipeline()
 {
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(std::chrono::high_resolution_clock::now() - startTime).count();
+    float time = std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - startTime).count();
 
     computeUniformData.imageID = finalOutputImage.storeDescriptor();
     computeUniformData.sunParams0.x = 0.0f;   // center X (compute shader flips Y)
@@ -115,6 +136,23 @@ void RenderingSystem::WatchMesh(uint64_t id)
 
 // static
 void RenderingSystem::UnwatchMesh(uint64_t id)
+{
+    auto &q = Engine::Instance().GetQueue("RenderingSystem");
+    q.enqueue([id, &sys = Engine::Instance().GetSystem<RenderingSystem>()]() mutable {
+        sys.data_keys_.erase(id);
+    });
+}
+
+void RenderingSystem::WatchModel(uint64_t id)
+{
+    auto &q = Engine::Instance().GetQueue("RenderingSystem");
+    q.enqueue([id, &sys = Engine::Instance().GetSystem<RenderingSystem>()]() mutable {
+        sys.data_keys_.insert(id);
+    });
+}
+
+// static
+void RenderingSystem::UnwatchModel(uint64_t id)
 {
     auto &q = Engine::Instance().GetQueue("RenderingSystem");
     q.enqueue([id, &sys = Engine::Instance().GetSystem<RenderingSystem>()]() mutable {
