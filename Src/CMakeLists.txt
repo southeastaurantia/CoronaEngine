@@ -12,10 +12,12 @@ target_include_directories(CoronaEngine PUBLIC
         "${stb_SOURCE_DIR}"
         "${PROJECT_SOURCE_DIR}/Env/oneapi-tbb-2022.2.0/include"
         "${PROJECT_SOURCE_DIR}/Env/spdlog-1.15.3/include"
+        ${Python3_INCLUDE_DIRS}
 )
 
 target_link_directories(CoronaEngine PUBLIC
         "${PROJECT_SOURCE_DIR}/Env/oneapi-tbb-2022.2.0/lib/intel64/vc14"
+        ${Python3_LIBRARY_DIRS}
 )
 
 target_link_libraries(CoronaEngine PUBLIC
@@ -23,6 +25,7 @@ target_link_libraries(CoronaEngine PUBLIC
         Helicon
         EnTT::EnTT
         CabbageHardware
+        python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}
 
         $<$<CONFIG:Debug>:tbb12_debug>
         $<$<CONFIG:RelWithDebInfo>:tbb12_debug>
@@ -47,10 +50,19 @@ target_link_libraries(CoronaEngine PUBLIC
 
 file(GLOB TBB_DLLS "${PROJECT_SOURCE_DIR}/Env/oneapi-tbb-2022.2.0/redist/intel64/vc14/*.dll")
 file(GLOB TBB_PDBS "${PROJECT_SOURCE_DIR}/Env/oneapi-tbb-2022.2.0/redist/intel64/vc14/*.pdb")
+file(GLOB PYTHON_DLLS "${Python3_RUNTIME_LIBRARY_DIRS}/*.dll")
+file(GLOB PYTHON_PDBS "${Python3_RUNTIME_LIBRARY_DIRS}/*.pdb")
 
-if (TBB_DLLS AND TBB_PDBS)
-    message(STATUS "Found TBB DLLs and PDBs")
-    set_target_properties(CoronaEngine PROPERTIES
-            INTERFACE_CABBAGE_RUNTIME_DEPS "${TBB_DLLS};${TBB_PDBS}"
-    )
-endif ()
+if(TBB_DLLS AND TBB_PDBS)
+        message(STATUS "Found TBB DLLs and PDBs")
+        set_target_properties(CoronaEngine PROPERTIES
+                INTERFACE_CABBAGE_RUNTIME_DEPS "${TBB_DLLS};${TBB_PDBS};"
+        )
+endif()
+
+if(PYTHON_DLLS AND PYTHON_PDBS)
+        message(STATUS "Found Python DLLs and PDBs")
+        set_target_properties(CoronaEngine PROPERTIES
+                INTERFACE_CABBAGE_RUNTIME_DEPS "${PYTHON_DLLS};${PYTHON_PDBS};"
+        )
+endif()
