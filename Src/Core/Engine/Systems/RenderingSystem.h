@@ -16,13 +16,12 @@ namespace Corona
       public:
         RenderingSystem();
 
-        // 提供静态便捷方法，向渲染系统队列投递数据关注/取消命令
-        static void WatchMesh(uint64_t id);   // 关注某个 Mesh 数据 id
-        static void UnwatchMesh(uint64_t id); // 取消关注
-        static void WatchModel(uint64_t id);
-        static void UnwatchModel(uint64_t id);
-        static void ClearWatched();           // 清空关注集合
-        static void setDisplaySurface(void *surface);
+        // 向渲染系统队列投递数据关注/取消命令
+        void WatchModel(uint64_t id);
+        void UnwatchModel(uint64_t id);
+        void ClearModelWatched(); // 清空关注集合
+
+        void setDisplaySurface(void *surface);
         void initShader(std::shared_ptr<Shader> shader);
 
       protected:
@@ -32,7 +31,7 @@ namespace Corona
 
       private:
         // 迁移保留：全局DataCache的所有key集合（后续用于 foreach）
-        std::unordered_set<uint64_t> data_keys_{};
+        std::unordered_set<uint64_t> model_cache_keys_{};
         std::vector<std::unique_ptr<HardwareDisplayer>> displayers_{};
 
         bool shaderHasInit = false;
@@ -47,15 +46,15 @@ namespace Corona
             ktm::fvec3 viewPos = ktm::fvec3(2.0f, 2.0f, 2.0f);
             ktm::fvec3 lightColor = ktm::fvec3(10.0f, 10.0f, 10.0f);
             ktm::fvec3 lightPos = ktm::fvec3(1.0f, 1.0f, 1.0f);
-        }rasterizerUniformBufferObject;
+        } rasterizerUniformBufferObject;
 
         struct ComputeUniformBufferObject
         {
             uint32_t imageID;
             uint32_t _pad0[3] = {0, 0, 0};
             ktm::fvec4 sunParams0 = ktm::fvec4(0.6f, 0.6f, 0.12f, 0.0f); // x,y = NDC center; z = radius in NDC
-            ktm::fvec4 sunColor = ktm::fvec4(8.0f, 7.0f, 5.0f, 0.0f);   // HDR radiance (pre-tonemap)
-        }computeUniformData;
+            ktm::fvec4 sunColor = ktm::fvec4(8.0f, 7.0f, 5.0f, 0.0f);    // HDR radiance (pre-tonemap)
+        } computeUniformData;
 
         ktm::uvec2 gbufferSize = ktm::uvec2(800, 800);
         HardwareImage gbufferPostionImage;

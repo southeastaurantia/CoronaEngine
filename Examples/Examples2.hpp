@@ -31,15 +31,7 @@ inline void Examples2()
     // 启动
     Corona::Engine::Instance().StartSystems();
 
-    // 使用数据缓存：Mesh 示例
-    // using MeshData = Corona::Mesh;
-    // auto &meshCache = Corona::Engine::Instance().Cache<MeshData>();
-    // auto meshId = Corona::DataId::Next();
-    // meshCache.insert(meshId, std::make_shared<MeshData>());
-    // Corona::RenderingSystem::WatchMesh(meshId);
-    using ModelData = Corona::Model;
-    auto &modelCache = Corona::Engine::Instance().Cache<ModelData>();
-
+    auto &modelCache = Corona::Engine::Instance().Cache<Corona::Model>();
     auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
     auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
     auto shaderCode = Corona::Engine::Instance().Resources().load({"shader", (std::filesystem::current_path() / "assets").string()});
@@ -58,7 +50,7 @@ inline void Examples2()
     {
         auto modelId = Corona::DataId::Next();
         modelCache.insert(modelId, model);
-        Corona::RenderingSystem::WatchModel(modelId);
+        render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchModel, modelId);
     }
 
     CE_LOG_INFO("Model loaded: {}", model ? "yes" : "no");
@@ -77,9 +69,7 @@ inline void Examples2()
         {
             windows[i] = glfwCreateWindow(800, 800, "Cabbage Engine", nullptr, nullptr);
             // 注意：这里传入的窗口句柄仅用于 DisplaySystem 创建显示表面
-            render_queue.enqueue([surface = glfwGetWin32Window(windows[i]), &rs = renderingSystem]() {
-                rs.setDisplaySurface(surface);
-            });
+            render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::setDisplaySurface, glfwGetWin32Window(windows[i]));
         }
 
         auto shouldClosed = [&]() {

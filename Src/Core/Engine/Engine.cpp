@@ -88,7 +88,7 @@ namespace Corona
         {
             return *it->second;
         }
-        throw std::runtime_error("Unknown command queue: " + name);
+        CE_LOG_CRITICAL("Command queue not found: {}", name);
     }
 
     void Engine::AddQueue(const std::string &name, std::unique_ptr<SafeCommandQueue> q)
