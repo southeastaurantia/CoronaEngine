@@ -1,0 +1,18 @@
+# AutoGen core and agent capabilities
+pyautogen
+
+# AutoGen extensions for OpenAI and MCP
+autogen-ext[openai,mcp]
+
+# Data manipulation
+pandas
+
+# GUI Framework
+PyQt6
+PyQt6-WebEngine
+
+# Computer Vision
+opencv-python
+
+# Cryptographic library
+cryptography

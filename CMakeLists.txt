@@ -22,19 +22,18 @@ function(cabbage_install_runtime_deps target_name)
     set(DESTINATION_DIR "$<TARGET_FILE_DIR:${target_name}>")
 
     add_custom_command(
-            TARGET ${target_name} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${CABBAGE_DEPS}
-            "${DESTINATION_DIR}"
-            COMMENT "Copying Cabbage runtime dependencies to ${target_name} output directory"
-            VERBATIM
+        TARGET ${target_name} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CABBAGE_DEPS}
+        "${DESTINATION_DIR}"
+        COMMENT "Copying Cabbage runtime dependencies to ${target_name} output directory"
+        VERBATIM
     )
 endfunction()
 
 if(POLICY CMP0077)
     cmake_policy(SET CMP0077 NEW)
 endif()
-
 
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 
@@ -44,12 +43,15 @@ else()
     option(CABBAGE_FRAMEWORK_BUILD_EXAMPLES "Build examples" OFF)
 endif()
 
+find_package(Python3 3.13 EXACT REQUIRED COMPONENTS Interpreter Development)
+
 add_compile_definitions(
     $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>
     NOMINMAX
     ENTT_ID_TYPE=uint64_t # 定义 ENTT 的 ID 类型为 uint64_t
     ENTT_USE_ATOMIC # 使用 ENTT 原子操作
     FMT_HEADER_ONLY=1 # 使用 fmt header-only 版本
+    CORONA_PYTHON_EXE="${Python3_EXECUTABLE}"
 
     $<$<CONFIG:Debug>:CABBAGE_ENGINE_DEBUG>
     $<$<CONFIG:RelWithDebInfo>:CABBAGE_ENGINE_DEBUG>
@@ -93,14 +95,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(entt)
 
-#FetchContent_Declare(
-#    oneTBB
-#    GIT_REPOSITORY https://github.com/uxlfoundation/oneTBB.git
-#    GIT_TAG master
-#    EXCLUDE_FROM_ALL
-#)
-#FetchContent_MakeAvailable(oneTBB)
-
+# FetchContent_Declare(
+# oneTBB
+# GIT_REPOSITORY https://github.com/uxlfoundation/oneTBB.git
+# GIT_TAG master
+# EXCLUDE_FROM_ALL
+# )
+# FetchContent_MakeAvailable(oneTBB)
 add_subdirectory(Src)
 
 if(CABBAGE_FRAMEWORK_BUILD_EXAMPLES)
