@@ -90,22 +90,22 @@ void RenderingSystem::gbufferPipeline()
         if (!model)
             return;
 
-        rasterizerUniformBuffer.copyFromData(&rasterizerUniformBufferObject, sizeof(rasterizerUniformBufferObject));
-        rasterizerPipeline["pushConsts.modelMatrix"] = model->modelMatrix;
-        rasterizerPipeline["pushConsts.uniformBufferIndex"] = rasterizerUniformBuffer.storeDescriptor();
-        for (const auto &m : model->meshes)
-        {
-            rasterizerPipeline["inPosition"] = m.meshDevice->pointsBuffer;
-            rasterizerPipeline["inNormal"] = m.meshDevice->normalsBuffer;
-            rasterizerPipeline["inTexCoord"] = m.meshDevice->texCoordsBuffer;
-            rasterizerPipeline["boneIndexes"] = m.meshDevice->boneIndexesBuffer;
-            rasterizerPipeline["boneWeights"] = m.meshDevice->boneWeightsBuffer;
-            rasterizerPipeline["pushConsts.textureIndex"] = m.meshDevice->textureIndex;
-
-            rasterizerPipeline.
-        }
-
-    rasterizerPipeline.startRecord(gbufferSize) << m->meshDevice->indexBuffer << rasterizerPipeline.endRecord();
+    //     rasterizerUniformBuffer.copyFromData(&rasterizerUniformBufferObject, sizeof(rasterizerUniformBufferObject));
+    //     rasterizerPipeline["pushConsts.modelMatrix"] = model->modelMatrix;
+    //     rasterizerPipeline["pushConsts.uniformBufferIndex"] = rasterizerUniformBuffer.storeDescriptor();
+    //     for (const auto &m : model->meshes)
+    //     {
+    //         rasterizerPipeline["inPosition"] = m.meshDevice->pointsBuffer;
+    //         rasterizerPipeline["inNormal"] = m.meshDevice->normalsBuffer;
+    //         rasterizerPipeline["inTexCoord"] = m.meshDevice->texCoordsBuffer;
+    //         rasterizerPipeline["boneIndexes"] = m.meshDevice->boneIndexesBuffer;
+    //         rasterizerPipeline["boneWeights"] = m.meshDevice->boneWeightsBuffer;
+    //         rasterizerPipeline["pushConsts.textureIndex"] = m.meshDevice->textureIndex;
+    //
+    //         // rasterizerPipeline.
+    //     }
+    //
+    // rasterizerPipeline.startRecord(gbufferSize) << rasterizerPipeline.endRecord();
     });
 }
 void RenderingSystem::compositePipeline()
