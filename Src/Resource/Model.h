@@ -34,6 +34,7 @@ namespace Corona
         ktm::fvec3 rotation = ktm::fvec3(0.0f, 0.0f, 0.0f);                          ///< 旋转
         ktm::fvec3 scale = ktm::fvec3(1.0f, 1.0f, 1.0f);                            ///< 缩放
         ktm::fmat4x4 modelMatrix = ktm::fmat4x4::from_diag(ktm::fvec4(0.0, 0.0, 0.0, 0.0));                          ///< 模型矩阵
+        HardwareBuffer bonesMatrixBuffer;
     };
 
     class ModelLoader : public IResourceLoader

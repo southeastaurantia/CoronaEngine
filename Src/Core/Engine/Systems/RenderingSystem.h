@@ -22,7 +22,7 @@ namespace Corona
         void UnwatchModel(uint64_t id);
         void WatchScene(uint64_t id);
         void UnwatchScene(uint64_t id);
-        void ClearModelWatched(); // 清空关注集合
+        void ClearWatched(); // 清空关注集合
 
         void setDisplaySurface(std::shared_ptr<Scene> scene);
         void initShader(std::shared_ptr<Shader> shader);

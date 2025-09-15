@@ -124,7 +124,7 @@ AnimationSystem::AnimationSystem()
 void AnimationSystem::onStart()
 {
     currentTime = 0.0f;
-    last_tick_time = std::chrono::high_resolution_clock::now();
+    // last_tick_time = std::chrono::high_resolution_clock::now();
 }
 
 void AnimationSystem::onTick()
@@ -138,27 +138,28 @@ void AnimationSystem::onTick()
         ++spun;
     }
 
-    const auto now = std::chrono::high_resolution_clock::now();
-    float dt = std::chrono::duration<float>(now - last_tick_time).count();
-    last_tick_time = now;
-    if (dt < 0.0f)
-        dt = 0.0f;
-    const float max_dt = 0.1f;
-    if (dt > max_dt)
-        dt = max_dt;
-
-    dt *= playback_speed;
-
-    if (dt <= 0.0f)
-        return;
+    // const auto now = std::chrono::high_resolution_clock::now();
+    // float dt = std::chrono::duration<float>(now - last_tick_time).count();
+    // last_tick_time = now;
+    // if (dt < 0.0f)
+    //     dt = 0.0f;
+    // const float max_dt = 0.1f;
+    // if (dt > max_dt)
+    //     dt = max_dt;
+    //
+    // dt *= playback_speed;
+    //
+    // if (dt <= 0.0f)
+    //     return;
 
     // 遍历关注的 AnimationState 并推进
     auto &cache = Engine::Instance().Cache<AnimationState>();
-    cache.safe_loop_foreach(data_keys_, [&](std::shared_ptr<AnimationState> st) {
+    cache.safe_loop_foreach(state_cache_keys_, [&](std::shared_ptr<AnimationState> st) {
         if (!st || !st->model)
             return;
         updateAnimationState(*st, 1.0f / 120.0f); // 与系统线程目标帧率一致
     });
+
 }
 
 void AnimationSystem::onStop()
@@ -171,31 +172,30 @@ void AnimationSystem::processAnimation(uint64_t /*id*/)
 {
 }
 
-// static
 void AnimationSystem::WatchState(uint64_t id)
 {
-    auto &q = Engine::Instance().GetQueue("AnimationSystem");
-    q.enqueue([id, &sys = Engine::Instance().GetSystem<AnimationSystem>()]() mutable {
-        sys.data_keys_.insert(id);
-    });
+    state_cache_keys_.insert(id);
 }
 
-// static
 void AnimationSystem::UnwatchState(uint64_t id)
 {
-    auto &q = Engine::Instance().GetQueue("AnimationSystem");
-    q.enqueue([id, &sys = Engine::Instance().GetSystem<AnimationSystem>()]() mutable {
-        sys.data_keys_.erase(id);
-    });
+    state_cache_keys_.erase(id);
 }
 
-// static
+void AnimationSystem::WatchModel(uint64_t id)
+{
+    model_cache_keys_.insert(id);
+}
+
+void AnimationSystem::UnwatchModel(uint64_t id)
+{
+    model_cache_keys_.erase(id);
+}
+
 void AnimationSystem::ClearWatched()
 {
-    auto &q = Engine::Instance().GetQueue("AnimationSystem");
-    q.enqueue([&sys = Engine::Instance().GetSystem<AnimationSystem>()]() mutable {
-        sys.data_keys_.clear();
-    });
+    state_cache_keys_.clear();
+    model_cache_keys_.clear();
 }
 
 void AnimationSystem::updateAnimationState(AnimationState &state, float dt)

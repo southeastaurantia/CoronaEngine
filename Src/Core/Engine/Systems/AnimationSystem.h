@@ -21,9 +21,11 @@ namespace Corona
       public:
         AnimationSystem();
         // 向系统注册/取消关注的 AnimationState id（通过命令队列串行修改）
-        static void WatchState(uint64_t id);
-        static void UnwatchState(uint64_t id);
-        static void ClearWatched();
+        void WatchState(uint64_t id);
+        void UnwatchState(uint64_t id);
+        void WatchModel(uint64_t id);
+        void UnwatchModel(uint64_t id);
+        void ClearWatched();
 
       protected:
         void onStart() override;
@@ -36,7 +38,8 @@ namespace Corona
         std::chrono::high_resolution_clock::time_point last_tick_time;
         float playback_speed = 1.0f; // 播放速度倍数
         std::unordered_map<uint64_t, float> animationTime_{};
-        std::unordered_set<uint64_t> data_keys_{};
+        std::unordered_set<uint64_t> state_cache_keys_{};
+        std::unordered_set<uint64_t> model_cache_keys_{};
         void processAnimation(uint64_t id);
         // 关注的动画状态 id 集合
         void updateAnimationState(AnimationState &state, float dt);

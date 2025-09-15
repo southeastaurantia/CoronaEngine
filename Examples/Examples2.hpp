@@ -35,8 +35,11 @@ inline void Examples2()
 
     auto &sceneCache = Corona::Engine::Instance().Cache<Corona::Scene>();
     auto &modelCache = Corona::Engine::Instance().Cache<Corona::Model>();
+    auto &animStateCache = Corona::Engine::Instance().Cache<Corona::AnimationState>();
     auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
+    auto &animationSystem = Corona::Engine::Instance().GetSystem<Corona::AnimationSystem>();
     auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
+    auto &anim_queue = Corona::Engine::Instance().GetQueue(animationSystem.name());
 
     // 使用数据缓存：加载模型并构建动画状态（若资源存在）
     std::shared_ptr<Corona::Model> model;
@@ -44,6 +47,20 @@ inline void Examples2()
         // 这里假设 ResourceManager 已配置了模型加载器；路径按工程实际
         auto res = Corona::Engine::Instance().Resources().load({"model", (std::filesystem::current_path() / "assets/model/dancing_vampire.dae").string()});
         model = std::static_pointer_cast<Corona::Model>(res);
+        std::shared_ptr<Corona::AnimationState> animState;
+        if (model)
+        {
+            if (!model->skeletalAnimations.empty())
+            {
+                animState = std::make_shared<Corona::AnimationState>();
+                animState->model = model;
+                animState->animationIndex = 0;
+
+                auto animStateId = Corona::DataId::Next();
+                animStateCache.insert(animStateId, animState);
+                anim_queue.enqueue(&animationSystem, &Corona::AnimationSystem::WatchState, animStateId);
+            }
+        }
         CE_LOG_INFO("Model loaded");
     }
 
@@ -55,6 +72,7 @@ inline void Examples2()
     {
         auto modelId = Corona::DataId::Next();
         modelCache.insert(modelId, model);
+        anim_queue.enqueue(&animationSystem, &Corona::AnimationSystem::WatchModel, modelId);
         render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchModel, modelId);
     }
 

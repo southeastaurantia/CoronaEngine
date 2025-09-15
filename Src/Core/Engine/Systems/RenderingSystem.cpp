@@ -103,7 +103,9 @@ void RenderingSystem::gbufferPipeline(std::shared_ptr<Scene> scene)
     //     ktm::fmat4x4 actorMatrix = model->modelMatrix;
     //     rasterizerPipeline["pushConsts.modelMatrix"] = actorMatrix;
     //
+    //     HardwareBuffer bonesMatrixBuffer = model->bonesMatrixBuffer;
     //     rasterizerPipeline["pushConsts.uniformBufferIndex"] = gbufferUniformBuffer.storeDescriptor();
+    //     rasterizerPipeline["pushConsts.boneIndex"] = bonesMatrixBuffer.storeDescriptor();
     //
     //     for (auto &m : model->meshes)
     //     {
@@ -159,7 +161,8 @@ void RenderingSystem::UnwatchScene(uint64_t id)
     scene_cache_keys_.erase(id);
 }
 
-void RenderingSystem::ClearModelWatched()
+void RenderingSystem::ClearWatched()
 {
+    scene_cache_keys_.clear();
     model_cache_keys_.clear();
 }
