@@ -4,6 +4,7 @@
 
 #include <assimp/material.h>
 #include <ktm/type_vec.h>
+#include <limits>
 
 namespace Corona
 {
@@ -27,8 +28,9 @@ namespace Corona
         HardwareBuffer boneIndexesBuffer;   ///< 骨骼索引缓冲区
         HardwareBuffer boneWeightsBuffer;   ///< 骨骼权重缓冲区
 
-        uint32_t materialIndex;
-        uint32_t textureIndex;
+        // 默认使用无效索引，避免未初始化使用
+        uint32_t materialIndex = std::numeric_limits<uint32_t>::max();
+        uint32_t textureIndex = std::numeric_limits<uint32_t>::max();
     };
 
     class Mesh final : public IResource

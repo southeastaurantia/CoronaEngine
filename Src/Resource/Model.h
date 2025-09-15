@@ -28,12 +28,13 @@ namespace Corona
         std::map<std::string, std::shared_ptr<BoneInfo>> m_BoneInfoMap; ///< 骨骼信息映射表
         int m_BoneCounter = 0;                                          ///< 骨骼计数器
         std::vector<Animation> skeletalAnimations;                      ///< 所有骨骼动画
-        ktm::fvec3 minXYZ = ktm::fvec3(0.0f, 0.0f, 0.0f);               ///< 模型包围盒最小点
-        ktm::fvec3 maxXYZ = ktm::fvec3(0.0f, 0.0f, 0.0f);               ///< 模型包围盒最大点
-        ktm::fvec3 positon = ktm::fvec3(0.0f, 0.0f, 0.0f);                           ///< 位置
-        ktm::fvec3 rotation = ktm::fvec3(0.0f, 0.0f, 0.0f);                          ///< 旋转
-        ktm::fvec3 scale = ktm::fvec3(1.0f, 1.0f, 1.0f);                            ///< 缩放
-        ktm::fmat4x4 modelMatrix = ktm::fmat4x4::from_diag(ktm::fvec4(0.0, 0.0, 0.0, 0.0));                          ///< 模型矩阵
+        ktm::fvec3 minXYZ{0.0f, 0.0f, 0.0f};               ///< 模型包围盒最小点
+        ktm::fvec3 maxXYZ{0.0f, 0.0f, 0.0f};               ///< 模型包围盒最大点
+        ktm::fvec3 positon{0.0f, 0.0f, 0.0f};                           ///< 位置
+        ktm::fvec3 rotation{0.0f, 0.0f, 0.0f};                          ///< 旋转
+        ktm::fvec3 scale{1.0f, 1.0f, 1.0f};                            ///< 缩放
+        // 使用单位矩阵作为初始模型矩阵，避免默认全零导致变换失效
+        ktm::fmat4x4 modelMatrix = ktm::fmat4x4::from_eye();                          ///< 模型矩阵
         HardwareBuffer bonesMatrixBuffer;
     };
 
