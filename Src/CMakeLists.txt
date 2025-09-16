@@ -7,7 +7,7 @@ file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES})
 add_library(CoronaEngine STATIC ${SOURCE_FILES})
 
-target_compile_definitions(CoronaEngine PRIVATE
+target_compile_options(CoronaEngine PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/utf-8> # 使用 UTF-8 编码
 )
 
