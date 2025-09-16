@@ -43,6 +43,7 @@ else()
     option(CABBAGE_FRAMEWORK_BUILD_EXAMPLES "Build examples" OFF)
 endif()
 
+set(Python3_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Env/Python-3.13.7 CACHE PATH "Path to Python 3.13 installation")
 find_package(Python3 3.13 EXACT REQUIRED COMPONENTS Interpreter Development)
 
 add_compile_definitions(
