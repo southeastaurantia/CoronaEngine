@@ -57,16 +57,9 @@ file(GLOB TBB_PDBS "${PROJECT_SOURCE_DIR}/Env/oneapi-tbb-2022.2.0/redist/intel64
 file(GLOB PYTHON_DLLS "${Python3_RUNTIME_LIBRARY_DIRS}/*.dll")
 file(GLOB PYTHON_PDBS "${Python3_RUNTIME_LIBRARY_DIRS}/*.pdb")
 
-if(TBB_DLLS AND TBB_PDBS)
-        message(STATUS "Found TBB DLLs and PDBs")
+if(TBB_DLLS AND TBB_PDBS AND PYTHON_DLLS AND PYTHON_PDBS)
+        message(STATUS "Found TBB DLLs and PDBs and PYTHON_DLLS and PDBS")
         set_target_properties(CoronaEngine PROPERTIES
-                INTERFACE_CABBAGE_RUNTIME_DEPS "${TBB_DLLS};${TBB_PDBS};"
-        )
-endif()
-
-if(PYTHON_DLLS AND PYTHON_PDBS)
-        message(STATUS "Found Python DLLs and PDBs")
-        set_target_properties(CoronaEngine PROPERTIES
-                INTERFACE_CABBAGE_RUNTIME_DEPS "${PYTHON_DLLS};${PYTHON_PDBS};"
+                INTERFACE_CABBAGE_RUNTIME_DEPS "${TBB_DLLS};${TBB_PDBS};${PYTHON_DLLS};${PYTHON_PDBS}"
         )
 endif()
