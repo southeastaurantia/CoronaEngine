@@ -220,4 +220,12 @@ void AnimationSystem::updateAnimationState(AnimationState &state, float dt)
     const ktm::fmat4x4 identity = ktm::fmat4x4::from_eye();
     // 从根开始递归计算
     calculateBoneTransform(state, anim, anim.m_RootNode, identity, state.bones);
+
+    if (!state.model->bonesMatrixBuffer)
+    {
+        state.model->bonesMatrixBuffer = HardwareBuffer(state.bones, BufferUsage::StorageBuffer);
+    }else
+    {
+        state.model->bonesMatrixBuffer.copyFromData(state.bones.data(), state.bones.size() * sizeof(ktm::fmat4x4));
+    }
 }

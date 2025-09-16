@@ -22,8 +22,12 @@ inline void Examples3()
     }
     PyConfig_Clear(&config);
 
-    PyRun_SimpleString("from time import time,ctime\n"
-                       "print('Today is', ctime(time()))\n");
+    PyRun_SimpleString(R"(
+import sys
+sys.path.insert(0, r'D:\project\CoronaEngine\Examples')
+import main
+main.main()
+)");
     if (Py_FinalizeEx() < 0)
     {
         exit(120);

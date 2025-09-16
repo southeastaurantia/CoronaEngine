@@ -54,6 +54,13 @@ namespace Corona
             handle->skeletalAnimations.emplace_back(scene, scene->mAnimations[i], handle->m_BoneInfoMap, handle->m_BoneCounter);
         }
 
+        // 预分配骨骼矩阵 GPU 缓冲，使用单位矩阵初始化，避免渲染时未创建导致 descriptor 无效
+        if (handle->m_BoneCounter > 0)
+        {
+            std::vector<ktm::fmat4x4> initBones(handle->m_BoneCounter, ktm::fmat4x4::from_eye());
+            handle->bonesMatrixBuffer = HardwareBuffer(initBones, BufferUsage::StorageBuffer);
+        }
+
         if (handle->meshes.size() > 0)
         {
             handle->minXYZ = handle->meshes[0].minXYZ;
