@@ -57,8 +57,8 @@ void RenderingSystem::init()
 
 void RenderingSystem::initShader(std::shared_ptr<Shader> shader)
 {
-    rasterizerPipeline.initialize(shader->vertCode, shader->fragCode);
-    computePipeline.initialize(shader->computeCode);
+    rasterizerPipeline = RasterizerPipeline(shader->vertCode, shader->fragCode);
+    computePipeline = ComputePipeline(shader->computeCode);
     shaderHasInit = true;
 }
 
