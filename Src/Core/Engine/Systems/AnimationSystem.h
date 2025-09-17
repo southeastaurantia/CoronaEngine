@@ -3,6 +3,7 @@
 #include "Core/Engine/ThreadedSystem.h"
 #include "Resource/AnimationState.h"
 
+#include <set>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -34,14 +35,14 @@ namespace Corona
 
       private:
         std::vector<float> boneMatrices_; // 占位：后续替换为矩阵类型
-        float currentTime = 0.0f;
-        std::chrono::high_resolution_clock::time_point last_tick_time;
         float playback_speed = 1.0f; // 播放速度倍数
         std::unordered_map<uint64_t, float> animationTime_{};
         std::unordered_set<uint64_t> state_cache_keys_{};
         std::unordered_set<uint64_t> model_cache_keys_{};
+        std::set<Model *> collisionActors_{};
         void processAnimation(uint64_t id);
         // 关注的动画状态 id 集合
         void updateAnimationState(AnimationState &state, float dt);
+        void updatePhysics(Model &model);
     };
 } // namespace Corona
