@@ -17,21 +17,21 @@ function(corona_install_runtime_deps target_name)
     # 从核心库读取之前收集的依赖文件列表（可能为空）
     get_target_property(_CORONA_DEPS CoronaEngine INTERFACE_CORONA_RUNTIME_DEPS)
     if(NOT _CORONA_DEPS)
-        message(STATUS "[RuntimeDeps] CoronaEngine 尚未定义 INTERFACE_CORONA_RUNTIME_DEPS，跳过复制。")
+        message(STATUS "[RuntimeDeps] CoronaEngine has not defined INTERFACE_CORONA_RUNTIME_DEPS; skipping copy.")
         return()
     endif()
     set(_DESTINATION_DIR "$<TARGET_FILE_DIR:${target_name}>")
     add_custom_command(
         TARGET ${target_name} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_CORONA_DEPS} "${_DESTINATION_DIR}"
-        COMMENT "[RuntimeDeps] 复制 Corona 运行时依赖到目标目录 -> ${target_name}"
+    COMMENT "[RuntimeDeps] Copy Corona runtime dependencies to target directory -> ${target_name}"
         VERBATIM
     )
 endfunction()
 
 function(corona_configure_runtime_deps target_name)
     if(NOT TARGET ${target_name})
-        message(WARNING "[RuntimeDeps] 目标 ${target_name} 不存在，无法配置运行时依赖。")
+        message(WARNING "[RuntimeDeps] Target ${target_name} does not exist; cannot configure runtime dependencies.")
         return()
     endif()
 
@@ -61,12 +61,12 @@ function(corona_configure_runtime_deps target_name)
     endif()
 
     if(NOT _ALL_DEPS)
-        message(WARNING "[RuntimeDeps] 未收集到任何运行时文件 (TBB / Python)。")
+        message(WARNING "[RuntimeDeps] No runtime files collected (TBB / Python).")
         return()
     endif()
 
     # 去重，写入目标属性供后续复制使用
     list(REMOVE_DUPLICATES _ALL_DEPS)
     set_target_properties(${target_name} PROPERTIES INTERFACE_CORONA_RUNTIME_DEPS "${_ALL_DEPS}")
-    message(STATUS "[RuntimeDeps] 已收集 ${target_name} 运行时文件: ${_ALL_DEPS}")
+    message(STATUS "[RuntimeDeps] Collected ${target_name} runtime files: ${_ALL_DEPS}")
 endfunction()

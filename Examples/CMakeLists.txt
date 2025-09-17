@@ -9,7 +9,7 @@ file(GLOB_RECURSE EXAMPLES_SOURCE_FILES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/*.c"
 )
 if(NOT EXAMPLES_SOURCE_FILES)
-    message(WARNING "[Examples] 未在 ${CMAKE_CURRENT_SOURCE_DIR} 中找到示例源文件。")
+    message(WARNING "[Examples] No example source files found in ${CMAKE_CURRENT_SOURCE_DIR}.")
 endif()
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${EXAMPLES_SOURCE_FILES})
 
@@ -39,6 +39,7 @@ target_link_libraries(CoronaEngineExamples PRIVATE
 # =====================================================================================
 helicon_install_runtime_deps(CoronaEngineExamples)
 corona_install_runtime_deps(CoronaEngineExamples)
+corona_install_cabbage_editor(CoronaEngineExamples CoronaEngine)
 
 # =====================================================================================
 #  资源目录拷贝 (Asset Copy Step)
@@ -48,11 +49,11 @@ corona_install_runtime_deps(CoronaEngineExamples)
 set(_EXAMPLES_ASSETS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets")
 add_custom_command(
     TARGET CoronaEngineExamples POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E echo "[Examples] 拷贝资源(若存在) -> $<TARGET_FILE_DIR:CoronaEngineExamples>/assets"
+    COMMAND ${CMAKE_COMMAND} -E echo "[Examples] Copying assets (if any) -> $<TARGET_FILE_DIR:CoronaEngineExamples>/assets"
     COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:CoronaEngineExamples>/assets
     COMMAND ${CMAKE_COMMAND} -E copy_directory
             "${_EXAMPLES_ASSETS_DIR}"
             $<TARGET_FILE_DIR:CoronaEngineExamples>/assets
-    COMMENT "[Examples] 复制资源目录"
+    COMMENT "[Examples] Copy asset directory"
     VERBATIM
 )

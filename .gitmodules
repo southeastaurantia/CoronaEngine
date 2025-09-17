@@ -1,0 +1,3 @@
+[submodule "Editor/CabbageEditor"]
+	path = Editor/CabbageEditor
+	url = https://github.com/CoronaEngine/CabbageEditor.git

@@ -9,13 +9,15 @@ if(POLICY CMP0077)
 endif()
 
 # 是否构建为共享库 (ON -> 生成 .dll/.so；OFF -> 生成静态库)
-option(BUILD_SHARED_LIBS "是否构建为共享库 (默认静态库 OFF)" OFF)
+option(BUILD_SHARED_LIBS "Build as shared libraries (default OFF for static)" OFF)
+# 是否编译Cabbage编辑器 (ON -> 编译; OFF -> 不编译)
+option(BUILD_CABBAGE_EDITOR "Build cabbage editor" OFF)
 
 # 是否编译示例工程：
 #   ON  -> 生成 Examples 目录下的演示可执行，便于调试 / 验证功能
 #   OFF -> 跳过示例，减少依赖（如 GLFW）拉取与编译时间
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-    option(CORONA_BUILD_EXAMPLES "是否构建示例程序" ON)
+    option(CORONA_BUILD_EXAMPLES "Build example programs" ON)
 else()
-    option(CORONA_BUILD_EXAMPLES "是否构建示例程序" OFF)
+    option(CORONA_BUILD_EXAMPLES "Build example programs" OFF)
 endif()
