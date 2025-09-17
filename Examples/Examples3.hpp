@@ -23,8 +23,6 @@ inline void Examples3()
     PyConfig_Clear(&config);
 
     PyRun_SimpleString(R"(
-import sys
-sys.path.insert(0, r'D:\project\CoronaEngine\Examples')
 import main
 main.main()
 )");

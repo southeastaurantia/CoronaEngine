@@ -110,6 +110,64 @@ namespace
         for (const auto &child : node.children)
             calculateBoneTransform(state, anim, child, global, outBones);
     }
+
+    static std::vector<ktm::fvec3> calculateVertices(const ktm::fvec3 &startMin, const ktm::fvec3 &startMax)
+    {
+        std::vector<ktm::fvec3> vertices;
+        vertices.reserve(8);
+        vertices.push_back(startMin);
+        vertices.push_back(ktm::fvec3(startMax.x, startMin.y, startMin.z));
+        vertices.push_back(ktm::fvec3(startMin.x, startMax.y, startMin.z));
+        vertices.push_back(ktm::fvec3(startMax.x, startMax.y, startMin.z));
+        vertices.push_back(ktm::fvec3(startMin.x, startMin.y, startMax.z));
+        vertices.push_back(ktm::fvec3(startMax.x, startMin.y, startMax.z));
+        vertices.push_back(ktm::fvec3(startMin.x, startMax.y, startMax.z));
+        vertices.push_back(startMax);
+        return vertices;
+    }
+
+    static bool checkCollision(const std::vector<ktm::fvec3> &vertices1, const std::vector<ktm::fvec3> &vertices2)
+    {
+        // 计算vertices2的AABB
+        ktm::fvec3 min2 = vertices2[0], max2 = vertices2[0];
+        for (const auto &v : vertices2)
+        {
+            min2 = ktm::min(min2, v);
+            max2 = ktm::max(max2, v);
+        }
+
+        // 检查vertices1的顶点是否在vertices2的AABB内
+        for (const auto &point : vertices1)
+        {
+            if (point.x >= min2.x && point.x <= max2.x &&
+                point.y >= min2.y && point.y <= max2.y &&
+                point.z >= min2.z && point.z <= max2.z)
+            {
+                return true;
+            }
+        }
+
+        // 计算vertices1的AABB
+        ktm::fvec3 min1 = vertices1[0], max1 = vertices1[0];
+        for (const auto &v : vertices1)
+        {
+            min1 = ktm::min(min1, v);
+            max1 = ktm::max(max1, v);
+        }
+
+        // 检查vertices2的顶点是否在vertices1的AABB内
+        for (const auto &point : vertices2)
+        {
+            if (point.x >= min1.x && point.x <= max1.x &&
+                point.y >= min1.y && point.y <= max1.y &&
+                point.z >= min1.z && point.z <= max1.z)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 } // namespace
 
 using namespace Corona;
@@ -123,8 +181,6 @@ AnimationSystem::AnimationSystem()
 
 void AnimationSystem::onStart()
 {
-    currentTime = 0.0f;
-    // last_tick_time = std::chrono::high_resolution_clock::now();
 }
 
 void AnimationSystem::onTick()
@@ -138,28 +194,20 @@ void AnimationSystem::onTick()
         ++spun;
     }
 
-    // const auto now = std::chrono::high_resolution_clock::now();
-    // float dt = std::chrono::duration<float>(now - last_tick_time).count();
-    // last_tick_time = now;
-    // if (dt < 0.0f)
-    //     dt = 0.0f;
-    // const float max_dt = 0.1f;
-    // if (dt > max_dt)
-    //     dt = max_dt;
-    //
-    // dt *= playback_speed;
-    //
-    // if (dt <= 0.0f)
-    //     return;
-
     // 遍历关注的 AnimationState 并推进
-    auto &cache = Engine::Instance().Cache<AnimationState>();
-    cache.safe_loop_foreach(state_cache_keys_, [&](std::shared_ptr<AnimationState> st) {
+    auto &animCache = Engine::Instance().Cache<AnimationState>();
+    animCache.safe_loop_foreach(state_cache_keys_, [&](std::shared_ptr<AnimationState> st) {
         if (!st || !st->model)
             return;
         updateAnimationState(*st, 1.0f / 120.0f); // 与系统线程目标帧率一致
     });
 
+    // auto &modelCache = Engine::Instance().Cache<Model>();
+    // modelCache.safe_loop_foreach(model_cache_keys_, [&](std::shared_ptr<Model> m) {
+    //     if (!m)
+    //         return;
+    //     updatePhysics(*m);
+    // });
 }
 
 void AnimationSystem::onStop()
@@ -228,4 +276,68 @@ void AnimationSystem::updateAnimationState(AnimationState &state, float dt)
     {
         state.model->bonesMatrixBuffer.copyFromData(state.bones.data(), state.bones.size() * sizeof(ktm::fmat4x4));
     }
+}
+
+void AnimationSystem::updatePhysics(Model &m)
+{
+    collisionActors_.clear();
+
+    auto StartMin = m.minXYZ;
+    auto StartMax = m.maxXYZ;
+
+    // 计算世界坐标下的包围盒顶点
+    std::vector<ktm::fvec3> Vertices1 = calculateVertices(StartMin, StartMax);
+    ktm::fmat4x4 actorMatrix = m.modelMatrix;
+    for (auto &v : Vertices1)
+    {
+        v = ktm::fvec4(actorMatrix * ktm::fvec4(v, 1.0f)).xyz();
+    }
+
+    auto &modelCache = Engine::Instance().Cache<Model>();
+    modelCache.safe_loop_foreach(model_cache_keys_, [&](std::shared_ptr<Model> otherModel) {
+        if (!otherModel)
+            return;
+
+        if (std::addressof(m) == otherModel.get())
+            return; // 跳过自己
+
+        auto otherStartMin = otherModel->minXYZ;
+        auto otherStartMax = otherModel->maxXYZ;
+
+        // 计算世界坐标下的包围盒顶点
+        std::vector<ktm::fvec3> Vertices2 = calculateVertices(otherStartMin, otherStartMax);
+        ktm::fmat4x4 otherModelMatrix = otherModel->modelMatrix;
+        for (auto &v : Vertices2)
+        {
+            v = ktm::fvec4(otherModelMatrix * ktm::fvec4(v, 1.0f)).xyz();
+        }
+
+        // 碰撞检测
+        if (checkCollision(Vertices1, Vertices2))
+        {
+            CE_LOG_INFO("Collision detected!");
+            collisionActors_.insert(otherModel.get());
+            collisionActors_.insert(std::addressof(m));
+
+            // 碰撞响应
+            // 计算碰撞法线（从actor指向otherActor）
+            ktm::fvec3 center1 = (StartMin + StartMax) * 0.5f;
+            ktm::fvec3 center2 = (otherStartMin + otherStartMax) * 0.5f;
+            ktm::fvec3 normal = ktm::normalize(center2 - center1);
+
+            // 物体分离（防止穿透）
+            const float separation = 0.02f;
+            m.positon += ktm::fvec3(-normal * separation);
+            otherModel->positon += (normal * separation);
+
+            // 直接施加反弹位移
+            const float bounceStrength = 0.1f; // 反弹强度
+            m.positon += ktm::fvec3(-normal * bounceStrength);
+            otherModel->positon += (normal * bounceStrength);
+
+            // 更新模型矩阵           /*变换矩阵 = 平移 * 旋转 * 缩放/     //先缩放在旋转后平移//
+            m.modelMatrix = ktm::fmat4x4(ktm::translate3d(m.positon) * ktm::translate3d(m.rotation) * ktm::translate3d(m.scale));
+            otherModel->modelMatrix = ktm::fmat4x4(ktm::translate3d(otherModel->positon) * ktm::translate3d(otherModel->rotation) * ktm::translate3d(otherModel->scale));
+        }
+    });
 }
