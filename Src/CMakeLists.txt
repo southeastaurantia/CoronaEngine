@@ -1,10 +1,20 @@
+# =====================================================================================
+#  Source Collection
+# =====================================================================================
 file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/*.c")
-
+        "${CMAKE_CURRENT_SOURCE_DIR}/*.c"
+)
+if(NOT SOURCE_FILES)
+        message(WARNING "No source files found in ${CMAKE_CURRENT_SOURCE_DIR}")
+endif()
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES})
+
+# =====================================================================================
+#  Library Target
+# =====================================================================================
 add_library(CoronaEngine STATIC ${SOURCE_FILES})
 
 target_compile_options(CoronaEngine PUBLIC
@@ -30,36 +40,34 @@ target_link_libraries(CoronaEngine PUBLIC
         EnTT::EnTT
         CabbageHardware
         python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}
-
-        $<$<CONFIG:Debug>:tbb12_debug>
-        $<$<CONFIG:RelWithDebInfo>:tbb12_debug>
-        $<$<CONFIG:Release>:tbb12>
-        $<$<CONFIG:MinSizeRel>:tbb12>
-
-        $<$<CONFIG:Debug>:tbbbind_2_5_debug>
-        $<$<CONFIG:RelWithDebInfo>:tbbbind_2_5_debug>
-        $<$<CONFIG:Release>:tbbbind_2_5>
-        $<$<CONFIG:MinSizeRel>:tbbbind_2_5>
-
-        $<$<CONFIG:Debug>:tbbmalloc_debug>
-        $<$<CONFIG:RelWithDebInfo>:tbbmalloc_debug>
-        $<$<CONFIG:Release>:tbbmalloc>
-        $<$<CONFIG:MinSizeRel>:tbbmalloc>
-
-        $<$<CONFIG:Debug>:tbbmalloc_proxy_debug>
-        $<$<CONFIG:RelWithDebInfo>:tbbmalloc_proxy_debug>
-        $<$<CONFIG:Release>:tbbmalloc_proxy>
-        $<$<CONFIG:MinSizeRel>:tbbmalloc_proxy>
+        # TBB core
+        $<IF:$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>,tbb12_debug,tbb12>
+        # tbbbind
+        $<IF:$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>,tbbbind_2_5_debug,tbbbind_2_5>
+        # tbbmalloc
+        $<IF:$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>,tbbmalloc_debug,tbbmalloc>
+        # tbbmalloc_proxy
+        $<IF:$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>,tbbmalloc_proxy_debug,tbbmalloc_proxy>
 )
 
-file(GLOB TBB_DLLS "${PROJECT_SOURCE_DIR}/Env/oneapi-tbb-2022.2.0/redist/intel64/vc14/*.dll")
-file(GLOB TBB_PDBS "${PROJECT_SOURCE_DIR}/Env/oneapi-tbb-2022.2.0/redist/intel64/vc14/*.pdb")
+# =====================================================================================
+#  Runtime Dependency Collection (DLL / PDB)
+# =====================================================================================
+file(GLOB TBB_DLLS  "${PROJECT_SOURCE_DIR}/Env/oneapi-tbb-2022.2.0/redist/intel64/vc14/*.dll")
+file(GLOB TBB_PDBS  "${PROJECT_SOURCE_DIR}/Env/oneapi-tbb-2022.2.0/redist/intel64/vc14/*.pdb")
 file(GLOB PYTHON_DLLS "${Python3_RUNTIME_LIBRARY_DIRS}/*.dll")
 file(GLOB PYTHON_PDBS "${Python3_RUNTIME_LIBRARY_DIRS}/*.pdb")
 
 if(TBB_DLLS AND TBB_PDBS AND PYTHON_DLLS AND PYTHON_PDBS)
-        message(STATUS "Found TBB DLLs and PDBs and PYTHON_DLLS and PDBS")
+        message(STATUS "Found TBB + Python runtime binaries (DLL/PDB)")
         set_target_properties(CoronaEngine PROPERTIES
-                INTERFACE_CABBAGE_RUNTIME_DEPS "${TBB_DLLS};${TBB_PDBS};${PYTHON_DLLS};${PYTHON_PDBS}"
+                        INTERFACE_CORONA_RUNTIME_DEPS "${TBB_DLLS};${TBB_PDBS};${PYTHON_DLLS};${PYTHON_PDBS}"
         )
+else()
+        if(NOT TBB_DLLS)
+                message(WARNING "TBB DLLs not found for CoronaEngine runtime package")
+        endif()
+        if(NOT PYTHON_DLLS)
+                message(WARNING "Python DLLs not found in ${Python3_RUNTIME_LIBRARY_DIRS}")
+        endif()
 endif()
