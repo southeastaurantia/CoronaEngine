@@ -12,12 +12,12 @@
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 
-#include <Resource/Mesh.h>
 #include <Resource/Model.h>
 #include <chrono>
 #include <filesystem>
 #include <thread>
-#include <vector>
+
+// 不再需要 <vector>，已改为单窗口
 
 inline void Examples4()
 {
@@ -81,29 +81,24 @@ inline void Examples4()
     // 旧的模拟客户端：GLFW 多窗口主循环（无 OpenGL 上下文，便于与 Vulkan/自研渲染对接）
     if (glfwInit() >= 0)
     {
-        std::vector<GLFWwindow *> windows(4);
+        GLFWwindow *window = nullptr;
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        for (size_t i = 0; i < windows.size(); i++)
+        window = glfwCreateWindow(800, 800, "Cabbage Engine", nullptr, nullptr);
+        if (window)
         {
-            windows[i] = glfwCreateWindow(800, 800, "Cabbage Engine", nullptr, nullptr);
             auto scene = std::make_shared<Corona::Scene>();
             auto sceneId = Corona::DataId::Next();
             sceneCache.insert(sceneId, scene);
-            scene->displaySurface = glfwGetWin32Window(windows[i]);
+            scene->displaySurface = glfwGetWin32Window(window);
             render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchScene, sceneId);
             render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::setDisplaySurface, scene);
         }
 
         auto shouldClosed = [&]() {
-            for (const auto &window : windows)
-            {
-                if (glfwWindowShouldClose(window))
-                {
-                    return true;
-                }
-            }
-            return false;
+            if (!window)
+                return true;
+            return glfwWindowShouldClose(window) != 0;
         };
 
         uint64_t frameCount = 0;
@@ -133,14 +128,13 @@ inline void Examples4()
 
                 // 简易键盘控制：数字键 1/2 观察/取消观察 meshId
                 // 注意：GLFW 需窗口上下文，这里取第一个窗口
-                // if (!windows.empty())
+                // if (window)
                 // {
-                //     auto *w = windows[0];
-                //     if (glfwGetKey(w, GLFW_KEY_1) == GLFW_PRESS)
+                //     if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
                 //     {
                 //         Corona::RenderingSystem::WatchMesh(meshId);
                 //     }
-                //     if (glfwGetKey(w, GLFW_KEY_2) == GLFW_PRESS)
+                //     if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
                 //     {
                 //         Corona::RenderingSystem::UnwatchMesh(meshId);
                 //     }
@@ -155,10 +149,8 @@ inline void Examples4()
                 std::this_thread::sleep_for(std::chrono::milliseconds(TIME - Spend));
             }
         }
-        for (const auto &window : windows)
-        {
+        if (window)
             glfwDestroyWindow(window);
-        }
         glfwTerminate();
     }
 
