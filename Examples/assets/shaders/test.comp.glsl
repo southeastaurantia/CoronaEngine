@@ -3,12 +3,12 @@
 
 layout (local_size_x = 8, local_size_y = 8) in;
 
-layout (set = 0, binding = 1) uniform sampler2D textures[];
+layout (set = 1, binding = 0) uniform sampler2D textures[];
 
-layout(set = 0, binding = 3, r32ui) uniform uimage2D inputImageRGBA8[];
-layout (set = 0, binding = 3, rgba16) uniform image2D inputImageRGBA16[];
+layout(set = 3, binding = 0, r32ui) uniform uimage2D inputImageRGBA8[];
+layout (set = 3, binding = 0, rgba16) uniform image2D inputImageRGBA16[];
 
-layout(set = 0, binding = 3, rgba16) uniform readonly image2DArray inputImage2DArray[];
+layout(set = 3, binding = 0, rgba16) uniform readonly image2DArray inputImage2DArray[];
 
 layout(push_constant) uniform PushConsts
 {

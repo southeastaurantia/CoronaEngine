@@ -15,7 +15,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject
 } uniformBufferObjects[];
 
 
-layout (set = 0, binding = 1) uniform sampler2D textures[];
+layout (set = 1, binding = 0) uniform sampler2D textures[];
 
 layout(location = 0) in vec3 fragPos;
 layout(location = 1) in vec3 fragNormal;
