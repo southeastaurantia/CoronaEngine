@@ -14,7 +14,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject
     mat4 viewProjMatrix;
 } uniformBufferObjects[];
 
-layout(set = 0, binding = 2)  buffer readonly MeshBonesMatrix
+layout(set = 2, binding = 0)  buffer readonly MeshBonesMatrix
 {
     mat4 matrix[];
 } bonesMatrix[];

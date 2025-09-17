@@ -57,15 +57,15 @@ void RenderingSystem::init()
 
 void RenderingSystem::initShader(std::shared_ptr<Shader> shader)
 {
-    rasterizerPipeline.initialize(shader->vertCode, shader->fragCode);
-    computePipeline.initialize(shader->computeCode);
+    rasterizerPipeline = RasterizerPipeline(shader->vertCode, shader->fragCode);
+    computePipeline = ComputePipeline(shader->computeCode);
     shaderHasInit = true;
 }
 
 void RenderingSystem::setDisplaySurface(std::shared_ptr<Scene> scene)
 {
     scene->displayer.setSurface(scene->displaySurface);
-    scene->displayer = finalOutputImage;
+    //scene->displayer = finalOutputImage;
 }
 
 void RenderingSystem::updateEngine()
@@ -87,38 +87,43 @@ void RenderingSystem::updateEngine()
 void RenderingSystem::gbufferPipeline(std::shared_ptr<Scene> scene)
 {
 
-    // uniformBufferObjects.eyePosition = scene->camera.pos;
-    // uniformBufferObjects.eyeDir = ktm::normalize(scene->camera.forward);
-    // uniformBufferObjects.eyeViewMatrix = ktm::look_at_lh(uniformBufferObjects.eyePosition, ktm::normalize(scene->camera.forward), scene->camera.worldUp);
-    // uniformBufferObjects.eyeProjMatrix = ktm::perspective_lh(ktm::radians(scene->camera.fov), (float)gbufferSize.x / (float)gbufferSize.y, 0.1f, 100.0f);
-    //
-    // gbufferUniformBufferObjects.viewProjMatrix = uniformBufferObjects.eyeProjMatrix * uniformBufferObjects.eyeViewMatrix;
-    // gbufferUniformBuffer.copyFromData(&gbufferUniformBufferObjects, sizeof(gbufferUniformBufferObjects));
-    //
-    // auto &modelCache = Engine::Instance().Cache<Model>();
-    // modelCache.safe_loop_foreach(model_cache_keys_, [&](std::shared_ptr<Model> model) {
-    //     if (!model)
-    //         return;
-    //
-    //     ktm::fmat4x4 actorMatrix = model->modelMatrix;
-    //     rasterizerPipeline["pushConsts.modelMatrix"] = actorMatrix;
-    //
-    //     HardwareBuffer bonesMatrixBuffer = model->bonesMatrixBuffer;
-    //     rasterizerPipeline["pushConsts.uniformBufferIndex"] = gbufferUniformBuffer.storeDescriptor();
-    //     rasterizerPipeline["pushConsts.boneIndex"] = bonesMatrixBuffer.storeDescriptor();
-    //
-    //     for (auto &m : model->meshes)
-    //     {
-    //         rasterizerPipeline["inPosition"] = m.meshDevice->pointsBuffer;
-    //         rasterizerPipeline["inNormal"] = m.meshDevice->normalsBuffer;
-    //         rasterizerPipeline["inTexCoord"] = m.meshDevice->texCoordsBuffer;
-    //         rasterizerPipeline["boneIndexes"] = m.meshDevice->boneIndexesBuffer;
-    //         rasterizerPipeline["jointWeights"] = m.meshDevice->boneWeightsBuffer;
-    //         rasterizerPipeline["pushConsts.textureIndex"] = m.meshDevice->textureIndex;
-    //
-    //         rasterizerPipeline.startRecord(gbufferSize) << m.meshDevice->indexBuffer << rasterizerPipeline.endRecord();
-    //     }
-    // });
+    uniformBufferObjects.eyePosition = scene->camera.pos;
+    uniformBufferObjects.eyeDir = ktm::normalize(scene->camera.forward);
+    uniformBufferObjects.eyeViewMatrix = ktm::look_at_lh(uniformBufferObjects.eyePosition, ktm::normalize(scene->camera.forward), scene->camera.worldUp);
+    uniformBufferObjects.eyeProjMatrix = ktm::perspective_lh(ktm::radians(scene->camera.fov), (float)gbufferSize.x / (float)gbufferSize.y, 0.1f, 100.0f);
+
+    gbufferUniformBufferObjects.viewProjMatrix = uniformBufferObjects.eyeProjMatrix * uniformBufferObjects.eyeViewMatrix;
+    gbufferUniformBuffer.copyFromData(&gbufferUniformBufferObjects, sizeof(gbufferUniformBufferObjects));
+
+    auto &modelCache = Engine::Instance().Cache<Model>();
+    modelCache.safe_loop_foreach(model_cache_keys_, [&](std::shared_ptr<Model> model) {
+        if (!model)
+            return;
+
+        ktm::fmat4x4 actorMatrix = model->modelMatrix;
+        rasterizerPipeline["pushConsts.modelMatrix"] = actorMatrix;
+
+        HardwareBuffer bonesMatrixBuffer = model->bonesMatrixBuffer;
+        rasterizerPipeline["pushConsts.uniformBufferIndex"] = gbufferUniformBuffer.storeDescriptor();
+        rasterizerPipeline["pushConsts.boneIndex"] = bonesMatrixBuffer.storeDescriptor();
+
+        rasterizerPipeline["gbufferPostion"] = gbufferPostionImage;
+        rasterizerPipeline["gbufferBaseColor"] = gbufferBaseColorImage;
+        rasterizerPipeline["gbufferNormal"] = gbufferNormalImage;
+        rasterizerPipeline["gbufferMotionVector"] = gbufferMotionVectorImage;
+
+         for (auto &m : model->meshes)
+         {
+             rasterizerPipeline["inPosition"] = m.meshDevice->pointsBuffer;
+             rasterizerPipeline["inNormal"] = m.meshDevice->normalsBuffer;
+             rasterizerPipeline["inTexCoord"] = m.meshDevice->texCoordsBuffer;
+             rasterizerPipeline["boneIndexes"] = m.meshDevice->boneIndexesBuffer;
+             rasterizerPipeline["jointWeights"] = m.meshDevice->boneWeightsBuffer;
+             rasterizerPipeline["pushConsts.textureIndex"] = m.meshDevice->textureIndex;
+        
+             rasterizerPipeline.startRecord(gbufferSize) << m.meshDevice->indexBuffer << rasterizerPipeline.endRecord();
+         }
+    });
 }
 void RenderingSystem::compositePipeline(ktm::fvec3 sunDir)
 {
