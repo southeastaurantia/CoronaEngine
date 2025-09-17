@@ -54,15 +54,53 @@ function(corona_install_cabbage_editor target_name core_target)
     set(_COMMANDS)
     list(APPEND _COMMANDS COMMAND ${CMAKE_COMMAND} -E echo "[CabbageEditor] Installing editor resources -> ${_DEST_ROOT}")
     list(APPEND _COMMANDS COMMAND ${CMAKE_COMMAND} -E make_directory "${_DEST_ROOT}")
+    set(_FRONTEND_SOURCE_DIR "${PROJECT_SOURCE_DIR}/Editor/CabbageEditor/Frontend")
     foreach(_DIR IN LISTS _EDITOR_DIRS)
         get_filename_component(_BASENAME "${_DIR}" NAME)
         list(APPEND _COMMANDS COMMAND ${CMAKE_COMMAND} -E copy_directory "${_DIR}" "${_DEST_ROOT}/${_BASENAME}")
     endforeach()
 
+    # Append npm install / build only if enabled and package.json exists.
+    if(BUILD_CABBAGE_EDITOR AND EXISTS "${_FRONTEND_SOURCE_DIR}/package.json")
+        # Auto-detect Node root if not explicitly provided
+        if(NOT DEFINED CORONA_NODE_ROOT)
+            set(_AUTO_NODE_ROOT "${PROJECT_SOURCE_DIR}/Editor/CabbageEditor/Env/node-v22.19.0-win-x64")
+            if(EXISTS "${_AUTO_NODE_ROOT}/node.exe")
+                set(CORONA_NODE_ROOT "${_AUTO_NODE_ROOT}" CACHE PATH "Auto-detected Node root for CabbageEditor" FORCE)
+                message(STATUS "[CabbageEditor] Auto-detected CORONA_NODE_ROOT=${CORONA_NODE_ROOT}")
+            else()
+                message(WARNING "[CabbageEditor] Neither CORONA_NODE_ROOT set nor auto-detected node-v22.19.0 directory present; skipping frontend npm build step.")
+            endif()
+        endif()
+
+        if(DEFINED CORONA_NODE_ROOT)
+            set(_NODE_EXE "${CORONA_NODE_ROOT}/node.exe")
+            set(_NPM_CMD "${CORONA_NODE_ROOT}/npm.cmd")
+            if(NOT EXISTS "${_NODE_EXE}")
+                message(WARNING "[CabbageEditor] node.exe not found under CORONA_NODE_ROOT (${CORONA_NODE_ROOT}); skipping frontend build.")
+            elseif(NOT EXISTS "${_NPM_CMD}")
+                message(WARNING "[CabbageEditor] npm.cmd not found under CORONA_NODE_ROOT (${CORONA_NODE_ROOT}); skipping frontend build.")
+            else()
+                list(APPEND _COMMANDS
+                    COMMAND ${CMAKE_COMMAND} -E echo "[CabbageEditor] Running npm install (frontend)"
+                    COMMAND "${_NPM_CMD}" install
+                    WORKING_DIRECTORY "${_FRONTEND_SOURCE_DIR}"
+                )
+                list(APPEND _COMMANDS
+                    COMMAND ${CMAKE_COMMAND} -E echo "[CabbageEditor] Running npm run build (frontend)"
+                    COMMAND "${_NPM_CMD}" run build
+                    WORKING_DIRECTORY "${_FRONTEND_SOURCE_DIR}"
+                )
+            endif()
+        endif()
+    else()
+        message(STATUS "[CabbageEditor] Frontend build step skipped (disabled or package.json missing)")
+    endif()
+
     add_custom_command(
         TARGET ${target_name} POST_BUILD
         ${_COMMANDS}
-        COMMENT "[CabbageEditor] Copy editor resource directories"
+        COMMENT "[CabbageEditor] Copy editor resource directories and frontend build"
         VERBATIM
     )
 endfunction()
