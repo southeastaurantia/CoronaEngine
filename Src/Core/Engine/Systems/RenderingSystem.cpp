@@ -107,17 +107,22 @@ void RenderingSystem::gbufferPipeline(std::shared_ptr<Scene> scene)
         rasterizerPipeline["pushConsts.uniformBufferIndex"] = gbufferUniformBuffer.storeDescriptor();
         rasterizerPipeline["pushConsts.boneIndex"] = bonesMatrixBuffer.storeDescriptor();
 
-        // for (auto &m : model->meshes)
-        // {
-        //     rasterizerPipeline["inPosition"] = m.meshDevice->pointsBuffer;
-        //     rasterizerPipeline["inNormal"] = m.meshDevice->normalsBuffer;
-        //     rasterizerPipeline["inTexCoord"] = m.meshDevice->texCoordsBuffer;
-        //     rasterizerPipeline["boneIndexes"] = m.meshDevice->boneIndexesBuffer;
-        //     rasterizerPipeline["jointWeights"] = m.meshDevice->boneWeightsBuffer;
-        //     rasterizerPipeline["pushConsts.textureIndex"] = m.meshDevice->textureIndex;
-        //
-        //     rasterizerPipeline.startRecord(gbufferSize) << m.meshDevice->indexBuffer << rasterizerPipeline.endRecord();
-        // }
+        rasterizerPipeline["gbufferPostion"] = gbufferPostionImage;
+        rasterizerPipeline["gbufferBaseColor"] = gbufferBaseColorImage;
+        rasterizerPipeline["gbufferNormal"] = gbufferNormalImage;
+        rasterizerPipeline["gbufferMotionVector"] = gbufferMotionVectorImage;
+
+         for (auto &m : model->meshes)
+         {
+             rasterizerPipeline["inPosition"] = m.meshDevice->pointsBuffer;
+             rasterizerPipeline["inNormal"] = m.meshDevice->normalsBuffer;
+             rasterizerPipeline["inTexCoord"] = m.meshDevice->texCoordsBuffer;
+             rasterizerPipeline["boneIndexes"] = m.meshDevice->boneIndexesBuffer;
+             rasterizerPipeline["jointWeights"] = m.meshDevice->boneWeightsBuffer;
+             rasterizerPipeline["pushConsts.textureIndex"] = m.meshDevice->textureIndex;
+        
+             rasterizerPipeline.startRecord(gbufferSize) << m.meshDevice->indexBuffer << rasterizerPipeline.endRecord();
+         }
     });
 }
 void RenderingSystem::compositePipeline(ktm::fvec3 sunDir)
