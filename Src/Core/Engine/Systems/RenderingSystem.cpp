@@ -65,7 +65,7 @@ void RenderingSystem::initShader(std::shared_ptr<Shader> shader)
 void RenderingSystem::setDisplaySurface(std::shared_ptr<Scene> scene)
 {
     scene->displayer.setSurface(scene->displaySurface);
-    scene->displayer = finalOutputImage;
+    //scene->displayer = finalOutputImage;
 }
 
 void RenderingSystem::updateEngine()
