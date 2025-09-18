@@ -175,7 +175,14 @@ namespace Corona
         resultMesh.meshDevice->indexBuffer = HardwareBuffer(resultMesh.Indices, BufferUsage::IndexBuffer);
 
         resultMesh.meshDevice->materialIndex = 0;
-        resultMesh.meshDevice->textureIndex = textureImageHash[resultMesh.textures[0]->path].storeDescriptor();
+        if (resultMesh.textures.size() > 0)
+        {
+            resultMesh.meshDevice->textureIndex = textureImageHash[resultMesh.textures[0]->path].storeDescriptor();
+        }
+        else
+        {
+            throw std::runtime_error("Model has no texture");
+        }
 
     }
 
