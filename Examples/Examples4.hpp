@@ -173,6 +173,10 @@ inline void Examples4()
                         scene->camera.pos.y -= 0.1f;
                         CE_LOG_INFO("Key D pressed");
                     }
+                    if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS && key_limiter.allow(GLFW_KEY_ENTER, cooldown_ms))
+                    {
+                        CE_LOG_INFO("Key ENTER pressed");
+                    }
                 }
                 ++frameCount;
             }
