@@ -66,24 +66,38 @@ inline void Examples4()
     auto &anim_queue = Corona::Engine::Instance().GetQueue(animationSystem.name());
 
     // 使用数据缓存：加载模型并构建动画状态（若资源存在）
-    std::shared_ptr<Corona::Model> model;
+    std::shared_ptr<Corona::Model> model1;
+    std::shared_ptr<Corona::Model> model2;
     {
         // 这里假设 ResourceManager 已配置了模型加载器；路径按工程实际
-        auto res = Corona::Engine::Instance().Resources().load({"model", (std::filesystem::current_path() / "assets/model/armadillo.obj").string()});
-        model = std::static_pointer_cast<Corona::Model>(res);
-        std::shared_ptr<Corona::AnimationState> animState;
-        if (model)
+        auto res1 = Corona::Engine::Instance().Resources().load({"model", (std::filesystem::current_path() / "assets/model/armadillo.obj").string()});
+        model1 = std::static_pointer_cast<Corona::Model>(res1);
+        // std::shared_ptr<Corona::AnimationState> animState;
+        if (model1)
         {
-            if (!model->skeletalAnimations.empty())
-            {
-                animState = std::make_shared<Corona::AnimationState>();
-                animState->model = model;
-                animState->animationIndex = 0;
-
-                auto animStateId = Corona::DataId::Next();
-                animStateCache.insert(animStateId, animState);
-                anim_queue.enqueue(&animationSystem, &Corona::AnimationSystem::WatchState, animStateId);
-            }
+            auto modelId = Corona::DataId::Next();
+            modelCache.insert(modelId, model1);
+            anim_queue.enqueue(&animationSystem, &Corona::AnimationSystem::WatchModel, modelId);
+            render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchModel, modelId);
+            // if (!model->skeletalAnimations.empty())
+            // {
+            //     animState = std::make_shared<Corona::AnimationState>();
+            //     animState->model = model;
+            //     animState->animationIndex = 0;
+            //
+            //     auto animStateId = Corona::DataId::Next();
+            //     animStateCache.insert(animStateId, animState);
+            //     anim_queue.enqueue(&animationSystem, &Corona::AnimationSystem::WatchState, animStateId);
+            // }
+        }
+        auto res2 = Corona::Engine::Instance().Resources().load({"model", (std::filesystem::current_path() / "assets/model/Ball.obj").string()});
+        model2 = std::static_pointer_cast<Corona::Model>(res2);
+        if (model2)
+        {
+            auto modelId = Corona::DataId::Next();
+            modelCache.insert(modelId, model2);
+            anim_queue.enqueue(&animationSystem, &Corona::AnimationSystem::WatchModel, modelId);
+            render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchModel, modelId);
         }
         CE_LOG_INFO("Model loaded");
     }
@@ -92,13 +106,6 @@ inline void Examples4()
     std::shared_ptr<Corona::Shader> shader = std::static_pointer_cast<Corona::Shader>(shaderCode);
     render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::initShader, shader);
 
-    if (model)
-    {
-        auto modelId = Corona::DataId::Next();
-        modelCache.insert(modelId, model);
-        anim_queue.enqueue(&animationSystem, &Corona::AnimationSystem::WatchModel, modelId);
-        render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchModel, modelId);
-    }
 
     std::optional<uint64_t> animStateId;
 
@@ -155,26 +162,28 @@ inline void Examples4()
                     const int cooldown_ms = 300;
                     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && key_limiter.allow(GLFW_KEY_W, cooldown_ms))
                     {
-                        scene->camera.pos.x += 0.1f;
+                        scene->camera.pos.x += 0.5f;
                         CE_LOG_INFO("Key W pressed");
                     }
                     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && key_limiter.allow(GLFW_KEY_S, cooldown_ms))
                     {
-                        scene->camera.pos.x -= 0.1f;
+                        scene->camera.pos.x -= 0.5f;
                         CE_LOG_INFO("Key S pressed");
                     }
                     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && key_limiter.allow(GLFW_KEY_S, cooldown_ms))
                     {
-                        scene->camera.pos.y += 0.1f;
+                        scene->camera.pos.y += 0.5f;
                         CE_LOG_INFO("Key A pressed");
                     }
                     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS && key_limiter.allow(GLFW_KEY_S, cooldown_ms))
                     {
-                        scene->camera.pos.y -= 0.1f;
+                        scene->camera.pos.y -= 0.5f;
                         CE_LOG_INFO("Key D pressed");
                     }
                     if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS && key_limiter.allow(GLFW_KEY_ENTER, cooldown_ms))
                     {
+                        model1->positon = ktm::fvec3(1.0f, 0.0f, 0.0f);
+                        model2->positon = ktm::fvec3(-1.0f, 0.0f, 0.0f);
                         CE_LOG_INFO("Key ENTER pressed");
                     }
                 }

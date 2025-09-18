@@ -19,13 +19,13 @@ const std::string PythonAPI::codePath =
     std::string resultPath = "";
     std::string runtimePath = std::filesystem::current_path().string();
     // std::replace(runtimePath.begin(), runtimePath.end(), '\\', '/');
-    std::regex pattern(R"((.*)CabbageEngine\b)");
+    std::regex pattern(R"((.*)CoronaEngine\b)");
     std::smatch matches;
     if (std::regex_search(runtimePath, matches, pattern))
     {
         if (matches.size() > 1)
         {
-            resultPath = matches[1].str() + "CabbageEngine";
+            resultPath = matches[1].str() + "CoronaEngine";
         }
         else
         {
@@ -33,13 +33,13 @@ const std::string PythonAPI::codePath =
         }
     }
     std::replace(resultPath.begin(), resultPath.end(), '\\', '/');
-    return resultPath + "/SourceCode";
+    return resultPath;
     }();
 
 
-PyObject *PyInit_CabbageEngineEmbedded()
+PyObject *PyInit_CoronaEngineEmbedded()
 {
-    PyMethodDef CabbageEngineMethods[] = {{NULL, NULL, 0, NULL}};
+    PyMethodDef CoronaEngineMethods[] = {{NULL, NULL, 0, NULL}};
 
     if (PyType_Ready(&EngineScripts::ActorScripts::PyActorType) < 0)
     {
@@ -54,8 +54,8 @@ PyObject *PyInit_CabbageEngineEmbedded()
 
     static PyModuleDef module{};
     module.m_base = PyModuleDef_HEAD_INIT;
-    module.m_name = "CabbageEngine";
-    module.m_methods = CabbageEngineMethods;
+    module.m_name = "CoronaEngine";
+    module.m_methods = CoronaEngineMethods;
     module.m_size = -1;
     module.m_doc = NULL;
 
@@ -85,7 +85,7 @@ PythonAPI::PythonAPI()
 {
     PyConfig_InitPythonConfig(&config);
 
-    hotreloadPath = PythonAPI::codePath + "/CabbageEditor/CabbageEditorBackend";
+    hotreloadPath = PythonAPI::codePath + "/Editor/CoronaEditor/Backend";
     std::replace(hotreloadPath.begin(), hotreloadPath.end(), '\\', '/');
 }
 
@@ -101,10 +101,12 @@ void PythonAPI::runPythonScript()
 {
     if (!Py_IsInitialized())
     {
-        std::string runtimePath = "./Resource/CabbageEditorBackend";
-        std::string pythonPath = "./Resource/Python";
+        std::string runtimePath = PythonAPI::codePath + "/Editor/CoronaEditor/Backend";
+        std::replace(runtimePath.begin(), runtimePath.end(), '\\', '/');
+        std::string pythonPath = CORONA_PYTHON_EXE;
+        std::replace(pythonPath.begin(), pythonPath.end(), '\\', '/');
 
-        PyImport_AppendInittab("CabbageEngine", &PyInit_CabbageEngineEmbedded);
+        PyImport_AppendInittab("CoronaEngine", &PyInit_CoronaEngineEmbedded);
 
         PyConfig_InitPythonConfig(&config);
         PyConfig_SetBytesString(&config, &config.home, pythonPath.c_str());
