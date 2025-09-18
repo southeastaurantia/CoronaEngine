@@ -1,4 +1,4 @@
-#include "AnimationSystem.h"
+﻿#include "AnimationSystem.h"
 #include "Core/Engine/Engine.h"
 #include "Resource/Animation.h"
 #include "Resource/Bone.h"
@@ -202,12 +202,14 @@ void AnimationSystem::onTick()
         updateAnimationState(*st, 1.0f / 120.0f); // 与系统线程目标帧率一致
     });
 
-    // auto &modelCache = Engine::Instance().Cache<Model>();
-    // modelCache.safe_loop_foreach(model_cache_keys_, [&](std::shared_ptr<Model> m) {
-    //     if (!m)
-    //         return;
-    //     updatePhysics(*m);
-    // });
+    auto &modelCache = Engine::Instance().Cache<Model>();
+    modelCache.safe_loop_foreach(model_cache_keys_, [&](uint64_t id, std::shared_ptr<Model> m) {
+        if (!m)
+            return;
+        other_model_cache_keys_.erase(id);
+        updatePhysics(*m);
+        other_model_cache_keys_.insert(id);
+    });
 }
 
 void AnimationSystem::onStop()
@@ -233,17 +235,20 @@ void AnimationSystem::UnwatchState(uint64_t id)
 void AnimationSystem::WatchModel(uint64_t id)
 {
     model_cache_keys_.insert(id);
+    other_model_cache_keys_.insert(id);
 }
 
 void AnimationSystem::UnwatchModel(uint64_t id)
 {
     model_cache_keys_.erase(id);
+    other_model_cache_keys_.erase(id);
 }
 
 void AnimationSystem::ClearWatched()
 {
     state_cache_keys_.clear();
     model_cache_keys_.clear();
+    other_model_cache_keys_.clear();
 }
 
 void AnimationSystem::updateAnimationState(AnimationState &state, float dt)
@@ -294,7 +299,7 @@ void AnimationSystem::updatePhysics(Model &m)
     }
 
     auto &modelCache = Engine::Instance().Cache<Model>();
-    modelCache.safe_loop_foreach(model_cache_keys_, [&](std::shared_ptr<Model> otherModel) {
+    modelCache.safe_loop_foreach(other_model_cache_keys_, [&](std::shared_ptr<Model> otherModel) {
         if (!otherModel)
             return;
 

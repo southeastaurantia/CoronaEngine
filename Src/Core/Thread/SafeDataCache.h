@@ -141,6 +141,55 @@ namespace Corona
             }
         }
 
+        // 新增：支持回调接收 id 的重载版本
+        void safe_loop_foreach(const std::unordered_set<id_type> &data_ids, std::function<void(id_type, std::shared_ptr<TData>)> callback)
+        {
+            std::queue<id_type> unhandled_data_ids;
+            for (auto const &id : data_ids)
+            {
+                typename caches_type::accessor data_it;
+                mutexes_type::accessor foreach_it;
+                if (!data_cache.find(data_it, id))
+                {
+                    continue;
+                }
+                if (!foreach_mutex.find(foreach_it, id))
+                {
+                    continue;
+                }
+                if (foreach_it->second->try_lock())
+                {
+                    callback(id, data_it->second);
+                    foreach_it->second->unlock();
+                    continue;
+                }
+                unhandled_data_ids.push(id);
+            }
+
+            while (!unhandled_data_ids.empty())
+            {
+                auto const &id = unhandled_data_ids.front();
+                unhandled_data_ids.pop();
+                typename caches_type::accessor data_it;
+                mutexes_type::accessor foreach_it;
+                if (!data_cache.find(data_it, id))
+                {
+                    continue;
+                }
+                if (!foreach_mutex.find(foreach_it, id))
+                {
+                    continue;
+                }
+                if (foreach_it->second->try_lock())
+                {
+                    callback(id, data_it->second);
+                    foreach_it->second->unlock();
+                    continue;
+                }
+                unhandled_data_ids.push(id);
+            }
+        }
+
       private:
         caches_type data_cache{};
         mutexes_type foreach_mutex{};

@@ -39,6 +39,7 @@ namespace Corona
         std::unordered_map<uint64_t, float> animationTime_{};
         std::unordered_set<uint64_t> state_cache_keys_{};
         std::unordered_set<uint64_t> model_cache_keys_{};
+        std::unordered_set<uint64_t> other_model_cache_keys_{};
         std::set<Model *> collisionActors_{};
         void processAnimation(uint64_t id);
         // 关注的动画状态 id 集合
