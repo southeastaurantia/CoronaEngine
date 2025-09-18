@@ -300,7 +300,7 @@ namespace Corona
             if (!texturePathHash.contains(tempTexturePath))
             {
                 auto tempTexture = std::make_shared<Texture>();
-                tempTexture->type = allTextureTypes[attributeToImageIndex];
+                tempTexture->type = aiTextureType_BASE_COLOR;
                 tempTexture->width = 1;
                 tempTexture->height = 1;
                 tempTexture->nrChannels = 4;
@@ -323,7 +323,7 @@ namespace Corona
             if (!texturePathHash.contains(tempTexturePath))
             {
                 auto tempTexture = std::make_shared<Texture>();
-                tempTexture->type = allTextureTypes[attributeToImageIndex];
+                tempTexture->type = aiTextureType_SPECULAR;
                 tempTexture->width = 1;
                 tempTexture->height = 1;
                 tempTexture->nrChannels = 4;
@@ -346,7 +346,7 @@ namespace Corona
             if (!texturePathHash.contains(tempTexturePath))
             {
                 auto tempTexture = std::make_shared<Texture>();
-                tempTexture->type = allTextureTypes[attributeToImageIndex];
+                tempTexture->type = aiTextureType_DIFFUSE;
                 tempTexture->width = 1;
                 tempTexture->height = 1;
                 tempTexture->nrChannels = 4;
@@ -369,7 +369,7 @@ namespace Corona
             if (!texturePathHash.contains(tempTexturePath))
             {
                 auto tempTexture = std::make_shared<Texture>();
-                tempTexture->type = allTextureTypes[attributeToImageIndex];
+                tempTexture->type = aiTextureType_EMISSIVE;
                 tempTexture->width = 1;
                 tempTexture->height = 1;
                 tempTexture->nrChannels = 4;
