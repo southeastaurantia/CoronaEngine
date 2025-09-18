@@ -69,7 +69,7 @@ inline void Examples4()
     std::shared_ptr<Corona::Model> model;
     {
         // 这里假设 ResourceManager 已配置了模型加载器；路径按工程实际
-        auto res = Corona::Engine::Instance().Resources().load({"model", (std::filesystem::current_path() / "assets/model/dancing_vampire.dae").string()});
+        auto res = Corona::Engine::Instance().Resources().load({"model", (std::filesystem::current_path() / "assets/model/armadillo.obj").string()});
         model = std::static_pointer_cast<Corona::Model>(res);
         std::shared_ptr<Corona::AnimationState> animState;
         if (model)
@@ -172,6 +172,10 @@ inline void Examples4()
                     {
                         scene->camera.pos.y -= 0.1f;
                         CE_LOG_INFO("Key D pressed");
+                    }
+                    if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS && key_limiter.allow(GLFW_KEY_ENTER, cooldown_ms))
+                    {
+                        CE_LOG_INFO("Key ENTER pressed");
                     }
                 }
                 ++frameCount;

@@ -303,9 +303,6 @@ void AnimationSystem::updatePhysics(Model &m)
         if (!otherModel)
             return;
 
-        if (std::addressof(m) == otherModel.get())
-            return; // 跳过自己
-
         auto otherStartMin = otherModel->minXYZ;
         auto otherStartMax = otherModel->maxXYZ;
 
