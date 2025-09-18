@@ -21,3 +21,6 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 else()
     option(CORONA_BUILD_EXAMPLES "Build example programs" OFF)
 endif()
+
+# Unified concise summary for key options (English output as per repository convention)
+message(STATUS "[Options] BUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}; BUILD_CORONA_EDITOR=${BUILD_CORONA_EDITOR}; CORONA_BUILD_EXAMPLES=${CORONA_BUILD_EXAMPLES}")

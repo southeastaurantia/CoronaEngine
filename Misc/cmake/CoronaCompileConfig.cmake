@@ -16,6 +16,8 @@ add_compile_definitions(
     FMT_HEADER_ONLY=1
     # 记录当前配置解析选择的 Python 解释器路径，供运行时查询或调试输出
     CORONA_PYTHON_EXE="${Python3_EXECUTABLE}"
+    CORONA_PYTHON_MODULE_DLL_DIR="${Python3_RUNTIME_LIBRARY_DIRS}/DLLs"
+    CORONA_PYTHON_MODULE_LIB_DIR="${Python3_RUNTIME_LIBRARY_DIRS}/Lib"
     # Debug / RelWithDebInfo 统一定义调试宏；Release / MinSizeRel 定义发布宏
     $<$<CONFIG:Debug>:CORONA_ENGINE_DEBUG>
     $<$<CONFIG:RelWithDebInfo>:CORONA_ENGINE_DEBUG>
@@ -27,3 +29,11 @@ add_compile_definitions(
 # 使用 /MT 或 /MTd (静态多线程运行库)，避免最终发布目录还需捆绑 VC++ 运行时 DLL。
 # 如需与外部动态库或插件系统共享 CRT，可切换为 MultiThreadedDLL 变体。
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
+# 强制 MSVC 源文件使用 UTF-8，避免中文注释/字符串在不同机器上出现编码问题
+if(MSVC)
+    add_compile_options(/utf-8)
+endif()
+
+# Print a short summary of key compile definitions (non-verbose)
+message(STATUS "[Compile] MSVC runtime=${CMAKE_MSVC_RUNTIME_LIBRARY}; UTF8=$<IF:$<BOOL:${MSVC}>,ON,OFF>")

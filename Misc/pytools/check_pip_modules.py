@@ -35,29 +35,35 @@ except Exception:  # 回退模式（功能有限）
 
 
 def get_installed_version(package_name: str) -> str | None:
+    """Return installed version string for a package or None if not installed."""
     try:
         return metadata.version(package_name)
-    except metadata.PackageNotFoundError:
+    except Exception:
         return None
 
 
 def version_satisfies(installed: str, spec: str | None) -> bool:
+    """Check whether installed version satisfies a given spec string.
+
+    - If `packaging` is available, use `SpecifierSet` for accurate comparison.
+    - Fallback: support minimal '==x.y.z' and '>=x.y' comparisons; otherwise return True.
+    """
     if not spec:
         return True
     if SpecifierSet is not None and Version is not None:
         try:
             return Version(installed) in SpecifierSet(spec)
         except Exception:
-            # 解析失败，退化为 >= 简单判断（不严谨）
-            return installed.startswith(spec.strip('='))
-    # 简单回退：只支持 '==x.y.z' 或 '>=x.y'
+            # Fallback to a simple heuristic if parsing fails
+            pass
+    # Simple fallback: only '==...' and '>=...'
     m_eq = re.fullmatch(r"==\s*([0-9][0-9a-zA-Z\._-]*)", spec)
     if m_eq:
         return installed == m_eq.group(1)
     m_ge = re.fullmatch(r">=\s*([0-9][0-9a-zA-Z\._-]*)", spec)
     if m_ge:
         return installed.split('.') >= m_ge.group(1).split('.')
-    # 其它操作符在简化模式下不支持，返回 True 以避免误报（或改成 False 更严格）
+    # Not supported operators in fallback path -> assume ok to avoid false negatives
     return True
 
 
@@ -104,7 +110,7 @@ def parse_requirements(path: str) -> List[RequirementEntry]:
                     pass  # 回退到正则
             m = REQ_LINE_RE.match(stripped)
             if not m:
-                print(f"[WARN] 无法解析第 {idx} 行: {raw}", file=sys.stderr)
+                print(f"[WARN] Unable to parse line {idx}: {raw}", file=sys.stderr)
                 continue
             name = m.group(1)
             extras_part = m.group(2)
@@ -140,14 +146,14 @@ def auto_install(entry: RequirementEntry) -> int:
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(description="Check python package installation status vs requirements.txt")
-    p.add_argument('-r', '--requirements', default=os.path.join(os.path.dirname(__file__), 'requirements.txt'), help='requirements 文件路径 (默认: 同目录 requirements.txt)')
-    p.add_argument('--json', action='store_true', help='以 JSON 输出结果')
-    p.add_argument('--auto-install', action='store_true', help='自动安装缺失或版本不满足的包')
-    p.add_argument('--fail-missing', action='store_true', help='若存在缺失包则退出码为 1 (默认行为)')
-    p.add_argument('--fail-mismatch', action='store_true', help='若存在版本不匹配则退出码为 1 (默认行为)')
-    p.add_argument('--ignore-errors', action='store_true', help='解析错误行忽略（默认忽略，仅提示警告）')
-    p.add_argument('--no-unicode', action='store_true', help='使用 ASCII 符号避免在 GBK 等终端编码下的输出错误')
+    p = argparse.ArgumentParser(description="Check Python packages against requirements.txt")
+    p.add_argument('-r', '--requirements', default=os.path.join(os.path.dirname(__file__), 'requirements.txt'), help='Path to requirements file (default: requirements.txt next to this script)')
+    p.add_argument('--json', action='store_true', help='Output result in JSON')
+    p.add_argument('--auto-install', action='store_true', help='Auto install missing or mismatched packages')
+    p.add_argument('--fail-missing', action='store_true', help='Exit with code 1 when packages are missing (default behavior)')
+    p.add_argument('--fail-mismatch', action='store_true', help='Exit with code 1 when version mismatches exist (default behavior)')
+    p.add_argument('--ignore-errors', action='store_true', help='Ignore parse errors (default: ignore and warn)')
+    p.add_argument('--no-unicode', action='store_true', help='Use ASCII symbols to avoid mojibake on legacy terminals')
     return p
 
 
@@ -155,7 +161,7 @@ def main(argv: List[str] | None = None) -> int:
     args = build_arg_parser().parse_args(argv)
     req_path = args.requirements
     if not os.path.isfile(req_path):
-        print(f"[ERROR] requirements 文件不存在: {req_path}", file=sys.stderr)
+        print(f"[ERROR] Requirements file does not exist: {req_path}", file=sys.stderr)
         return 2
     entries = parse_requirements(req_path)
     results = []
@@ -179,7 +185,7 @@ def main(argv: List[str] | None = None) -> int:
             if args.auto_install:
                 rc = auto_install(e)
                 if rc != 0:
-                    print(f"[ERROR] 自动安装失败: {e.display}", file=sys.stderr)
+                    print(f"[ERROR] Auto-install failed: {e.display}", file=sys.stderr)
     # 如果启用了自动安装，对失败的重新检查（仅对 missing/mismatch）
     if args.auto_install and (missing or mismatch):
         missing = []
@@ -204,7 +210,7 @@ def main(argv: List[str] | None = None) -> int:
         }
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
-        # 根据终端编码自动决定是否使用 Unicode 勾叉；或用户强制关闭
+        # 根据终端编码自动决定是否使用 Unicode 符号；或用户强制关闭
         def _symbols(disable: bool):
             if disable:
                 return '+', '-'
@@ -230,11 +236,11 @@ def main(argv: List[str] | None = None) -> int:
             ver_part = f" (installed: {r['installed_version']})" if r['installed_version'] else ''
             print(f" {mark} {r['name']}{spec_part}{ver_part} -> {r['status']}")
         if missing:
-            print("\n缺失包:")
+            print("\nMissing packages:")
             for e in missing:
                 print(f"  - {e.display}")
         if mismatch:
-            print("\n版本不匹配:")
+            print("\nVersion mismatches:")
             for e in mismatch:
                 print(f"  - {e.display}")
     exit_code = 0

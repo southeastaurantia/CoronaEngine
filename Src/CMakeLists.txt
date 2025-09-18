@@ -22,10 +22,6 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES})
 # =====================================================================================
 add_library(CoronaEngine STATIC ${SOURCE_FILES})
 
-target_compile_options(CoronaEngine PUBLIC
-        $<$<CXX_COMPILER_ID:MSVC>:/utf-8> # 强制 MSVC 使用 UTF-8 源码编码，防止中文/特殊字符警告
-)
-
 target_include_directories(CoronaEngine PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}" # 本工程源目录（允许头按相对路径引用）
         "${stb_SOURCE_DIR}" # stb 单头库目录
@@ -60,6 +56,6 @@ target_link_libraries(CoronaEngine PUBLIC
 corona_configure_runtime_deps(CoronaEngine)
 
 if(BUILD_CORONA_EDITOR)
-        message(STATUS "[CoronaEditor] Configuring CoronaEditor resources for CoronaEngine")
+        message(STATUS "[Editor] Configure resources for CoronaEngine")
         corona_configure_corona_editor(CoronaEngine)
 endif()

@@ -8,6 +8,11 @@ inline void Examples3()
 
     /* optional but recommended */
     status = PyConfig_SetBytesString(&config, &config.program_name, CORONA_PYTHON_EXE);
+
+    CORONA_PYTHON_EXE;
+    CORONA_PYTHON_MODULE_DLL_DIR;
+    CORONA_PYTHON_MODULE_LIB_DIR;
+
     if (PyStatus_Exception(status))
     {
         PyConfig_Clear(&config);
