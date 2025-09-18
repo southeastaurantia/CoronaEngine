@@ -3,6 +3,32 @@
 # 作用：统一管理跨模块需要共享或保持一致的编译定义，减少分散定义导致的冲突与遗漏。
 # 说明：使用 generator expression($<...>) 根据编译器/配置类型动态注入。
 
+# ------------------------------
+# Utility: slash replace helpers
+# ------------------------------
+# corona_to_backslash(INPUT out_var [ESCAPE_FOR_CSTRING])
+# 将字符串中的正斜杠全部替换为反斜杠；
+# 若提供 ESCAPE_FOR_CSTRING，则会对反斜杠进行 C 字符串转义（\\ -> \\\\）。
+function(corona_to_backslash INPUT OUT_VAR)
+    set(_val "${INPUT}")
+    # 先把所有正斜杠替换为反斜杠
+    string(REPLACE "/" "\\" _val "${_val}")
+    # 可选：转为 C 字符串中的双反斜杠
+    if(ARGC GREATER 2)
+        set(_flag "${ARGV2}")
+        if(_flag STREQUAL "ESCAPE_FOR_CSTRING")
+            string(REPLACE "\\" "\\\\" _val "${_val}")
+        endif()
+    endif()
+    set(${OUT_VAR} "${_val}" PARENT_SCOPE)
+endfunction()
+
+# 生成四个需要注入到编译宏中的（反斜杠且 C 字符串安全的）路径
+corona_to_backslash("${Python3_EXECUTABLE}" _CORONA_PY_EXE_ESC ESCAPE_FOR_CSTRING)
+corona_to_backslash("${Python3_RUNTIME_LIBRARY_DIRS}" _CORONA_PY_HOME_ESC ESCAPE_FOR_CSTRING)
+corona_to_backslash("${Python3_RUNTIME_LIBRARY_DIRS}/DLLs" _CORONA_PY_DLLS_ESC ESCAPE_FOR_CSTRING)
+corona_to_backslash("${Python3_RUNTIME_LIBRARY_DIRS}/Lib" _CORONA_PY_LIB_ESC ESCAPE_FOR_CSTRING)
+
 add_compile_definitions(
     # (MSVC) 关闭 MSVC 对不安全 CRT 函数的警告（如 fopen/strcpy），保证日志整洁
     $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>
@@ -14,11 +40,11 @@ add_compile_definitions(
     ENTT_USE_ATOMIC
     # 强制 fmt 使用 header-only 模式，避免单独编译库（适合轻量集成）
     FMT_HEADER_ONLY=1
-    # 记录 Python 可执行与运行库路径（反斜杠样式，已按 C 字符串转义）
-    CORONA_PYTHON_EXE="${Python3_EXECUTABLE}"
-    CORONA_PYTHON_HOME_DIR="${Python3_RUNTIME_LIBRARY_DIRS}"
-    CORONA_PYTHON_MODULE_DLL_DIR="${Python3_RUNTIME_LIBRARY_DIRS}/DLLs"
-    CORONA_PYTHON_MODULE_LIB_DIR="${Python3_RUNTIME_LIBRARY_DIRS}/Lib"
+
+    CORONA_PYTHON_EXE="${_CORONA_PY_EXE_ESC}"
+    CORONA_PYTHON_HOME_DIR="${_CORONA_PY_HOME_ESC}"
+    CORONA_PYTHON_MODULE_DLL_DIR="${_CORONA_PY_DLLS_ESC}"
+    CORONA_PYTHON_MODULE_LIB_DIR="${_CORONA_PY_LIB_ESC}"
     # Debug / RelWithDebInfo 统一定义调试宏；Release / MinSizeRel 定义发布宏
     $<$<CONFIG:Debug>:CORONA_ENGINE_DEBUG>
     $<$<CONFIG:RelWithDebInfo>:CORONA_ENGINE_DEBUG>
