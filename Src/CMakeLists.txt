@@ -59,7 +59,7 @@ target_link_libraries(CoronaEngine PUBLIC
 # =====================================================================================
 corona_configure_runtime_deps(CoronaEngine)
 
-if(BUILD_CABBAGE_EDITOR)
-        message(STATUS "[CabbageEditor] Configuring CabbageEditor resources for CoronaEngine")
-        corona_configure_cabbage_editor(CoronaEngine)
+if(BUILD_CORONA_EDITOR)
+        message(STATUS "[CoronaEditor] Configuring CoronaEditor resources for CoronaEngine")
+        corona_configure_corona_editor(CoronaEngine)
 endif()

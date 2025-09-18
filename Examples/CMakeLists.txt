@@ -39,7 +39,7 @@ target_link_libraries(CoronaEngineExamples PRIVATE
 # =====================================================================================
 helicon_install_runtime_deps(CoronaEngineExamples)
 corona_install_runtime_deps(CoronaEngineExamples)
-corona_install_cabbage_editor(CoronaEngineExamples CoronaEngine)
+corona_install_corona_editor(CoronaEngineExamples CoronaEngine)
 
 # =====================================================================================
 #  资源目录拷贝 (Asset Copy Step)

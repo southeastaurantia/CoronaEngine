@@ -43,7 +43,7 @@ if(Python3_VERSION)
 endif()
 
 message(STATUS "  Build examples    : ${CORONA_BUILD_EXAMPLES}")
-message(STATUS "  Build cabbage editor : ${BUILD_CABBAGE_EDITOR}")
+message(STATUS "  Build corona editor : ${BUILD_CORONA_EDITOR}")
 message(STATUS "  Check py deps     : ${CORONA_CHECK_PY_DEPS}")
 message(STATUS "  Auto install deps : ${CORONA_AUTO_INSTALL_PY_DEPS}")
 message(STATUS "======================================================================")
