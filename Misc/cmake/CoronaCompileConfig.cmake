@@ -16,8 +16,8 @@ add_compile_definitions(
     FMT_HEADER_ONLY=1
     # 记录当前配置解析选择的 Python 解释器路径，供运行时查询或调试输出
     CORONA_PYTHON_EXE="${Python3_EXECUTABLE}"
-    CORONA_PYTHON_RUNTIME_DIR="${Python3_RUNTIME_LIBRARY_DIRS}"
-    CORONA_PYTHON_LIB_DIR="${Python3_LIBRARY_DIRS}"
+    CORONA_PYTHON_MODULE_DLL_DIR="${Python3_RUNTIME_LIBRARY_DIRS}/DLLs"
+    CORONA_PYTHON_MODULE_LIB_DIR="${Python3_RUNTIME_LIBRARY_DIRS}/Lib"
     # Debug / RelWithDebInfo 统一定义调试宏；Release / MinSizeRel 定义发布宏
     $<$<CONFIG:Debug>:CORONA_ENGINE_DEBUG>
     $<$<CONFIG:RelWithDebInfo>:CORONA_ENGINE_DEBUG>
