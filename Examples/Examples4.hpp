@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <Core/Engine/Engine.h>
 #include <Core/Engine/Systems/AnimationSystem.h>
@@ -16,7 +16,31 @@
 #include <chrono>
 #include <filesystem>
 #include <thread>
+#include <unordered_map>
 
+struct KeyRateLimiter
+{
+    using clock = std::chrono::steady_clock;
+    std::unordered_map<int, clock::time_point> last_time;
+
+    // cooldown_ms: 冷却时间（毫秒）
+    bool allow(int key, int cooldown_ms)
+    {
+        auto now = clock::now();
+        auto it = last_time.find(key);
+        if (it == last_time.end() || std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second).count() >= cooldown_ms)
+        {
+            last_time[key] = now;
+            return true;
+        }
+        return false;
+    }
+
+    // 可选：重置某按键计时器
+    void reset(int key) { last_time.erase(key); }
+};
+
+static KeyRateLimiter key_limiter;
 // 不再需要 <vector>，已改为单窗口
 
 inline void Examples4()
@@ -82,12 +106,12 @@ inline void Examples4()
     if (glfwInit() >= 0)
     {
         GLFWwindow *window = nullptr;
+        auto scene = std::make_shared<Corona::Scene>();
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         window = glfwCreateWindow(800, 800, "Cabbage Engine", nullptr, nullptr);
         if (window)
         {
-            auto scene = std::make_shared<Corona::Scene>();
             auto sceneId = Corona::DataId::Next();
             sceneCache.insert(sceneId, scene);
             scene->displaySurface = glfwGetWin32Window(window);
@@ -126,19 +150,30 @@ inline void Examples4()
                     }
                 }
 
-                // 简易键盘控制：数字键 1/2 观察/取消观察 meshId
-                // 注意：GLFW 需窗口上下文，这里取第一个窗口
-                // if (window)
-                // {
-                //     if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
-                //     {
-                //         Corona::RenderingSystem::WatchMesh(meshId);
-                //     }
-                //     if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
-                //     {
-                //         Corona::RenderingSystem::UnwatchMesh(meshId);
-                //     }
-                // }
+                if (window)
+                {
+                    const int cooldown_ms = 300;
+                    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && key_limiter.allow(GLFW_KEY_W, cooldown_ms))
+                    {
+                        scene->camera.pos.x += 0.1f;
+                        CE_LOG_INFO("Key W pressed");
+                    }
+                    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && key_limiter.allow(GLFW_KEY_S, cooldown_ms))
+                    {
+                        scene->camera.pos.x -= 0.1f;
+                        CE_LOG_INFO("Key S pressed");
+                    }
+                    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && key_limiter.allow(GLFW_KEY_S, cooldown_ms))
+                    {
+                        scene->camera.pos.y += 0.1f;
+                        CE_LOG_INFO("Key A pressed");
+                    }
+                    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS && key_limiter.allow(GLFW_KEY_S, cooldown_ms))
+                    {
+                        scene->camera.pos.y -= 0.1f;
+                        CE_LOG_INFO("Key D pressed");
+                    }
+                }
                 ++frameCount;
             }
 
