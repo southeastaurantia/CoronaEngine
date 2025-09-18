@@ -69,7 +69,7 @@ inline void Examples4()
     std::shared_ptr<Corona::Model> model;
     {
         // 这里假设 ResourceManager 已配置了模型加载器；路径按工程实际
-        auto res = Corona::Engine::Instance().Resources().load({"model", (std::filesystem::current_path() / "assets/model/dancing_vampire.dae").string()});
+        auto res = Corona::Engine::Instance().Resources().load({"model", (std::filesystem::current_path() / "assets/model/armadillo.obj").string()});
         model = std::static_pointer_cast<Corona::Model>(res);
         std::shared_ptr<Corona::AnimationState> animState;
         if (model)
