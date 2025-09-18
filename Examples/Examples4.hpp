@@ -182,8 +182,8 @@ inline void Examples4()
                     }
                     if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS && key_limiter.allow(GLFW_KEY_ENTER, cooldown_ms))
                     {
-                        model1->positon = ktm::fvec3(1.0f, 0.0f, 0.0f);
-                        model2->positon = ktm::fvec3(-1.0f, 0.0f, 0.0f);
+                        model1->positon = ktm::fvec3(-1.0f, 0.0f, 0.0f);
+                        model2->positon = ktm::fvec3(0.0f, 0.0f, 0.0f);
                         CE_LOG_INFO("Key ENTER pressed");
                     }
                 }

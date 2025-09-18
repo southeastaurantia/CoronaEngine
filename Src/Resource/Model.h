@@ -33,9 +33,13 @@ namespace Corona
         ktm::fvec3 positon{0.0f, 0.0f, 0.0f};                           ///< 位置
         ktm::fvec3 rotation{0.0f, 0.0f, 0.0f};                          ///< 旋转
         ktm::fvec3 scale{1.0f, 1.0f, 1.0f};                            ///< 缩放
-        // 使用单位矩阵作为初始模型矩阵，避免默认全零导致变换失效
         ktm::fmat4x4 modelMatrix = ktm::fmat4x4::from_eye();                          ///< 模型矩阵
         HardwareBuffer bonesMatrixBuffer;
+
+        void getModelMatrix()
+        {
+            modelMatrix = ktm::fmat4x4(ktm::translate3d(positon) * ktm::translate3d(rotation) * ktm::translate3d(scale));
+        };
     };
 
     class ModelLoader : public IResourceLoader

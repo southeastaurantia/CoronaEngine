@@ -30,11 +30,6 @@ void RenderingSystem::onTick()
         ++spun;
     }
 
-    // 遍历 data_keys_ 示例：从 Cache<Mesh> 读取并执行占位渲染操作
-    // auto &meshCache = Engine::Instance().Cache<Mesh>();
-    // meshCache.safe_loop_foreach(data_keys_, [&](std::shared_ptr<Mesh> m) {
-    //     (void)m; // TODO: 真正的渲染逻辑
-    // });
     updateEngine();
 }
 
@@ -100,6 +95,7 @@ void RenderingSystem::gbufferPipeline(std::shared_ptr<Scene> scene)
         if (!model)
             return;
 
+        model->getModelMatrix();
         ktm::fmat4x4 actorMatrix = model->modelMatrix;
         rasterizerPipeline["pushConsts.modelMatrix"] = actorMatrix;
 
