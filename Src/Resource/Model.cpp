@@ -175,8 +175,8 @@ namespace Corona
         resultMesh.meshDevice->indexBuffer = HardwareBuffer(resultMesh.Indices, BufferUsage::IndexBuffer);
 
         resultMesh.meshDevice->materialIndex = 0;
-        if (resultMesh.textures.size() > 0)
-            resultMesh.meshDevice->textureIndex = textureImageHash[resultMesh.textures[0]->path].storeDescriptor();
+        resultMesh.meshDevice->textureIndex = textureImageHash[resultMesh.textures[0]->path].storeDescriptor();
+
     }
 
     void ModelLoader::extractBoneWeightForVertices(Mesh &resultMesh, const aiMesh *mesh, const aiScene *scene, const ModelPtr &model)
@@ -297,7 +297,7 @@ namespace Corona
         {
             std::string tempTexturePath = directory + std::to_string(++attributeToImageIndex);
 
-            if (texturePathHash.contains(tempTexturePath))
+            if (!texturePathHash.contains(tempTexturePath))
             {
                 auto tempTexture = std::make_shared<Texture>();
                 tempTexture->type = allTextureTypes[attributeToImageIndex];
@@ -320,7 +320,7 @@ namespace Corona
         {
             std::string tempTexturePath = directory + std::to_string(++attributeToImageIndex);
 
-            if (texturePathHash.contains(tempTexturePath))
+            if (!texturePathHash.contains(tempTexturePath))
             {
                 auto tempTexture = std::make_shared<Texture>();
                 tempTexture->type = allTextureTypes[attributeToImageIndex];
@@ -343,7 +343,7 @@ namespace Corona
         {
             std::string tempTexturePath = directory + std::to_string(++attributeToImageIndex);
 
-            if (texturePathHash.contains(tempTexturePath))
+            if (!texturePathHash.contains(tempTexturePath))
             {
                 auto tempTexture = std::make_shared<Texture>();
                 tempTexture->type = allTextureTypes[attributeToImageIndex];
@@ -366,7 +366,7 @@ namespace Corona
         {
             std::string tempTexturePath = directory + std::to_string(++attributeToImageIndex);
 
-            if (texturePathHash.contains(tempTexturePath))
+            if (!texturePathHash.contains(tempTexturePath))
             {
                 auto tempTexture = std::make_shared<Texture>();
                 tempTexture->type = allTextureTypes[attributeToImageIndex];
