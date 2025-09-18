@@ -16,8 +16,9 @@ function(corona_configure_cabbage_editor target_name)
         return()
     endif()
 
-    set(_BACKEND_DIR "${PROJECT_SOURCE_DIR}/Editor/CabbageEditor/Backend")
-    set(_FRONTEND_DIR "${PROJECT_SOURCE_DIR}/Editor/CabbageEditor/Frontend")
+    # Source directories now renamed to Editor/CoronaEditor
+    set(_BACKEND_DIR "${PROJECT_SOURCE_DIR}/Editor/CoronaEditor/Backend")
+    set(_FRONTEND_DIR "${PROJECT_SOURCE_DIR}/Editor/CoronaEditor/Frontend")
     set(_EXISTING_DIRS)
 
     if(EXISTS "${_BACKEND_DIR}")
@@ -58,42 +59,46 @@ function(corona_install_cabbage_editor target_name core_target)
     set(_COMMANDS)
     list(APPEND _COMMANDS COMMAND ${CMAKE_COMMAND} -E echo "[CabbageEditor] Installing editor resources -> ${_DEST_ROOT}")
     list(APPEND _COMMANDS COMMAND ${CMAKE_COMMAND} -E make_directory "${_DEST_ROOT}")
-    set(_FRONTEND_SOURCE_DIR "${PROJECT_SOURCE_DIR}/Editor/CabbageEditor/Frontend")
+        set(_FRONTEND_SOURCE_DIR "${PROJECT_SOURCE_DIR}/Editor/CoronaEditor/Frontend")
 
     foreach(_DIR IN LISTS _EDITOR_DIRS)
         get_filename_component(_BASENAME "${_DIR}" NAME)
         list(APPEND _COMMANDS COMMAND ${CMAKE_COMMAND} -E copy_directory "${_DIR}" "${_DEST_ROOT}/${_BASENAME}")
     endforeach()
 
-    # Append npm install / build only if enabled and package.json exists.
-    if(BUILD_CABBAGE_EDITOR AND EXISTS "${_FRONTEND_SOURCE_DIR}/package.json")
-        # Prefer the bundled Node distribution under Editor/CabbageEditor/Env
-        set(_AUTO_NODE_ROOT "${PROJECT_SOURCE_DIR}/Editor/CabbageEditor/Env/node-v22.19.0-win-x64")
+    # Frontend npm steps moved to a standalone target defined below.
 
-        if(EXISTS "${_AUTO_NODE_ROOT}/node.exe")
-            set(CORONA_NODE_ROOT "${_AUTO_NODE_ROOT}" CACHE PATH "Bundled Node root for CabbageEditor" FORCE)
-            message(STATUS "[CabbageEditor] Using bundled Node at ${CORONA_NODE_ROOT}")
-        elseif(DEFINED CORONA_NODE_ROOT)
-            message(STATUS "[CabbageEditor] Using CORONA_NODE_ROOT=${CORONA_NODE_ROOT}")
-        else()
-            message(WARNING "[CabbageEditor] No Node runtime found (bundled missing and CORONA_NODE_ROOT not set); skipping frontend npm build step.")
-        endif()
+    add_custom_command(
+        TARGET ${target_name} POST_BUILD
+        ${_COMMANDS}
+        COMMENT "[CabbageEditor] Copy editor resource directories"
+        VERBATIM
+    )
 
-        if(DEFINED CORONA_NODE_ROOT)
-            set(_NODE_EXE "${CORONA_NODE_ROOT}/node.exe")
-            set(_NPM_CMD "${CORONA_NODE_ROOT}/npm.cmd")
+    # Create a separate target to handle frontend npm steps after the executable is available.
+    if(BUILD_CABBAGE_EDITOR)
+        set(_FRONTEND_SOURCE_DIR "${PROJECT_SOURCE_DIR}/Editor/CoronaEditor/Frontend")
+        if(EXISTS "${_FRONTEND_SOURCE_DIR}/package.json")
+            set(_frontend_target "CabbageEditorFrontend_${target_name}")
 
-            if(NOT EXISTS "${_NODE_EXE}")
-                message(WARNING "[CabbageEditor] node.exe not found under CORONA_NODE_ROOT (${CORONA_NODE_ROOT}); skipping frontend build.")
-            elseif(NOT EXISTS "${_NPM_CMD}")
-                message(WARNING "[CabbageEditor] npm.cmd not found under CORONA_NODE_ROOT (${CORONA_NODE_ROOT}); skipping frontend build.")
+            # Prefer bundled Node
+            set(_AUTO_NODE_ROOT "${PROJECT_SOURCE_DIR}/Editor/CoronaEditor/Env/node-v22.19.0-win-x64")
+            if(EXISTS "${_AUTO_NODE_ROOT}/node.exe")
+                set(CORONA_NODE_ROOT "${_AUTO_NODE_ROOT}" CACHE PATH "Bundled Node root for CabbageEditor" FORCE)
+                message(STATUS "[CabbageEditor] Using bundled Node at ${CORONA_NODE_ROOT}")
+            endif()
+
+            if(DEFINED CORONA_NODE_ROOT)
+                set(_NODE_EXE "${CORONA_NODE_ROOT}/node.exe")
+                set(_NPM_CMD "${CORONA_NODE_ROOT}/npm.cmd")
+            endif()
+
+            if(NOT DEFINED CORONA_NODE_ROOT OR NOT EXISTS "${_NODE_EXE}" OR NOT EXISTS "${_NPM_CMD}")
+                message(WARNING "[CabbageEditor] Frontend target will be skipped (Node/npm not found). Set CORONA_NODE_ROOT or ensure bundled Node exists.")
             else()
-                # Ensure PATH contains Node root so postinstall scripts invoking `node` can resolve it.
-                # Escape all semicolons so the PATH assignment is treated as a single argument to `cmake -E env`.
                 string(REPLACE ";" "\;" _ENV_PATH "$ENV{PATH}")
                 set(_PATH_INJECT "PATH=${CORONA_NODE_ROOT}\;${_ENV_PATH}")
 
-                # Choose install method: prefer npm ci when lockfile exists for reproducibility.
                 if(EXISTS "${_FRONTEND_SOURCE_DIR}/package-lock.json")
                     set(_NPM_INSTALL_CMD_ARGS ci)
                     set(_NPM_INSTALL_ECHO "npm ci (frontend)")
@@ -102,24 +107,20 @@ function(corona_install_cabbage_editor target_name core_target)
                     set(_NPM_INSTALL_ECHO "npm install (frontend)")
                 endif()
 
-                list(APPEND _COMMANDS
-                    COMMAND ${CMAKE_COMMAND} -E echo "[CabbageEditor] Running ${_NPM_INSTALL_ECHO}"
+                add_custom_target(${_frontend_target}
+                    COMMAND ${CMAKE_COMMAND} -E echo "[CabbageEditor] ${_frontend_target}: ${_NPM_INSTALL_ECHO}"
                     COMMAND ${CMAKE_COMMAND} -E chdir "${_FRONTEND_SOURCE_DIR}" ${CMAKE_COMMAND} -E env "${_PATH_INJECT}" "${_NPM_CMD}" ${_NPM_INSTALL_CMD_ARGS}
-                )
-                list(APPEND _COMMANDS
-                    COMMAND ${CMAKE_COMMAND} -E echo "[CabbageEditor] Running npm run build (frontend)"
+                    COMMAND ${CMAKE_COMMAND} -E echo "[CabbageEditor] ${_frontend_target}: npm run build"
                     COMMAND ${CMAKE_COMMAND} -E chdir "${_FRONTEND_SOURCE_DIR}" ${CMAKE_COMMAND} -E env "${_PATH_INJECT}" "${_NPM_CMD}" run build
+                    COMMENT "[CabbageEditor] Build frontend for ${target_name}"
+                    VERBATIM
                 )
-            endif()
-        endif()
-    else()
-        message(STATUS "[CabbageEditor] Frontend build step skipped (disabled or package.json missing)")
-    endif()
 
-    add_custom_command(
-        TARGET ${target_name} POST_BUILD
-        ${_COMMANDS}
-        COMMENT "[CabbageEditor] Copy editor resource directories and frontend build"
-        VERBATIM
-    )
+                # Ensure frontend target runs after the executable is built
+                add_dependencies(${_frontend_target} ${target_name})
+            endif()
+        else()
+            message(STATUS "[CabbageEditor] package.json not found, frontend target not created")
+        endif()
+    endif()
 endfunction()
