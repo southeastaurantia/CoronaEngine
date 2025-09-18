@@ -60,6 +60,11 @@ namespace Corona
             std::vector<ktm::fmat4x4> initBones(handle->m_BoneCounter, ktm::fmat4x4::from_eye());
             handle->bonesMatrixBuffer = HardwareBuffer(initBones, BufferUsage::StorageBuffer);
         }
+        else
+        {
+            std::vector<ktm::fmat4x4> initBones(1, ktm::fmat4x4::from_eye());
+            handle->bonesMatrixBuffer = HardwareBuffer(initBones, BufferUsage::StorageBuffer);
+        }
 
         if (handle->meshes.size() > 0)
         {
