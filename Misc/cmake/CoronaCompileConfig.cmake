@@ -30,10 +30,17 @@ add_compile_definitions(
 # 如需与外部动态库或插件系统共享 CRT，可切换为 MultiThreadedDLL 变体。
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-# 强制 MSVC 源文件使用 UTF-8，避免中文注释/字符串在不同机器上出现编码问题
+# 统一 MSVC 源/执行字符集为 UTF-8，避免与外部注入的 "/utf-8" 或 
+# "/source-charset:utf-8" 产生不兼容组合（两者不能同时存在）。
+# 采用更细粒度的等价设置：/source-charset:utf-8 与 /execution-charset:utf-8。
 if(MSVC)
-    add_compile_options(/utf-8)
+    add_compile_options(
+        $<$<COMPILE_LANGUAGE:C>:/source-charset:utf-8>
+        $<$<COMPILE_LANGUAGE:C>:/execution-charset:utf-8>
+        $<$<COMPILE_LANGUAGE:CXX>:/source-charset:utf-8>
+        $<$<COMPILE_LANGUAGE:CXX>:/execution-charset:utf-8>
+    )
 endif()
 
 # Print a short summary of key compile definitions (non-verbose)
-message(STATUS "[Compile] MSVC runtime=${CMAKE_MSVC_RUNTIME_LIBRARY}; UTF8=$<IF:$<BOOL:${MSVC}>,ON,OFF>")
+message(STATUS "[Compile] MSVC runtime=${CMAKE_MSVC_RUNTIME_LIBRARY}; charset=UTF-8($<IF:$<BOOL:${MSVC}>,source+execution,off>)")
