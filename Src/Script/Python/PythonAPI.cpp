@@ -12,9 +12,7 @@
 
 #include "PythonAPI.h"
 
-#include "Core/Log.h"
-
-// #include"CabbageFramework/CabbageCommon/CabbageCommon.h"
+//#include"CabbageFramework/CabbageCommon/CabbageCommon.h"
 
 const std::string PythonAPI::codePath =
 [] {
@@ -105,17 +103,19 @@ void PythonAPI::runPythonScript()
     {
         std::string runtimePath = PythonAPI::codePath + "/Editor/CoronaEditor/Backend";
         std::replace(runtimePath.begin(), runtimePath.end(), '\\', '/');
+        std::string pythonPath = CORONA_PYTHON_EXE;
+        std::replace(pythonPath.begin(), pythonPath.end(), '\\', '/');
 
         PyImport_AppendInittab("CoronaEngine", &PyInit_CoronaEngineEmbedded);
 
         PyConfig_InitPythonConfig(&config);
-        PyConfig_SetBytesString(&config, &config.home, CORONA_PYTHON_HOME_DIR);
-        PyConfig_SetBytesString(&config, &config.pythonpath_env, CORONA_PYTHON_HOME_DIR);
+        PyConfig_SetBytesString(&config, &config.home, pythonPath.c_str());
+        PyConfig_SetBytesString(&config, &config.pythonpath_env, pythonPath.c_str());
         config.module_search_paths_set = 1;
         PyWideStringList_Append(&config.module_search_paths, str2wstr(runtimePath).c_str());
-        PyWideStringList_Append(&config.module_search_paths, str2wstr(CORONA_PYTHON_MODULE_DLL_DIR).c_str());
-        PyWideStringList_Append(&config.module_search_paths, str2wstr(CORONA_PYTHON_MODULE_LIB_DIR).c_str());
-        PyWideStringList_Append(&config.module_search_paths, str2wstr(std::string(CORONA_PYTHON_MODULE_LIB_DIR) + "/site-packages").c_str());
+        PyWideStringList_Append(&config.module_search_paths, str2wstr(std::string(pythonPath + "/DLLs")).c_str());
+        PyWideStringList_Append(&config.module_search_paths, str2wstr(std::string(pythonPath + "/Lib")).c_str());
+        PyWideStringList_Append(&config.module_search_paths, str2wstr(std::string(pythonPath + "/Lib/site-packages")).c_str());
 
         Py_InitializeFromConfig(&config);
 
@@ -131,31 +131,31 @@ void PythonAPI::runPythonScript()
                 pFunc = PyObject_GetAttrString(pModule, "run");
 
                 PyObject *global_dict = PyModule_GetDict(pModule);
+                PyObject *import_names = PyDict_Keys(global_dict);
+                PyObject *import_values = PyDict_Values(global_dict);
+                Py_ssize_t pos = 0;
+                PyObject *key;
 
-                if (global_dict)
+                while (PyDict_Next(global_dict, &pos, &key, nullptr))
                 {
-                    Py_ssize_t pos = 0;
-                    PyObject *key;
-                    PyObject *value;
-
-                    // 传入 &value，确保 value 被填充
-                    while (PyDict_Next(global_dict, &pos, &key, &value))
+                    const char *name = PyUnicode_AsUTF8(key);
+                    PyObject *value = PyDict_GetItem(global_dict, key);
+                    if (PyModule_Check(value))
                     {
-                        if (!key || !value)
-                            continue;
-                        const char *name = PyUnicode_AsUTF8(key);
-                        if (!name)
-                            continue;
-                        if (PyModule_Check(value))
-                        {
-                            moduleList.push_back(name);
-                        }
-                        else if (PyCallable_Check(value))
+                        moduleList.push_back(name);
+                    }
+                    else
+                    {
+                        if (PyCallable_Check(value))
                         {
                             callableList.push_back(name);
                         }
                     }
                 }
+                Py_DECREF(import_names);
+                Py_DECREF(import_values);
+                Py_DECREF(global_dict);
+                Py_DECREF(key);
             }
             else
             {
@@ -165,6 +165,7 @@ void PythonAPI::runPythonScript()
                 }
                 throw("Python: import error.");
             }
+            Py_DECREF(pModule);
         }
         else
         {
@@ -239,7 +240,7 @@ void PythonAPI::runPythonScript()
                 }
             }
             Py_XDECREF(result);
-            // Py_DECREF(pArg);
+            Py_DECREF(pArg);
         }
         catch (...)
         {
@@ -260,8 +261,7 @@ void PythonAPI::checkPythonScriptChange()
 void PythonAPI::checkReleaseScriptChange()
 {
     std::queue<std::unordered_set<std::string>> messageQue;
-    std::string runtimePath =  PythonAPI::codePath + "/Editor/CoronaEditor/Backend";
-    std::replace(runtimePath.begin(), runtimePath.end(), '\\', '/');
+    std::string runtimePath = "./Resource/CabbageEditorBackend";
 
     hotfixManger.TraverseDirectory(runtimePath, messageQue, hotfixManger.GetCurrentTimeMsec());
 
