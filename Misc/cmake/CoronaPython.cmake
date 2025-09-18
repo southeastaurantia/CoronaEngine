@@ -43,12 +43,39 @@ message(STATUS "[Python] Final chosen interpreter: ${Python3_EXECUTABLE}")
 # Requirements checking -----------------------------------------------------------
 option(CORONA_CHECK_PY_DEPS "Check Python dependencies (requirements) during configure" ON)
 option(CORONA_AUTO_INSTALL_PY_DEPS "Auto-install missing Python packages during configure" ON)
-set(CORONA_PY_REQUIREMENTS_FILE "${PROJECT_SOURCE_DIR}/Misc/requirements.txt")
-set(CORONA_PY_CHECK_SCRIPT "${PROJECT_SOURCE_DIR}/Misc/check_pip_modules.py")
+set(CORONA_PY_REQUIREMENTS_FILE "${PROJECT_SOURCE_DIR}/Misc/pytools/requirements.txt")
+set(CORONA_PY_CHECK_SCRIPT "${PROJECT_SOURCE_DIR}/Misc/pytools/check_pip_modules.py")
+
+# 统一以缓冲模式调用 Python 脚本的小工具函数（仅封装引号与工作目录惯例）
+function(corona_run_python OUT_RESULT)
+    set(options)
+    set(oneValueArgs SCRIPT WORKING_DIRECTORY)
+    set(multiValueArgs ARGS)
+    cmake_parse_arguments(CRP "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+    if(NOT CRP_SCRIPT)
+        message(FATAL_ERROR "corona_run_python: SCRIPT is required")
+    endif()
+    if(NOT DEFINED Python3_EXECUTABLE)
+        message(FATAL_ERROR "corona_run_python: Python3_EXECUTABLE is not defined")
+    endif()
+    if(NOT CRP_WORKING_DIRECTORY)
+        set(CRP_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+    endif()
+    execute_process(
+        COMMAND "${Python3_EXECUTABLE}" "${CRP_SCRIPT}" ${CRP_ARGS}
+        WORKING_DIRECTORY "${CRP_WORKING_DIRECTORY}"
+        RESULT_VARIABLE _CRP_RES
+        OUTPUT_VARIABLE _CRP_OUT
+        ERROR_VARIABLE _CRP_ERR
+    )
+    set(${OUT_RESULT} ${_CRP_RES} PARENT_SCOPE)
+    set(CORONA_LAST_PY_STDOUT "${_CRP_OUT}" PARENT_SCOPE)
+    set(CORONA_LAST_PY_STDERR "${_CRP_ERR}" PARENT_SCOPE)
+endfunction()
 
 function(corona_run_python_requirements_check)
     if(NOT EXISTS "${CORONA_PY_CHECK_SCRIPT}")
-    message(WARNING "[Python] Dependency check script missing: ${CORONA_PY_CHECK_SCRIPT}")
+        message(WARNING "[Python] Dependency check script missing: ${CORONA_PY_CHECK_SCRIPT}")
         return()
     endif()
 
@@ -57,6 +84,7 @@ function(corona_run_python_requirements_check)
         return()
     endif()
 
+    # 常规方式调用 Python 检查依赖
     set(_CORONA_PY_CMD "${Python3_EXECUTABLE}" "${CORONA_PY_CHECK_SCRIPT}" -r "${CORONA_PY_REQUIREMENTS_FILE}")
 
     if(CORONA_AUTO_INSTALL_PY_DEPS)
@@ -66,21 +94,19 @@ function(corona_run_python_requirements_check)
     endif()
 
     message(STATUS "[Python] Running dependency check with interpreter: ${Python3_EXECUTABLE}")
-    execute_process(
-        COMMAND ${_CORONA_PY_CMD}
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-        RESULT_VARIABLE _CORONA_PY_RES
-        OUTPUT_VARIABLE _CORONA_PY_OUT
-        ERROR_VARIABLE _CORONA_PY_ERR
-    )
+    set(_CRP_ARGS -r "${CORONA_PY_REQUIREMENTS_FILE}" --no-unicode)
+    if(CORONA_AUTO_INSTALL_PY_DEPS)
+        list(APPEND _CRP_ARGS --auto-install)
+    endif()
+    corona_run_python(_CORONA_PY_RES SCRIPT "${CORONA_PY_CHECK_SCRIPT}" ARGS ${_CRP_ARGS} WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 
     if(NOT _CORONA_PY_RES EQUAL 0)
-        message(STATUS "[Python] Checker stdout:\n${_CORONA_PY_OUT}")
-
-        if(_CORONA_PY_ERR)
-            message(STATUS "[Python] Checker stderr:\n${_CORONA_PY_ERR}")
+        if(CORONA_LAST_PY_STDOUT)
+            message(STATUS "[Python] Checker stdout:\n${CORONA_LAST_PY_STDOUT}")
         endif()
-
+        if(CORONA_LAST_PY_STDERR)
+            message(STATUS "[Python] Checker stderr:\n${CORONA_LAST_PY_STDERR}")
+        endif()
         message(FATAL_ERROR "[Python] Requirement check failed (exit code ${_CORONA_PY_RES}); see output above, fix issues, then re-run")
     else()
         message(STATUS "[Python] Requirements satisfied; no installation needed")
