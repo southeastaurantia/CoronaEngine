@@ -22,12 +22,14 @@ struct PythonAPI
 
     void checkPythonScriptChange();
     void checkReleaseScriptChange();
+    // static void Init();
 
     std::wstring str2wstr(const std::string &str);
 
   private:
     
     static const std::string codePath;
+    // static bool s_tzdbInit;
     
     PythonHotfix hotfixManger;
 

@@ -107,7 +107,11 @@ struct PythonHotfix
             {
                 // pyFileCount++;
                 std::string filePathStr = filePath.string();
-                long long modifyTime = std::chrono::system_clock::to_time_t(std::chrono::clock_cast<std::chrono::system_clock>(std::filesystem::last_write_time(filePathStr)));
+                auto fileTime = std::filesystem::last_write_time(filePathStr);
+
+                // 转换为system_clock时间点进行比较（避免时区转换）
+                auto sysTime = std::chrono::clock_cast<std::chrono::system_clock>(fileTime);
+                long long modifyTime = std::chrono::duration_cast<std::chrono::seconds>(sysTime.time_since_epoch()).count();
                 formatStr(filePathStr);
                 if (filePathStr != "" && checkTime - modifyTime <= 1)
                 {
@@ -129,7 +133,7 @@ struct PythonHotfix
 
     time_t GetCurrentTimeMsec()
     {
-        return std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     }
 
     void CheckPythonFileDependence()
@@ -259,7 +263,7 @@ struct PythonHotfix
         // std::cout << "ReloadPythonFile took: " << duration << " ms." << std::endl;
         return reloadSomething;
     }
-    
+
 
     std::unordered_set<std::string> packageSet;
     std::unordered_map<std::string, std::unordered_set<std::string>> dependencyGraph;
