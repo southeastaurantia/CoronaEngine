@@ -101,13 +101,13 @@ namespace CoronaEngine {
         };
 
     private:
-        auto &sceneCache = Corona::Engine::Instance().Cache<Corona::Scene>();
-        auto &modelCache = Corona::Engine::Instance().Cache<Corona::Model>();
-        auto &animStateCache = Corona::Engine::Instance().Cache<Corona::AnimationState>();
-        auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
-        auto &animationSystem = Corona::Engine::Instance().GetSystem<Corona::AnimationSystem>();
-        auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
-        auto &anim_queue = Corona::Engine::Instance().GetQueue(animationSystem.name());
+        // auto &sceneCache = Corona::Engine::Instance().Cache<Corona::Scene>();
+        // auto &modelCache = Corona::Engine::Instance().Cache<Corona::Model>();
+        // auto &animStateCache = Corona::Engine::Instance().Cache<Corona::AnimationState>();
+        // auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
+        // auto &animationSystem = Corona::Engine::Instance().GetSystem<Corona::AnimationSystem>();
+        // auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
+        // auto &anim_queue = Corona::Engine::Instance().GetQueue(animationSystem.name());
     };
 
 } // CoronaEngine

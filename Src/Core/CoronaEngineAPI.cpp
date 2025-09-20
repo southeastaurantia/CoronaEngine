@@ -19,14 +19,14 @@ namespace CoronaEngine {
         if (surface)
         {
             scene->displaySurface = surface;
-            render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchScene, sceneID);
-            render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::setDisplaySurface, scene);
+            // render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchScene, sceneID);
+            // render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::setDisplaySurface, scene);
         }
     }
 
     CoronaEngineAPI::Scene::~Scene()
     {
-        sceneCache.erase(sceneID);
+        // sceneCache.erase(sceneID);
     }
 
     void CoronaEngineAPI::Scene::setCamera(const ktm::fvec3 &position, const ktm::fvec3 &forward, const ktm::fvec3 &worldUp, float fov)
@@ -45,11 +45,11 @@ namespace CoronaEngine {
 
     void CoronaEngineAPI::Scene::setDisplaySurface(void *surface)
     {
-        sceneCache.modify(sceneID, [surface, this](std::shared_ptr<Corona::Scene> &scene) {
-            scene->displaySurface = surface;
-            render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchScene, sceneID);
-            render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::setDisplaySurface, scene);
-        });
+        // sceneCache.modify(sceneID, [surface, this](std::shared_ptr<Corona::Scene> &scene) {
+        //     scene->displaySurface = surface;
+        //     render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchScene, sceneID);
+        //     render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::setDisplaySurface, scene);
+        // });
     }
 
     void *CoronaEngineAPI::Scene::getDisplaySurface() const
