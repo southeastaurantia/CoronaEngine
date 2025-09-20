@@ -9,7 +9,7 @@ PyMethodDef EngineScripts::ActorScripts::PyActor_methods[] = {
 
 // ���Ͷ���
 PyTypeObject EngineScripts::ActorScripts::PyActorType = {
-    PyVarObject_HEAD_INIT(nullptr, 0) "CabbageEngine.Actor", // ������
+    PyVarObject_HEAD_INIT(nullptr, 0) "CoronaEngine.Actor", // ������
     sizeof(PyActorObject),                                   // �����С
     0,                                                       // ������С
     (destructor)PyActor_dealloc,                             // ��������
@@ -27,12 +27,8 @@ PyTypeObject EngineScripts::ActorScripts::PyActorType = {
 
 void EngineScripts::ActorScripts::PyActor_dealloc(PyActorObject *self)
 {
-#ifdef ENABLE_CABBAGE_FRAMEWORK
-    CabbageEngine::pythonOperateList.destoryActor(self->cpp_obj->actorID);
-
     delete self->cpp_obj;
     self->cpp_obj = nullptr;
-#endif
 
     Py_TYPE(self)->tp_free((PyObject *)self);
 }
@@ -43,10 +39,7 @@ PyObject *EngineScripts::ActorScripts::PyActor_new(PyTypeObject *type, PyObject 
     self = (PyActorObject *)type->tp_alloc(type, 0);
     if (self != nullptr)
     {
-#ifdef ENABLE_CABBAGE_FRAMEWORK
-        // EngineScripts::pythonOperateList.destoryActor(self->cpp_obj->actorID);
         self->cpp_obj = nullptr;
-#endif
     }
     return (PyObject *)self;
 }
@@ -55,13 +48,12 @@ int EngineScripts::ActorScripts::PyActor_init(PyActorObject *self, PyObject *arg
 {
     char *path = (char *)"";
     SceneScripts::PySceneObject *scene = nullptr;
-    static char *kwlist[] = {(char *)"scene", (char *)"path", nullptr};
+    static char *kwlist[] = {(char *)"path", nullptr};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|Os", kwlist, &scene, &path))
     {
         return -1;
     }
 
-#ifdef ENABLE_CABBAGE_FRAMEWORK
     if (self->cpp_obj)
     {
         delete self->cpp_obj;
@@ -70,7 +62,7 @@ int EngineScripts::ActorScripts::PyActor_init(PyActorObject *self, PyObject *arg
 
     try
     {
-        self->cpp_obj = new CabbageEngine::Actor(*scene->cpp_obj, path);
+        self->cpp_obj = new CoronaEngine::CoronaEngineAPI::Actor(path);
     }
     catch (const std::bad_alloc &)
     {
@@ -82,7 +74,6 @@ int EngineScripts::ActorScripts::PyActor_init(PyActorObject *self, PyObject *arg
         PyErr_SetString(PyExc_RuntimeError, e.what());
         return -1;
     }
-#endif
 
     return 0; // Success
 }
@@ -96,7 +87,6 @@ PyObject *EngineScripts::ActorScripts::PyActor_move(PyActorObject *self, PyObjec
         return nullptr;
     }
 
-#ifdef ENABLE_CABBAGE_FRAMEWORK
     ktm::fvec3 vector_cpp;
     {
         PyObject *ItemX = PyList_GetItem(vector_py, 0);
@@ -123,7 +113,6 @@ PyObject *EngineScripts::ActorScripts::PyActor_move(PyActorObject *self, PyObjec
         PyErr_SetString(PyExc_RuntimeError, e.what());
         return nullptr;
     }
-#endif
 
     Py_RETURN_NONE;
 }
@@ -136,7 +125,6 @@ PyObject *EngineScripts::ActorScripts::PyActor_rotate(PyActorObject *self, PyObj
         return nullptr;
     }
 
-#ifdef ENABLE_CABBAGE_FRAMEWORK
     ktm::fvec3 vector_cpp;
     {
         PyObject *ItemX = PyList_GetItem(vector_py, 0);
@@ -163,7 +151,6 @@ PyObject *EngineScripts::ActorScripts::PyActor_rotate(PyActorObject *self, PyObj
         PyErr_SetString(PyExc_RuntimeError, e.what());
         return nullptr;
     }
-#endif
 
     Py_RETURN_NONE;
 }
@@ -177,7 +164,6 @@ PyObject *EngineScripts::ActorScripts::PyActor_scale(PyActorObject *self, PyObje
         return nullptr;
     }
 
-#ifdef ENABLE_CABBAGE_FRAMEWORK
     ktm::fvec3 vector_cpp;
     {
         PyObject *ItemX = PyList_GetItem(vector_py, 0);
@@ -204,7 +190,6 @@ PyObject *EngineScripts::ActorScripts::PyActor_scale(PyActorObject *self, PyObje
         PyErr_SetString(PyExc_RuntimeError, e.what());
         return nullptr;
     }
-#endif
 
     Py_RETURN_NONE;
 }

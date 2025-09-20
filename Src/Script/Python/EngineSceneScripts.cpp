@@ -9,7 +9,7 @@ PyMethodDef EngineScripts::SceneScripts::PyScene_methods[] = {
 
 // ���Ͷ���
 PyTypeObject EngineScripts::SceneScripts::PySceneType = {
-    PyVarObject_HEAD_INIT(nullptr, 0) "CabbageEngine.Scene", // ������
+    PyVarObject_HEAD_INIT(nullptr, 0) "CoronaEngine.Scene", // ������
     sizeof(PySceneObject),                                   // �����С
     0,                                                       // ������С
     (destructor)PyScene_dealloc,                             // ��������
@@ -26,10 +26,8 @@ PyTypeObject EngineScripts::SceneScripts::PySceneType = {
 
 void EngineScripts::SceneScripts::PyScene_dealloc(PySceneObject *self)
 {
-#ifdef ENABLE_CABBAGE_FRAMEWORK
     delete self->cpp_obj;
     self->cpp_obj = nullptr;
-#endif
     Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
@@ -39,9 +37,7 @@ PyObject *EngineScripts::SceneScripts::PyScene_new(PyTypeObject *type, PyObject 
     self = (PySceneObject *)type->tp_alloc(type, 0);
     if (self != nullptr)
     {
-#ifdef ENABLE_CABBAGE_FRAMEWORK
         self->cpp_obj = nullptr;
-#endif
     }
     return (PyObject *)self;
 }
@@ -56,7 +52,6 @@ int EngineScripts::SceneScripts::PyScene_init(PySceneObject *self, PyObject *arg
         return -1;
     }
 
-#ifdef ENABLE_CABBAGE_FRAMEWORK
     if (self->cpp_obj)
     {
         delete self->cpp_obj;
@@ -75,7 +70,7 @@ int EngineScripts::SceneScripts::PyScene_init(PySceneObject *self, PyObject *arg
         {
             surface = PyLong_AsVoidPtr(winID_py_ptr);
         }
-        self->cpp_obj = new CabbageEngine::Scene(surface, lightField);
+        self->cpp_obj = new CoronaEngine::CoronaEngineAPI::Scene(surface, lightField);
     }
     catch (const std::bad_alloc &)
     {
@@ -87,7 +82,6 @@ int EngineScripts::SceneScripts::PyScene_init(PySceneObject *self, PyObject *arg
         PyErr_SetString(PyExc_RuntimeError, e.what());
         return -1;
     }
-#endif
 
     return 0; // Success
 }
@@ -101,7 +95,6 @@ PyObject *EngineScripts::SceneScripts::PyScene_setCamera(PySceneObject *self, Py
         return PyBool_FromLong(false);
     }
 
-#ifdef ENABLE_CABBAGE_FRAMEWORK
     ktm::fvec3 cameraPosition, cameraForward, cameraWorldUp;
     {
         int SizeOfposition = PyList_Size(position);
@@ -136,7 +129,6 @@ PyObject *EngineScripts::SceneScripts::PyScene_setCamera(PySceneObject *self, Py
     }
 
     self->cpp_obj->setCamera(cameraPosition, cameraForward, cameraWorldUp, cameraFov);
-#endif
 
     return PyBool_FromLong(true);
 };
@@ -147,9 +139,7 @@ PyObject *EngineScripts::SceneScripts::PyScene_setDisplaySurface(PySceneObject *
 
     PyArg_ParseTuple(args, "O", &py_ptr);
 
-#ifdef ENABLE_CABBAGE_FRAMEWORK
     self->cpp_obj->setDisplaySurface(PyLong_AsVoidPtr(py_ptr));
-#endif
 
     return PyBool_FromLong(true);
 }
@@ -162,7 +152,6 @@ PyObject *EngineScripts::SceneScripts::PyScene_setSunDirection(PySceneObject *se
         return PyBool_FromLong(false);
     }
 
-#ifdef ENABLE_CABBAGE_FRAMEWORK
     ktm::fvec3 sunDir;
     {
         int SizeOfposition = PyList_Size(direct);
@@ -177,7 +166,6 @@ PyObject *EngineScripts::SceneScripts::PyScene_setSunDirection(PySceneObject *se
     }
 
     self->cpp_obj->setSunDirection(sunDir);
-#endif
 
     return PyBool_FromLong(true);
 }

@@ -1,10 +1,9 @@
 #pragma once
 
 #include <Python.h>
+#include <ktm/ktm.h>
 
-#ifdef ENABLE_CABBAGE_FRAMEWORK
-#include "CabbageEngine.h"
-#endif
+#include "Core/CoronaEngineAPI.h"
 
 struct EngineScripts
 {
@@ -13,9 +12,7 @@ struct EngineScripts
         struct PySceneObject
         {
             PyObject_HEAD;
-#ifdef ENABLE_CABBAGE_FRAMEWORK
-            CabbageEngine::Scene *cpp_obj;
-#endif
+            CoronaEngine::CoronaEngineAPI::Scene *cpp_obj;
         };
 
         static void PyScene_dealloc(PySceneObject *self);
@@ -35,9 +32,7 @@ struct EngineScripts
         struct PyActorObject
         {
             PyObject_HEAD;
-#ifdef ENABLE_CABBAGE_FRAMEWORK
-            CabbageEngine::Actor *cpp_obj;
-#endif
+            CoronaEngine::CoronaEngineAPI::Actor *cpp_obj;
         };
 
         static void PyActor_dealloc(PyActorObject *self);
