@@ -1,14 +1,3 @@
-﻿#include "Examples1.hpp"
-#include "Examples2.hpp"
-#include "Examples3.hpp"
-#include "Examples4.hpp"
-
-int main()
-{
-    // Examples1();
-    // Examples2();
-    Examples3();
-    // Examples4();
-
-    return 0;
-}
+﻿// 此文件已不再作为独立示例入口，示例请参见：
+// - Examples/queue_smoke/queue_smoke.cpp
+// - Examples/lfq_stress/lfq_stress.cpp

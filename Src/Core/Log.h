@@ -242,9 +242,7 @@ namespace Corona
 #endif
 
 #if CE_LOG_LEVEL_CRITICAL
-#define CE_LOG_CRITICAL(...)                                                  \
-    ::Corona::Logger::Critical(std::source_location::current(), __VA_ARGS__); \
-    throw std::runtime_error("Critical error occurred!")
+#define CE_LOG_CRITICAL(...) ::Corona::Logger::Critical(std::source_location::current(), __VA_ARGS__)
 #else
 #define CE_LOG_CRITICAL(...) (void)0
 #endif
