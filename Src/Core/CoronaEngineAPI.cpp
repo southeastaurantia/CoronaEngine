@@ -7,130 +7,147 @@
 #include <memory>
 
 
-
-namespace CoronaEngine {
-
-    CoronaEngineAPI::Scene::Scene(void *surface, bool lightField)
-        : sceneID(Corona::DataId::Next())
+CoronaEngineAPI::Scene::Scene(void *surface, bool lightField)
+    : sceneID(Corona::DataId::Next())
+{
+    auto scene = std::make_shared<Corona::Scene>();
+    auto &sceneCache = Corona::Engine::Instance().Cache<Corona::Scene>();
+    sceneCache.insert(sceneID, scene);
+    if (surface)
     {
-        auto scene = std::shared_ptr<Corona::Scene>();
-        auto &sceneCache = Corona::Engine::Instance().Cache<Corona::Scene>();
-        sceneCache.insert(sceneID, scene);
-        if (surface)
-        {
+        sceneCache.modify(sceneID, [surface](std::shared_ptr<Corona::Scene> scene) {
             scene->displaySurface = surface;
-            // render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchScene, sceneID);
-            // render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::setDisplaySurface, scene);
-        }
+        });
+        auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
+        auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
+        render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchScene, sceneID);
+        render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::setDisplaySurface, scene);
     }
+}
 
-    CoronaEngineAPI::Scene::~Scene()
+CoronaEngineAPI::Scene::~Scene()
+{
+    auto &sceneCache = Corona::Engine::Instance().Cache<Corona::Scene>();
+    auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
+    auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
+    render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::UnwatchScene, sceneID);
+    sceneCache.erase(sceneID);
+}
+
+void CoronaEngineAPI::Scene::setCamera(const ktm::fvec3 &position, const ktm::fvec3 &forward, const ktm::fvec3 &worldUp, float fov)
+{
+    auto &sceneCache = Corona::Engine::Instance().Cache<Corona::Scene>();
+    sceneCache.modify(sceneID, [position, forward, worldUp, fov](std::shared_ptr<Corona::Scene> scene) {
+        scene->camera.pos = position;
+        scene->camera.forward = forward;
+        scene->camera.worldUp = worldUp;
+        scene->camera.fov = fov;
+    });
+
+}
+
+void CoronaEngineAPI::Scene::setSunDirection(ktm::fvec3 direction)
+{
+    auto &sceneCache = Corona::Engine::Instance().Cache<Corona::Scene>();
+    sceneCache.modify(sceneID, [direction](std::shared_ptr<Corona::Scene> scene) {
+        scene->sunDirection = direction;
+    });
+}
+
+void CoronaEngineAPI::Scene::setDisplaySurface(void *surface)
+{
+    auto &sceneCache = Corona::Engine::Instance().Cache<Corona::Scene>();
+    auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
+    auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
+    sceneCache.modify(sceneID, [surface, &renderingSystem, &render_queue](std::shared_ptr<Corona::Scene> scene) {
+        scene->displaySurface = surface;
+        render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::setDisplaySurface, scene);
+    });
+    render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchScene, sceneID);
+}
+
+
+CoronaEngineAPI::Actor::Actor(std::string path)
+    : actorID(Corona::DataId::Next()),
+    animationID(0)
+{
+    const auto res = Corona::Engine::Instance().Resources().load({"model", path});
+    auto model = std::dynamic_pointer_cast<Corona::Model>(res);
+    if (!model)
     {
-        // sceneCache.erase(sceneID);
+        CE_LOG_WARN("Failed to load model: %s", path.c_str());
+        return;
     }
+    auto &modelCache = Corona::Engine::Instance().Cache<Corona::Model>();
+    modelCache.insert(actorID, model);
 
-    void CoronaEngineAPI::Scene::setCamera(const ktm::fvec3 &position, const ktm::fvec3 &forward, const ktm::fvec3 &worldUp, float fov)
+    if (!model->skeletalAnimations.empty())
     {
+        auto animState = std::make_shared<Corona::AnimationState>();
+        animState->model = model;
+        animState->animationIndex = 0;
 
+        animationID = Corona::DataId::Next();
+
+        auto &animStateCache = Corona::Engine::Instance().Cache<Corona::AnimationState>();
+        auto &animationSystem = Corona::Engine::Instance().GetSystem<Corona::AnimationSystem>();
+        auto &anim_queue = Corona::Engine::Instance().GetQueue(animationSystem.name());
+
+        animStateCache.insert(animationID, animState);
+        anim_queue.enqueue(&animationSystem, &Corona::AnimationSystem::WatchState, animationID);
+
+        auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
+        auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
+        render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchModel, actorID);
+        return;
     }
 
-    void CoronaEngineAPI::Scene::setSunDirection(ktm::fvec3 direction)
+    auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
+    auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
+    render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchModel, actorID);
+}
+
+CoronaEngineAPI::Actor::~Actor()
+{
+    if (animationID != 0)
     {
+        auto &animStateCache = Corona::Engine::Instance().Cache<Corona::AnimationState>();
+        auto &animationSystem = Corona::Engine::Instance().GetSystem<Corona::AnimationSystem>();
+        auto &anim_queue = Corona::Engine::Instance().GetQueue(animationSystem.name());
+        anim_queue.enqueue(&animationSystem, &Corona::AnimationSystem::UnwatchState, animationID);
+        animStateCache.erase(animationID);
     }
-
-    ktm::fvec3 CoronaEngineAPI::Scene::getSunDirection() const
+    auto &modelCache = Corona::Engine::Instance().Cache<Corona::Model>();
+    if (modelCache.get(actorID) != nullptr)
     {
-        return ktm::fvec3{};
+        auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
+        auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
+        render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::UnwatchModel, actorID);
+        modelCache.erase(actorID);
     }
+}
 
-    void CoronaEngineAPI::Scene::setDisplaySurface(void *surface)
-    {
-        // sceneCache.modify(sceneID, [surface, this](std::shared_ptr<Corona::Scene> &scene) {
-        //     scene->displaySurface = surface;
-        //     render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchScene, sceneID);
-        //     render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::setDisplaySurface, scene);
-        // });
-    }
+void CoronaEngineAPI::Actor::move(ktm::fvec3 pos)
+{
+    auto &modelCache = Corona::Engine::Instance().Cache<Corona::Model>();
+    modelCache.modify(actorID, [pos](std::shared_ptr<Corona::Model> model) {
+        model->positon = pos;
+    });
+}
 
-    void *CoronaEngineAPI::Scene::getDisplaySurface() const
-    {
-        return nullptr;
-    }
+void CoronaEngineAPI::Actor::rotate(ktm::fvec3 euler)
+{
+    auto &modelCache = Corona::Engine::Instance().Cache<Corona::Model>();
+    modelCache.modify(actorID, [euler](std::shared_ptr<Corona::Model> model) {
+        model->rotation = euler;
+    });
+}
 
-    CoronaEngineAPI::Actor *CoronaEngineAPI::Scene::detectActorByRay(ktm::fvec3 origin, ktm::fvec3 dir)
-    {
-        return nullptr;
-    }
+void CoronaEngineAPI::Actor::scale(ktm::fvec3 size)
+{
+    auto &modelCache = Corona::Engine::Instance().Cache<Corona::Model>();
+    modelCache.modify(actorID, [size](std::shared_ptr<Corona::Model> model) {
+        model->scale = size;
+    });
+}
 
-    CoronaEngineAPI::Actor *CoronaEngineAPI::Scene::detectActorByScreen(ktm::uvec2 pixel)
-    {
-        return nullptr;
-    }
-
-    CoronaEngineAPI::Actor::Actor(std::string path)
-    {
-    }
-
-    CoronaEngineAPI::Actor::~Actor()
-    {
-    }
-
-    void CoronaEngineAPI::Actor::move(ktm::fvec3 pos)
-    {
-    }
-
-    void CoronaEngineAPI::Actor::rotate(ktm::fvec3 euler)
-    {
-    }
-
-    void CoronaEngineAPI::Actor::scale(ktm::fvec3 size)
-    {
-    }
-
-    void CoronaEngineAPI::Actor::setPose(const Pose &newPose)
-    {
-    }
-
-    CoronaEngineAPI::Actor::Pose CoronaEngineAPI::Actor::getPose() const
-    {
-        return pose;
-    }
-
-    void CoronaEngineAPI::Actor::setMeshShape(std::string path)
-    {
-    }
-
-    void CoronaEngineAPI::Actor::setAnimation(std::string path)
-    {
-    }
-
-    void CoronaEngineAPI::Actor::updateAnimation(float deltaTime)
-    {
-
-    }
-
-    void CoronaEngineAPI::Actor::setActorMatrix(ktm::fmat4x4 matrix)
-    {
-    }
-
-    ktm::fmat4x4 CoronaEngineAPI::Actor::getActorMatrix() const
-    {
-        return ktm::fmat4x4::from_eye();
-    }
-
-    void CoronaEngineAPI::Actor::detectCollision()
-    {
-    }
-
-    void CoronaEngineAPI::Actor::setOpticsParams(const OpticsParams &params)
-    {
-    }
-
-    void CoronaEngineAPI::Actor::setAcousticsParams(const AcousticsParams &params)
-    {
-    }
-
-    void CoronaEngineAPI::Actor::setMechanicsParams(const MechanicsParams &params)
-    {
-    }
-} // CoronaEngine
