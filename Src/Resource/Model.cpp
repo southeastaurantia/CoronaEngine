@@ -137,10 +137,10 @@ namespace Corona
                 resultMesh.texCoords.push_back(0.0f);
             }
 
-            resultMesh.boneIndices.push_back(0);
-            resultMesh.boneIndices.push_back(0);
-            resultMesh.boneIndices.push_back(0);
-            resultMesh.boneIndices.push_back(0);
+            resultMesh.boneIndices.push_back(-1);
+            resultMesh.boneIndices.push_back(-1);
+            resultMesh.boneIndices.push_back(-1);
+            resultMesh.boneIndices.push_back(-1);
 
             resultMesh.boneWeights.push_back(0.0f);
             resultMesh.boneWeights.push_back(0.0f);
