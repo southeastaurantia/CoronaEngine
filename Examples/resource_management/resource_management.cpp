@@ -1,8 +1,6 @@
-#pragma once
-
 #include <Core/Engine/Engine.h>
 #include <Core/IO/Loaders/TextResource.h>
-#include <Core/Log.h>
+#include <Log.h>
 #include <Core/Thread/SafeCommandQueue.h>
 
 #include <filesystem>
@@ -59,7 +57,7 @@ namespace demo
     };
 } // namespace demo
 
-inline void Examples1()
+int main()
 {
     // Init logger
     Corona::LogConfig cfg;
@@ -195,4 +193,5 @@ inline void Examples1()
 
     // Clean shutdown
     Corona::Engine::Instance().Shutdown();
+    return 0;
 }

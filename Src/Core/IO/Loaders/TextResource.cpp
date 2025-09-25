@@ -1,6 +1,6 @@
 #include "TextResource.h"
 
-#include "Core/Log.h"
+#include <Log.h>
 
 #include <algorithm>
 #include <fstream>

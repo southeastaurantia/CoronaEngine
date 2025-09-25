@@ -1,5 +1,5 @@
 #include "BinaryResource.h"
-#include "Core/Log.h"
+#include <Log.h>
 
 #include <algorithm>
 #include <fstream>

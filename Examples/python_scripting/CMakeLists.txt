@@ -1,0 +1,16 @@
+set(_target Corona_python_scripting)
+add_executable(${_target} python_scripting.cpp)
+set_target_properties(${_target} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY $<TARGET_FILE_DIR:${_target}>)
+target_link_libraries(${_target} PRIVATE glfw CoronaEngine)
+
+if(COMMAND helicon_install_runtime_deps)
+    helicon_install_runtime_deps(${_target})
+else()
+    message(STATUS "[python_scripting] helicon_install_runtime_deps not available; skip")
+endif()
+corona_install_runtime_deps(${_target})
+if(BUILD_CORONA_EDITOR)
+    corona_install_corona_editor(${_target} CoronaEngine)
+endif()
+
+corona_examples_copy_assets(${_target})

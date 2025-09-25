@@ -1,6 +1,6 @@
 // CoronaEngine - 日志实现（spdlog 后端）
 
-#include "Log.h"
+#include "include/Log.h"
 
 #include <atomic>
 #include <mutex>
@@ -93,7 +93,9 @@ namespace Corona
             try
             {
                 if (m_logger)
+                {
                     m_logger->flush();
+                }
             }
             catch (...)
             { /* swallow */
@@ -133,7 +135,9 @@ namespace Corona
         void SetLevel(LogLevel level) override
         {
             if (m_logger)
+            {
                 m_logger->set_level(ToSpd(level));
+            }
         }
 
         LogLevel GetLevel() const override
@@ -144,7 +148,9 @@ namespace Corona
         void Log(LogLevel level, std::string_view msg) override
         {
             if (!m_logger)
+            {
                 return;
+            }
             switch (level)
             {
             case LogLevel::Trace:
@@ -173,7 +179,9 @@ namespace Corona
         void Log(LogLevel level, std::string_view msg, const std::source_location &loc) override
         {
             if (!m_logger)
+            {
                 return;
+            }
             // Map to spdlog::source_loc to drive [%s:%#] and function formatting
             spdlog::source_loc sloc{loc.file_name(), static_cast<int>(loc.line()), loc.function_name()};
             switch (level)
@@ -204,7 +212,9 @@ namespace Corona
         void Flush() override
         {
             if (m_logger)
+            {
                 m_logger->flush();
+            }
         }
 
       private:
@@ -219,7 +229,9 @@ namespace Corona
     void Logger::Init(const LogConfig &config)
     {
         if (g_inited.load(std::memory_order_acquire))
+        {
             return;
+        }
         std::lock_guard<std::mutex> lock(g_mutex);
         if (!g_backend)
         {
@@ -274,7 +286,9 @@ namespace Corona
     std::shared_ptr<ILogBackend> Logger::GetOrCreateBackend()
     {
         if (g_backend)
+        {
             return g_backend;
+        }
         std::lock_guard<std::mutex> lock(g_mutex);
         if (!g_backend)
         {

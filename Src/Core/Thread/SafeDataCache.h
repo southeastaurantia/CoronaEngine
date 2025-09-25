@@ -4,7 +4,7 @@
 // - safe_loop_foreach 尝试无阻塞处理，无法立即加锁的 id 会排队重试
 #pragma once
 
-#include "Core/Log.h"
+#include <Log.h>
 #include "oneapi/tbb/concurrent_hash_map.h"
 
 #include <cstdint>

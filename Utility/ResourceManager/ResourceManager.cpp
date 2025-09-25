@@ -1,6 +1,6 @@
 #include "ResourceManager.h"
-
 #include <Log.h>
+
 #include <algorithm>
 #include <mutex>
 
@@ -9,7 +9,6 @@ namespace Corona
     ResourceManager::ResourceManager() = default;
     ResourceManager::~ResourceManager()
     {
-        // 确保未完成任务收尾
         tasks_.wait();
     }
 
@@ -29,11 +28,9 @@ namespace Corona
 
     std::shared_ptr<IResource> ResourceManager::loadInternal(const ResourceId &id)
     {
-        // 查缓存
         if (auto it = cache_.find(id); it != cache_.end())
             return it->second;
 
-        // 获取该资源的互斥锁（或创建）
         std::shared_ptr<std::mutex> mtx;
         if (auto it = locks_.find(id); it != locks_.end())
         {
@@ -46,7 +43,6 @@ namespace Corona
             mtx = insIt->second;
         }
 
-        // 加锁后再次检查缓存
         std::scoped_lock lk(*mtx);
         if (auto it2 = cache_.find(id); it2 != cache_.end())
             return it2->second;
@@ -65,7 +61,6 @@ namespace Corona
             return nullptr;
         }
 
-        // 放入缓存（若存在则不覆盖）
         cache_.insert({id, res});
         return res;
     }
@@ -142,13 +137,12 @@ namespace Corona
 
     void ResourceManager::preload(const std::vector<ResourceId> &ids)
     {
-        for (const auto &id : ids)
+        for (const auto &rid : ids)
         {
-            tasks_.run([this, id]() {
-                (void)loadInternal(id);
+            tasks_.run([this, rid]() {
+                (void)loadInternal(rid);
             });
         }
-        // 不等待，交由调用方决定同步点；如需等待，可在外部保持 task_group 或添加 wait 接口
     }
 
     void ResourceManager::wait()

@@ -1,10 +1,4 @@
+// Transitional forwarding header after migrating Resource system to Utility/ResourceManager.
+// Kept to avoid mass include path churn. Prefer including <IResource.h> directly going forward.
 #pragma once
-
-namespace Corona
-{
-    // 基类：所有资源对象需继承，便于类型擦除与统一缓存
-    struct IResource
-    {
-        virtual ~IResource() = default;
-    };
-} // namespace Corona
+#include <IResource.h>

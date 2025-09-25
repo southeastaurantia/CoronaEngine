@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Core/Engine/ISystem.h"
-#include "Core/IO/ResourceManager.h"
-#include "Core/Log.h"
+#include <ResourceManager.h>
+#include <Log.h>
 #include "Core/Thread/SafeCommandQueue.h"
 #include "Core/Thread/SafeDataCache.h"
 

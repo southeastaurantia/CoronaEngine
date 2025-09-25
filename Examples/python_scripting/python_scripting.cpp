@@ -1,7 +1,14 @@
 #include <Python.h>
 #include <Script/Python/PythonAPI.h>
+#include <Core/Engine/Engine.h>
+#include <Core/Engine/Systems/AnimationSystem.h>
+#include <Core/Engine/Systems/AudioSystem.h>
+#include <Core/Engine/Systems/DisplaySystem.h>
+#include <Core/Engine/Systems/RenderingSystem.h>
+#include <chrono>
+#include <thread>
 
-inline void Examples3()
+int main()
 {
     Corona::Engine::Instance().Init({/* LogConfig */});
 
@@ -29,4 +36,5 @@ inline void Examples3()
         pythonManager.runPythonScript();
     }
 
+    return 0;
 }
