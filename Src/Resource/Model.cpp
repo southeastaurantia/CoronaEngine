@@ -162,6 +162,7 @@ namespace Corona
 
         for (auto &texture : resultMesh.textures)
         {
+            std::lock_guard<std::mutex> lk(textureMutex);
             HardwareImage tempImage = HardwareImage(ktm::uvec2(texture->width, texture->height), ImageFormat::RGBA8_SRGB, ImageUsage::SampledImage, 1, texture->data);
             textureImageHash.insert(std::make_pair(texture->path, tempImage));
         }
@@ -239,7 +240,7 @@ namespace Corona
 
                 for (int i = 0; i < 4; ++i)
                 {
-                    if (resultMesh.boneIndices[vertexId * 4 + i] == 0 && resultMesh.boneWeights[vertexId * 4 + i] <= 1e-3)
+                    if (resultMesh.boneIndices[vertexId * 4 + i] == -1 && resultMesh.boneWeights[vertexId * 4 + i] <= 1e-3)
                     {
                         resultMesh.boneWeights[vertexId * 4 + i] = weight;
                         resultMesh.boneIndices[vertexId * 4 + i] = boneID;
@@ -281,19 +282,24 @@ namespace Corona
 
                 std::string texturePath = directory + "\\" + str.C_Str();
 
-                if (!texturePathHash.contains(texturePath))
+                std::shared_ptr<Texture> texture;
                 {
-                    auto texture = std::make_shared<Texture>();
-                    texture->type = allTextureTypes[index];
-                    texture->path = texturePath;
-                    texture->data = stbi_load(texturePath.c_str(), &texture->width, &texture->height, &texture->nrChannels, 0);
-                    texturePathHash[texturePath] = texture;
-                    textures.push_back(texture);
+                    std::lock_guard<std::mutex> lk(textureMutex);
+                    if (auto it = texturePathHash.find(texturePath); it != texturePathHash.end())
+                    {
+                        texture = it->second;
+                    }
+                    else
+                    {
+                        // 直接在锁内加载以保证并发安全（可优化为双检并在锁外加载）
+                        texture = std::make_shared<Texture>();
+                        texture->type = allTextureTypes[index];
+                        texture->path = texturePath;
+                        texture->data = stbi_load(texturePath.c_str(), &texture->width, &texture->height, &texture->nrChannels, 0);
+                        texturePathHash[texturePath] = texture;
+                    }
                 }
-                else
-                {
-                    textures.push_back(texturePathHash[texturePath]);
-                }
+                textures.push_back(texture);
             }
 
             resultMesh.textures.insert(resultMesh.textures.end(), textures.begin(), textures.end());
@@ -304,6 +310,7 @@ namespace Corona
         {
             std::string tempTexturePath = directory + std::to_string(++attributeToImageIndex);
 
+            std::lock_guard<std::mutex> lk(textureMutex);
             if (!texturePathHash.contains(tempTexturePath))
             {
                 auto tempTexture = std::make_shared<Texture>();
@@ -327,6 +334,7 @@ namespace Corona
         {
             std::string tempTexturePath = directory + std::to_string(++attributeToImageIndex);
 
+            std::lock_guard<std::mutex> lk(textureMutex);
             if (!texturePathHash.contains(tempTexturePath))
             {
                 auto tempTexture = std::make_shared<Texture>();
@@ -350,6 +358,7 @@ namespace Corona
         {
             std::string tempTexturePath = directory + std::to_string(++attributeToImageIndex);
 
+            std::lock_guard<std::mutex> lk(textureMutex);
             if (!texturePathHash.contains(tempTexturePath))
             {
                 auto tempTexture = std::make_shared<Texture>();
@@ -373,6 +382,7 @@ namespace Corona
         {
             std::string tempTexturePath = directory + std::to_string(++attributeToImageIndex);
 
+            std::lock_guard<std::mutex> lk(textureMutex);
             if (!texturePathHash.contains(tempTexturePath))
             {
                 auto tempTexture = std::make_shared<Texture>();

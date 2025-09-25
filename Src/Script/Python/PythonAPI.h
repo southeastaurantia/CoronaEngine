@@ -1,16 +1,13 @@
 #pragma once
 
 #include <chrono>
-#include <mutex>
 #include <shared_mutex>
-#include <sstream>
-#include <thread>
+#include <filesystem>
+#include <string>
+
 
 #include "PythonHotfix.h"
-
 #include "EngineScripts.h"
-
-#include <Python.h>
 
 struct PythonAPI
 {
@@ -22,14 +19,12 @@ struct PythonAPI
 
     void checkPythonScriptChange();
     void checkReleaseScriptChange();
-    // static void Init();
 
     std::wstring str2wstr(const std::string &str);
 
   private:
     
     static const std::string codePath;
-    // static bool s_tzdbInit;
     
     PythonHotfix hotfixManger;
 

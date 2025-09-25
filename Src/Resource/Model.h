@@ -11,6 +11,8 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <mutex>
+#include <atomic>
 
 // forward decls for Assimp types used in declarations
 struct aiMesh;
@@ -55,8 +57,9 @@ namespace Corona
         void processNode(const std::string &path, const aiNode *node, const aiScene *scene, const ModelPtr &model);
         void loadMaterial(const std::string &path, const aiMaterial *material, Mesh &resultMesh);
         void extractBoneWeightForVertices(Mesh &resultMesh, const aiMesh *mesh, const aiScene *scene, const ModelPtr &model);
+        std::mutex textureMutex;
         std::unordered_map<std::string, std::shared_ptr<Texture>> texturePathHash;
         std::unordered_map<std::string, HardwareImage> textureImageHash;
-        uint32_t attributeToImageIndex = 0;
+        std::atomic<uint32_t> attributeToImageIndex = 0;
     };
 } // namespace Corona

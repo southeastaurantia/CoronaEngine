@@ -1,26 +1,36 @@
 #define PY_SSIZE_T_CLEAN
-
-#include <chrono>
-#include <filesystem>
-#include <iostream>
-#include <mutex>
-#include <regex>
-#include <shared_mutex>
-#include <sstream>
-#include <string>
-#include <thread>
-
 #include "PythonAPI.h"
 
-#include "Core/Log.h"
+namespace CE::Python::Internal {
+    struct PyObjPtr {
+        PyObject* p = nullptr;
+        PyObjPtr() = default;
+        explicit PyObjPtr(PyObject* obj): p(obj) {}
+        ~PyObjPtr(){ Py_XDECREF(p); }
+        PyObject* get() const { return p; }
+        PyObject* release() { PyObject* t = p; p = nullptr; return t; }
+        PyObjPtr(const PyObjPtr&) = delete;
+        PyObjPtr& operator=(const PyObjPtr&) = delete;
+        PyObjPtr(PyObjPtr&& o) noexcept { p = o.p; o.p = nullptr; }
+        PyObjPtr& operator=(PyObjPtr&& o) noexcept {
+            if (this != &o) { Py_XDECREF(p); p = o.p; o.p = nullptr; }
+            return *this;
+        }
+    };
+    struct GILGuard {
+        PyGILState_STATE state;
+        GILGuard(){ state = PyGILState_Ensure(); }
+        ~GILGuard(){ PyGILState_Release(state); }
+    };
+}
 
-// #include"CabbageFramework/CabbageCommon/CabbageCommon.h"
+using CE::Python::Internal::PyObjPtr;
+using CE::Python::Internal::GILGuard;
 
 const std::string PythonAPI::codePath =
 [] {
     std::string resultPath = "";
     std::string runtimePath = std::filesystem::current_path().string();
-    // std::replace(runtimePath.begin(), runtimePath.end(), '\\', '/');
     std::regex pattern(R"((.*)CoronaEngine\b)");
     std::smatch matches;
     if (std::regex_search(runtimePath, matches, pattern))
@@ -34,14 +44,14 @@ const std::string PythonAPI::codePath =
             throw std::runtime_error("Failed to resolve source path.");
         }
     }
-    std::replace(resultPath.begin(), resultPath.end(), '\\', '/');
+    std::ranges::replace(resultPath, '\\', '/');
     return resultPath;
     }();
 
 
 PyObject *PyInit_CoronaEngineEmbedded()
 {
-    PyMethodDef CoronaEngineMethods[] = {{NULL, NULL, 0, NULL}};
+    PyMethodDef CoronaEngineMethods[] = {{nullptr, nullptr, 0, nullptr}};
 
     if (PyType_Ready(&EngineScripts::ActorScripts::PyActorType) < 0)
     {
@@ -59,12 +69,12 @@ PyObject *PyInit_CoronaEngineEmbedded()
     module.m_name = "CoronaEngine";
     module.m_methods = CoronaEngineMethods;
     module.m_size = -1;
-    module.m_doc = NULL;
+    module.m_doc = nullptr;
 
     auto m = PyModule_Create(&module);
 
     Py_INCREF(&EngineScripts::ActorScripts::PyActorType);
-    if (PyModule_AddObject(m, "Actor", (PyObject *)&EngineScripts::ActorScripts::PyActorType) < 0)
+    if (PyModule_AddObject(m, "Actor", reinterpret_cast<PyObject *>(&EngineScripts::ActorScripts::PyActorType)) < 0)
     {
         Py_DECREF(&EngineScripts::ActorScripts::PyActorType);
         Py_DECREF(m);
@@ -72,7 +82,7 @@ PyObject *PyInit_CoronaEngineEmbedded()
     }
 
     Py_INCREF(&EngineScripts::SceneScripts::PySceneType);
-    if (PyModule_AddObject(m, "Scene", (PyObject *)&EngineScripts::SceneScripts::PySceneType) < 0)
+    if (PyModule_AddObject(m, "Scene", reinterpret_cast<PyObject *>(&EngineScripts::SceneScripts::PySceneType)) < 0)
     {
         Py_DECREF(&EngineScripts::SceneScripts::PySceneType);
         Py_DECREF(m);
@@ -88,7 +98,7 @@ PythonAPI::PythonAPI()
     PyConfig_InitPythonConfig(&config);
 
     hotreloadPath = PythonAPI::codePath + "/Editor/CoronaEditor/Backend";
-    std::replace(hotreloadPath.begin(), hotreloadPath.end(), '\\', '/');
+    std::ranges::replace(hotreloadPath, '\\', '/');
 }
 
 PythonAPI::~PythonAPI()
@@ -116,7 +126,7 @@ void PythonAPI::runPythonScript()
     if (!Py_IsInitialized())
     {
         std::string runtimePath = PythonAPI::codePath + "/Editor/CoronaEditor/Backend";
-        std::replace(runtimePath.begin(), runtimePath.end(), '\\', '/');
+        std::ranges::replace(runtimePath, '\\', '/');
 
         PyImport_AppendInittab("CoronaEngine", &PyInit_CoronaEngineEmbedded);
 
@@ -142,9 +152,7 @@ void PythonAPI::runPythonScript()
             {
                 pFunc = PyObject_GetAttrString(pModule, "run");
 
-                PyObject *global_dict = PyModule_GetDict(pModule);
-
-                if (global_dict)
+                if (PyObject *global_dict = PyModule_GetDict(pModule))
                 {
                     Py_ssize_t pos = 0;
                     PyObject *key;
@@ -160,11 +168,11 @@ void PythonAPI::runPythonScript()
                             continue;
                         if (PyModule_Check(value))
                         {
-                            moduleList.push_back(name);
+                            moduleList.emplace_back(name);
                         }
                         else if (PyCallable_Check(value))
                         {
-                            callableList.push_back(name);
+                            callableList.emplace_back(name);
                         }
                     }
                 }
@@ -175,7 +183,7 @@ void PythonAPI::runPythonScript()
                 {
                     PyErr_Print();
                 }
-                throw("Python: import error.");
+                throw std::runtime_error("Python: import error.");
             }
         }
         else
@@ -184,7 +192,7 @@ void PythonAPI::runPythonScript()
             {
                 PyErr_Print();
             }
-            throw("Python: init error.");
+            throw std::runtime_error("Python: init error.");
         }
     }
 
@@ -200,8 +208,7 @@ void PythonAPI::runPythonScript()
                 if (hotfixManger.ReloadPythonFile())
                 {
                     isReload = true;
-                    PyObject *new_module = PyImport_ReloadModule(pModule);
-                    if (new_module)
+                    if (PyObject *new_module = PyImport_ReloadModule(pModule))
                     {
                         PyObject *old_module = pModule;
                         PyObject *old_func = pFunc;
@@ -262,7 +269,6 @@ void PythonAPI::runPythonScript()
                 if (!pBool) {
                     // PyBool_FromLong失败时需要手动释放pBool
                     Py_DECREF(pBool);
-                    pArg = nullptr;
                     break;
                 }
 
@@ -270,17 +276,11 @@ void PythonAPI::runPythonScript()
                     // PyTuple_SetItem失败时需要手动释放pBool
                     Py_DECREF(pBool);
                     Py_DECREF(pArg);
-                    pBool = nullptr;
-                    pArg = nullptr;
                     break;
                 }
-                pBool = nullptr;
 
                 // 执行函数调用
                 result = PyObject_CallObject(pFunc, pArg);
-
-                // 标记pArg不再需要我们管理（已被函数使用）
-                pArg = nullptr;
 
                 if (!result) {
                     if (PyErr_Occurred()) {
@@ -291,18 +291,8 @@ void PythonAPI::runPythonScript()
 
             // 安全释放所有资源
             if (Py_IsInitialized()) {
-                if (pArg != nullptr) {
-                    Py_XDECREF(pArg);
-                    pArg = nullptr;
-                }
                 if (result != nullptr) {
                     Py_XDECREF(result);
-                    result = nullptr;
-                }
-                // pBool此时应为nullptr，但为了安全仍进行检查
-                if (pBool != nullptr) {
-                    Py_XDECREF(pBool);
-                    pBool = nullptr;
                 }
             }
         }
@@ -350,7 +340,7 @@ void PythonAPI::checkReleaseScriptChange()
 
     std::queue<std::unordered_set<std::string>> messageQue;
     std::string runtimePath = PythonAPI::codePath + "/Editor/CoronaEditor/Backend";
-    std::replace(runtimePath.begin(), runtimePath.end(), '\\', '/');
+    std::ranges::replace(runtimePath, '\\', '/');
 
     hotfixManger.TraverseDirectory(runtimePath, messageQue, currentTime);
 
