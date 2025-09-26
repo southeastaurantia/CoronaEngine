@@ -5,7 +5,6 @@
 #ifndef CORONAENGINEAPI_H
 #define CORONAENGINEAPI_H
 
-#include <set>
 #include <ktm/ktm.h>
 #include "Engine/Engine.h"
 #include "Engine/Systems/AnimationSystem.h"
@@ -25,12 +24,12 @@ struct CoronaEngineAPI
     struct Actor
     {
       public:
-        Actor(std::string path = "");
+        Actor(const std::string &path = "");
         ~Actor();
 
-        void move(ktm::fvec3 pos);
-        void rotate(ktm::fvec3 euler);
-        void scale(ktm::fvec3 size);
+        void move(ktm::fvec3 pos) const;
+        void rotate(ktm::fvec3 euler) const;
+        void scale(ktm::fvec3 size) const;
 
       private:
         uint64_t actorID;
@@ -43,8 +42,8 @@ struct CoronaEngineAPI
         Scene(void *surface = nullptr, bool lightField = false);
         ~Scene();
 
-        void setCamera(const ktm::fvec3 &position, const ktm::fvec3 &forward, const ktm::fvec3 &worldUp, float fov);
-        void setSunDirection(ktm::fvec3 direction);
+        void setCamera(const ktm::fvec3 &position, const ktm::fvec3 &forward, const ktm::fvec3 &worldUp, float fov) const;
+        void setSunDirection(ktm::fvec3 direction) const;
         void setDisplaySurface(void *surface);
 
       private:
