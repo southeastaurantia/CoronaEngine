@@ -1,7 +1,7 @@
-#pragma once
-#include "Core/IO/IResource.h"
-#include "Core/IO/IResourceLoader.h"
-#include "Core/IO/ResourceTypes.h"
+﻿#pragma once
+#include <IResource.h>
+#include <IResourceLoader.h>
+#include <ResourceTypes.h>
 
 namespace Corona
 {

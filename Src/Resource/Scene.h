@@ -1,11 +1,11 @@
-//
+﻿//
 // Created by 25473 on 25-9-14.
 //
 
 #ifndef SCENE_H
 #define SCENE_H
 #include "CabbageDisplayer.h"
-#include "Core/IO/IResource.h"
+#include <IResource.h>
 #include "ktm/type_vec.h"
 
 namespace Corona {

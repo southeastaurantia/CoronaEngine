@@ -1,10 +1,10 @@
-#pragma once
+﻿#pragma once
 
 #include "Animation.h"
 #include "Bone.h"
-#include "Core/IO/IResource.h"
-#include "Core/IO/IResourceLoader.h"
-#include "Core/IO/ResourceTypes.h"
+#include <IResource.h>
+#include <IResourceLoader.h>
+#include <ResourceTypes.h>
 
 #include <map>
 #include <memory>
@@ -26,16 +26,16 @@ namespace Corona
     class Model final : public IResource
     {
       public:
-        std::vector<Mesh> meshes;                                       ///< 所有网格
-        std::map<std::string, std::shared_ptr<BoneInfo>> m_BoneInfoMap; ///< 骨骼信息映射表
-        int m_BoneCounter = 0;                                          ///< 骨骼计数器
-        std::vector<Animation> skeletalAnimations;                      ///< 所有骨骼动画
-        ktm::fvec3 minXYZ{0.0f, 0.0f, 0.0f};               ///< 模型包围盒最小点
-        ktm::fvec3 maxXYZ{0.0f, 0.0f, 0.0f};               ///< 模型包围盒最大点
-        ktm::fvec3 positon{0.0f, 0.0f, 0.0f};                           ///< 位置
-        ktm::fvec3 rotation{0.0f, 0.0f, 0.0f};                          ///< 旋转
-        ktm::fvec3 scale{1.0f, 1.0f, 1.0f};                            ///< 缩放
-        ktm::fmat4x4 modelMatrix = ktm::fmat4x4::from_eye();                          ///< 模型矩阵
+        std::vector<Mesh> meshes;                                       ///< 鎵€鏈夌綉鏍?
+        std::map<std::string, std::shared_ptr<BoneInfo>> m_BoneInfoMap; ///< 楠ㄩ淇℃伅鏄犲皠琛?
+        int m_BoneCounter = 0;                                          ///< 楠ㄩ璁℃暟鍣?
+        std::vector<Animation> skeletalAnimations;                      ///< 鎵€鏈夐楠煎姩鐢?
+        ktm::fvec3 minXYZ{0.0f, 0.0f, 0.0f};               ///< 妯″瀷鍖呭洿鐩掓渶灏忕偣
+        ktm::fvec3 maxXYZ{0.0f, 0.0f, 0.0f};               ///< 妯″瀷鍖呭洿鐩掓渶澶х偣
+        ktm::fvec3 positon{0.0f, 0.0f, 0.0f};                           ///< 浣嶇疆
+        ktm::fvec3 rotation{0.0f, 0.0f, 0.0f};                          ///< 鏃嬭浆
+        ktm::fvec3 scale{1.0f, 1.0f, 1.0f};                            ///< 缂╂斁
+        ktm::fmat4x4 modelMatrix = ktm::fmat4x4::from_eye();                          ///< 妯″瀷鐭╅樀
         HardwareBuffer bonesMatrixBuffer;
 
         void getModelMatrix()
@@ -47,7 +47,7 @@ namespace Corona
     class ModelLoader : public IResourceLoader
     {
       public:
-        // 支持类型：type=="model" 或 扩展名常见三维格式
+        // 鏀寔绫诲瀷锛歵ype=="model" 鎴?鎵╁睍鍚嶅父瑙佷笁缁存牸寮?
         bool supports(const ResourceId &id) const override;
         std::shared_ptr<IResource> load(const ResourceId &id) override;
 

@@ -1,5 +1,6 @@
 #define PY_SSIZE_T_CLEAN
 #include "PythonAPI.h"
+#include <Log.h>
 
 namespace CE::Python::Internal {
     struct PyObjPtr {

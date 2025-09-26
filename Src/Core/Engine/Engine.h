@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Core/Engine/ISystem.h"
-#include "Core/IO/ResourceManager.h"
-#include "Core/Log.h"
+#include <ResourceManager.h>
+#include <Log.h>
 #include "Core/Thread/SafeCommandQueue.h"
 #include "Core/Thread/SafeDataCache.h"
 
@@ -85,8 +85,9 @@ namespace Corona
         void RegisterSystem()
         {
             const std::type_index key{typeid(T)};
-            if (systems_.contains(key))
+            if (systems_.contains(key)) {
                 return;
+}
             systems_.emplace(key, std::make_shared<T>());
             CE_LOG_DEBUG("Registered system {}", key.name());
         }

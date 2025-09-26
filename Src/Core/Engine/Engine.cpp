@@ -1,6 +1,4 @@
-#include "Engine.h"
-#include "Core/IO/Loaders/BinaryResource.h"
-#include "Core/IO/Loaders/TextResource.h"
+﻿#include "Engine.h"
 #include "Resource/Model.h"
 #include "Resource/Shader.h"
 
@@ -14,7 +12,7 @@ namespace Corona
         return inst;
     }
 
-    // --- DataId：简单自增 ID 生成器 ---
+    // --- DataId锛氱畝鍗曡嚜澧?ID 鐢熸垚鍣?---
     std::atomic<DataId::id_type> DataId::counter_ = 0;
     DataId::id_type DataId::Next()
     {
@@ -26,14 +24,11 @@ namespace Corona
         if (inited_)
             return;
 
-        // 初始化日志
+        // 鍒濆鍖栨棩蹇?
         Logger::Init(cfg);
 
-        // 创建资源管理器并注册默认加载器
+        // 鍒涘缓璧勬簮绠＄悊鍣ㄥ苟娉ㄥ唽榛樿鍔犺浇鍣?
         resMgr_ = std::make_unique<ResourceManager>();
-        resMgr_->registerLoader(std::make_shared<TextResourceLoader>());
-        resMgr_->registerLoader(std::make_shared<BinaryResourceLoader>());
-        // 引擎资源加载器（模型/着色器）
         resMgr_->registerLoader(std::make_shared<ModelLoader>());
         resMgr_->registerLoader(std::make_shared<ShaderLoader>());
 
@@ -45,7 +40,7 @@ namespace Corona
         if (!inited_)
             return;
 
-        // 停止并清理系统
+        // 鍋滄骞舵竻鐞嗙郴缁?
         StopSystems();
         systems_.clear();
         queues_.clear();

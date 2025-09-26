@@ -40,6 +40,8 @@ target_link_libraries(CoronaEngine PUBLIC
         Helicon # (外部子模块/功能库，若后续移除请同步删引用)
         EnTT::EnTT # ECS 框架
         CabbageHardware # 硬件/平台适配层
+        CoronaLogger # 日志库
+        CoronaResources # 资源管理
         python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR} # Python 主/次版本动态库
 
         # 以下使用生成器表达式按配置选择 Debug / Release 变体，减少手工条件判断

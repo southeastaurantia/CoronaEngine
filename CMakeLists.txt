@@ -26,7 +26,10 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/Misc/cmake/CoronaCompileConfig.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/Misc/cmake/CoronaThirdParty.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/Misc/cmake/BuildCabbageEditor.cmake)
 
-add_subdirectory(Src) # 核心引擎库
+add_subdirectory(Utility/Logger) # 独立日志库 (为 CoronaEngine 提供前置目标)
+add_subdirectory(Utility/ResourceManager) # 资源管理模块迁移后独立库
+
+add_subdirectory(Src) # 核心引擎库 (链接到上方工具库)
 
 if(CORONA_BUILD_EXAMPLES)
     add_subdirectory(Examples) # 可选示例程序 (由 CORONA_BUILD_EXAMPLES 控制)

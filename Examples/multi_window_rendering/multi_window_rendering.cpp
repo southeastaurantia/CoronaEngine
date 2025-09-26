@@ -1,5 +1,3 @@
-#pragma once
-
 #include <Core/Engine/Engine.h>
 #include <Core/Engine/Systems/AnimationSystem.h>
 #include <Core/Engine/Systems/AudioSystem.h>
@@ -19,7 +17,7 @@
 #include <thread>
 #include <vector>
 
-inline void Examples2()
+int main()
 {
     // 初始化
     Corona::Engine::Instance().Init({/* LogConfig */});
@@ -164,4 +162,5 @@ inline void Examples2()
 
     // 收尾
     Corona::Engine::Instance().Shutdown();
+    return 0;
 }

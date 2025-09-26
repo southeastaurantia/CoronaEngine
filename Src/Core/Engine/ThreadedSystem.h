@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Core/Engine/ISystem.h"
-#include "Core/Log.h"
+#include <Log.h>
 
 #include <atomic>
 #include <chrono>

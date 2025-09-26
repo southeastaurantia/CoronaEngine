@@ -1,5 +1,8 @@
 #pragma once
 
+// 迁移版 ResourceManager：从 Src/Core/IO 移至 Utility/ResourceManager
+// 对外暴露统一头 <ResourceManager.h>
+
 #include "IResource.h"
 #include "IResourceLoader.h"
 #include "ResourceTypes.h"
@@ -16,10 +19,6 @@
 
 namespace Corona
 {
-    // 资源管理契约：
-    // - 输入：ResourceId（type/path/uid）
-    // - 输出：shared_ptr<IResource>（失败返回 nullptr，并记录日志）
-    // - 线程安全：内部具备并发缓存/任务分发，单资源加载以互斥锁去重
     class ResourceManager
     {
       public:
@@ -28,11 +27,9 @@ namespace Corona
         ResourceManager();
         ~ResourceManager();
 
-        // 注册/取消注册加载器
         void registerLoader(std::shared_ptr<IResourceLoader> loader);
         void unregisterLoader(std::shared_ptr<IResourceLoader> loader);
 
-        // 同步加载（带缓存）
         std::shared_ptr<IResource> load(const ResourceId &id);
 
         template <typename T>
@@ -42,24 +39,16 @@ namespace Corona
             return std::static_pointer_cast<T>(r);
         }
 
-        // 异步加载，返回 future 或使用回调
         std::future<std::shared_ptr<IResource>> loadAsync(const ResourceId &id);
         void loadAsync(const ResourceId &id, LoadCallback cb);
 
-        // 一次性加载（不进入缓存）
-        // 同步版本：直接通过匹配的 loader 读取并返回（失败返回 nullptr）。
         std::shared_ptr<IResource> loadOnce(const ResourceId &id);
-        // 异步版本：不进入缓存。
         std::future<std::shared_ptr<IResource>> loadOnceAsync(const ResourceId &id);
         void loadOnceAsync(const ResourceId &id, LoadCallback cb);
 
-        // 预加载：并行排队加载，尽量复用缓存
         void preload(const std::vector<ResourceId> &ids);
-
-        // 等待所有排队任务完成
         void wait();
 
-        // 缓存管理
         void clear();
         bool contains(const ResourceId &id) const;
 
@@ -68,17 +57,10 @@ namespace Corona
         std::shared_ptr<IResourceLoader> findLoader(const ResourceId &id);
 
       private:
-        // 缓存：ResourceId -> IResource
         tbb::concurrent_unordered_map<ResourceId, std::shared_ptr<IResource>, ResourceIdHash> cache_;
-
-        // 正在加载的资源锁：防止并发重复加载
         tbb::concurrent_unordered_map<ResourceId, std::shared_ptr<std::mutex>, ResourceIdHash> locks_;
-
-        // 加载器集合（读多写少）
         mutable std::shared_mutex loadersMutex_;
         std::vector<std::shared_ptr<IResourceLoader>> loaders_;
-
-        // 异步加载组
         tbb::task_group tasks_;
     };
 } // namespace Corona

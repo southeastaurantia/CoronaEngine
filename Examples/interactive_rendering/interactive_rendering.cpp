@@ -1,5 +1,3 @@
-﻿#pragma once
-
 #include <Core/Engine/Engine.h>
 #include <Core/Engine/Systems/AnimationSystem.h>
 #include <Core/Engine/Systems/AudioSystem.h>
@@ -41,9 +39,8 @@ struct KeyRateLimiter
 };
 
 static KeyRateLimiter key_limiter;
-// 不再需要 <vector>，已改为单窗口
 
-inline void Examples4()
+int main()
 {
     // 初始化
     Corona::Engine::Instance().Init({/* LogConfig */});
@@ -205,4 +202,5 @@ inline void Examples4()
 
     // 收尾
     Corona::Engine::Instance().Shutdown();
+    return 0;
 }

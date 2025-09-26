@@ -1,6 +1,6 @@
 #include "Model.h"
 
-#include <Core/Log.h>
+#include <Log.h>
 #include <algorithm>
 #include <assimp/Importer.hpp>
 #include <assimp/Vertex.h>
