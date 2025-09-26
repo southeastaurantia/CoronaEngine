@@ -97,6 +97,7 @@ PythonAPI::~PythonAPI()
     if (Py_IsInitialized())
     {
         GILGuard guard;
+        Py_XDECREF(messageFunc);
         Py_XDECREF(pFunc);
         Py_XDECREF(pModule);
         Py_FinalizeEx();
@@ -139,9 +140,12 @@ bool PythonAPI::ensureInitialized()
         pModule = PyImport_ImportModule("main");
         if (!pModule) { if (PyErr_Occurred()) PyErr_Print(); return false; }
         pFunc = PyObject_GetAttrString(pModule, "run");
-        if (!pFunc || !PyCallable_Check(pFunc)) {
+        messageFunc = PyObject_GetAttrString(pModule, "put_queue");
+        if (!pFunc || !messageFunc || !PyCallable_Check(pFunc)) {
             if (PyErr_Occurred()) PyErr_Print();
             Py_XDECREF(pFunc); pFunc = nullptr;
+            Py_XDECREF(messageFunc); messageFunc = nullptr;
+            Py_XDECREF(pModule); pModule = nullptr;
             return false;
         }
     }
@@ -186,11 +190,24 @@ void PythonAPI::invokeEntry(bool isReload) {
     }
 }
 
+void PythonAPI::sendMessage(const std::string &message)
+{
+    if (!messageFunc) return;
+    GILGuard gil;
+
+    PyObjPtr result(PyObject_CallFunction(messageFunc, "s", message.c_str()));
+    if (!result.get() && PyErr_Occurred()) {
+        PyErr_Print();
+    }
+}
+
 void PythonAPI::runPythonScript() {
     if (!ensureInitialized()) {
         std::cerr << "Python init failed." << std::endl;
         return;
     }
+
+    sendMessage("hello world");
 
     bool reloaded = false;
     {
