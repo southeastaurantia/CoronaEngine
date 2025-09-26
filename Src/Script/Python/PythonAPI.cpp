@@ -53,25 +53,17 @@ PyObject *PyInit_CoronaEngineEmbedded()
 {
     PyMethodDef CoronaEngineMethods[] = {{nullptr, nullptr, 0, nullptr}};
 
-    if (PyType_Ready(&EngineScripts::ActorScripts::PyActorType) < 0)
-    {
-        std::cerr << "Py type ready error  - PyActorType" << std::endl;
-        return nullptr;
-    }
-    if (PyType_Ready(&EngineScripts::SceneScripts::PySceneType) < 0)
-    {
-        std::cerr << "Py type ready error  - PySceneType" << std::endl;
-        return nullptr;
-    }
+    if (PyType_Ready(&EngineScripts::ActorScripts::PyActorType) < 0) return nullptr;
+    if (PyType_Ready(&EngineScripts::SceneScripts::PySceneType) < 0) return nullptr;
 
     static PyModuleDef module{};
     module.m_base = PyModuleDef_HEAD_INIT;
     module.m_name = "CoronaEngine";
     module.m_methods = CoronaEngineMethods;
     module.m_size = -1;
-    module.m_doc = nullptr;
 
     auto m = PyModule_Create(&module);
+    if (!m) return nullptr;
 
     Py_INCREF(&EngineScripts::ActorScripts::PyActorType);
     if (PyModule_AddObject(m, "Actor", reinterpret_cast<PyObject *>(&EngineScripts::ActorScripts::PyActorType)) < 0)
@@ -95,8 +87,6 @@ PyObject *PyInit_CoronaEngineEmbedded()
 
 PythonAPI::PythonAPI()
 {
-    PyConfig_InitPythonConfig(&config);
-
     hotreloadPath = PythonAPI::codePath + "/Editor/CoronaEditor/Backend";
     std::ranges::replace(hotreloadPath, '\\', '/');
 }
@@ -105,202 +95,111 @@ PythonAPI::~PythonAPI()
 {
     if (Py_IsInitialized())
     {
-        if (pFunc != nullptr) {
-            Py_DECREF(pFunc);
-            pFunc = nullptr;
-        }
-        if (pModule != nullptr) {
-            Py_DECREF(pModule);
-            pModule = nullptr;
-        }
-
+        GILGuard guard;
+        Py_XDECREF(pFunc);
+        Py_XDECREF(pModule);
         Py_FinalizeEx();
     }
-
-    // 只在最后清理一次配置
     PyConfig_Clear(&config);
 }
 
-void PythonAPI::runPythonScript()
+long long PythonAPI::nowMsec()
 {
-    if (!Py_IsInitialized())
-    {
-        std::string runtimePath = PythonAPI::codePath + "/Editor/CoronaEditor/Backend";
-        std::ranges::replace(runtimePath, '\\', '/');
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+}
 
-        PyImport_AppendInittab("CoronaEngine", &PyInit_CoronaEngineEmbedded);
+bool PythonAPI::ensureInitialized()
+{
+    if (Py_IsInitialized()) return true;
 
-        PyConfig_InitPythonConfig(&config);
-        PyConfig_SetBytesString(&config, &config.home, CORONA_PYTHON_HOME_DIR);
-        PyConfig_SetBytesString(&config, &config.pythonpath_env, CORONA_PYTHON_HOME_DIR);
-        config.module_search_paths_set = 1;
-        PyWideStringList_Append(&config.module_search_paths, str2wstr(runtimePath).c_str());
-        PyWideStringList_Append(&config.module_search_paths, str2wstr(CORONA_PYTHON_MODULE_DLL_DIR).c_str());
-        PyWideStringList_Append(&config.module_search_paths, str2wstr(CORONA_PYTHON_MODULE_LIB_DIR).c_str());
-        PyWideStringList_Append(&config.module_search_paths, str2wstr(std::string(CORONA_PYTHON_MODULE_LIB_DIR) + "/site-packages").c_str());
+    PyImport_AppendInittab("CoronaEngine", &PyInit_CoronaEngineEmbedded);
 
-        Py_InitializeFromConfig(&config);
+    PyConfig_InitPythonConfig(&config);
+    PyConfig_SetBytesString(&config, &config.home, CORONA_PYTHON_HOME_DIR);
+    PyConfig_SetBytesString(&config, &config.pythonpath_env, CORONA_PYTHON_HOME_DIR);
+    config.module_search_paths_set = 1;
 
-        if (Py_IsInitialized())
-        {
-            pModule = PyImport_ImportModule("main");
-            if (PyErr_Occurred())
-            {
-                PyErr_Print();
-            }
-            if (pModule)
-            {
-                pFunc = PyObject_GetAttrString(pModule, "run");
+    std::string runtimePath = codePath + "/Editor/CoronaEditor/Backend";
+    std::ranges::replace(runtimePath, '\\', '/');
+    PyWideStringList_Append(&config.module_search_paths, str2wstr(runtimePath).c_str());
+    PyWideStringList_Append(&config.module_search_paths, str2wstr(CORONA_PYTHON_MODULE_DLL_DIR).c_str());
+    PyWideStringList_Append(&config.module_search_paths, str2wstr(CORONA_PYTHON_MODULE_LIB_DIR).c_str());
+    PyWideStringList_Append(&config.module_search_paths, str2wstr(std::string(CORONA_PYTHON_MODULE_LIB_DIR) + "/site-packages").c_str());
 
-                if (PyObject *global_dict = PyModule_GetDict(pModule))
-                {
-                    Py_ssize_t pos = 0;
-                    PyObject *key;
-                    PyObject *value;
+    Py_InitializeFromConfig(&config);
 
-                    // 传入 &value，确保 value 被填充
-                    while (PyDict_Next(global_dict, &pos, &key, &value))
-                    {
-                        if (!key || !value)
-                            continue;
-                        const char *name = PyUnicode_AsUTF8(key);
-                        if (!name)
-                            continue;
-                        if (PyModule_Check(value))
-                        {
-                            moduleList.emplace_back(name);
-                        }
-                        else if (PyCallable_Check(value))
-                        {
-                            callableList.emplace_back(name);
-                        }
-                    }
-                }
-            }
-            else
-            {
-                if (PyErr_Occurred())
-                {
-                    PyErr_Print();
-                }
-                throw std::runtime_error("Python: import error.");
-            }
-        }
-        else
-        {
-            if (PyErr_Occurred())
-            {
-                PyErr_Print();
-            }
-            throw std::runtime_error("Python: init error.");
-        }
+    if (!Py_IsInitialized()) {
+        if (PyErr_Occurred()) PyErr_Print();
+        return false;
     }
 
-    if (pModule && pFunc)
     {
-        try
-        {
-            bool isReload = false;
-            queMtx.lock();
-            long long currentTime = hotfixManger.GetCurrentTimeMsec();
-            if (currentTime - lastHotReloadTime > 1 && !hotfixManger.packageSet.empty())
-            {
-                if (hotfixManger.ReloadPythonFile())
-                {
-                    isReload = true;
-                    if (PyObject *new_module = PyImport_ReloadModule(pModule))
-                    {
-                        PyObject *old_module = pModule;
-                        PyObject *old_func = pFunc;
-
-                        pModule = new_module;
-                        pFunc = PyObject_GetAttrString(pModule, "run");
-
-                        // 只有在获取新函数成功后才释放旧对象
-                        if (pFunc) {
-                            Py_XDECREF(old_module);
-                            Py_XDECREF(old_func);
-                        } else {
-                            // 如果获取新函数失败，恢复旧状态
-                            pModule = old_module;
-                            pFunc = old_func;
-
-                            if (PyErr_Occurred()) {
-                                PyErr_Print();
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (PyErr_Occurred()) {
-                            PyErr_Print();
-                        }
-                    }
-                    lastHotReloadTime = currentTime;
-                    hasHotReload = true;
-                }
-                else
-                {
-                    hasHotReload = false;
-                }
-            }
-            else if (!hotfixManger.packageSet.empty())
-            {
-                hasHotReload = false;
-            }
-            queMtx.unlock();
-
-            PyObject *pArg = nullptr;
-            PyObject *result = nullptr;
-            PyObject *pBool = nullptr;
-
-            do {
-                // 只在解释器初始化时创建Python对象
-                if (!Py_IsInitialized()) {
-                    break;
-                }
-
-                pArg = PyTuple_New(1);
-                if (!pArg) {
-                    break;
-                }
-
-                pBool = PyBool_FromLong(isReload);
-                if (!pBool) {
-                    // PyBool_FromLong失败时需要手动释放pBool
-                    Py_DECREF(pBool);
-                    break;
-                }
-
-                if (PyTuple_SetItem(pArg, 0, pBool) != 0) {
-                    // PyTuple_SetItem失败时需要手动释放pBool
-                    Py_DECREF(pBool);
-                    Py_DECREF(pArg);
-                    break;
-                }
-
-                // 执行函数调用
-                result = PyObject_CallObject(pFunc, pArg);
-
-                if (!result) {
-                    if (PyErr_Occurred()) {
-                        PyErr_Print();
-                    }
-                }
-            } while (false);
-
-            // 安全释放所有资源
-            if (Py_IsInitialized()) {
-                if (result != nullptr) {
-                    Py_XDECREF(result);
-                }
-            }
-        }
-        catch (...)
-        {
-            std::cout << "python error!" << std::endl;
+        GILGuard gil;
+        pModule = PyImport_ImportModule("main");
+        if (!pModule) { if (PyErr_Occurred()) PyErr_Print(); return false; }
+        pFunc = PyObject_GetAttrString(pModule, "run");
+        if (!pFunc || !PyCallable_Check(pFunc)) {
+            if (PyErr_Occurred()) PyErr_Print();
+            Py_XDECREF(pFunc); pFunc = nullptr;
+            return false;
         }
     }
+    return true;
+}
+
+bool PythonAPI::performHotReload() {
+    long long currentTime = hotfixManger.GetCurrentTimeMsec();
+    if (currentTime - lastHotReloadTime <= 100 || hotfixManger.packageSet.empty())
+        return false;
+
+    if (!hotfixManger.ReloadPythonFile())
+        return false;
+
+    GILGuard gil;
+    PyObjPtr newMod(PyImport_ReloadModule(pModule));
+    if (!newMod.get()) { if (PyErr_Occurred()) PyErr_Print(); return false; }
+
+    PyObjPtr newFunc(PyObject_GetAttrString(newMod.get(), "run"));
+    if (!newFunc.get() || !PyCallable_Check(newFunc.get())) {
+        if (PyErr_Occurred()) PyErr_Print();
+        return false;
+    }
+
+    Py_XDECREF(pModule);
+    Py_XDECREF(pFunc);
+    pModule = newMod.release();
+    pFunc   = newFunc.release();
+
+    lastHotReloadTime = currentTime;
+    hasHotReload = true;
+    return true;
+}
+
+void PythonAPI::invokeEntry(bool isReload) {
+    if (!pFunc) return;
+    GILGuard gil;
+
+    PyObjPtr result(PyObject_CallFunction(pFunc, "i", isReload ? 1 : 0));
+    if (!result.get() && PyErr_Occurred()) {
+        PyErr_Print();
+    }
+}
+
+void PythonAPI::runPythonScript() {
+    if (!ensureInitialized()) {
+        std::cerr << "Python init failed." << std::endl;
+        return;
+    }
+
+    bool reloaded = false;
+    {
+        std::unique_lock lk(queMtx);
+        reloaded = performHotReload();
+        if (!reloaded && !hotfixManger.packageSet.empty())
+            hasHotReload = false;
+    }
+
+    invokeEntry(reloaded);
 }
 
 void PythonAPI::checkPythonScriptChange()
@@ -311,127 +210,65 @@ void PythonAPI::checkPythonScriptChange()
     copyModifiedFiles(hotreloadPath, runtimePath, checkTime);
 #endif
 }
-// bool PythonAPI::s_tzdbInit = false;
-//
-// void PythonAPI::Init() {
-//     // 提前初始化时区数据库，避免在业务线程中首次触发
-//     if (!s_tzdbInit) {
-//         try {
-//             // 触发时区数据库初始化但不实际使用结果
-//             std::chrono::get_tzdb();
-//             s_tzdbInit = true;
-//         } catch (...) {
-//             // 忽略初始化失败的异常
-//         }
-//     }
-// }
 
-void PythonAPI::checkReleaseScriptChange()
-{
+void PythonAPI::checkReleaseScriptChange() {
     static long long lastCheckTime = 0;
     long long currentTime = hotfixManger.GetCurrentTimeMsec();
-
-    // 至少间隔100毫秒才进行一次检查（可根据实际情况调整）
-    if (currentTime - lastCheckTime < 100) {
-        return;
-    }
-
+    if (currentTime - lastCheckTime < 100) return;
     lastCheckTime = currentTime;
 
     std::queue<std::unordered_set<std::string>> messageQue;
-    std::string runtimePath = PythonAPI::codePath + "/Editor/CoronaEditor/Backend";
+    std::string runtimePath = codePath + "/Editor/CoronaEditor/Backend";
     std::ranges::replace(runtimePath, '\\', '/');
-
     hotfixManger.TraverseDirectory(runtimePath, messageQue, currentTime);
 
-    queMtx.lock();
-    if (!messageQue.empty())
-    {
-        hotfixManger.packageSet = messageQue.front();
-        messageQue.pop();
+    if (!messageQue.empty()) {
+        std::unique_lock lk(queMtx);
+        hotfixManger.packageSet = std::move(messageQue.front());
     }
-    queMtx.unlock();
 }
 
-std::wstring PythonAPI::str2wstr(const std::string &str)
-{
-    // 获取所需的宽字符数组大小
-    size_t size_needed = mbstowcs(nullptr, str.c_str(), 0) + 1;
-
-    // 分配足够的空间
-    std::vector<wchar_t> buffer(size_needed);
-
-    // 执行转换
-    mbstowcs(&buffer[0], str.c_str(), size_needed);
-
-    // 创建wstring并返回
-    return std::wstring(buffer.begin(), buffer.end() - 1); // 减1是为了去掉结尾的null字符
+std::wstring PythonAPI::str2wstr(const std::string& str) {
+    if (str.empty()) return {};
+    int wlen = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), nullptr, 0);
+    if (wlen <= 0 ) return {};
+    std::wstring w(wlen, L'\0');
+    MultiByteToWideChar(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), w.data(), wlen);
+    return w;
 }
 
-void PythonAPI::copyModifiedFiles(const std::filesystem::path &sourceDir, const std::filesystem::path &destDir, long long checkTime)
+
+void PythonAPI::copyModifiedFiles(const std::filesystem::path& sourceDir,
+                                  const std::filesystem::path& destDir,
+                                  long long checkTime)
 {
-    //  auto startTime = std::chrono::high_resolution_clock::now();
-    //  int pyFileCount = 0;
-    for (const auto &entry : std::filesystem::recursive_directory_iterator(sourceDir))
-    {
-        const std::filesystem::path &filePath = entry.path();
+    static const std::set<std::string> skip = {
+        "__pycache__", "__init__.py", ".pyc", "StaticComponents.py"
+    };
+
+    for (auto const& entry : std::filesystem::recursive_directory_iterator(sourceDir)) {
+        if (!entry.is_regular_file()) continue;
+        const auto& filePath = entry.path();
         std::string fileName = filePath.filename().string();
+        if (!hotfixManger.endsWith(fileName, ".py")) continue;
+        bool skipFile = std::any_of(skip.begin(), skip.end(), [&](const std::string& s){
+            return hotfixManger.endsWith(fileName, s);
+        });
+        if (skipFile) continue;
 
-        if (entry.is_directory())
-            continue;
-        if (!hotfixManger.endsWith(fileName, ".py"))
-            continue;
-
-        const std::set<std::string> skipSuffixes = {"__pycache__", "__init__.py", ".pyc", "StaticComponents.py"};
-        bool shouldSkip = false;
-        for (const auto &suffix : skipSuffixes)
-        {
-            if (hotfixManger.endsWith(fileName, suffix))
-            {
-                shouldSkip = true;
-                break;
+        try {
+            long long modifyTime = std::chrono::system_clock::to_time_t(
+                std::chrono::clock_cast<std::chrono::system_clock>(
+                    std::filesystem::last_write_time(filePath)));
+            if (checkTime - modifyTime <= 1) {
+                auto relativePath = std::filesystem::relative(filePath, sourceDir);
+                auto destFilePath = destDir / relativePath;
+                std::filesystem::create_directories(destFilePath.parent_path());
+                std::filesystem::copy_file(filePath, destFilePath,
+                    std::filesystem::copy_options::overwrite_existing);
             }
-        }
-        if (shouldSkip)
-        {
-            continue;
-        }
-        //  pyFileCount++;
-        try
-        {
-            if (std::filesystem::exists(filePath))
-            {
-                long long modifyTime = std::chrono::system_clock::to_time_t(std::chrono::clock_cast<std::chrono::system_clock>(std::filesystem::last_write_time(filePath)));
-                if (checkTime - modifyTime <= 1)
-                {
-                    //  auto startCopyTime = std::chrono::high_resolution_clock::now();
-                    std::filesystem::path relativePath = std::filesystem::relative(filePath, sourceDir);
-                    std::filesystem::path destFilePath = destDir / relativePath;
-
-                    std::filesystem::create_directories(destFilePath.parent_path());
-                    std::filesystem::copy_file(filePath, destFilePath, std::filesystem::copy_options::overwrite_existing);
-                    //  auto endCopyTime = std::chrono::high_resolution_clock::now();
-                    //  auto CopyTime = std::chrono::duration_cast<std::chrono::milliseconds>(endCopyTime - startCopyTime).count();
-                    //  std::cout << "Python SourceCode Copy took: " << CopyTime << " ms." << std::endl;
-                }
-            }
-        }
-        catch (const std::filesystem::filesystem_error &e)
-        {
-            // Catch specific filesystem_error
-            std::cerr << "Filesystem error occurred!" << std::endl;
-            std::cerr << "What: " << e.what() << std::endl;       // General description
-            std::cerr << "Path 1: " << e.path1() << std::endl;    // Path involved in the error
-            std::cerr << "Error code: " << e.code() << std::endl; // System-specific error code
-        }
-        catch (const std::exception &e)
-        {
-            // Catch other standard exceptions (e.g., std::bad_alloc for memory issues)
-            std::cerr << "General error occurred: " << e.what() << std::endl;
+        } catch (const std::exception& e) {
+            std::cerr << "File copy error: " << e.what() << std::endl;
         }
     }
-    //  auto endTime = std::chrono::high_resolution_clock::now();
-    //  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
-    //  std::cout << "Python SourceCode TraverseDirectory took: " << duration << " ms." << std::endl;
-    //  std::cout << "Python SourceCode file count: " << pyFileCount << std::endl;
 }
