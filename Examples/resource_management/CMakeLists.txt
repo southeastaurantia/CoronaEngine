@@ -1,16 +1,5 @@
-set(_target Corona_resource_management)
-add_executable(${_target} resource_management.cpp)
-set_target_properties(${_target} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY $<TARGET_FILE_DIR:${_target}>)
-target_link_libraries(${_target} PRIVATE glfw CoronaEngine)
-
-if(COMMAND helicon_install_runtime_deps)
-    helicon_install_runtime_deps(${_target})
-else()
-    message(STATUS "[resource_management] helicon_install_runtime_deps not available; skip")
-endif()
-corona_install_runtime_deps(${_target})
-if(BUILD_CORONA_EDITOR)
-    corona_install_corona_editor(${_target} CoronaEngine)
-endif()
-
-corona_examples_copy_assets(${_target})
+corona_add_example(
+    NAME Corona_resource_management
+    SOURCES resource_management.cpp
+    COPY_ASSETS
+)

@@ -1,10 +1,7 @@
-# =====================================================================================
-# 为每个示例提供独立的子目录与构建开关
-# =====================================================================================
+# 为每个示例提供独立开关并共享构建逻辑
+include(CMakeParseArguments)
 
-# =====================================================================================
-# 通用函数：为示例项目拷贝资源文件
-# =====================================================================================
+# 复制示例资产到可执行目录
 function(corona_examples_copy_assets target_name)
     add_custom_command(TARGET ${target_name} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E echo "[${target_name}] Copy assets -> $<TARGET_FILE_DIR:${target_name}>/assets"
@@ -13,52 +10,75 @@ function(corona_examples_copy_assets target_name)
         VERBATIM)
 endfunction()
 
-# 引擎功能示例
-option(BUILD_EXAMPLE_RESOURCE_MANAGEMENT "Build resource management example" ON)
-option(BUILD_EXAMPLE_MULTI_WINDOW_RENDERING "Build multi-window rendering example" ON)
-option(BUILD_EXAMPLE_PYTHON_SCRIPTING "Build Python scripting example" ON)
-option(BUILD_EXAMPLE_INTERACTIVE_RENDERING "Build interactive rendering example" ON)
-
-# 引擎功能示例
-if(BUILD_EXAMPLE_RESOURCE_MANAGEMENT)
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/resource_management/CMakeLists.txt")
-        add_subdirectory(resource_management)
-    else()
-        message(WARNING "[Examples] resource_management subdir not found, skip")
+# 统一的示例目标创建入口
+function(corona_add_example)
+    set(options COPY_ASSETS)
+    set(oneValueArgs NAME)
+    set(multiValueArgs SOURCES)
+    cmake_parse_arguments(COR_EX "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+    if(NOT COR_EX_NAME)
+        message(FATAL_ERROR "corona_add_example requires NAME")
     endif()
-endif()
-
-if(BUILD_EXAMPLE_MULTI_WINDOW_RENDERING)
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/multi_window_rendering/CMakeLists.txt")
-        add_subdirectory(multi_window_rendering)
-    else()
-        message(WARNING "[Examples] multi_window_rendering subdir not found, skip")
+    if(NOT COR_EX_SOURCES)
+        message(FATAL_ERROR "corona_add_example requires SOURCES for ${COR_EX_NAME}")
     endif()
-endif()
 
-if(BUILD_EXAMPLE_PYTHON_SCRIPTING)
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/python_scripting/CMakeLists.txt")
-        add_subdirectory(python_scripting)
+    add_executable(${COR_EX_NAME} ${COR_EX_SOURCES})
+    set_target_properties(${COR_EX_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY $<TARGET_FILE_DIR:${COR_EX_NAME}>)
+    target_link_libraries(${COR_EX_NAME} PRIVATE glfw CoronaEngine)
+
+    if(COMMAND helicon_install_runtime_deps)
+        helicon_install_runtime_deps(${COR_EX_NAME})
     else()
-        message(WARNING "[Examples] python_scripting subdir not found, skip")
+        message(STATUS "[${COR_EX_NAME}] helicon_install_runtime_deps not available; skip")
     endif()
-endif()
-
-if(BUILD_EXAMPLE_INTERACTIVE_RENDERING)
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interactive_rendering/CMakeLists.txt")
-        add_subdirectory(interactive_rendering)
-    else()
-        message(WARNING "[Examples] interactive_rendering subdir not found, skip")
+    corona_install_runtime_deps(${COR_EX_NAME})
+    if(BUILD_CORONA_EDITOR)
+        corona_install_corona_editor(${COR_EX_NAME} CoronaEngine)
     endif()
-endif()
 
-# 选择 VS 启动项目（若对应 target 存在）
-if(BUILD_EXAMPLE_RESOURCE_MANAGEMENT)
-    set_property(DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Corona_resource_management)
-elseif(BUILD_EXAMPLE_MULTI_WINDOW_RENDERING)
-    set_property(DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Corona_multi_window_rendering)
-elseif(BUILD_EXAMPLE_PYTHON_SCRIPTING)
-    set_property(DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Corona_python_scripting)
-elseif(BUILD_EXAMPLE_INTERACTIVE_RENDERING)
-    set_property(DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Corona_interactive_rendering)
+    if(COR_EX_COPY_ASSETS)
+        corona_examples_copy_assets(${COR_EX_NAME})
+    endif()
+endfunction()
+
+set(_CORONA_EXAMPLE_FOLDERS
+    resource_management
+    multi_window_rendering
+    python_scripting
+    interactive_rendering
+)
+
+set(_CORONA_EXAMPLE_TARGETS
+    Corona_resource_management
+    Corona_multi_window_rendering
+    Corona_python_scripting
+    Corona_interactive_rendering
+)
+
+set(_corona_startup_target "")
+list(LENGTH _CORONA_EXAMPLE_FOLDERS _corona_example_count)
+math(EXPR _corona_example_last "${_corona_example_count} - 1")
+foreach(_idx RANGE 0 ${_corona_example_last})
+    list(GET _CORONA_EXAMPLE_FOLDERS ${_idx} _folder)
+    list(GET _CORONA_EXAMPLE_TARGETS ${_idx} _target)
+    string(TOUPPER "${_folder}" _upper)
+    string(REPLACE "/" "_" _upper "${_upper}")
+    string(REPLACE "-" "_" _upper "${_upper}")
+    set(_option_name "BUILD_EXAMPLE_${_upper}")
+    option(${_option_name} "Build ${_folder} example" ON)
+    if(${_option_name})
+        if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${_folder}/CMakeLists.txt")
+            add_subdirectory(${_folder})
+            if(_corona_startup_target STREQUAL "")
+                set(_corona_startup_target ${_target})
+            endif()
+        else()
+            message(WARNING "[Examples] ${_folder} subdir not found, skip")
+        endif()
+    endif()
+endforeach()
+
+if(NOT _corona_startup_target STREQUAL "")
+    set_property(DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${_corona_startup_target})
 endif()
