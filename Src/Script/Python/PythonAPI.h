@@ -31,6 +31,7 @@ struct PythonAPI
 
     PyObject *pModule = nullptr;
     PyObject *pFunc = nullptr;
+    PyObject *messageFunc = nullptr;
 
     std::string hotreloadPath = "";
     std::vector<std::string> moduleList;
@@ -41,6 +42,7 @@ struct PythonAPI
     bool ensureInitialized();
     bool performHotReload();
     void invokeEntry(bool isReload);
+    void sendMessage(const std::string &message);
     static long long nowMsec();
     std::wstring str2wstr(const std::string &str);
     void copyModifiedFiles(const std::filesystem::path& sourceDir,
