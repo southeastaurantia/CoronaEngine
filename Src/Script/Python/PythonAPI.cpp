@@ -1,6 +1,7 @@
 #define PY_SSIZE_T_CLEAN
 #include "PythonAPI.h"
 #include <Log.h>
+#include <regex>
 
 namespace CE::Python::Internal {
     struct PyObjPtr {
@@ -8,7 +9,7 @@ namespace CE::Python::Internal {
         PyObjPtr() = default;
         explicit PyObjPtr(PyObject* obj): p(obj) {}
         ~PyObjPtr(){ Py_XDECREF(p); }
-        PyObject* get() const { return p; }
+        [[nodiscard]] PyObject* get() const { return p; }
         PyObject* release() { PyObject* t = p; p = nullptr; return t; }
         PyObjPtr(const PyObjPtr&) = delete;
         PyObjPtr& operator=(const PyObjPtr&) = delete;
@@ -23,39 +24,34 @@ namespace CE::Python::Internal {
         GILGuard(){ state = PyGILState_Ensure(); }
         ~GILGuard(){ PyGILState_Release(state); }
     };
-}
+} // namespace CE::Python::Internal
 
 using CE::Python::Internal::PyObjPtr;
 using CE::Python::Internal::GILGuard;
 
 const std::string PythonAPI::codePath =
 [] {
-    std::string resultPath = "";
+    std::string resultPath; // 默认空
     std::string runtimePath = std::filesystem::current_path().string();
     std::regex pattern(R"((.*)CoronaEngine\b)");
     std::smatch matches;
-    if (std::regex_search(runtimePath, matches, pattern))
-    {
-        if (matches.size() > 1)
-        {
+    if (std::regex_search(runtimePath, matches, pattern)) {
+        if (matches.size() > 1) {
             resultPath = matches[1].str() + "CoronaEngine";
-        }
-        else
-        {
+        } else {
             throw std::runtime_error("Failed to resolve source path.");
         }
     }
     std::ranges::replace(resultPath, '\\', '/');
     return resultPath;
-    }();
-
+}();
 
 PyObject *PyInit_CoronaEngineEmbedded()
 {
     PyMethodDef CoronaEngineMethods[] = {{nullptr, nullptr, 0, nullptr}};
 
-    if (PyType_Ready(&EngineScripts::ActorScripts::PyActorType) < 0) return nullptr;
-    if (PyType_Ready(&EngineScripts::SceneScripts::PySceneType) < 0) return nullptr;
+    if (PyType_Ready(&EngineScripts::ActorScripts::PyActorType) < 0) { return nullptr; }
+    if (PyType_Ready(&EngineScripts::SceneScripts::PySceneType) < 0) { return nullptr; }
 
     static PyModuleDef module{};
     module.m_base = PyModuleDef_HEAD_INIT;
@@ -64,19 +60,17 @@ PyObject *PyInit_CoronaEngineEmbedded()
     module.m_size = -1;
 
     auto m = PyModule_Create(&module);
-    if (!m) return nullptr;
+    if (!m) { return nullptr; }
 
     Py_INCREF(&EngineScripts::ActorScripts::PyActorType);
-    if (PyModule_AddObject(m, "Actor", reinterpret_cast<PyObject *>(&EngineScripts::ActorScripts::PyActorType)) < 0)
-    {
+    if (PyModule_AddObject(m, "Actor", reinterpret_cast<PyObject *>(&EngineScripts::ActorScripts::PyActorType)) < 0) {
         Py_DECREF(&EngineScripts::ActorScripts::PyActorType);
         Py_DECREF(m);
         return nullptr;
     }
 
     Py_INCREF(&EngineScripts::SceneScripts::PySceneType);
-    if (PyModule_AddObject(m, "Scene", reinterpret_cast<PyObject *>(&EngineScripts::SceneScripts::PySceneType)) < 0)
-    {
+    if (PyModule_AddObject(m, "Scene", reinterpret_cast<PyObject *>(&EngineScripts::SceneScripts::PySceneType)) < 0) {
         Py_DECREF(&EngineScripts::SceneScripts::PySceneType);
         Py_DECREF(m);
         return nullptr;
@@ -84,7 +78,6 @@ PyObject *PyInit_CoronaEngineEmbedded()
 
     return m;
 }
-
 
 PythonAPI::PythonAPI()
 {
@@ -94,8 +87,7 @@ PythonAPI::PythonAPI()
 
 PythonAPI::~PythonAPI()
 {
-    if (Py_IsInitialized())
-    {
+    if (Py_IsInitialized()) {
         GILGuard guard;
         Py_XDECREF(messageFunc);
         Py_XDECREF(pFunc);
@@ -105,14 +97,15 @@ PythonAPI::~PythonAPI()
     PyConfig_Clear(&config);
 }
 
-long long PythonAPI::nowMsec()
+int64_t PythonAPI::nowMsec()
 {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
 }
 
 bool PythonAPI::ensureInitialized()
 {
-    if (Py_IsInitialized()) return true;
+    if (Py_IsInitialized()) { return true; }
 
     PyImport_AppendInittab("CoronaEngine", &PyInit_CoronaEngineEmbedded);
 
@@ -131,18 +124,18 @@ bool PythonAPI::ensureInitialized()
     Py_InitializeFromConfig(&config);
 
     if (!Py_IsInitialized()) {
-        if (PyErr_Occurred()) PyErr_Print();
+        if (PyErr_Occurred()) { PyErr_Print(); }
         return false;
     }
 
     {
         GILGuard gil;
         pModule = PyImport_ImportModule("main");
-        if (!pModule) { if (PyErr_Occurred()) PyErr_Print(); return false; }
+        if (!pModule) { if (PyErr_Occurred()) { PyErr_Print(); } return false; }
         pFunc = PyObject_GetAttrString(pModule, "run");
         messageFunc = PyObject_GetAttrString(pModule, "put_queue");
         if (!pFunc || !messageFunc || !PyCallable_Check(pFunc)) {
-            if (PyErr_Occurred()) PyErr_Print();
+            if (PyErr_Occurred()) { PyErr_Print(); }
             Py_XDECREF(pFunc); pFunc = nullptr;
             Py_XDECREF(messageFunc); messageFunc = nullptr;
             Py_XDECREF(pModule); pModule = nullptr;
@@ -153,20 +146,23 @@ bool PythonAPI::ensureInitialized()
 }
 
 bool PythonAPI::performHotReload() {
-    long long currentTime = hotfixManger.GetCurrentTimeMsec();
-    if (currentTime - lastHotReloadTime <= 100 || hotfixManger.packageSet.empty())
+    int64_t currentTime = PythonHotfix::GetCurrentTimeMsec(); // ms
+    constexpr int64_t kHotReloadIntervalMs = 100; // 100ms
+    if (currentTime - lastHotReloadTime <= kHotReloadIntervalMs || hotfixManger.packageSet.empty()) {
         return false;
+    }
 
-    if (!hotfixManger.ReloadPythonFile())
+    if (!hotfixManger.ReloadPythonFile()) {
         return false;
+    }
 
     GILGuard gil;
     PyObjPtr newMod(PyImport_ReloadModule(pModule));
-    if (!newMod.get()) { if (PyErr_Occurred()) PyErr_Print(); return false; }
+    if (!newMod.get()) { if (PyErr_Occurred()) { PyErr_Print(); } return false; }
 
     PyObjPtr newFunc(PyObject_GetAttrString(newMod.get(), "run"));
     if (!newFunc.get() || !PyCallable_Check(newFunc.get())) {
-        if (PyErr_Occurred()) PyErr_Print();
+        if (PyErr_Occurred()) { PyErr_Print(); }
         return false;
     }
 
@@ -180,8 +176,9 @@ bool PythonAPI::performHotReload() {
     return true;
 }
 
-void PythonAPI::invokeEntry(bool isReload) {
-    if (!pFunc) return;
+void PythonAPI::invokeEntry(bool isReload) const
+{
+    if (!pFunc) { return; }
     GILGuard gil;
 
     PyObjPtr result(PyObject_CallFunction(pFunc, "i", isReload ? 1 : 0));
@@ -190,15 +187,13 @@ void PythonAPI::invokeEntry(bool isReload) {
     }
 }
 
-void PythonAPI::sendMessage(const std::string &message)
+void PythonAPI::sendMessage(const std::string &message) const
 {
-    if (!messageFunc) return;
+    if (!messageFunc) { return; }
     GILGuard gil;
 
     PyObjPtr result(PyObject_CallFunction(messageFunc, "s", message.c_str()));
-    if (!result.get() && PyErr_Occurred()) {
-        PyErr_Print();
-    }
+    if (!result.get() && PyErr_Occurred()) { PyErr_Print(); }
 }
 
 void PythonAPI::runPythonScript() {
@@ -213,8 +208,9 @@ void PythonAPI::runPythonScript() {
     {
         std::unique_lock lk(queMtx);
         reloaded = performHotReload();
-        if (!reloaded && !hotfixManger.packageSet.empty())
+        if (!reloaded && !hotfixManger.packageSet.empty()) {
             hasHotReload = false;
+        }
     }
 
     invokeEntry(reloaded);
@@ -224,21 +220,21 @@ void PythonAPI::checkPythonScriptChange()
 {
 #if CABBAGE_ENGINE_DEBUG
     std::string runtimePath = "./Resource/CabbageEditorBackend";
-    long long checkTime = hotfixManger.GetCurrentTimeMsec();
+    int64_t checkTime = hotfixManger.GetCurrentTimeMsec();
     copyModifiedFiles(hotreloadPath, runtimePath, checkTime);
 #endif
 }
 
 void PythonAPI::checkReleaseScriptChange() {
-    static long long lastCheckTime = 0;
-    long long currentTime = hotfixManger.GetCurrentTimeMsec();
-    if (currentTime - lastCheckTime < 100) return;
+    static int64_t lastCheckTime = 0;
+    int64_t currentTime = PythonHotfix::GetCurrentTimeMsec();
+    if (currentTime - lastCheckTime < 100) { return; }
     lastCheckTime = currentTime;
 
     std::queue<std::unordered_set<std::string>> messageQue;
     std::string runtimePath = codePath + "/Editor/CoronaEditor/Backend";
     std::ranges::replace(runtimePath, '\\', '/');
-    hotfixManger.TraverseDirectory(runtimePath, messageQue, currentTime);
+    PythonHotfix::TraverseDirectory(runtimePath, messageQue, currentTime);
 
     if (!messageQue.empty()) {
         std::unique_lock lk(queMtx);
@@ -247,38 +243,37 @@ void PythonAPI::checkReleaseScriptChange() {
 }
 
 std::wstring PythonAPI::str2wstr(const std::string& str) {
-    if (str.empty()) return {};
+    if (str.empty()) { return {}; }
     int wlen = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), nullptr, 0);
-    if (wlen <= 0 ) return {};
-    std::wstring w(wlen, L'\0');
+    if (wlen <= 0 ) { return {}; }
+    std::wstring w(static_cast<size_t>(wlen), L'\0');
     MultiByteToWideChar(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), w.data(), wlen);
     return w;
 }
 
-
 void PythonAPI::copyModifiedFiles(const std::filesystem::path& sourceDir,
                                   const std::filesystem::path& destDir,
-                                  long long checkTime)
+                                  int64_t checkTimeMs)
 {
     static const std::set<std::string> skip = {
         "__pycache__", "__init__.py", ".pyc", "StaticComponents.py"
     };
 
-    for (auto const& entry : std::filesystem::recursive_directory_iterator(sourceDir)) {
-        if (!entry.is_regular_file()) continue;
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(sourceDir)) {
+        if (!entry.is_regular_file()) { continue; }
         const auto& filePath = entry.path();
         std::string fileName = filePath.filename().string();
-        if (!hotfixManger.endsWith(fileName, ".py")) continue;
-        bool skipFile = std::any_of(skip.begin(), skip.end(), [&](const std::string& s){
-            return hotfixManger.endsWith(fileName, s);
+        if (!PythonHotfix::EndsWith(fileName, ".py")) { continue; }
+        bool skipFile = std::ranges::any_of(skip, [&](const std::string& s){
+            return PythonHotfix::EndsWith(fileName, s);
         });
-        if (skipFile) continue;
+        if (skipFile) { continue; }
 
         try {
-            long long modifyTime = std::chrono::system_clock::to_time_t(
-                std::chrono::clock_cast<std::chrono::system_clock>(
-                    std::filesystem::last_write_time(filePath)));
-            if (checkTime - modifyTime <= 1) {
+            auto ftime = std::filesystem::last_write_time(filePath);
+            auto sysTime = std::chrono::clock_cast<std::chrono::system_clock>(ftime);
+            int64_t modifyMs = std::chrono::duration_cast<std::chrono::milliseconds>(sysTime.time_since_epoch()).count();
+            if (checkTimeMs - modifyMs <= PythonHotfix::kFileRecentWindowMs) {
                 auto relativePath = std::filesystem::relative(filePath, sourceDir);
                 auto destFilePath = destDir / relativePath;
                 std::filesystem::create_directories(destFilePath.parent_path());
