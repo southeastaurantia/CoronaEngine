@@ -1,43 +1,30 @@
-
 cmake_minimum_required(VERSION 4.0)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Misc/cmake")
+
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-# =====================================================================================
-# 工程元数据 (项目名称 / 版本 / 主页 / 使用语言)
-# - VERSION: 统一用于后续安装导出、包配置以及可能的语义版本判断
-# - LANGUAGES: 仅启用 C / CXX，避免不必要的语言检查加快配置速度
-# =====================================================================================
+# 基础项目信息，仅启用 C/C++ 并保留统一版本号
 project(CoronaEngine VERSION 0.5.0 HOMEPAGE_URL "https://github.com/CoronaEngine/CoronaEngine" LANGUAGES C CXX)
 
-# =====================================================================================
-# 模块化引入 (保持根 CMakeLists 精简，只承担“编排”职责)
-# 每个模块职责：
-# CoronaOptions.cmake        -> 项目级选项/开关定义
-# CoronaPython.cmake         -> Python 解释器发现 + 依赖检测
-# CoronaRuntimeDeps.cmake    -> 运行时依赖(TBB/Python dll/pdb)收集与复制函数
-# CoronaCompileConfig.cmake  -> 编译宏 / MSVC 运行库策略
-# CoronaThirdParty.cmake     -> 第三方库 FetchContent 声明与拉取
-# 如需新增模块（安装/测试等）建议继续追加 include 行保持结构清晰。
-# =====================================================================================
-include(${CMAKE_CURRENT_SOURCE_DIR}/Misc/cmake/CoronaOptions.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/Misc/cmake/CoronaPython.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/Misc/cmake/CoronaRuntimeDeps.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/Misc/cmake/CoronaCompileConfig.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/Misc/cmake/CoronaThirdParty.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/Misc/cmake/BuildCabbageEditor.cmake)
+# 模块化拆分：保持根脚本专注于 orchestrate
+include(CoronaOptions)        # 全局开关
+include(CoronaPython)         # Python 探测与依赖校验
+include(CoronaRuntimeDeps)    # 运行时 DLL/PDB 收集
+include(CoronaCompileConfig)  # 编译宏与 MSVC 运行库
+include(CoronaThirdParty)     # FetchContent 第三方依赖
+include(BuildCabbageEditor)   # 编辑器资源安装
 
-add_subdirectory(Utility/Logger) # 独立日志库 (为 CoronaEngine 提供前置目标)
-add_subdirectory(Utility/ResourceManager) # 资源管理模块迁移后独立库
+# 库与主引擎
+add_subdirectory(Utility/Logger)
+add_subdirectory(Utility/ResourceManager)
+add_subdirectory(Src)
 
-add_subdirectory(Src) # 核心引擎库 (链接到上方工具库)
-
+# 示例工程按需开启
 if(CORONA_BUILD_EXAMPLES)
-    add_subdirectory(Examples) # 可选示例程序 (由 CORONA_BUILD_EXAMPLES 控制)
+    add_subdirectory(Examples)
 endif()
 
-# =====================================================================================
-# 配置结果汇总 (方便在 CI / 本地快速确认关键选项生效情况)
-# =====================================================================================
+# 配置摘要，方便在 CI / 本地快速核对
 message(STATUS "================ CoronaEngine Configuration Summary ==================")
 message(STATUS "[Config] Python executable : ${Python3_EXECUTABLE}")
 if(Python3_VERSION)
