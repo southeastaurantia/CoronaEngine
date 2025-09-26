@@ -9,7 +9,7 @@ PyMethodDef EngineScripts::ActorScripts::PyActor_methods[] = {
 
 // ���Ͷ���
 PyTypeObject EngineScripts::ActorScripts::PyActorType = {
-    PyVarObject_HEAD_INIT(nullptr, 0) "CoronaEngine.Actor", // ������
+    PyVarObject_HEAD_INIT(nullptr, 0) "CabbageEngine.Actor", // ������
     sizeof(PyActorObject),                                   // �����С
     0,                                                       // ������С
     (destructor)PyActor_dealloc,                             // ��������
@@ -47,9 +47,8 @@ PyObject *EngineScripts::ActorScripts::PyActor_new(PyTypeObject *type, PyObject 
 int EngineScripts::ActorScripts::PyActor_init(PyActorObject *self, PyObject *args, PyObject *kwds)
 {
     char *path = (char *)"";
-    SceneScripts::PySceneObject *scene = nullptr;
     static char *kwlist[] = {(char *)"path", nullptr};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|Os", kwlist, &scene, &path))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|s", kwlist, &path))
     {
         return -1;
     }
@@ -62,7 +61,7 @@ int EngineScripts::ActorScripts::PyActor_init(PyActorObject *self, PyObject *arg
 
     try
     {
-        self->cpp_obj = new CoronaEngine::CoronaEngineAPI::Actor(path);
+        self->cpp_obj = new CoronaEngineAPI::Actor(path);
     }
     catch (const std::bad_alloc &)
     {

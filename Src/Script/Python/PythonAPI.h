@@ -1,16 +1,13 @@
 #pragma once
 
 #include <chrono>
-#include <mutex>
 #include <shared_mutex>
-#include <sstream>
-#include <thread>
+#include <filesystem>
+#include <string>
+
 
 #include "PythonHotfix.h"
-
 #include "EngineScripts.h"
-
-#include <Python.h>
 
 struct PythonAPI
 {
@@ -19,21 +16,16 @@ struct PythonAPI
     ~PythonAPI();
 
     void runPythonScript();
-
     void checkPythonScriptChange();
     void checkReleaseScriptChange();
-    // static void Init();
-
-    std::wstring str2wstr(const std::string &str);
 
   private:
     
     static const std::string codePath;
-    // static bool s_tzdbInit;
     
     PythonHotfix hotfixManger;
-
     std::shared_mutex queMtx;
+
     long long lastHotReloadTime = 0;
     bool hasHotReload = false;
 
@@ -41,11 +33,17 @@ struct PythonAPI
     PyObject *pFunc = nullptr;
 
     std::string hotreloadPath = "";
-
     std::vector<std::string> moduleList;
     std::vector<std::string> callableList;
 
     PyConfig config;
 
-    void copyModifiedFiles(const std::filesystem::path &sourceDir, const std::filesystem::path &destDir, long long checkTime);
+    bool ensureInitialized();
+    bool performHotReload();
+    void invokeEntry(bool isReload);
+    static long long nowMsec();
+    std::wstring str2wstr(const std::string &str);
+    void copyModifiedFiles(const std::filesystem::path& sourceDir,
+                           const std::filesystem::path& destDir,
+                           long long checkTime);
 };

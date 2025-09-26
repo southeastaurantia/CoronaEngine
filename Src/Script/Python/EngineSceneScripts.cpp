@@ -1,4 +1,5 @@
 ﻿#include "EngineScripts.h"
+#include <iostream>
 
 
 PyMethodDef EngineScripts::SceneScripts::PyScene_methods[] = {
@@ -26,8 +27,11 @@ PyTypeObject EngineScripts::SceneScripts::PySceneType = {
 
 void EngineScripts::SceneScripts::PyScene_dealloc(PySceneObject *self)
 {
-    delete self->cpp_obj;
-    self->cpp_obj = nullptr;
+    if (self->cpp_obj)
+    {
+        delete self->cpp_obj;
+        self->cpp_obj = nullptr;
+    }
     Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
@@ -70,7 +74,7 @@ int EngineScripts::SceneScripts::PyScene_init(PySceneObject *self, PyObject *arg
         {
             surface = PyLong_AsVoidPtr(winID_py_ptr);
         }
-        self->cpp_obj = new CoronaEngine::CoronaEngineAPI::Scene(surface, lightField);
+        self->cpp_obj = new CoronaEngineAPI::Scene(surface, lightField);
     }
     catch (const std::bad_alloc &)
     {
@@ -139,7 +143,10 @@ PyObject *EngineScripts::SceneScripts::PyScene_setDisplaySurface(PySceneObject *
 
     PyArg_ParseTuple(args, "O", &py_ptr);
 
-    self->cpp_obj->setDisplaySurface(PyLong_AsVoidPtr(py_ptr));
+    if (self->cpp_obj)
+    {
+        self->cpp_obj->setDisplaySurface(PyLong_AsVoidPtr(py_ptr));
+    }
 
     return PyBool_FromLong(true);
 }
@@ -165,7 +172,10 @@ PyObject *EngineScripts::SceneScripts::PyScene_setSunDirection(PySceneObject *se
         }
     }
 
-    self->cpp_obj->setSunDirection(sunDir);
+    if (self->cpp_obj)
+    {
+        self->cpp_obj->setSunDirection(sunDir);
+    }
 
     return PyBool_FromLong(true);
 }

@@ -11,11 +11,11 @@ RenderingSystem::RenderingSystem()
     : ThreadedSystem("RenderingSystem")
 {
     Engine::Instance().AddQueue(name(), std::make_unique<SafeCommandQueue>());
-    init();
 }
 
 void RenderingSystem::onStart()
 {
+    init();
 }
 
 void RenderingSystem::onTick()

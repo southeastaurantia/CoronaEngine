@@ -1,8 +1,6 @@
 #pragma once
 
 #include <Python.h>
-#include <ktm/ktm.h>
-
 #include "Core/CoronaEngineAPI.h"
 
 struct EngineScripts
@@ -12,7 +10,7 @@ struct EngineScripts
         struct PySceneObject
         {
             PyObject_HEAD;
-            CoronaEngine::CoronaEngineAPI::Scene *cpp_obj;
+            CoronaEngineAPI::Scene *cpp_obj;
         };
 
         static void PyScene_dealloc(PySceneObject *self);
@@ -32,7 +30,7 @@ struct EngineScripts
         struct PyActorObject
         {
             PyObject_HEAD;
-            CoronaEngine::CoronaEngineAPI::Actor *cpp_obj;
+            CoronaEngineAPI::Actor *cpp_obj;
         };
 
         static void PyActor_dealloc(PyActorObject *self);

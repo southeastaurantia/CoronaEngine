@@ -119,6 +119,7 @@ int main()
             auto sceneId = Corona::DataId::Next();
             sceneCache.insert(sceneId, scene);
             scene->displaySurface = glfwGetWin32Window(window);
+            scene->camera.pos = ktm::fvec3(10.0f, 10.0f, 0.0f);
             render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchScene, sceneId);
             render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::setDisplaySurface, scene);
         }
@@ -159,22 +160,22 @@ int main()
                     const int cooldown_ms = 300;
                     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && key_limiter.allow(GLFW_KEY_W, cooldown_ms))
                     {
-                        scene->camera.pos.x += 0.5f;
+                        scene->camera.pos.y += 0.5f;
                         CE_LOG_INFO("Key W pressed");
                     }
                     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && key_limiter.allow(GLFW_KEY_S, cooldown_ms))
                     {
-                        scene->camera.pos.x -= 0.5f;
+                        scene->camera.pos.y -= 0.5f;
                         CE_LOG_INFO("Key S pressed");
                     }
                     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && key_limiter.allow(GLFW_KEY_S, cooldown_ms))
                     {
-                        scene->camera.pos.y += 0.5f;
+                        scene->camera.pos.x += 0.5f;
                         CE_LOG_INFO("Key A pressed");
                     }
                     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS && key_limiter.allow(GLFW_KEY_S, cooldown_ms))
                     {
-                        scene->camera.pos.y -= 0.5f;
+                        scene->camera.pos.x -= 0.5f;
                         CE_LOG_INFO("Key D pressed");
                     }
                     if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS && key_limiter.allow(GLFW_KEY_ENTER, cooldown_ms))
