@@ -1,5 +1,4 @@
 #include <Core/Engine/Engine.h>
-#include <Core/IO/Loaders/TextResource.h>
 #include <Log.h>
 #include <Core/Thread/SafeCommandQueue.h>
 
@@ -91,15 +90,15 @@ int main()
     // 1) Sync load
     auto &io = Corona::Engine::Instance().Resources();
     Corona::ResourceId idText{"text", target.string()};
-    auto txtRes = io.loadTyped<Corona::TextResource>(idText);
-    if (txtRes)
-    {
-        CE_LOG_INFO("Sync loaded: {} ({} bytes)", idText.path, txtRes->text.size());
-    }
-    else
-    {
-        CE_LOG_ERROR("Sync load failed: {}", idText.path);
-    }
+    // auto txtRes = io.loadTyped<Corona::TextResource>(idText);
+    // if (txtRes)
+    // {
+    //     CE_LOG_INFO("Sync loaded: {} ({} bytes)", idText.path, txtRes->text.size());
+    // }
+    // else
+    // {
+    //     CE_LOG_ERROR("Sync load failed: {}", idText.path);
+    // }
 
     // 2) Async load (future)
     auto fut = io.loadAsync(idText);
@@ -117,8 +116,8 @@ int main()
     io.wait(); // wait all async tasks
 
     // Optional: read back frag
-    auto frag = io.loadTyped<Corona::TextResource>(idFrag);
-    CE_LOG_INFO("Preloaded-read: {} -> {}", idFrag.path, frag ? "ok" : "fail");
+    // auto frag = io.loadTyped<Corona::TextResource>(idFrag);
+    // CE_LOG_INFO("Preloaded-read: {} -> {}", idFrag.path, frag ? "ok" : "fail");
 
     // 5) 自定义资源与加载器示例
     // 注册一次自定义加载器（线程安全，重复注册会追加在末尾）

@@ -15,7 +15,9 @@ namespace Corona
     void ResourceManager::registerLoader(std::shared_ptr<IResourceLoader> loader)
     {
         if (!loader)
+        {
             return;
+        }
         std::unique_lock lk(loadersMutex_);
         loaders_.push_back(std::move(loader));
     }
@@ -29,7 +31,9 @@ namespace Corona
     std::shared_ptr<IResource> ResourceManager::loadInternal(const ResourceId &id)
     {
         if (auto it = cache_.find(id); it != cache_.end())
+        {
             return it->second;
+        }
 
         std::shared_ptr<std::mutex> mtx;
         if (auto it = locks_.find(id); it != locks_.end())
@@ -45,7 +49,9 @@ namespace Corona
 
         std::scoped_lock lk(*mtx);
         if (auto it2 = cache_.find(id); it2 != cache_.end())
+        {
             return it2->second;
+        }
 
         auto loader = findLoader(id);
         if (!loader)
@@ -71,7 +77,9 @@ namespace Corona
         for (auto &l : loaders_)
         {
             if (l && l->supports(id))
+            {
                 return l;
+            }
         }
         return nullptr;
     }
@@ -122,7 +130,9 @@ namespace Corona
         tasks_.run([this, id, cb] {
             auto res = loadInternal(id);
             if (cb)
+            {
                 cb(id, res);
+            }
         });
     }
 
@@ -131,7 +141,9 @@ namespace Corona
         tasks_.run([this, id, cb] {
             auto res = loadOnce(id);
             if (cb)
+            {
                 cb(id, res);
+            }
         });
     }
 

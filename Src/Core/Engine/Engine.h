@@ -85,8 +85,9 @@ namespace Corona
         void RegisterSystem()
         {
             const std::type_index key{typeid(T)};
-            if (systems_.contains(key))
+            if (systems_.contains(key)) {
                 return;
+}
             systems_.emplace(key, std::make_shared<T>());
             CE_LOG_DEBUG("Registered system {}", key.name());
         }

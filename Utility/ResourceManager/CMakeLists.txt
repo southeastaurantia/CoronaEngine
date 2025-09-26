@@ -1,14 +1,10 @@
 add_library(CoronaResources STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/ResourceManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ResourceTypes.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/BinaryResource.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/TextResource.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ResourceManager.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ResourceTypes.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/IResource.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/IResourceLoader.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/BinaryResource.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/TextResource.h
 )
 
 target_include_directories(CoronaResources
