@@ -24,6 +24,7 @@ function(corona_add_example)
     endif()
 
     add_executable(${COR_EX_NAME} ${COR_EX_SOURCES})
+    target_compile_features(${COR_EX_NAME} PRIVATE cxx_std_20)
     set_target_properties(${COR_EX_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY $<TARGET_FILE_DIR:${COR_EX_NAME}>)
     target_link_libraries(${COR_EX_NAME} PRIVATE glfw CoronaEngine)
 
@@ -43,6 +44,8 @@ function(corona_add_example)
 endfunction()
 
 set(_CORONA_EXAMPLE_FOLDERS
+    concurrent_queue_usage
+    concurrent_queue_performance
     resource_management
     multi_window_rendering
     python_scripting
@@ -50,6 +53,8 @@ set(_CORONA_EXAMPLE_FOLDERS
 )
 
 set(_CORONA_EXAMPLE_TARGETS
+    Corona_concurrent_queue_usage
+    Corona_concurrent_queue_performance
     Corona_resource_management
     Corona_multi_window_rendering
     Corona_python_scripting

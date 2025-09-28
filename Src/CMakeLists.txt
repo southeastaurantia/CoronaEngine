@@ -21,7 +21,6 @@ target_include_directories(CoronaEngine PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}" # 允许头按相对路径引用
         "${stb_SOURCE_DIR}" # stb 单头库
         "${PROJECT_SOURCE_DIR}/Env/oneapi-tbb-2022.2.0/include"
-        "${PROJECT_SOURCE_DIR}/Env/spdlog-1.15.3/include"
         ${Python3_INCLUDE_DIRS}
 )
 
@@ -36,6 +35,7 @@ target_link_libraries(CoronaEngine PUBLIC
         EnTT::EnTT
         CabbageHardware
         CoronaLogger
+        CoronaConcurrent
         CoronaResources
         python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}
 

@@ -4,10 +4,9 @@ add_library(CoronaLogger STATIC
 )
 
 # 对外暴露本库自己的 include 目录 (PUBLIC)，这样链接 CoronaLogger（或传递链接 CoronaEngine） 的外部目标可以直接 #include <Log.h>
-# spdlog 头文件仍保持 PRIVATE，避免外部代码依赖其内部实现细节。
+# Log.h 直接引用 spdlog，因此也需要向外传递其 include 目录。
 target_include_directories(CoronaLogger
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
-    PRIVATE
         "${PROJECT_SOURCE_DIR}/Env/spdlog-1.15.3/include"
 )
