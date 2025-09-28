@@ -119,17 +119,17 @@ double run_bounded_benchmark(int producer_count, int consumer_count, int tasks_p
 int main() {
     const int producer_count = 4;
     const int consumer_count = 4;
-    const int tasks_per_producer = 100'000;
+    const int tasks_per_producer = 3'000;
 
     std::cout << "================ Concurrent queue benchmark ================\n";
     std::cout << "Producer threads: " << producer_count << ", consumer threads: " << consumer_count
               << ", tasks per producer: " << tasks_per_producer << std::endl;
 
     double unbounded_ops = run_unbounded_benchmark(producer_count, consumer_count, tasks_per_producer);
-    std::cout << "Unbounded queue throughput ≈ " << static_cast<std::int64_t>(unbounded_ops) << " ops/s" << std::endl;
+    std::cout << "Unbounded queue throughput: " << static_cast<std::int64_t>(unbounded_ops) << " ops/s" << std::endl;
 
     double bounded_ops = run_bounded_benchmark(producer_count, consumer_count, tasks_per_producer, /*capacity=*/256);
-    std::cout << "Bounded queue throughput ≈ " << static_cast<std::int64_t>(bounded_ops) << " ops/s" << std::endl;
+    std::cout << "Bounded queue throughput: " << static_cast<std::int64_t>(bounded_ops) << " ops/s" << std::endl;
 
     std::cout << "==================================================\n";
     std::cout << "Note: results depend on CPU, compiler optimizations, and runtime load." << std::endl;
