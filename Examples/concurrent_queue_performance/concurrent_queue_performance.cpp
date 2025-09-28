@@ -26,7 +26,8 @@ double run_unbounded_benchmark(int producer_count, int consumer_count, int tasks
             while (true) {
                 int value = queue.pop();
                 if (value == sentinel) {
-                    break;
+                    queue.push(sentinel);  // 将哨兵信号重新推回队列，传递给其他消费者
+                    break;                 // 然后自己退出
                 }
                 consumed.fetch_add(1, std::memory_order_release);
             }
@@ -77,7 +78,8 @@ double run_bounded_benchmark(int producer_count, int consumer_count, int tasks_p
             while (true) {
                 int value = queue.pop();
                 if (value == sentinel) {
-                    break;
+                    queue.push(sentinel);  // 将哨兵信号重新推回队列，传递给其他消费者
+                    break;                 // 然后自己退出
                 }
                 consumed.fetch_add(1, std::memory_order_release);
             }
@@ -112,7 +114,7 @@ double run_bounded_benchmark(int producer_count, int consumer_count, int tasks_p
     return static_cast<double>(total_tasks) / seconds;
 }
 
-} // namespace
+}  // namespace
 
 int main() {
     const int producer_count = 4;
