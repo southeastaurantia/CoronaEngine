@@ -78,7 +78,16 @@ void test_concurrent_hashmap() {
     
     auto insert_time = timer.elapsed_micros();
     
-    std::cout << "Insert Results:" << std::endl;
+    // 显示分片信息
+    auto sharding_info = map.get_sharding_info();
+    std::cout << "\nSharding Information:" << std::endl;
+    std::cout << "  Shard count: " << sharding_info.shard_count << std::endl;
+    std::cout << "  CPU cores: " << sharding_info.cpu_cores << std::endl;
+    std::cout << "  Optimization level: " << sharding_info.optimization_level << std::endl;
+    std::cout << "  Buckets per shard: " << sharding_info.bucket_count_per_shard << std::endl;
+    std::cout << "  Load factor: " << std::fixed << std::setprecision(3) << sharding_info.load_factor << std::endl;
+    
+    std::cout << "\nInsert Results:" << std::endl;
     std::cout << "  Successful inserts: " << insert_success.load() << std::endl;
     std::cout << "  Map size: " << map.size() << std::endl;
     std::cout << "  Insert time: " << insert_time << " μs" << std::endl;

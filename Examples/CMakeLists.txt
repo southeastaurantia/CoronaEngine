@@ -50,6 +50,7 @@ set(_CORONA_EXAMPLE_FOLDERS
     interactive_rendering
     concurrent_basics
     concurrent_containers
+    shard_performance_comparison
 )
 
 set(_CORONA_EXAMPLE_TARGETS
@@ -59,6 +60,7 @@ set(_CORONA_EXAMPLE_TARGETS
     Corona_interactive_rendering
     Corona_concurrent_basics
     Corona_concurrent_containers
+    Corona_shard_performance_comparison
 )
 
 set(_corona_startup_target "")

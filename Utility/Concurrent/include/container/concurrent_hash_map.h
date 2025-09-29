@@ -76,8 +76,26 @@ private:
 
     // 配置参数
     static constexpr size_t DEFAULT_SHARD_COUNT = 32;  // 默认分片数量
+    static constexpr size_t MIN_SHARD_COUNT = 8;       // 最小分片数量
+    static constexpr size_t MAX_SHARD_COUNT = 512;     // 最大分片数量
     static constexpr double MAX_LOAD_FACTOR = 0.75;    // 最大负载因子
     static constexpr bool USE_LOCK_FREE = true;        // 是否启用 lock-free 模式
+    
+    // 智能分片数量计算
+    static size_t calculate_optimal_shard_count() {
+        size_t cpu_count = std::thread::hardware_concurrency();
+        if (cpu_count == 0) cpu_count = 8;  // 回退默认值
+        
+        // 分片数 = CPU逻辑核心数 × 4 (减少竞争)
+        size_t optimal_count = cpu_count * 4;
+        
+        // 确保在合理范围内
+        optimal_count = std::max(MIN_SHARD_COUNT, optimal_count);
+        optimal_count = std::min(MAX_SHARD_COUNT, optimal_count);
+        
+        // 确保是2的幂
+        return next_power_of_2(optimal_count);
+    }
 
     std::vector<std::unique_ptr<Shard>> shards_;
     size_t shard_mask_;
@@ -96,15 +114,23 @@ public:
      * @param bucket_count_per_shard 每个分片的桶数量
      */
     explicit ConcurrentHashMap(
-        size_t shard_count = DEFAULT_SHARD_COUNT,
+        size_t shard_count = 0,  // 0表示使用智能计算
         size_t bucket_count_per_shard = Shard::DEFAULT_BUCKET_COUNT,
         const hasher& hash = hasher{},
         const key_equal& equal = key_equal{},
         const allocator_type& alloc = allocator_type{}
     ) : hasher_(hash), key_eq_(equal), allocator_(alloc) {
         
-        // 确保分片数量是2的幂
-        shard_count = next_power_of_2(shard_count);
+        // 智能分片数量计算
+        if (shard_count == 0) {
+            shard_count = calculate_optimal_shard_count();
+        } else {
+            // 用户指定的分片数量，确保是2的幂且在合理范围内
+            shard_count = std::max(MIN_SHARD_COUNT, shard_count);
+            shard_count = std::min(MAX_SHARD_COUNT, shard_count);
+            shard_count = next_power_of_2(shard_count);
+        }
+        
         shard_mask_ = shard_count - 1;
         
         // 初始化分片
@@ -112,6 +138,34 @@ public:
         for (size_t i = 0; i < shard_count; ++i) {
             shards_.emplace_back(std::make_unique<Shard>(bucket_count_per_shard));
         }
+    }
+
+    /**
+     * 性能调优构造函数 - 使用推荐的高性能配置
+     * @param performance_mode 性能模式：0=平衡，1=高并发，2=低延迟
+     */
+    static ConcurrentHashMap create_optimized(int performance_mode = 0) {
+        size_t cpu_count = std::thread::hardware_concurrency();
+        if (cpu_count == 0) cpu_count = 8;
+        
+        size_t shard_count, bucket_count;
+        
+        switch (performance_mode) {
+            case 1: // 高并发模式
+                shard_count = cpu_count * 8;  // 更多分片减少竞争
+                bucket_count = 32;            // 较大的桶数量
+                break;
+            case 2: // 低延迟模式  
+                shard_count = cpu_count * 2;  // 适中分片数量
+                bucket_count = 8;             // 较小桶数量减少遍历
+                break;
+            default: // 平衡模式
+                shard_count = cpu_count * 4;  // 平衡的分片数量
+                bucket_count = 16;            // 默认桶数量
+                break;
+        }
+        
+        return ConcurrentHashMap(shard_count, bucket_count);
     }
 
     // 禁用拷贝，允许移动
@@ -188,6 +242,46 @@ public:
      */
     size_t size() const noexcept {
         return total_size_.load(std::memory_order_relaxed);
+    }
+    
+    /**
+     * 获取分片配置信息
+     */
+    struct ShardingInfo {
+        size_t shard_count;
+        size_t bucket_count_per_shard;
+        size_t total_buckets;
+        double load_factor;
+        size_t cpu_cores;
+        std::string optimization_level;
+    };
+    
+    ShardingInfo get_sharding_info() const {
+        size_t total_elements = size();
+        size_t total_buckets = shards_.size() * shards_[0]->buckets.size();
+        size_t cpu_cores = std::thread::hardware_concurrency();
+        
+        // 判断优化级别
+        std::string opt_level;
+        double shard_ratio = static_cast<double>(shards_.size()) / cpu_cores;
+        if (shard_ratio >= 8.0) {
+            opt_level = "High Concurrency";
+        } else if (shard_ratio >= 4.0) {
+            opt_level = "Balanced";
+        } else if (shard_ratio >= 2.0) {
+            opt_level = "Low Latency";
+        } else {
+            opt_level = "Conservative";
+        }
+        
+        return ShardingInfo{
+            .shard_count = shards_.size(),
+            .bucket_count_per_shard = shards_[0]->buckets.size(),
+            .total_buckets = total_buckets,
+            .load_factor = total_buckets > 0 ? static_cast<double>(total_elements) / total_buckets : 0.0,
+            .cpu_cores = cpu_cores,
+            .optimization_level = opt_level
+        };
     }
 
     /**
