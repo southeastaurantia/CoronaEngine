@@ -17,6 +17,7 @@ include(BuildCabbageEditor)   # 编辑器资源安装
 # 库与主引擎
 add_subdirectory(Utility/Logger)
 add_subdirectory(Utility/ResourceManager)
+add_subdirectory(Utility/Concurrent)
 add_subdirectory(Src)
 
 # 示例工程按需开启

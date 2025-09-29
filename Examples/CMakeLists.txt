@@ -26,7 +26,7 @@ function(corona_add_example)
     add_executable(${COR_EX_NAME} ${COR_EX_SOURCES})
     target_compile_features(${COR_EX_NAME} PRIVATE cxx_std_20)
     set_target_properties(${COR_EX_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY $<TARGET_FILE_DIR:${COR_EX_NAME}>)
-    target_link_libraries(${COR_EX_NAME} PRIVATE glfw CoronaEngine)
+    target_link_libraries(${COR_EX_NAME} PRIVATE glfw CoronaEngine CoronaConcurrent)
 
     if(COMMAND helicon_install_runtime_deps)
         helicon_install_runtime_deps(${COR_EX_NAME})
@@ -48,6 +48,7 @@ set(_CORONA_EXAMPLE_FOLDERS
     multi_window_rendering
     python_scripting
     interactive_rendering
+    concurrent_basics
 )
 
 set(_CORONA_EXAMPLE_TARGETS
@@ -55,6 +56,7 @@ set(_CORONA_EXAMPLE_TARGETS
     Corona_multi_window_rendering
     Corona_python_scripting
     Corona_interactive_rendering
+    Corona_concurrent_basics
 )
 
 set(_corona_startup_target "")
