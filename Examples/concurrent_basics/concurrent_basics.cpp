@@ -7,8 +7,32 @@
 #include <iostream>
 #include <vector>
 #include <thread>
+#include <mutex>
+#include <iomanip>
 
 using namespace Corona::Concurrent;
+
+// Thread-safe output utility
+class ThreadSafeOutput {
+private:
+    static std::mutex output_mutex;
+    
+public:
+    template<typename... Args>
+    static void print(Args&&... args) {
+        std::lock_guard<std::mutex> lock(output_mutex);
+        ((std::cout << args), ...);
+    }
+    
+    template<typename... Args>
+    static void println(Args&&... args) {
+        std::lock_guard<std::mutex> lock(output_mutex);
+        ((std::cout << args), ...);
+        std::cout << std::endl;
+    }
+};
+
+std::mutex ThreadSafeOutput::output_mutex;
 
 // Example 1: Atomic Operations
 void atomic_example() {
@@ -30,6 +54,16 @@ void atomic_example() {
     if (counter.compare_exchange_strong(expected, 200)) {
         std::cout << "CAS succeeded, new value: " << counter.load() << std::endl;
     }
+    
+    // Test fetch_add operation
+    auto prev = counter.fetch_add(50);
+    std::cout << "fetch_add(50): previous=" << prev << ", current=" << counter.load() << std::endl;
+    
+    // Test atomic pointer operations
+    int value = 42;
+    AtomicPtr<int> atomic_ptr{&value};
+    int* loaded = atomic_ptr.load();
+    std::cout << "Atomic pointer loaded value: " << (loaded ? *loaded : 0) << std::endl;
 }
 
 // Example 2: SpinLock
@@ -38,19 +72,31 @@ void spinlock_example() {
     
     SpinLock lock;
     AtomicInt32 shared_counter{0};
+    AtomicInt64 contention_count{0};
     std::vector<std::thread> threads;
     
     // Launch multiple threads, each thread increments the counter
     constexpr int NUM_THREADS = 4;
-    constexpr int INCREMENTS_PER_THREAD = 1000;
+    constexpr int INCREMENTS_PER_THREAD = 10000;
+    
+    HighResTimer timer;
+    timer.start();
     
     for (int i = 0; i < NUM_THREADS; ++i) {
-        threads.emplace_back([&lock, &shared_counter]() {
+        threads.emplace_back([&lock, &shared_counter, &contention_count, i, INCREMENTS_PER_THREAD]() {
             for (int j = 0; j < INCREMENTS_PER_THREAD; ++j) {
-                SpinGuard guard(lock);
+                // Try lock first to measure contention
+                if (!lock.try_lock()) {
+                    contention_count++;
+                    lock.lock();
+                }
+                
                 int current = shared_counter.load(std::memory_order_relaxed);
                 shared_counter.store(current + 1, std::memory_order_relaxed);
+                
+                lock.unlock();
             }
+            ThreadSafeOutput::println("Thread ", i, " completed ", INCREMENTS_PER_THREAD, " increments");
         });
     }
     
@@ -59,8 +105,15 @@ void spinlock_example() {
         t.join();
     }
     
+    auto elapsed = timer.elapsed_micros();
+    
     std::cout << "Expected value: " << NUM_THREADS * INCREMENTS_PER_THREAD << std::endl;
     std::cout << "Actual value: " << shared_counter.load() << std::endl;
+    std::cout << "Execution time: " << elapsed << " microseconds" << std::endl;
+    std::cout << "Contention events: " << contention_count.load() << std::endl;
+    std::cout << "Throughput: " << std::fixed << std::setprecision(2) 
+              << (static_cast<double>(NUM_THREADS * INCREMENTS_PER_THREAD) / elapsed * 1000000) 
+              << " ops/second" << std::endl;
 }
 
 // Example 3: Read-Write Lock
@@ -69,56 +122,120 @@ void rwlock_example() {
     
     RWLock rwlock;
     int shared_data = 0;
+    AtomicInt32 read_count{0};
+    AtomicInt32 write_count{0};
     std::vector<std::thread> threads;
     
+    HighResTimer timer;
+    timer.start();
+    
     // Launch reader threads
-    for (int i = 0; i < 3; ++i) {
-        threads.emplace_back([&rwlock, &shared_data, i]() {
-            for (int j = 0; j < 5; ++j) {
-                ReadGuard guard(rwlock);
-                std::cout << "Reader " << i << " read: " << shared_data << std::endl;
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    constexpr int NUM_READERS = 3;
+    constexpr int READS_PER_THREAD = 8;
+    
+    for (int i = 0; i < NUM_READERS; ++i) {
+        threads.emplace_back([&rwlock, &shared_data, &read_count, i, READS_PER_THREAD]() {
+            for (int j = 0; j < READS_PER_THREAD; ++j) {
+                {
+                    ReadGuard guard(rwlock);
+                    int data = shared_data;
+                    read_count++;
+                    ThreadSafeOutput::println("Reader ", i, " read: ", data, 
+                                            " (read #", read_count.load(), ")");
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(5));
             }
+            ThreadSafeOutput::println("Reader ", i, " finished");
         });
     }
     
-    // Launch writer thread
-    threads.emplace_back([&rwlock, &shared_data]() {
-        for (int i = 0; i < 5; ++i) {
-            WriteGuard guard(rwlock);
-            shared_data = i * 10;
-            std::cout << "Writer wrote: " << shared_data << std::endl;
-            std::this_thread::sleep_for(std::chrono::milliseconds(20));
-        }
-    });
+    // Launch writer threads
+    constexpr int NUM_WRITERS = 2;
+    constexpr int WRITES_PER_THREAD = 3;
+    
+    for (int i = 0; i < NUM_WRITERS; ++i) {
+        threads.emplace_back([&rwlock, &shared_data, &write_count, i, WRITES_PER_THREAD]() {
+            for (int j = 0; j < WRITES_PER_THREAD; ++j) {
+                {
+                    WriteGuard guard(rwlock);
+                    shared_data = (i + 1) * 10 + j;
+                    write_count++;
+                    ThreadSafeOutput::println("Writer ", i, " wrote: ", shared_data,
+                                            " (write #", write_count.load(), ")");
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(15));
+            }
+            ThreadSafeOutput::println("Writer ", i, " finished");
+        });
+    }
     
     // Wait for all threads to complete
     for (auto& t : threads) {
         t.join();
     }
+    
+    auto elapsed = timer.elapsed_micros();
+    std::cout << "Final shared_data value: " << shared_data << std::endl;
+    std::cout << "Total reads: " << read_count.load() << std::endl;
+    std::cout << "Total writes: " << write_count.load() << std::endl;
+    std::cout << "RWLock test completed in " << elapsed << " microseconds" << std::endl;
 }
 
 // Example 4: Memory Allocator
 void allocator_example() {
     std::cout << "\n=== Memory Allocator Example ===" << std::endl;
     
-    // Allocate some memory
-    constexpr std::size_t alloc_size = 256;
-    void* ptr1 = AllocatorManager::allocate(alloc_size, alignof(std::max_align_t));
-    void* ptr2 = AllocatorManager::allocate_aligned(alloc_size);
+    // Record initial statistics
+    auto initial_bytes = AllocatorManager::total_allocated_bytes();
+    auto initial_allocs = AllocatorManager::total_allocations();
     
-    std::cout << "Allocated memory address 1: " << ptr1 << std::endl;
-    std::cout << "Allocated memory address 2: " << ptr2 << std::endl;
-    std::cout << "Address 2 is cache-line aligned: " << 
-        (is_aligned(ptr2, CACHE_LINE_SIZE) ? "Yes" : "No") << std::endl;
+    std::cout << "Initial - Allocated bytes: " << initial_bytes 
+              << ", Allocations: " << initial_allocs << std::endl;
     
-    // Free memory
-    AllocatorManager::deallocate(ptr1, alloc_size);
-    AllocatorManager::deallocate(ptr2, alloc_size);
+    std::vector<void*> pointers;
+    std::vector<std::size_t> sizes;
     
-    // Display statistics
-    std::cout << "Total allocated bytes: " << AllocatorManager::total_allocated_bytes() << std::endl;
-    std::cout << "Total allocations: " << AllocatorManager::total_allocations() << std::endl;
+    // Test different allocation sizes
+    const std::vector<std::size_t> test_sizes = {32, 64, 128, 256, 512, 1024};
+    
+    std::cout << "\nAllocating memory blocks:" << std::endl;
+    for (std::size_t size : test_sizes) {
+        void* ptr1 = AllocatorManager::allocate(size, alignof(std::max_align_t));
+        void* ptr2 = AllocatorManager::allocate_aligned(size);
+        
+        pointers.push_back(ptr1);
+        pointers.push_back(ptr2);
+        sizes.push_back(size);
+        sizes.push_back(size);
+        
+        std::cout << "  Size " << std::setw(4) << size << ": "
+                  << "regular=" << ptr1 
+                  << ", aligned=" << ptr2 
+                  << " (aligned: " << (is_aligned(ptr2, CACHE_LINE_SIZE) ? "Yes" : "No") << ")" 
+                  << std::endl;
+    }
+    
+    // Check current statistics
+    auto current_bytes = AllocatorManager::total_allocated_bytes();
+    auto current_allocs = AllocatorManager::total_allocations();
+    
+    std::cout << "\nAfter allocation - Allocated bytes: " << current_bytes 
+              << ", Allocations: " << current_allocs << std::endl;
+    std::cout << "Delta - Bytes: " << (current_bytes - initial_bytes) 
+              << ", Allocations: " << (current_allocs - initial_allocs) << std::endl;
+    
+    // Free all memory
+    std::cout << "\nFreeing memory blocks..." << std::endl;
+    for (size_t i = 0; i < pointers.size(); ++i) {
+        AllocatorManager::deallocate(pointers[i], sizes[i]);
+    }
+    
+    // Final statistics
+    auto final_bytes = AllocatorManager::total_allocated_bytes();
+    auto final_allocs = AllocatorManager::total_allocations();
+    
+    std::cout << "Final - Allocated bytes: " << final_bytes 
+              << ", Allocations: " << final_allocs << std::endl;
 }
 
 // Example 5: Thread Tools
@@ -127,35 +244,75 @@ void thread_tools_example() {
     
     // Get CPU information
     auto cpu_info = get_cpu_info();
-    std::cout << "Physical cores: " << cpu_info.physical_cores << std::endl;
-    std::cout << "Logical cores: " << cpu_info.logical_cores << std::endl;
-    std::cout << "Hyper-threading support: " << (cpu_info.has_hyper_threading ? "Yes" : "No") << std::endl;
+    std::cout << "CPU Information:" << std::endl;
+    std::cout << "  Physical cores: " << cpu_info.physical_cores << std::endl;
+    std::cout << "  Logical cores: " << cpu_info.logical_cores << std::endl;
+    std::cout << "  NUMA nodes: " << cpu_info.numa_nodes << std::endl;
+    std::cout << "  Hyper-threading: " << (cpu_info.has_hyper_threading ? "Enabled" : "Disabled") << std::endl;
     
     // Get current thread ID
     auto thread_id = get_current_thread_id();
-    std::cout << "Current thread ID: " << thread_id << std::endl;
+    std::cout << "\nThread Information:" << std::endl;
+    std::cout << "  Current thread ID: " << thread_id << std::endl;
     
-    // High-precision timing
+    // Test CPU affinity (if available)
+    auto affinity = CpuAffinity::get_current_affinity();
+    std::cout << "  CPU affinity: ";
+    for (size_t i = 0; i < affinity.size() && i < 8; ++i) {
+        std::cout << affinity[i];
+        if (i < affinity.size() - 1 && i < 7) std::cout << ", ";
+    }
+    if (affinity.size() > 8) std::cout << " ... (" << affinity.size() << " total)";
+    std::cout << std::endl;
+    
+    // Performance benchmarks
+    std::cout << "\nPerformance Benchmarks:" << std::endl;
+    
+    // Test 1: Simple computation
     HighResTimer timer;
     timer.start();
-    
-    // Perform some work
-    volatile int sum = 0;
+    volatile uint64_t sum = 0;
     for (int i = 0; i < 1000000; ++i) {
         sum += i;
     }
+    auto elapsed1 = timer.elapsed_micros();
+    std::cout << "  Simple computation (1M ops): " << elapsed1 << " μs" << std::endl;
     
-    auto elapsed = timer.elapsed_micros();
-    std::cout << "Computation time: " << elapsed << " microseconds" << std::endl;
+    // Test 2: Memory allocation
+    timer.start();
+    std::vector<void*> ptrs;
+    for (int i = 0; i < 1000; ++i) {
+        ptrs.push_back(AllocatorManager::allocate(64, 8));
+    }
+    for (void* ptr : ptrs) {
+        AllocatorManager::deallocate(ptr, 64);
+    }
+    auto elapsed2 = timer.elapsed_micros();
+    std::cout << "  Memory allocation (1K ops): " << elapsed2 << " μs" << std::endl;
+    
+    // Test 3: Atomic operations
+    AtomicInt64 atomic_counter{0};
+    timer.start();
+    for (int i = 0; i < 1000000; ++i) {
+        atomic_counter++;
+    }
+    auto elapsed3 = timer.elapsed_micros();
+    std::cout << "  Atomic operations (1M ops): " << elapsed3 << " μs" << std::endl;
+    std::cout << "  Final counter value: " << atomic_counter.load() << std::endl;
 }
 
 int main() {
-    std::cout << "Corona Concurrent Toolkit Example Program" << std::endl;
-    std::cout << "Version: " << version.string << std::endl;
-    std::cout << std::endl;
+    std::cout << "================================================" << std::endl;
+    std::cout << "    Corona Concurrent Toolkit Example Program    " << std::endl;
+    std::cout << "              Version: " << version.string << "              " << std::endl;
+    std::cout << "================================================" << std::endl;
     
     // Initialize library
+    std::cout << "Initializing concurrent toolkit..." << std::endl;
     initialize();
+    
+    HighResTimer total_timer;
+    total_timer.start();
     
     try {
         // Run various examples
@@ -166,20 +323,47 @@ int main() {
         thread_tools_example();
         
         // Display runtime statistics
-        std::cout << "\n=== Runtime Statistics ===" << std::endl;
+        std::cout << "\n" << std::string(50, '=') << std::endl;
+        std::cout << "=== Final Runtime Statistics ===" << std::endl;
+        
         auto stats = get_runtime_stats();
-        std::cout << "Total allocated memory: " << stats.total_memory_allocated << " bytes" << std::endl;
-        std::cout << "Total allocations: " << stats.total_memory_allocations << std::endl;
-        std::cout << "Cache hit rate: " << stats.cache_hit_rate_percent << "%" << std::endl;
+        std::cout << "Memory Statistics:" << std::endl;
+        std::cout << "  Total allocated memory: " << stats.total_memory_allocated << " bytes" << std::endl;
+        std::cout << "  Total allocations: " << stats.total_memory_allocations << std::endl;
+        std::cout << "  Active threads: " << stats.active_threads << std::endl;
+        
+        auto& thread_stats = ThreadLocal::get_stats();
+        std::cout << "\nThread Local Statistics:" << std::endl;
+        std::cout << "  Operations performed: " << thread_stats.operations_count << std::endl;
+        std::cout << "  Cache hits: " << thread_stats.cache_hits << std::endl;
+        std::cout << "  Cache misses: " << thread_stats.cache_misses << std::endl;
+        std::cout << "  Contentions: " << thread_stats.contentions << std::endl;
+        
+        if (thread_stats.cache_hits + thread_stats.cache_misses > 0) {
+            double hit_rate = thread_stats.hit_rate() * 100.0;
+            std::cout << "  Cache hit rate: " << std::fixed << std::setprecision(1) << hit_rate << "%" << std::endl;
+        }
+        
+        auto total_elapsed = total_timer.elapsed_millis();
+        std::cout << "\nTotal execution time: " << total_elapsed << " milliseconds" << std::endl;
         
     } catch (const std::exception& e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
+        std::cerr << "\n*** EXCEPTION OCCURRED ***" << std::endl;
+        std::cerr << "Error: " << e.what() << std::endl;
+        std::cerr << "The program will now terminate." << std::endl;
         return 1;
+    } catch (...) {
+        std::cerr << "\n*** UNKNOWN EXCEPTION OCCURRED ***" << std::endl;
+        std::cerr << "The program will now terminate." << std::endl;
+        return 2;
     }
     
     // Cleanup library
+    std::cout << "\nCleaning up concurrent toolkit..." << std::endl;
     finalize();
     
-    std::cout << "\nExample program completed successfully!" << std::endl;
+    std::cout << "\n" << std::string(50, '=') << std::endl;
+    std::cout << "🎉 Example program completed successfully! 🎉" << std::endl;
+    std::cout << std::string(50, '=') << std::endl;
     return 0;
 }
