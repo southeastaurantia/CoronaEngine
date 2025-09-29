@@ -49,6 +49,7 @@ set(_CORONA_EXAMPLE_FOLDERS
     python_scripting
     interactive_rendering
     concurrent_basics
+    concurrent_containers
 )
 
 set(_CORONA_EXAMPLE_TARGETS
@@ -57,6 +58,7 @@ set(_CORONA_EXAMPLE_TARGETS
     Corona_python_scripting
     Corona_interactive_rendering
     Corona_concurrent_basics
+    Corona_concurrent_containers
 )
 
 set(_corona_startup_target "")

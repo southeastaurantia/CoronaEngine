@@ -17,6 +17,16 @@
 #include "core/memory.h"   // 内存管理
 #include "core/sync.h"     // 同步原语
 
+// 并发容器
+#include "container/concurrent_hash_map.h"  // 高性能哈希表
+#include "container/mpmc_queue.h"           // 多生产者多消费者队列
+
+// 工具类
+#include "util/hash.h"                      // 哈希函数集
+
+// 基准测试
+#include "benchmark/concurrent_benchmark.h" // 性能基准测试框架
+
 namespace Corona::Concurrent {
 
 // 重新导出核心命名空间中的主要类型
