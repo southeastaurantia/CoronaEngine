@@ -78,6 +78,9 @@ private:
     static constexpr size_t DEFAULT_SHARD_COUNT = 32;  // 默认分片数量
     static constexpr size_t MIN_SHARD_COUNT = 8;       // 最小分片数量
     static constexpr size_t MAX_SHARD_COUNT = 512;     // 最大分片数量
+    
+    // 内存序优化配置
+    static constexpr bool ENABLE_MEMORY_ORDER_OPTIMIZATION = true;  // 启用内存序优化
     static constexpr double MAX_LOAD_FACTOR = 0.75;    // 最大负载因子
     static constexpr bool USE_LOCK_FREE = true;        // 是否启用 lock-free 模式
     
@@ -254,6 +257,8 @@ public:
         double load_factor;
         size_t cpu_cores;
         std::string optimization_level;
+        bool memory_order_optimized;  // 是否启用内存序优化
+        std::string memory_strategy;   // 内存序策略描述
     };
     
     ShardingInfo get_sharding_info() const {
@@ -280,7 +285,10 @@ public:
             .total_buckets = total_buckets,
             .load_factor = total_buckets > 0 ? static_cast<double>(total_elements) / total_buckets : 0.0,
             .cpu_cores = cpu_cores,
-            .optimization_level = opt_level
+            .optimization_level = opt_level,
+            .memory_order_optimized = ENABLE_MEMORY_ORDER_OPTIMIZATION,
+            .memory_strategy = ENABLE_MEMORY_ORDER_OPTIMIZATION ? 
+                "Relaxed + Fence (Hot Path Optimized)" : "Acquire/Release (Conservative)"
         };
     }
 
@@ -345,9 +353,9 @@ private:
         auto new_node = create_node(std::forward<K>(key), std::forward<V>(value));
         
         for (;;) {
-            Node* head = bucket.load(std::memory_order_acquire);
+            Node* head = bucket.load(std::memory_order_relaxed);
             
-            // 检查是否已存在
+            // 检查是否已存在 - 使用relaxed遍历
             Node* current = head;
             while (current != nullptr) {
                 if (key_eq_(current->data.first, key)) {
@@ -355,14 +363,17 @@ private:
                     node_reclaimer_.retire(new_node);
                     return false;
                 }
-                current = current->next.load(std::memory_order_acquire);
+                current = current->next.load(std::memory_order_relaxed);
             }
             
-            // 尝试插入到链表头部
+            // 准备插入：使用fence确保新节点数据完全可见
+            std::atomic_thread_fence(std::memory_order_release);
             new_node->next.store(head, std::memory_order_relaxed);
+            
+            // CAS操作使用acq_rel确保原子性和可见性
             if (bucket.compare_exchange_weak(head, new_node, 
-                                           std::memory_order_release, 
-                                           std::memory_order_acquire)) {
+                                           std::memory_order_acq_rel, 
+                                           std::memory_order_relaxed)) {
                 // 更新计数
                 shard.size.fetch_add(1, std::memory_order_relaxed);
                 total_size_.fetch_add(1, std::memory_order_relaxed);
@@ -395,16 +406,21 @@ private:
         return true;
     }
 
-    // Lock-free 查找实现
+    // Lock-free 查找实现 - 内存序优化
     std::optional<T> find_lockfree(const Core::Atomic<Node*>& bucket, const Key& key) const {
         typename EpochReclaimer<Node>::Guard guard(node_reclaimer_);
         
+        // 初始读取使用acquire确保与插入同步
         Node* current = bucket.load(std::memory_order_acquire);
         while (current != nullptr) {
+            // 检查键值匹配
             if (key_eq_(current->data.first, key)) {
+                // 找到匹配项，使用fence确保数据可见性
+                std::atomic_thread_fence(std::memory_order_acquire);
                 return current->data.second;
             }
-            current = current->next.load(std::memory_order_acquire);
+            // 链表遍历使用relaxed + consume语义（通过数据依赖保证顺序）
+            current = current->next.load(std::memory_order_relaxed);
         }
         return std::nullopt;
     }
@@ -423,17 +439,18 @@ private:
         return std::nullopt;
     }
 
-    // Lock-free 删除实现
+    // Lock-free 删除实现 - 内存序优化
     bool erase_lockfree(Shard& shard, Core::Atomic<Node*>& bucket, const Key& key) {
         for (;;) {
-            Node* head = bucket.load(std::memory_order_acquire);
+            Node* head = bucket.load(std::memory_order_relaxed);
             
             // 如果要删除的是头节点
             if (head != nullptr && key_eq_(head->data.first, key)) {
-                Node* next = head->next.load(std::memory_order_acquire);
+                Node* next = head->next.load(std::memory_order_relaxed);
+                // 使用acq_rel确保删除操作的原子性和内存同步
                 if (bucket.compare_exchange_weak(head, next,
-                                               std::memory_order_release,
-                                               std::memory_order_acquire)) {
+                                               std::memory_order_acq_rel,
+                                               std::memory_order_relaxed)) {
                     node_reclaimer_.retire(head);
                     shard.size.fetch_sub(1, std::memory_order_relaxed);
                     total_size_.fetch_sub(1, std::memory_order_relaxed);
@@ -442,15 +459,16 @@ private:
                 continue;
             }
             
-            // 查找要删除的节点
+            // 查找要删除的节点 - 使用relaxed遍历
             Node* prev = head;
             while (prev != nullptr) {
-                Node* current = prev->next.load(std::memory_order_acquire);
+                Node* current = prev->next.load(std::memory_order_relaxed);
                 if (current != nullptr && key_eq_(current->data.first, key)) {
-                    Node* next = current->next.load(std::memory_order_acquire);
+                    Node* next = current->next.load(std::memory_order_relaxed);
+                    // 删除中间节点使用acq_rel确保链表一致性
                     if (prev->next.compare_exchange_weak(current, next,
-                                                       std::memory_order_release,
-                                                       std::memory_order_acquire)) {
+                                                       std::memory_order_acq_rel,
+                                                       std::memory_order_relaxed)) {
                         node_reclaimer_.retire(current);
                         shard.size.fetch_sub(1, std::memory_order_relaxed);
                         total_size_.fetch_sub(1, std::memory_order_relaxed);

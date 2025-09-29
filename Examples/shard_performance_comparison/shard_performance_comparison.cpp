@@ -31,7 +31,10 @@ TestResult run_performance_test(const std::string& config_name, HashMap& map) {
     // 获取分片信息
     auto sharding_info = map.get_sharding_info();
     std::cout << "分片数量: " << sharding_info.shard_count 
-              << ", 优化级别: " << sharding_info.optimization_level << std::endl;
+              << ", 优化级别: " << sharding_info.optimization_level 
+              << ", 内存序优化: " << (sharding_info.memory_order_optimized ? "已启用" : "未启用")
+              << std::endl;
+    std::cout << "内存策略: " << sharding_info.memory_strategy << std::endl;
     
     std::vector<std::thread> threads;
     
