@@ -35,7 +35,6 @@ target_link_libraries(CoronaEngine PUBLIC
         EnTT::EnTT
         CabbageHardware
         CoronaLogger
-        CoronaConcurrent
         CoronaResources
         python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}
 
