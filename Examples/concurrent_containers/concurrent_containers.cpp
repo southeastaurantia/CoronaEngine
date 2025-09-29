@@ -88,6 +88,8 @@ void test_concurrent_hashmap() {
     std::cout << "  Load factor: " << std::fixed << std::setprecision(3) << sharding_info.load_factor << std::endl;
     std::cout << "  Memory order optimized: " << (sharding_info.memory_order_optimized ? "Yes" : "No") << std::endl;
     std::cout << "  Memory strategy: " << sharding_info.memory_strategy << std::endl;
+    std::cout << "  Cache line optimized: " << (sharding_info.cache_line_optimized ? "Yes" : "No") << std::endl;
+    std::cout << "  Cache strategy: " << sharding_info.cache_strategy << std::endl;
     
     std::cout << "\nInsert Results:" << std::endl;
     std::cout << "  Successful inserts: " << insert_success.load() << std::endl;

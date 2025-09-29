@@ -48,22 +48,40 @@ public:
     using allocator_type = Allocator;
 
 private:
-    // 哈希表节点结构
-    struct alignas(Core::CACHE_LINE_SIZE) Node {
+    // 哈希表节点结构 - 缓存行优化版本
+    struct Node {
+        // 数据和指针紧密排列，避免不必要的缓存行对齐开销
         value_type data;
         Core::Atomic<Node*> next{nullptr};
         
         template<typename K, typename V>
         Node(K&& key, V&& val) : data(std::forward<K>(key), std::forward<V>(val)) {}
+        
+        // 对于小节点，缓存行对齐会造成内存浪费
+        // 只在节点大小超过阈值时才对齐
+        static constexpr bool should_align = sizeof(value_type) + sizeof(Core::Atomic<Node*>) >= Core::CACHE_LINE_SIZE / 4;
+    } __attribute__((packed));  // 紧密包装小节点
+    
+    // 缓存行对齐的大节点版本
+    struct alignas(Core::CACHE_LINE_SIZE) AlignedNode : public Node {
+        template<typename K, typename V>
+        AlignedNode(K&& key, V&& val) : Node(std::forward<K>(key), std::forward<V>(val)) {}
     };
 
     // 分片结构，每个分片包含独立的桶数组和锁
+    // 优化缓存行布局：将热点数据分离避免伪共享
     struct alignas(Core::CACHE_LINE_SIZE) Shard {
         static constexpr size_t DEFAULT_BUCKET_COUNT = 16;
         
-        std::vector<Core::Atomic<Node*>> buckets;
-        mutable Core::SpinLock lock;  // fine-grained locking 模式使用
-        Core::AtomicSize size{0};    // 当前分片中的元素数量
+        // 第一个缓存行：热点读取数据
+        alignas(Core::CACHE_LINE_SIZE) std::vector<Core::Atomic<Node*>> buckets;
+        
+        // 第二个缓存行：写入热点数据  
+        alignas(Core::CACHE_LINE_SIZE) struct {
+            Core::AtomicSize size{0};        // 当前分片中的元素数量
+            mutable Core::SpinLock lock;     // fine-grained locking 模式使用
+            char padding[Core::CACHE_LINE_SIZE - sizeof(Core::AtomicSize) - sizeof(Core::SpinLock)];
+        } write_hot_data;
         
         explicit Shard(size_t bucket_count = DEFAULT_BUCKET_COUNT) 
             : buckets(bucket_count) {
@@ -72,6 +90,12 @@ private:
                 bucket.store(nullptr, std::memory_order_relaxed);
             }
         }
+        
+        // 便利访问器
+        Core::AtomicSize& get_size() { return write_hot_data.size; }
+        const Core::AtomicSize& get_size() const { return write_hot_data.size; }
+        Core::SpinLock& get_lock() { return write_hot_data.lock; }
+        const Core::SpinLock& get_lock() const { return write_hot_data.lock; }
     };
 
     // 配置参数
@@ -81,6 +105,10 @@ private:
     
     // 内存序优化配置
     static constexpr bool ENABLE_MEMORY_ORDER_OPTIMIZATION = true;  // 启用内存序优化
+    
+    // 缓存行对齐优化配置
+    static constexpr bool ENABLE_CACHE_LINE_OPTIMIZATION = true;    // 启用缓存行优化
+    static constexpr size_t OPTIMAL_BUCKET_COUNT = 8;              // 优化的桶数量（缓存行友好）
     static constexpr double MAX_LOAD_FACTOR = 0.75;    // 最大负载因子
     static constexpr bool USE_LOCK_FREE = true;        // 是否启用 lock-free 模式
     
@@ -257,8 +285,10 @@ public:
         double load_factor;
         size_t cpu_cores;
         std::string optimization_level;
-        bool memory_order_optimized;  // 是否启用内存序优化
-        std::string memory_strategy;   // 内存序策略描述
+        bool memory_order_optimized;     // 是否启用内存序优化
+        std::string memory_strategy;     // 内存序策略描述
+        bool cache_line_optimized;       // 是否启用缓存行优化
+        std::string cache_strategy;      // 缓存行优化策略描述
     };
     
     ShardingInfo get_sharding_info() const {
@@ -288,7 +318,10 @@ public:
             .optimization_level = opt_level,
             .memory_order_optimized = ENABLE_MEMORY_ORDER_OPTIMIZATION,
             .memory_strategy = ENABLE_MEMORY_ORDER_OPTIMIZATION ? 
-                "Relaxed + Fence (Hot Path Optimized)" : "Acquire/Release (Conservative)"
+                "Relaxed + Fence (Hot Path Optimized)" : "Acquire/Release (Conservative)",
+            .cache_line_optimized = ENABLE_CACHE_LINE_OPTIMIZATION,
+            .cache_strategy = ENABLE_CACHE_LINE_OPTIMIZATION ?
+                "Hot/Cold Data Separation + Aligned Buckets" : "Default Layout"
         };
     }
 
@@ -309,7 +342,7 @@ public:
         typename EpochReclaimer<Node>::Guard guard(node_reclaimer_);
         
         for (const auto& shard : shards_) {
-            Core::SpinGuard lock_guard(shard->lock);  // 获取读锁保证快照一致性
+            Core::SpinGuard lock_guard(shard->get_lock());  // 获取读锁保证快照一致性
             
             for (const auto& bucket : shard->buckets) {
                 Node* current = bucket.load(std::memory_order_acquire);
@@ -375,7 +408,7 @@ private:
                                            std::memory_order_acq_rel, 
                                            std::memory_order_relaxed)) {
                 // 更新计数
-                shard.size.fetch_add(1, std::memory_order_relaxed);
+                shard.get_size().fetch_add(1, std::memory_order_relaxed);
                 total_size_.fetch_add(1, std::memory_order_relaxed);
                 return true;
             }
@@ -385,7 +418,7 @@ private:
     // 使用锁的插入实现
     template<typename K, typename V>
     bool insert_with_lock(Shard& shard, Core::Atomic<Node*>& bucket, K&& key, V&& value) {
-        Core::SpinGuard guard(shard.lock);
+        Core::SpinGuard guard(shard.get_lock());
         
         Node* current = bucket.load(std::memory_order_relaxed);
         while (current != nullptr) {
@@ -401,7 +434,7 @@ private:
         bucket.store(new_node, std::memory_order_relaxed);
         
         // 更新计数
-        shard.size.fetch_add(1, std::memory_order_relaxed);
+        shard.get_size().fetch_add(1, std::memory_order_relaxed);
         total_size_.fetch_add(1, std::memory_order_relaxed);
         return true;
     }
@@ -427,7 +460,7 @@ private:
 
     // 使用锁的查找实现
     std::optional<T> find_with_lock(const Shard& shard, const Core::Atomic<Node*>& bucket, const Key& key) const {
-        Core::SpinGuard guard(shard.lock);
+        Core::SpinGuard guard(shard.get_lock());
         
         Node* current = bucket.load(std::memory_order_relaxed);
         while (current != nullptr) {
@@ -452,7 +485,7 @@ private:
                                                std::memory_order_acq_rel,
                                                std::memory_order_relaxed)) {
                     node_reclaimer_.retire(head);
-                    shard.size.fetch_sub(1, std::memory_order_relaxed);
+                    shard.get_size().fetch_sub(1, std::memory_order_relaxed);
                     total_size_.fetch_sub(1, std::memory_order_relaxed);
                     return true;
                 }
@@ -470,7 +503,7 @@ private:
                                                        std::memory_order_acq_rel,
                                                        std::memory_order_relaxed)) {
                         node_reclaimer_.retire(current);
-                        shard.size.fetch_sub(1, std::memory_order_relaxed);
+                        shard.get_size().fetch_sub(1, std::memory_order_relaxed);
                         total_size_.fetch_sub(1, std::memory_order_relaxed);
                         return true;
                     }
@@ -485,7 +518,7 @@ private:
 
     // 使用锁的删除实现
     bool erase_with_lock(Shard& shard, Core::Atomic<Node*>& bucket, const Key& key) {
-        Core::SpinGuard guard(shard.lock);
+        Core::SpinGuard guard(shard.get_lock());
         
         Node* prev = nullptr;
         Node* current = bucket.load(std::memory_order_relaxed);
@@ -503,7 +536,7 @@ private:
                 }
                 
                 node_reclaimer_.retire(current);
-                shard.size.fetch_sub(1, std::memory_order_relaxed);
+                shard.get_size().fetch_sub(1, std::memory_order_relaxed);
                 total_size_.fetch_sub(1, std::memory_order_relaxed);
                 return true;
             }
