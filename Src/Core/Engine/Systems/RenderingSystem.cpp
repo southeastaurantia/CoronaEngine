@@ -117,7 +117,7 @@ void RenderingSystem::gbufferPipeline(std::shared_ptr<Scene> scene)
              rasterizerPipeline["jointWeights"] = m.meshDevice->boneWeightsBuffer;
              rasterizerPipeline["pushConsts.textureIndex"] = m.meshDevice->textureIndex;
         
-             rasterizerPipeline.startRecord(gbufferSize) << m.meshDevice->indexBuffer << rasterizerPipeline.endRecord();
+             rasterizerPipeline(gbufferSize.x, gbufferSize.y) << rasterizerPipeline.record(m.meshDevice->indexBuffer) << rasterizerPipeline.endRecord();
          }
     });
 }
@@ -139,7 +139,7 @@ void RenderingSystem::compositePipeline(ktm::fvec3 sunDir)
     uniformBuffer.copyFromData(&uniformBufferObjects, sizeof(uniformBufferObjects));
     computePipeline["pushConsts.uniformBufferIndex"] = uniformBuffer.storeDescriptor();
 
-    computePipeline.executePipeline(ktm::uvec3(1920 / 8, 1080 / 8, 1));
+    computePipeline(1920 / 8, 1080 / 8, 1);
 }
 
 void RenderingSystem::WatchModel(uint64_t id)

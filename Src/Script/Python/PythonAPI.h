@@ -16,34 +16,35 @@ struct PythonAPI
     ~PythonAPI();
 
     void runPythonScript();
-    void checkPythonScriptChange();
+    static void checkPythonScriptChange();
     void checkReleaseScriptChange();
 
   private:
-    
     static const std::string codePath;
-    
+
     PythonHotfix hotfixManger;
     std::shared_mutex queMtx;
 
-    long long lastHotReloadTime = 0;
+    int64_t lastHotReloadTime = 0; // ms
     bool hasHotReload = false;
 
     PyObject *pModule = nullptr;
     PyObject *pFunc = nullptr;
+    PyObject *messageFunc = nullptr;
 
-    std::string hotreloadPath = "";
+    std::string hotreloadPath; // 无需冗余初始化
     std::vector<std::string> moduleList;
     std::vector<std::string> callableList;
 
-    PyConfig config;
+    PyConfig config{}; // 值初始化
 
     bool ensureInitialized();
     bool performHotReload();
-    void invokeEntry(bool isReload);
-    static long long nowMsec();
-    std::wstring str2wstr(const std::string &str);
-    void copyModifiedFiles(const std::filesystem::path& sourceDir,
+    void invokeEntry(bool isReload) const;
+    void sendMessage(const std::string &message) const;
+    static int64_t nowMsec();
+    static std::wstring str2wstr(const std::string &str);
+    static void copyModifiedFiles(const std::filesystem::path& sourceDir,
                            const std::filesystem::path& destDir,
-                           long long checkTime);
+                           int64_t checkTimeMs);
 };
