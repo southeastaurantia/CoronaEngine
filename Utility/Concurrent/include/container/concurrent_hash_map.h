@@ -2,6 +2,7 @@
 
 #include "../core/atomic.h"
 #include "../core/sync.h"
+#include "../util/epoch_reclaimer.h"
 #include <vector>
 #include <optional>
 #include <functional>
@@ -9,21 +10,7 @@
 
 namespace Corona::Concurrent {
 
-// 通用的内存回收器接口
-class MemoryReclaimer {
-public:
-    class Guard {
-    public:
-        explicit Guard(const MemoryReclaimer&) { /* 进入临界区 */ }
-        ~Guard() { /* 离开临界区 */ }
-    };
-    
-    template<typename T>
-    void retire(T* ptr) {
-        // 延迟释放指针
-        delete ptr;  // 简化实现，实际应该加入回收队列
-    }
-};
+
 
 /**
  * 高性能并发哈希表实现
@@ -48,7 +35,7 @@ template<
     typename Hash = std::hash<Key>,
     typename KeyEqual = std::equal_to<Key>,
     typename Allocator = std::allocator<std::pair<const Key, T>>,
-    typename Reclaimer = MemoryReclaimer
+    typename Reclaimer = EpochReclaimer<void>
 >
 class ConcurrentHashMap {
 public:
@@ -100,7 +87,7 @@ private:
     allocator_type allocator_;
     
     // 内存回收器
-    mutable Reclaimer reclaimer_;
+    mutable EpochReclaimer<Node> node_reclaimer_;
 
 public:
     /**
@@ -217,7 +204,7 @@ public:
      */
     template<typename Fn>
     void for_each(Fn fn) const {
-        typename Reclaimer::Guard guard(reclaimer_);
+        typename EpochReclaimer<Node>::Guard guard(node_reclaimer_);
         
         for (const auto& shard : shards_) {
             Core::SpinGuard lock_guard(shard->lock);  // 获取读锁保证快照一致性
@@ -246,7 +233,7 @@ public:
                 // 释放链表中的所有节点
                 while (current != nullptr) {
                     Node* next = current->next.load(std::memory_order_relaxed);
-                    reclaimer_.retire(current);
+                    node_reclaimer_.retire(current);
                     current = next;
                 }
             }
@@ -271,7 +258,7 @@ private:
             while (current != nullptr) {
                 if (key_eq_(current->data.first, key)) {
                     // 键已存在，释放新节点
-                    reclaimer_.retire(new_node);
+                    node_reclaimer_.retire(new_node);
                     return false;
                 }
                 current = current->next.load(std::memory_order_acquire);
@@ -316,7 +303,7 @@ private:
 
     // Lock-free 查找实现
     std::optional<T> find_lockfree(const Core::Atomic<Node*>& bucket, const Key& key) const {
-        typename Reclaimer::Guard guard(reclaimer_);
+        typename EpochReclaimer<Node>::Guard guard(node_reclaimer_);
         
         Node* current = bucket.load(std::memory_order_acquire);
         while (current != nullptr) {
@@ -353,7 +340,7 @@ private:
                 if (bucket.compare_exchange_weak(head, next,
                                                std::memory_order_release,
                                                std::memory_order_acquire)) {
-                    reclaimer_.retire(head);
+                    node_reclaimer_.retire(head);
                     shard.size.fetch_sub(1, std::memory_order_relaxed);
                     total_size_.fetch_sub(1, std::memory_order_relaxed);
                     return true;
@@ -370,7 +357,7 @@ private:
                     if (prev->next.compare_exchange_weak(current, next,
                                                        std::memory_order_release,
                                                        std::memory_order_acquire)) {
-                        reclaimer_.retire(current);
+                        node_reclaimer_.retire(current);
                         shard.size.fetch_sub(1, std::memory_order_relaxed);
                         total_size_.fetch_sub(1, std::memory_order_relaxed);
                         return true;
@@ -403,7 +390,7 @@ private:
                                     std::memory_order_relaxed);
                 }
                 
-                reclaimer_.retire(current);
+                node_reclaimer_.retire(current);
                 shard.size.fetch_sub(1, std::memory_order_relaxed);
                 total_size_.fetch_sub(1, std::memory_order_relaxed);
                 return true;

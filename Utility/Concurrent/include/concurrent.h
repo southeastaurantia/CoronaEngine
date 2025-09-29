@@ -23,6 +23,9 @@
 
 // 工具类
 #include "util/hash.h"                      // 哈希函数集
+#include "util/epoch_reclaimer.h"           // Epoch-based 内存回收
+#include "util/hazard_pointer.h"            // Hazard Pointer 内存回收
+#include "util/thread_pool.h"               // 高性能线程池
 
 // 基准测试
 #include "benchmark/concurrent_benchmark.h" // 性能基准测试框架

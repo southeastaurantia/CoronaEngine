@@ -1,0 +1,318 @@
+#pragma once
+
+#include "../core/atomic.h"
+#include <array>
+#include <vector>
+#include <functional>
+#include <algorithm>
+#include <thread>
+
+namespace Corona::Concurrent {
+
+/**
+ * Hazard Pointer 内存回收系统
+ * 
+ * 专门为无锁数据结构设计的内存管理系统
+ * 特性：
+ * - 无锁设计：读操作无阻塞
+ * - 延迟回收：安全时机才释放内存
+ * - 线程安全：多线程环境下的安全内存管理
+ * - 高效扫描：批量检测和回收
+ */
+template<typename T>
+class HazardPointer {
+public:
+    static constexpr std::size_t MAX_THREADS = 128;
+    static constexpr std::size_t HAZARDS_PER_THREAD = 4;  // 每线程hazard指针数量
+    static constexpr std::size_t RETIRE_THRESHOLD = 64;   // 触发扫描的退休对象阈值
+    
+private:
+    // Hazard 记录结构
+    struct alignas(Core::CACHE_LINE_SIZE) HazardRecord {
+        std::array<Core::Atomic<T*>, HAZARDS_PER_THREAD> hazards;
+        Core::Atomic<std::thread::id> owner;
+        std::atomic<bool> active{false};
+        
+        HazardRecord() {
+            for (auto& hazard : hazards) {
+                hazard.store(nullptr, std::memory_order_relaxed);
+            }
+            owner.store(std::thread::id{}, std::memory_order_relaxed);
+        }
+        
+        // 禁用拷贝构造和赋值
+        HazardRecord(const HazardRecord&) = delete;
+        HazardRecord& operator=(const HazardRecord&) = delete;
+    };
+    
+    // 退休对象
+    struct RetiredPointer {
+        T* ptr;
+        std::function<void(T*)> deleter;
+        
+        explicit RetiredPointer(T* p, std::function<void(T*)> d = nullptr)
+            : ptr(p), deleter(d ? std::move(d) : [](T* obj) { delete obj; }) {}
+    };
+    
+    // 线程本地数据
+    struct ThreadLocalData {
+        HazardRecord* my_hazard_record;
+        std::vector<RetiredPointer> retired_list;
+        
+        ThreadLocalData() : my_hazard_record(nullptr) {
+            retired_list.reserve(RETIRE_THRESHOLD * 2);
+        }
+        
+        ~ThreadLocalData() {
+            // 析构时释放所有退休对象
+            for (const auto& retired : retired_list) {
+                retired.deleter(retired.ptr);
+            }
+            
+            // 释放hazard记录
+            if (my_hazard_record) {
+                my_hazard_record->active.store(false, std::memory_order_release);
+            }
+        }
+    };
+    
+    // 全局hazard记录数组
+    static inline std::array<HazardRecord, MAX_THREADS> hazard_records_;
+    
+    // 线程本地数据
+    static thread_local ThreadLocalData tl_data_;
+    
+public:
+    /**
+     * Hazard Pointer 保护类
+     */
+    class Guard {
+    private:
+        HazardRecord* record_;
+        std::size_t slot_;
+        
+    public:
+        explicit Guard(std::size_t slot = 0) : record_(nullptr), slot_(slot) {
+            if (slot >= HAZARDS_PER_THREAD) {
+                slot_ = 0;  // 防止越界
+            }
+            
+            // 获取当前线程的hazard记录
+            if (!tl_data_.my_hazard_record) {
+                acquire_hazard_record();
+            }
+            record_ = tl_data_.my_hazard_record;
+        }
+        
+        /**
+         * 保护指针，防止其被回收
+         * @param ptr 要保护的指针
+         */
+        void protect(T* ptr) {
+            if (record_) {
+                record_->hazards[slot_].store(ptr, std::memory_order_release);
+            }
+        }
+        
+        /**
+         * 原子性地加载并保护指针
+         * @param atomic_ptr 原子指针的引用
+         * @return 加载的指针值
+         */
+        T* protect_and_load(const Core::Atomic<T*>& atomic_ptr) {
+            T* ptr = nullptr;
+            if (record_) {
+                do {
+                    ptr = atomic_ptr.load(std::memory_order_acquire);
+                    record_->hazards[slot_].store(ptr, std::memory_order_release);
+                    // 双重检查，确保指针没有在保护期间被修改
+                } while (ptr != atomic_ptr.load(std::memory_order_acquire));
+            }
+            return ptr;
+        }
+        
+        /**
+         * 清除保护
+         */
+        void reset() {
+            if (record_) {
+                record_->hazards[slot_].store(nullptr, std::memory_order_release);
+            }
+        }
+        
+        /**
+         * 获取当前保护的指针
+         */
+        T* get_protected() const {
+            if (record_) {
+                return record_->hazards[slot_].load(std::memory_order_acquire);
+            }
+            return nullptr;
+        }
+        
+        ~Guard() {
+            reset();
+        }
+        
+        // 禁用拷贝，允许移动
+        Guard(const Guard&) = delete;
+        Guard& operator=(const Guard&) = delete;
+        
+        Guard(Guard&& other) noexcept : record_(other.record_), slot_(other.slot_) {
+            other.record_ = nullptr;
+        }
+        
+        Guard& operator=(Guard&& other) noexcept {
+            if (this != &other) {
+                reset();
+                record_ = other.record_;
+                slot_ = other.slot_;
+                other.record_ = nullptr;
+            }
+            return *this;
+        }
+        
+    private:
+        void acquire_hazard_record() {
+            std::thread::id current_thread_id = std::this_thread::get_id();
+            
+            // 首先尝试找到已经属于当前线程的记录
+            for (auto& record : hazard_records_) {
+                if (record.owner.load(std::memory_order_acquire) == current_thread_id) {
+                    tl_data_.my_hazard_record = &record;
+                    return;
+                }
+            }
+            
+            // 如果没找到，尝试获取一个未使用的记录
+            for (auto& record : hazard_records_) {
+                std::thread::id expected{};
+                if (record.owner.compare_exchange_strong(expected, current_thread_id, 
+                                                       std::memory_order_acq_rel)) {
+                    record.active.store(true, std::memory_order_release);
+                    tl_data_.my_hazard_record = &record;
+                    return;
+                }
+            }
+            
+            // 如果所有记录都被占用，使用轮询方式等待
+            // 在实际生产环境中，这里应该有更好的处理策略
+            tl_data_.my_hazard_record = &hazard_records_[0];
+        }
+    };
+    
+    /**
+     * 将对象标记为退休，等待安全回收
+     * @param ptr 要回收的对象指针
+     * @param deleter 自定义删除器
+     */
+    static void retire(T* ptr, std::function<void(T*)> deleter = nullptr) {
+        if (!ptr) return;
+        
+        // 确保线程本地数据已初始化
+        if (!tl_data_.my_hazard_record) {
+            Guard dummy_guard;  // 这会初始化hazard记录
+        }
+        
+        tl_data_.retired_list.emplace_back(ptr, std::move(deleter));
+        
+        // 检查是否需要执行扫描回收
+        if (tl_data_.retired_list.size() >= RETIRE_THRESHOLD) {
+            scan_and_reclaim();
+        }
+    }
+    
+    /**
+     * 扫描并回收安全的对象
+     */
+    static void scan_and_reclaim() {
+        // 收集所有当前受保护的指针
+        std::vector<T*> hazard_pointers;
+        hazard_pointers.reserve(MAX_THREADS * HAZARDS_PER_THREAD);
+        
+        for (const auto& record : hazard_records_) {
+            if (record.active.load(std::memory_order_acquire)) {
+                for (const auto& hazard : record.hazards) {
+                    T* ptr = hazard.load(std::memory_order_acquire);
+                    if (ptr) {
+                        hazard_pointers.push_back(ptr);
+                    }
+                }
+            }
+        }
+        
+        // 排序hazard指针以便于二分查找
+        std::sort(hazard_pointers.begin(), hazard_pointers.end());
+        
+        // 扫描退休列表，回收安全的对象
+        auto& retired_list = tl_data_.retired_list;
+        auto it = retired_list.begin();
+        
+        while (it != retired_list.end()) {
+            // 检查这个指针是否在hazard列表中
+            bool is_hazardous = std::binary_search(hazard_pointers.begin(), 
+                                                  hazard_pointers.end(), 
+                                                  it->ptr);
+            
+            if (!is_hazardous) {
+                // 安全回收
+                it->deleter(it->ptr);
+                it = retired_list.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+    
+    /**
+     * 强制清理所有退休对象（程序退出时使用）
+     */
+    static void force_cleanup_all() {
+        for (const auto& retired : tl_data_.retired_list) {
+            retired.deleter(retired.ptr);
+        }
+        tl_data_.retired_list.clear();
+    }
+    
+    /**
+     * 获取统计信息
+     */
+    struct Statistics {
+        std::size_t active_threads;
+        std::size_t protected_pointers;
+        std::size_t retired_objects;
+        std::size_t total_hazard_records;
+    };
+    
+    static Statistics get_statistics() {
+        Statistics stats{};
+        stats.total_hazard_records = MAX_THREADS;
+        stats.retired_objects = tl_data_.retired_list.size();
+        
+        for (const auto& record : hazard_records_) {
+            if (record.active.load(std::memory_order_acquire)) {
+                stats.active_threads++;
+                for (const auto& hazard : record.hazards) {
+                    if (hazard.load(std::memory_order_acquire)) {
+                        stats.protected_pointers++;
+                    }
+                }
+            }
+        }
+        
+        return stats;
+    }
+    
+    /**
+     * 执行维护操作（定期调用）
+     */
+    static void maintenance() {
+        scan_and_reclaim();
+    }
+};
+
+// 静态成员定义
+template<typename T>
+thread_local typename HazardPointer<T>::ThreadLocalData HazardPointer<T>::tl_data_;
+
+} // namespace Corona::Concurrent

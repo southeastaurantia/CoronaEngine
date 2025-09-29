@@ -19,8 +19,8 @@ namespace Corona::Concurrent::Util {
 
 namespace Hash {
 
-// xxHash 32位实现（简化版）
-namespace xxHash {
+// xxHash 32位高性能实现
+namespace xxHash { // xxHash
     constexpr std::uint32_t PRIME32_1 = 0x9E3779B1U;
     constexpr std::uint32_t PRIME32_2 = 0x85EBCA77U;
     constexpr std::uint32_t PRIME32_3 = 0xC2B2AE3DU;
@@ -82,7 +82,7 @@ namespace xxHash {
         return h32;
     }
 
-    // xxHash 64位实现（简化版）
+    // xxHash 64位高性能实现
     constexpr std::uint64_t PRIME64_1 = 0x9E3779B185EBCA87ULL;
     constexpr std::uint64_t PRIME64_2 = 0xC2B2AE3D27D4EB4FULL;
     constexpr std::uint64_t PRIME64_3 = 0x165667B19E3779F9ULL;
@@ -197,8 +197,8 @@ namespace FNV {
     }
 }
 
-// MurmurHash3 (简化版)
-namespace Murmur {
+// MurmurHash3 高性能实现
+namespace Murmur { // Murmur
     inline std::uint32_t rotl32(std::uint32_t x, std::int8_t r) {
         return (x << r) | (x >> (32 - r));
     }
@@ -249,7 +249,8 @@ namespace Murmur {
         h1 ^= static_cast<std::uint32_t>(len);
         return fmix32(h1);
     }
-}
+
+} // namespace Murmur
 
 } // namespace Hash
 

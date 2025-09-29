@@ -1,8 +1,8 @@
 #pragma once
 
 #include "../core/atomic.h"
+#include "../util/hazard_pointer.h"
 #include <optional>
-#include <array>
 
 namespace Corona::Concurrent {
 
@@ -29,68 +29,8 @@ private:
         explicit Node(T* item) : data(item) {}
     };
 
-    // Hazard Pointer 管理，简化版本
-    class HazardPointer {
-    private:
-        static constexpr size_t MAX_THREADS = 64;
-        static constexpr size_t HAZARD_PER_THREAD = 2;  // 每个线程最多2个hazard pointer
-        
-        struct alignas(Core::CACHE_LINE_SIZE) HazardRecord {
-            std::atomic<Node*> hazard[HAZARD_PER_THREAD];
-            std::atomic<bool> active{false};
-        };
-        
-        static thread_local HazardRecord* tl_hazard_record;
-        static std::array<HazardRecord, MAX_THREADS> hazard_records;
-        static std::atomic<size_t> next_record_index;
-        
-    public:
-        class Guard {
-        private:
-            size_t slot_;
-            
-        public:
-            explicit Guard(size_t slot = 0) : slot_(slot) {
-                if (!tl_hazard_record) {
-                    acquire_record();
-                }
-            }
-            
-            void protect(Node* ptr) {
-                if (tl_hazard_record) {
-                    tl_hazard_record->hazard[slot_].store(ptr, std::memory_order_release);
-                }
-            }
-            
-            void reset() {
-                if (tl_hazard_record) {
-                    tl_hazard_record->hazard[slot_].store(nullptr, std::memory_order_release);
-                }
-            }
-            
-            ~Guard() {
-                reset();
-            }
-        };
-        
-        static void retire(Node* node) {
-            // 简化版本：直接删除（实际应该加入退休列表）
-            delete node;
-        }
-        
-    private:
-        static void acquire_record() {
-            for (auto& record : hazard_records) {
-                bool expected = false;
-                if (record.active.compare_exchange_strong(expected, true, std::memory_order_acquire)) {
-                    tl_hazard_record = &record;
-                    return;
-                }
-            }
-            // 如果没有可用记录，使用第一个（简化处理）
-            tl_hazard_record = &hazard_records[0];
-        }
-    };
+    // 使用完整的HazardPointer实现
+    using NodeHazardPointer = HazardPointer<Node>;
 
     alignas(Core::CACHE_LINE_SIZE) Core::Atomic<Node*> head_;  // 队列头部
     alignas(Core::CACHE_LINE_SIZE) Core::Atomic<Node*> tail_;  // 队列尾部
@@ -132,7 +72,7 @@ public:
      */
     void enqueue(T item) {
         Node* new_node = new Node(new T(std::move(item)));
-        typename HazardPointer::Guard tail_guard(0);
+        typename NodeHazardPointer::Guard tail_guard(0);
         
         for (;;) {
             Node* tail = tail_.load(std::memory_order_acquire);
@@ -174,8 +114,8 @@ public:
      * @return 如果队列非空返回元素，否则返回 nullopt
      */
     std::optional<T> dequeue() {
-        typename HazardPointer::Guard head_guard(0);
-        typename HazardPointer::Guard next_guard(1);
+        typename NodeHazardPointer::Guard head_guard(0);
+        typename NodeHazardPointer::Guard next_guard(1);
         
         for (;;) {
             Node* head = head_.load(std::memory_order_acquire);
@@ -222,7 +162,7 @@ public:
                         // 成功获取数据
                         T result = *data;
                         delete data;  // 释放数据内存
-                        HazardPointer::retire(head);  // 延迟释放节点
+                        NodeHazardPointer::retire(head);  // 延迟释放节点
                         size_.fetch_sub(1, std::memory_order_relaxed);
                         return result;
                     }
@@ -266,17 +206,6 @@ public:
     }
 };
 
-// Hazard Pointer 静态成员定义
-template<typename T>
-thread_local typename MPMCQueue<T>::HazardPointer::HazardRecord* 
-    MPMCQueue<T>::HazardPointer::tl_hazard_record = nullptr;
 
-template<typename T>
-std::array<typename MPMCQueue<T>::HazardPointer::HazardRecord, 
-          MPMCQueue<T>::HazardPointer::MAX_THREADS> 
-    MPMCQueue<T>::HazardPointer::hazard_records{};
-
-template<typename T>
-std::atomic<size_t> MPMCQueue<T>::HazardPointer::next_record_index{0};
 
 } // namespace Corona::Concurrent
