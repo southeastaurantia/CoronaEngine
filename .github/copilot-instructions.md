@@ -48,7 +48,7 @@
 - 资源 id 与缓存 key 使用 `uint64_t`，避免手工复用旧 id；销毁对象时必须 `erase` 缓存并让系统取消关注。
 - 渲染资源（`HardwareImage`、`HardwareBuffer` 等）由 `CabbageHardware` 提供；在 CPU 线程创建后通过命令队列与 GPU 线程同步。
 - 资产路径默认基于运行目录的 `assets/`（示例中使用 `std::filesystem::current_path()/assets`），跨平台时请保持正斜杠并复用 `ResourceId::ComputeUid` 的规范化逻辑。
-- 命名遵循 `.clang-tidy` 的 google-readability 配置：类/结构体/接口/枚举使用 `CamelCase`，自由函数与局部变量 `snake_case`，成员变量 `snake_case_`（自动追加 `_`），常量与枚举值使用 `kCamelCase` 前缀；main 风格入口可放宽检查。
+- 命名遵循 `.clang-tidy` 的 google-readability 配置：类/结构体/接口/枚举使用 `CamelCase`，自由函数与局部变量 `snake_case`，成员变量 `snake_case_`（自动追加 `_`），常量与枚举值使用 `kCamelCase` 前缀；文件名使用 `CamelCase`；namespace使用 `CamelCase`；main 风格入口可放宽检查。
 
 ## 排除目录
 - `build/`
