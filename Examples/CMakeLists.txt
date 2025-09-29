@@ -44,8 +44,6 @@ function(corona_add_example)
 endfunction()
 
 set(_CORONA_EXAMPLE_FOLDERS
-    concurrent_queue_usage
-    concurrent_queue_performance
     resource_management
     multi_window_rendering
     python_scripting
@@ -53,8 +51,6 @@ set(_CORONA_EXAMPLE_FOLDERS
 )
 
 set(_CORONA_EXAMPLE_TARGETS
-    Corona_concurrent_queue_usage
-    Corona_concurrent_queue_performance
     Corona_resource_management
     Corona_multi_window_rendering
     Corona_python_scripting
