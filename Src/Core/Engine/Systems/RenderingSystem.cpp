@@ -118,7 +118,8 @@ void RenderingSystem::gbufferPipeline(std::shared_ptr<Scene> scene)
              rasterizerPipeline["pushConsts.textureIndex"] = m.meshDevice->textureIndex;
         
              executor(HardwareExecutor::ExecutorType::Graphics)
-                 << rasterizerPipeline(gbufferSize.x, gbufferSize.y) << rasterizerPipeline.record(m.meshDevice->indexBuffer);
+                 << rasterizerPipeline(gbufferSize.x, gbufferSize.y) << rasterizerPipeline.record(m.meshDevice->indexBuffer)
+                 << executor.commit();
          }
     });
 }
@@ -140,7 +141,9 @@ void RenderingSystem::compositePipeline(ktm::fvec3 sunDir)
     uniformBuffer.copyFromData(&uniformBufferObjects, sizeof(uniformBufferObjects));
     computePipeline["pushConsts.uniformBufferIndex"] = uniformBuffer.storeDescriptor();
 
-    computePipeline(1920 / 8, 1080 / 8, 1);
+    executor(HardwareExecutor::ExecutorType::Graphics)
+        << computePipeline(1920 / 8, 1080 / 8, 1)
+        << executor.commit();
 }
 
 void RenderingSystem::WatchModel(uint64_t id)
