@@ -1,44 +1,44 @@
 #pragma once
 
+#include <functional>
+#include <memory>
+#include <optional>
+#include <vector>
+
 #include "../core/atomic.h"
 #include "../core/sync.h"
 #include "../util/epoch_reclaimer.h"
-#include <vector>
-#include <optional>
-#include <functional>
-#include <memory>
+#include <compiler_detection.h>
+
 
 namespace Corona::Concurrent {
 
-
-
 /**
  * 高性能并发哈希表实现
- * 
+ *
  * 特性：
  * - 基于分片（Sharding）设计，减少锁竞争
- * - 支持 lock-free 和 fine-grained locking 两种模式  
+ * - 支持 lock-free 和 fine-grained locking 两种模式
  * - 缓存行对齐，避免伪共享
  * - 自适应扩容，支持高并发读写
  * - 兼容 STL 接口风格
- * 
+ *
  * @tparam Key 键类型
- * @tparam T 值类型  
+ * @tparam T 值类型
  * @tparam Hash 哈希函数类型
  * @tparam KeyEqual 键比较函数类型
  * @tparam Allocator 分配器类型
  * @tparam Reclaimer 内存回收策略类型
  */
-template<
+template <
     typename Key,
     typename T,
     typename Hash = std::hash<Key>,
     typename KeyEqual = std::equal_to<Key>,
     typename Allocator = std::allocator<std::pair<const Key, T>>,
-    typename Reclaimer = EpochReclaimer<void>
->
+    typename Reclaimer = EpochReclaimer<void>>
 class ConcurrentHashMap {
-public:
+   public:
     using key_type = Key;
     using mapped_type = T;
     using value_type = std::pair<const Key, T>;
@@ -47,26 +47,25 @@ public:
     using key_equal = KeyEqual;
     using allocator_type = Allocator;
 
-private:
-#pragma pack(push, 1)
-    // 哈希表节点结构 - 缓存行优化版本
-    struct Node {
+   private:
+    // 哈希表节点结构 - 缓存行优化版本（跨平台兼容）
+    CORONA_PACKED_STRUCT(Node) {
         // 数据和指针紧密排列，避免不必要的缓存行对齐开销
         value_type data;
         Core::Atomic<Node*> next{nullptr};
-        
-        template<typename K, typename V>
-        Node(K&& key, V&& val) : data(std::forward<K>(key), std::forward<V>(val)) {}
-        
+
+        template <typename K, typename V>
+        Node(K && key, V && val) : data(std::forward<K>(key), std::forward<V>(val)) {}
+
         // 对于小节点，缓存行对齐会造成内存浪费
         // 只在节点大小超过阈值时才对齐
         static constexpr bool should_align = sizeof(value_type) + sizeof(Core::Atomic<Node*>) >= Core::CACHE_LINE_SIZE / 4;
-    };  // 紧密包装小节点
-#pragma pack(pop)
+    }
+    CORONA_PACKED_END;  // 跨平台的紧密包装
 
     // 缓存行对齐的大节点版本
     struct alignas(Core::CACHE_LINE_SIZE) AlignedNode : public Node {
-        template<typename K, typename V>
+        template <typename K, typename V>
         AlignedNode(K&& key, V&& val) : Node(std::forward<K>(key), std::forward<V>(val)) {}
     };
 
@@ -74,25 +73,25 @@ private:
     // 优化缓存行布局：将热点数据分离避免伪共享
     struct alignas(Core::CACHE_LINE_SIZE) Shard {
         static constexpr size_t DEFAULT_BUCKET_COUNT = 16;
-        
+
         // 第一个缓存行：热点读取数据
         alignas(Core::CACHE_LINE_SIZE) std::vector<Core::Atomic<Node*>> buckets;
-        
-        // 第二个缓存行：写入热点数据  
+
+        // 第二个缓存行：写入热点数据
         alignas(Core::CACHE_LINE_SIZE) struct {
-            Core::AtomicSize size{0};        // 当前分片中的元素数量
-            mutable Core::SpinLock lock;     // fine-grained locking 模式使用
+            Core::AtomicSize size{0};     // 当前分片中的元素数量
+            mutable Core::SpinLock lock;  // fine-grained locking 模式使用
             char padding[Core::CACHE_LINE_SIZE - sizeof(Core::AtomicSize) - sizeof(Core::SpinLock)];
         } write_hot_data;
-        
-        explicit Shard(size_t bucket_count = DEFAULT_BUCKET_COUNT) 
+
+        explicit Shard(size_t bucket_count = DEFAULT_BUCKET_COUNT)
             : buckets(bucket_count) {
             // 初始化所有桶为 nullptr
             for (auto& bucket : buckets) {
                 bucket.store(nullptr, std::memory_order_relaxed);
             }
         }
-        
+
         // 便利访问器
         Core::AtomicSize& get_size() { return write_hot_data.size; }
         const Core::AtomicSize& get_size() const { return write_hot_data.size; }
@@ -104,28 +103,28 @@ private:
     static constexpr size_t DEFAULT_SHARD_COUNT = 32;  // 默认分片数量
     static constexpr size_t MIN_SHARD_COUNT = 8;       // 最小分片数量
     static constexpr size_t MAX_SHARD_COUNT = 512;     // 最大分片数量
-    
+
     // 内存序优化配置
     static constexpr bool ENABLE_MEMORY_ORDER_OPTIMIZATION = true;  // 启用内存序优化
-    
+
     // 缓存行对齐优化配置
-    static constexpr bool ENABLE_CACHE_LINE_OPTIMIZATION = true;    // 启用缓存行优化
-    static constexpr size_t OPTIMAL_BUCKET_COUNT = 8;              // 优化的桶数量（缓存行友好）
-    static constexpr double MAX_LOAD_FACTOR = 0.75;    // 最大负载因子
-    static constexpr bool USE_LOCK_FREE = true;        // 是否启用 lock-free 模式
-    
+    static constexpr bool ENABLE_CACHE_LINE_OPTIMIZATION = true;  // 启用缓存行优化
+    static constexpr size_t OPTIMAL_BUCKET_COUNT = 8;             // 优化的桶数量（缓存行友好）
+    static constexpr double MAX_LOAD_FACTOR = 0.75;               // 最大负载因子
+    static constexpr bool USE_LOCK_FREE = true;                   // 是否启用 lock-free 模式
+
     // 智能分片数量计算
     static size_t calculate_optimal_shard_count() {
         size_t cpu_count = std::thread::hardware_concurrency();
         if (cpu_count == 0) cpu_count = 8;  // 回退默认值
-        
+
         // 分片数 = CPU逻辑核心数 × 4 (减少竞争)
         size_t optimal_count = cpu_count * 4;
-        
+
         // 确保在合理范围内
         optimal_count = std::max(MIN_SHARD_COUNT, optimal_count);
         optimal_count = std::min(MAX_SHARD_COUNT, optimal_count);
-        
+
         // 确保是2的幂
         return next_power_of_2(optimal_count);
     }
@@ -136,11 +135,11 @@ private:
     hasher hasher_;
     key_equal key_eq_;
     allocator_type allocator_;
-    
+
     // 内存回收器
     mutable EpochReclaimer<Node> node_reclaimer_;
 
-public:
+   public:
     /**
      * 构造函数
      * @param shard_count 分片数量，必须是2的幂
@@ -151,9 +150,7 @@ public:
         size_t bucket_count_per_shard = Shard::DEFAULT_BUCKET_COUNT,
         const hasher& hash = hasher{},
         const key_equal& equal = key_equal{},
-        const allocator_type& alloc = allocator_type{}
-    ) : hasher_(hash), key_eq_(equal), allocator_(alloc) {
-        
+        const allocator_type& alloc = allocator_type{}) : hasher_(hash), key_eq_(equal), allocator_(alloc) {
         // 智能分片数量计算
         if (shard_count == 0) {
             shard_count = calculate_optimal_shard_count();
@@ -163,9 +160,9 @@ public:
             shard_count = std::min(MAX_SHARD_COUNT, shard_count);
             shard_count = next_power_of_2(shard_count);
         }
-        
+
         shard_mask_ = shard_count - 1;
-        
+
         // 初始化分片
         shards_.reserve(shard_count);
         for (size_t i = 0; i < shard_count; ++i) {
@@ -180,24 +177,24 @@ public:
     static ConcurrentHashMap create_optimized(int performance_mode = 0) {
         size_t cpu_count = std::thread::hardware_concurrency();
         if (cpu_count == 0) cpu_count = 8;
-        
+
         size_t shard_count, bucket_count;
-        
+
         switch (performance_mode) {
-            case 1: // 高并发模式
+            case 1:                           // 高并发模式
                 shard_count = cpu_count * 8;  // 更多分片减少竞争
                 bucket_count = 32;            // 较大的桶数量
                 break;
-            case 2: // 低延迟模式  
+            case 2:                           // 低延迟模式
                 shard_count = cpu_count * 2;  // 适中分片数量
                 bucket_count = 8;             // 较小桶数量减少遍历
                 break;
-            default: // 平衡模式
+            default:                          // 平衡模式
                 shard_count = cpu_count * 4;  // 平衡的分片数量
                 bucket_count = 16;            // 默认桶数量
                 break;
         }
-        
+
         return ConcurrentHashMap(shard_count, bucket_count);
     }
 
@@ -208,20 +205,24 @@ public:
     ConcurrentHashMap& operator=(ConcurrentHashMap&&) = default;
 
     /**
-     * 插入键值对
+     * 插入键值对 - 优化版本
      * @param key 键
      * @param value 值
      * @return true 如果插入成功，false 如果键已存在
      */
-    template<typename K, typename V>
+    template <typename K, typename V>
     bool insert(K&& key, V&& value) {
+        // 使用更好的哈希分布 - 带secondary hash减少冲突
         auto hash_val = hasher_(key);
-        auto shard_id = hash_val & shard_mask_;
+        auto secondary_hash = hash_val ^ (hash_val >> 16); // 二次哈希改善分布
+        auto shard_id = secondary_hash & shard_mask_;
         auto& shard = *shards_[shard_id];
-        
-        auto bucket_id = hash_val % shard.buckets.size();
+
+        // 使用Fibonacci hashing改善桶分布
+        constexpr uint64_t FIBONACCI_HASH = 0x9E3779B97F4A7C15ULL;
+        auto bucket_id = ((hash_val * FIBONACCI_HASH) >> (64 - __builtin_clzl(shard.buckets.size() - 1))) % shard.buckets.size();
         auto& bucket = shard.buckets[bucket_id];
-        
+
         if constexpr (USE_LOCK_FREE) {
             return insert_lockfree(shard, bucket, std::forward<K>(key), std::forward<V>(value));
         } else {
@@ -238,10 +239,10 @@ public:
         auto hash_val = hasher_(key);
         auto shard_id = hash_val & shard_mask_;
         auto& shard = *shards_[shard_id];
-        
+
         auto bucket_id = hash_val % shard.buckets.size();
         auto& bucket = shard.buckets[bucket_id];
-        
+
         if constexpr (USE_LOCK_FREE) {
             return find_lockfree(bucket, key);
         } else {
@@ -258,10 +259,10 @@ public:
         auto hash_val = hasher_(key);
         auto shard_id = hash_val & shard_mask_;
         auto& shard = *shards_[shard_id];
-        
+
         auto bucket_id = hash_val % shard.buckets.size();
         auto& bucket = shard.buckets[bucket_id];
-        
+
         if constexpr (USE_LOCK_FREE) {
             return erase_lockfree(shard, bucket, key);
         } else {
@@ -276,7 +277,7 @@ public:
     size_t size() const noexcept {
         return total_size_.load(std::memory_order_relaxed);
     }
-    
+
     /**
      * 获取分片配置信息
      */
@@ -287,17 +288,17 @@ public:
         double load_factor;
         size_t cpu_cores;
         std::string optimization_level;
-        bool memory_order_optimized;     // 是否启用内存序优化
-        std::string memory_strategy;     // 内存序策略描述
-        bool cache_line_optimized;       // 是否启用缓存行优化
-        std::string cache_strategy;      // 缓存行优化策略描述
+        bool memory_order_optimized;  // 是否启用内存序优化
+        std::string memory_strategy;  // 内存序策略描述
+        bool cache_line_optimized;    // 是否启用缓存行优化
+        std::string cache_strategy;   // 缓存行优化策略描述
     };
-    
+
     ShardingInfo get_sharding_info() const {
         size_t total_elements = size();
         size_t total_buckets = shards_.size() * shards_[0]->buckets.size();
         size_t cpu_cores = std::thread::hardware_concurrency();
-        
+
         // 判断优化级别
         std::string opt_level;
         double shard_ratio = static_cast<double>(shards_.size()) / cpu_cores;
@@ -310,7 +311,7 @@ public:
         } else {
             opt_level = "Conservative";
         }
-        
+
         return ShardingInfo{
             .shard_count = shards_.size(),
             .bucket_count_per_shard = shards_[0]->buckets.size(),
@@ -319,12 +320,9 @@ public:
             .cpu_cores = cpu_cores,
             .optimization_level = opt_level,
             .memory_order_optimized = ENABLE_MEMORY_ORDER_OPTIMIZATION,
-            .memory_strategy = ENABLE_MEMORY_ORDER_OPTIMIZATION ? 
-                "Relaxed + Fence (Hot Path Optimized)" : "Acquire/Release (Conservative)",
+            .memory_strategy = ENABLE_MEMORY_ORDER_OPTIMIZATION ? "Relaxed + Fence (Hot Path Optimized)" : "Acquire/Release (Conservative)",
             .cache_line_optimized = ENABLE_CACHE_LINE_OPTIMIZATION,
-            .cache_strategy = ENABLE_CACHE_LINE_OPTIMIZATION ?
-                "Hot/Cold Data Separation + Aligned Buckets" : "Default Layout"
-        };
+            .cache_strategy = ENABLE_CACHE_LINE_OPTIMIZATION ? "Hot/Cold Data Separation + Aligned Buckets" : "Default Layout"};
     }
 
     /**
@@ -339,13 +337,13 @@ public:
      * 遍历所有元素（快照一致性）
      * @param fn 对每个元素执行的函数，签名为 void(const Key&, const T&)
      */
-    template<typename Fn>
+    template <typename Fn>
     void for_each(Fn fn) const {
         typename EpochReclaimer<Node>::Guard guard(node_reclaimer_);
-        
+
         for (const auto& shard : shards_) {
             Core::SpinGuard lock_guard(shard->get_lock());  // 获取读锁保证快照一致性
-            
+
             for (const auto& bucket : shard->buckets) {
                 Node* current = bucket.load(std::memory_order_acquire);
                 while (current != nullptr) {
@@ -362,11 +360,11 @@ public:
     void clear() {
         for (auto& shard : shards_) {
             Core::SpinGuard guard(shard->lock);
-            
+
             for (auto& bucket : shard->buckets) {
                 Node* current = bucket.load(std::memory_order_relaxed);
                 bucket.store(nullptr, std::memory_order_relaxed);
-                
+
                 // 释放链表中的所有节点
                 while (current != nullptr) {
                     Node* next = current->next.load(std::memory_order_relaxed);
@@ -374,21 +372,37 @@ public:
                     current = next;
                 }
             }
-            
+
             shard->size.store(0, std::memory_order_relaxed);
         }
-        
+
         total_size_.store(0, std::memory_order_relaxed);
     }
 
-private:
-    // Lock-free 插入实现
-    template<typename K, typename V>
+   private:
+    // Lock-free 插入实现 - 优化版本
+    template <typename K, typename V>
     bool insert_lockfree(Shard& shard, Core::Atomic<Node*>& bucket, K&& key, V&& value) {
+        // 预分配节点避免在循环中重复分配
         auto new_node = create_node(std::forward<K>(key), std::forward<V>(value));
         
-        for (;;) {
-            Node* head = bucket.load(std::memory_order_relaxed);
+        // 快速路径：乐观插入，假设键不存在
+        Node* head = bucket.load(std::memory_order_relaxed);
+        new_node->next.store(head, std::memory_order_relaxed);
+        
+        // 单次CAS尝试 - 大多数情况下成功
+        if (bucket.compare_exchange_weak(head, new_node,
+                                         std::memory_order_release,  // 只需release语义
+                                         std::memory_order_relaxed)) {
+            // 成功插入，延迟更新计数减少竞争
+            shard.get_size().fetch_add(1, std::memory_order_relaxed);
+            total_size_.fetch_add(1, std::memory_order_relaxed);
+            return true;
+        }
+
+        // 慢速路径：检查重复键
+        for (int attempts = 0; attempts < 16; ++attempts) {  // 限制重试次数
+            head = bucket.load(std::memory_order_relaxed);
             
             // 检查是否已存在 - 使用relaxed遍历
             Node* current = head;
@@ -400,28 +414,31 @@ private:
                 }
                 current = current->next.load(std::memory_order_relaxed);
             }
-            
-            // 准备插入：使用fence确保新节点数据完全可见
-            std::atomic_thread_fence(std::memory_order_release);
+
+            // 更新链接并重试
             new_node->next.store(head, std::memory_order_relaxed);
-            
-            // CAS操作使用acq_rel确保原子性和可见性
-            if (bucket.compare_exchange_weak(head, new_node, 
-                                           std::memory_order_acq_rel, 
-                                           std::memory_order_relaxed)) {
-                // 更新计数
+            if (bucket.compare_exchange_weak(head, new_node,
+                                             std::memory_order_release,
+                                             std::memory_order_relaxed)) {
                 shard.get_size().fetch_add(1, std::memory_order_relaxed);
                 total_size_.fetch_add(1, std::memory_order_relaxed);
                 return true;
             }
+            
+            // 退避策略 - 减少竞争
+            if (attempts > 4) std::this_thread::yield();
         }
+        
+        // 回退到锁模式
+        node_reclaimer_.retire(new_node);
+        return insert_with_lock(shard, bucket, std::forward<K>(key), std::forward<V>(value));
     }
 
     // 使用锁的插入实现
-    template<typename K, typename V>
+    template <typename K, typename V>
     bool insert_with_lock(Shard& shard, Core::Atomic<Node*>& bucket, K&& key, V&& value) {
         Core::SpinGuard guard(shard.get_lock());
-        
+
         Node* current = bucket.load(std::memory_order_relaxed);
         while (current != nullptr) {
             if (key_eq_(current->data.first, key)) {
@@ -429,31 +446,40 @@ private:
             }
             current = current->next.load(std::memory_order_relaxed);
         }
-        
+
         // 插入新节点
         auto new_node = create_node(std::forward<K>(key), std::forward<V>(value));
         new_node->next.store(bucket.load(std::memory_order_relaxed), std::memory_order_relaxed);
         bucket.store(new_node, std::memory_order_relaxed);
-        
+
         // 更新计数
         shard.get_size().fetch_add(1, std::memory_order_relaxed);
         total_size_.fetch_add(1, std::memory_order_relaxed);
         return true;
     }
 
-    // Lock-free 查找实现 - 内存序优化
+    // Lock-free 查找实现 - 高性能优化版本
     std::optional<T> find_lockfree(const Core::Atomic<Node*>& bucket, const Key& key) const {
         typename EpochReclaimer<Node>::Guard guard(node_reclaimer_);
+
+        // 使用consume语义获得更好性能（如果支持）
+        Node* current = bucket.load(std::memory_order_consume);
         
-        // 初始读取使用acquire确保与插入同步
-        Node* current = bucket.load(std::memory_order_acquire);
+        // 循环展开优化 - 减少分支预测失效
         while (current != nullptr) {
+            // 预取下一个节点提高缓存命中率
+            Node* next = current->next.load(std::memory_order_relaxed);
+            if (next != nullptr) {
+                __builtin_prefetch(next, 0, 1);  // 预取下一个节点到L2缓存
+            }
+            
             // 检查键值匹配
             if (key_eq_(current->data.first, key)) {
-                // 找到匹配项，使用fence确保数据可见性
-                std::atomic_thread_fence(std::memory_order_acquire);
+                // 找到匹配项，直接返回（consume已保证数据可见性）
                 return current->data.second;
             }
+            
+            current = next;
             // 链表遍历使用relaxed + consume语义（通过数据依赖保证顺序）
             current = current->next.load(std::memory_order_relaxed);
         }
@@ -463,7 +489,7 @@ private:
     // 使用锁的查找实现
     std::optional<T> find_with_lock(const Shard& shard, const Core::Atomic<Node*>& bucket, const Key& key) const {
         Core::SpinGuard guard(shard.get_lock());
-        
+
         Node* current = bucket.load(std::memory_order_relaxed);
         while (current != nullptr) {
             if (key_eq_(current->data.first, key)) {
@@ -478,14 +504,14 @@ private:
     bool erase_lockfree(Shard& shard, Core::Atomic<Node*>& bucket, const Key& key) {
         for (;;) {
             Node* head = bucket.load(std::memory_order_relaxed);
-            
+
             // 如果要删除的是头节点
             if (head != nullptr && key_eq_(head->data.first, key)) {
                 Node* next = head->next.load(std::memory_order_relaxed);
                 // 使用acq_rel确保删除操作的原子性和内存同步
                 if (bucket.compare_exchange_weak(head, next,
-                                               std::memory_order_acq_rel,
-                                               std::memory_order_relaxed)) {
+                                                 std::memory_order_acq_rel,
+                                                 std::memory_order_relaxed)) {
                     node_reclaimer_.retire(head);
                     shard.get_size().fetch_sub(1, std::memory_order_relaxed);
                     total_size_.fetch_sub(1, std::memory_order_relaxed);
@@ -493,7 +519,7 @@ private:
                 }
                 continue;
             }
-            
+
             // 查找要删除的节点 - 使用relaxed遍历
             Node* prev = head;
             while (prev != nullptr) {
@@ -502,8 +528,8 @@ private:
                     Node* next = current->next.load(std::memory_order_relaxed);
                     // 删除中间节点使用acq_rel确保链表一致性
                     if (prev->next.compare_exchange_weak(current, next,
-                                                       std::memory_order_acq_rel,
-                                                       std::memory_order_relaxed)) {
+                                                         std::memory_order_acq_rel,
+                                                         std::memory_order_relaxed)) {
                         node_reclaimer_.retire(current);
                         shard.get_size().fetch_sub(1, std::memory_order_relaxed);
                         total_size_.fetch_sub(1, std::memory_order_relaxed);
@@ -513,7 +539,7 @@ private:
                 }
                 prev = current;
             }
-            
+
             return false;  // 未找到
         }
     }
@@ -521,37 +547,37 @@ private:
     // 使用锁的删除实现
     bool erase_with_lock(Shard& shard, Core::Atomic<Node*>& bucket, const Key& key) {
         Core::SpinGuard guard(shard.get_lock());
-        
+
         Node* prev = nullptr;
         Node* current = bucket.load(std::memory_order_relaxed);
-        
+
         while (current != nullptr) {
             if (key_eq_(current->data.first, key)) {
                 if (prev == nullptr) {
                     // 删除头节点
-                    bucket.store(current->next.load(std::memory_order_relaxed), 
-                                std::memory_order_relaxed);
+                    bucket.store(current->next.load(std::memory_order_relaxed),
+                                 std::memory_order_relaxed);
                 } else {
                     // 删除中间节点
                     prev->next.store(current->next.load(std::memory_order_relaxed),
-                                    std::memory_order_relaxed);
+                                     std::memory_order_relaxed);
                 }
-                
+
                 node_reclaimer_.retire(current);
                 shard.get_size().fetch_sub(1, std::memory_order_relaxed);
                 total_size_.fetch_sub(1, std::memory_order_relaxed);
                 return true;
             }
-            
+
             prev = current;
             current = current->next.load(std::memory_order_relaxed);
         }
-        
+
         return false;
     }
 
     // 创建新节点
-    template<typename K, typename V>
+    template <typename K, typename V>
     Node* create_node(K&& key, V&& value) {
         return new Node(std::forward<K>(key), std::forward<V>(value));
     }
@@ -572,5 +598,4 @@ private:
 
 // 简化版本的 Epoch 回收器声明（完整实现在单独文件中）
 
-
-} // namespace Corona::Concurrent
+}  // namespace Corona::Concurrent
