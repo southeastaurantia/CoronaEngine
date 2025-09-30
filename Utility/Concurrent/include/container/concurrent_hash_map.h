@@ -48,6 +48,7 @@ public:
     using allocator_type = Allocator;
 
 private:
+#pragma pack(push, 1)
     // 哈希表节点结构 - 缓存行优化版本
     struct Node {
         // 数据和指针紧密排列，避免不必要的缓存行对齐开销
@@ -60,8 +61,9 @@ private:
         // 对于小节点，缓存行对齐会造成内存浪费
         // 只在节点大小超过阈值时才对齐
         static constexpr bool should_align = sizeof(value_type) + sizeof(Core::Atomic<Node*>) >= Core::CACHE_LINE_SIZE / 4;
-    } __attribute__((packed));  // 紧密包装小节点
-    
+    };  // 紧密包装小节点
+#pragma pack(pop)
+
     // 缓存行对齐的大节点版本
     struct alignas(Core::CACHE_LINE_SIZE) AlignedNode : public Node {
         template<typename K, typename V>
