@@ -15,7 +15,7 @@ CoronaEngineAPI::Scene::Scene(void *surface, bool lightField)
     sceneCache.insert(sceneID, scene);
     if (surface)
     {
-        sceneCache.modify(sceneID, [surface](std::shared_ptr<Corona::Scene> scene) {
+        sceneCache.modify(sceneID, [surface](const std::shared_ptr<Corona::Scene> &scene) {
             scene->displaySurface = surface;
         });
         auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
@@ -34,10 +34,10 @@ CoronaEngineAPI::Scene::~Scene()
     sceneCache.erase(sceneID);
 }
 
-void CoronaEngineAPI::Scene::setCamera(const ktm::fvec3 &position, const ktm::fvec3 &forward, const ktm::fvec3 &worldUp, float fov)
+void CoronaEngineAPI::Scene::setCamera(const ktm::fvec3 &position, const ktm::fvec3 &forward, const ktm::fvec3 &worldUp, float fov) const
 {
     auto &sceneCache = Corona::Engine::Instance().Cache<Corona::Scene>();
-    sceneCache.modify(sceneID, [position, forward, worldUp, fov](std::shared_ptr<Corona::Scene> scene) {
+    sceneCache.modify(sceneID, [position, forward, worldUp, fov](const std::shared_ptr<Corona::Scene> &scene) {
         scene->camera.pos = position;
         scene->camera.forward = forward;
         scene->camera.worldUp = worldUp;
@@ -46,10 +46,10 @@ void CoronaEngineAPI::Scene::setCamera(const ktm::fvec3 &position, const ktm::fv
 
 }
 
-void CoronaEngineAPI::Scene::setSunDirection(ktm::fvec3 direction)
+void CoronaEngineAPI::Scene::setSunDirection(ktm::fvec3 direction) const
 {
     auto &sceneCache = Corona::Engine::Instance().Cache<Corona::Scene>();
-    sceneCache.modify(sceneID, [direction](std::shared_ptr<Corona::Scene> scene) {
+    sceneCache.modify(sceneID, [direction](const std::shared_ptr<Corona::Scene> &scene) {
         scene->sunDirection = direction;
     });
 }
@@ -59,7 +59,7 @@ void CoronaEngineAPI::Scene::setDisplaySurface(void *surface)
     auto &sceneCache = Corona::Engine::Instance().Cache<Corona::Scene>();
     auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
     auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
-    sceneCache.modify(sceneID, [surface, &renderingSystem, &render_queue](std::shared_ptr<Corona::Scene> scene) {
+    sceneCache.modify(sceneID, [surface, &renderingSystem, &render_queue](const std::shared_ptr<Corona::Scene> &scene) {
         scene->displaySurface = surface;
         render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::setDisplaySurface, scene);
     });
@@ -67,7 +67,7 @@ void CoronaEngineAPI::Scene::setDisplaySurface(void *surface)
 }
 
 
-CoronaEngineAPI::Actor::Actor(std::string path)
+CoronaEngineAPI::Actor::Actor(const std::string &path)
     : actorID(Corona::DataId::Next()),
     animationID(0)
 {
@@ -127,26 +127,26 @@ CoronaEngineAPI::Actor::~Actor()
     }
 }
 
-void CoronaEngineAPI::Actor::move(ktm::fvec3 pos)
+void CoronaEngineAPI::Actor::move(ktm::fvec3 pos) const
 {
     auto &modelCache = Corona::Engine::Instance().Cache<Corona::Model>();
-    modelCache.modify(actorID, [pos](std::shared_ptr<Corona::Model> model) {
+    modelCache.modify(actorID, [pos](const std::shared_ptr<Corona::Model> &model) {
         model->positon = pos;
     });
 }
 
-void CoronaEngineAPI::Actor::rotate(ktm::fvec3 euler)
+void CoronaEngineAPI::Actor::rotate(ktm::fvec3 euler) const
 {
     auto &modelCache = Corona::Engine::Instance().Cache<Corona::Model>();
-    modelCache.modify(actorID, [euler](std::shared_ptr<Corona::Model> model) {
+    modelCache.modify(actorID, [euler](const std::shared_ptr<Corona::Model> &model) {
         model->rotation = euler;
     });
 }
 
-void CoronaEngineAPI::Actor::scale(ktm::fvec3 size)
+void CoronaEngineAPI::Actor::scale(ktm::fvec3 size) const
 {
     auto &modelCache = Corona::Engine::Instance().Cache<Corona::Model>();
-    modelCache.modify(actorID, [size](std::shared_ptr<Corona::Model> model) {
+    modelCache.modify(actorID, [size](const std::shared_ptr<Corona::Model> &model) {
         model->scale = size;
     });
 }
