@@ -48,9 +48,7 @@ set(_CORONA_EXAMPLE_FOLDERS
     multi_window_rendering
     python_scripting
     interactive_rendering
-    concurrent_basics
-    concurrent_containers
-    shard_performance_comparison
+    concurrent_performance
 )
 
 set(_CORONA_EXAMPLE_TARGETS
@@ -58,9 +56,7 @@ set(_CORONA_EXAMPLE_TARGETS
     Corona_multi_window_rendering
     Corona_python_scripting
     Corona_interactive_rendering
-    Corona_concurrent_basics
-    Corona_concurrent_containers
-    Corona_shard_performance_comparison
+    Corona_concurrent_performance
 )
 
 set(_corona_startup_target "")

@@ -1,29 +1,35 @@
+#include <compiler_features.h>
+
 #include "../include/core/memory.h"
+
+#include <algorithm>
 #include <cstdlib>
 #include <new>
-#include <algorithm>
 
-#ifdef _WIN32
+#if CE_BUILTIN_PLATFORM_WINDOWS
 #include <malloc.h>
-#else
-#include <cstdlib>
 #endif
 
 // 跨平台的对齐内存分配函数
 inline void* portable_aligned_alloc(std::size_t alignment, std::size_t size) {
-#ifdef _WIN32
+#if CE_BUILTIN_PLATFORM_WINDOWS
     return _aligned_malloc(size, alignment);
-#else
+#elif CE_BUILTIN_PLATFORM_POSIX
     void* ptr = nullptr;
     if (posix_memalign(&ptr, alignment, size) == 0) {
         return ptr;
     }
     return nullptr;
+#else
+    if ((size % alignment) != 0) {
+        size = ((size + alignment - 1) / alignment) * alignment;
+    }
+    return std::aligned_alloc(alignment, size);
 #endif
 }
 
 inline void portable_aligned_free(void* ptr) {
-#ifdef _WIN32
+#if CE_BUILTIN_PLATFORM_WINDOWS
     _aligned_free(ptr);
 #else
     free(ptr);
@@ -41,17 +47,10 @@ void* CacheLineAllocator::allocate(std::size_t size, std::size_t alignment) {
     
     std::size_t aligned_size = align_up(size, alignment);
     
-#ifdef _WIN32
-    void* ptr = _aligned_malloc(aligned_size, alignment);
+    void* ptr = portable_aligned_alloc(alignment, aligned_size);
     if (!ptr) {
         throw std::bad_alloc();
     }
-#else
-    void* ptr = nullptr;
-    if (posix_memalign(&ptr, alignment, aligned_size) != 0) {
-        throw std::bad_alloc();
-    }
-#endif
     
     allocated_bytes_ += aligned_size;
     allocation_count_++;
@@ -62,11 +61,7 @@ void* CacheLineAllocator::allocate(std::size_t size, std::size_t alignment) {
 void CacheLineAllocator::deallocate(void* ptr, std::size_t size) noexcept {
     if (!ptr) return;
     
-#ifdef _WIN32
-    _aligned_free(ptr);
-#else
-    free(ptr);
-#endif
+    portable_aligned_free(ptr);
     
     allocated_bytes_ -= size;
 }

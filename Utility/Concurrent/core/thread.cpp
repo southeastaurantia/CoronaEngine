@@ -1,17 +1,21 @@
+#include <compiler_features.h>
+
 #include "../include/core/thread.h"
 
-#if defined(_WIN32)
+#include <memory>
+
+#if CE_BUILTIN_PLATFORM_WINDOWS
 #include <windows.h>
 #include <processthreadsapi.h>
-#elif defined(__linux__)
-#include <unistd.h>
+#elif CE_BUILTIN_PLATFORM_LINUX || CE_BUILTIN_PLATFORM_ANDROID
+#include <pthread.h>
 #include <sched.h>
-#include <pthread.h>
 #include <sys/sysinfo.h>
-#elif defined(__APPLE__)
 #include <unistd.h>
-#include <sys/sysctl.h>
+#elif CE_BUILTIN_PLATFORM_MACOS
 #include <pthread.h>
+#include <sys/sysctl.h>
+#include <unistd.h>
 #endif
 
 namespace Corona::Concurrent::Core {
@@ -22,7 +26,7 @@ namespace Corona::Concurrent::Core {
 CpuInfo get_cpu_info() noexcept {
     CpuInfo info{};
     
-#if defined(_WIN32)
+#if CE_BUILTIN_PLATFORM_WINDOWS
     // Windows 实现
     SYSTEM_INFO sys_info;
     GetSystemInfo(&sys_info);
@@ -47,14 +51,14 @@ CpuInfo get_cpu_info() noexcept {
     info.has_hyper_threading = (info.logical_cores > info.physical_cores);
     info.numa_nodes = 1; // 简化处理，实际应该查询 NUMA 信息
     
-#elif defined(__linux__)
+#elif CE_BUILTIN_PLATFORM_LINUX || CE_BUILTIN_PLATFORM_ANDROID
     // Linux 实现
     info.logical_cores = std::thread::hardware_concurrency();
     info.physical_cores = info.logical_cores; // 简化处理
     info.has_hyper_threading = false;
     info.numa_nodes = 1;
     
-#elif defined(__APPLE__)
+#elif CE_BUILTIN_PLATFORM_MACOS
     // macOS 实现
     size_t size = sizeof(info.logical_cores);
     sysctlbyname("hw.logicalcpu", &info.logical_cores, &size, nullptr, 0);
@@ -93,17 +97,17 @@ ThreadId get_current_thread_id() noexcept {
  * CPU 亲和性设置实现
  */
 bool CpuAffinity::bind_to_cpu(std::uint32_t cpu_id) noexcept {
-#if defined(_WIN32)
+#if CE_BUILTIN_PLATFORM_WINDOWS
     DWORD_PTR mask = 1ULL << cpu_id;
     return SetThreadAffinityMask(GetCurrentThread(), mask) != 0;
     
-#elif defined(__linux__)
+#elif CE_BUILTIN_PLATFORM_LINUX || CE_BUILTIN_PLATFORM_ANDROID
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
     CPU_SET(cpu_id, &cpuset);
     return pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) == 0;
     
-#elif defined(__APPLE__)
+#elif CE_BUILTIN_PLATFORM_MACOS
     // macOS 不直接支持线程 CPU 亲和性设置
     // 这里返回 true 但实际不执行操作
     (void)cpu_id; // 避免未使用参数警告
@@ -116,14 +120,14 @@ bool CpuAffinity::bind_to_cpu(std::uint32_t cpu_id) noexcept {
 }
 
 bool CpuAffinity::bind_thread_to_cpu(std::thread::id thread_id, std::uint32_t cpu_id) noexcept {
-#if defined(_WIN32)
+#if CE_BUILTIN_PLATFORM_WINDOWS
     // 这需要线程句柄，标准库的 thread::id 无法直接转换
     // 在实际使用中，应该传递原生线程句柄
     (void)thread_id;
     (void)cpu_id;
     return false;
     
-#elif defined(__linux__)
+#elif CE_BUILTIN_PLATFORM_LINUX || CE_BUILTIN_PLATFORM_ANDROID
     // 类似问题，需要 pthread_t
     (void)thread_id;
     (void)cpu_id;
@@ -139,7 +143,7 @@ bool CpuAffinity::bind_thread_to_cpu(std::thread::id thread_id, std::uint32_t cp
 std::vector<std::uint32_t> CpuAffinity::get_current_affinity() noexcept {
     std::vector<std::uint32_t> result;
     
-#if defined(_WIN32)
+#if CE_BUILTIN_PLATFORM_WINDOWS
     DWORD_PTR process_mask, system_mask;
     if (GetProcessAffinityMask(GetCurrentProcess(), &process_mask, &system_mask)) {
         for (std::uint32_t i = 0; i < 64; ++i) {
@@ -149,7 +153,7 @@ std::vector<std::uint32_t> CpuAffinity::get_current_affinity() noexcept {
         }
     }
     
-#elif defined(__linux__)
+#elif CE_BUILTIN_PLATFORM_LINUX || CE_BUILTIN_PLATFORM_ANDROID
     cpu_set_t cpuset;
     if (pthread_getaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) == 0) {
         for (std::uint32_t i = 0; i < CPU_SETSIZE; ++i) {
@@ -171,14 +175,14 @@ std::vector<std::uint32_t> CpuAffinity::get_current_affinity() noexcept {
 }
 
 bool CpuAffinity::reset_affinity() noexcept {
-#if defined(_WIN32)
+#if CE_BUILTIN_PLATFORM_WINDOWS
     DWORD_PTR process_mask, system_mask;
     if (GetProcessAffinityMask(GetCurrentProcess(), &process_mask, &system_mask)) {
         return SetThreadAffinityMask(GetCurrentThread(), process_mask) != 0;
     }
     return false;
     
-#elif defined(__linux__)
+#elif CE_BUILTIN_PLATFORM_LINUX || CE_BUILTIN_PLATFORM_ANDROID
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
     for (int i = 0; i < CPU_SETSIZE; ++i) {

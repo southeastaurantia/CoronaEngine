@@ -1,11 +1,12 @@
 #pragma once
 
+#include <compiler_features.h>
 #include <atomic>
 #include <type_traits>
 #include <cstdint>
-#include <thread>
+#include <thread>  // IWYU pragma: keep
 
-#if defined(_MSC_VER) && (defined(_M_X64) || defined(_M_IX86))
+#if CE_BUILTIN_COMPILER_MSVC && (CE_BUILTIN_ARCH_X86_64 || CE_BUILTIN_ARCH_X86_32)
 #include <intrin.h>
 #endif
 
@@ -257,9 +258,9 @@ public:
  * CPU 自旋优化工具
  */
 inline void cpu_relax() noexcept {
-#if defined(_MSC_VER) && (defined(_M_X64) || defined(_M_IX86))
+#if CE_BUILTIN_COMPILER_MSVC && (CE_BUILTIN_ARCH_X86_64 || CE_BUILTIN_ARCH_X86_32)
     _mm_pause();
-#elif defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__))
+#elif CE_BUILTIN_COMPILER_GCC_FAMILY && (CE_BUILTIN_ARCH_X86_64 || CE_BUILTIN_ARCH_X86_32)
     __builtin_ia32_pause();
 #else
     std::this_thread::yield();
@@ -285,9 +286,9 @@ inline void release_fence() noexcept {
  * 编译器屏障
  */
 inline void compiler_fence() noexcept {
-#if defined(_MSC_VER)
+#if CE_BUILTIN_COMPILER_MSVC
     _ReadWriteBarrier();
-#elif defined(__GNUC__)
+#elif CE_BUILTIN_COMPILER_GCC_FAMILY
     __asm__ __volatile__("" ::: "memory");
 #else
     std::atomic_signal_fence(std::memory_order_seq_cst);
