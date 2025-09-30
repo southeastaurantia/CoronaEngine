@@ -35,24 +35,6 @@ corona_to_backslash("${Python3_RUNTIME_LIBRARY_DIRS}/Lib" _CORONA_PY_LIB_ESC ESC
 
 add_compile_definitions(
 
-    # ========================================
-    # 编译器识别宏 (Compiler Detection Macros)
-    # ========================================
-    # 为不同编译器定义统一的识别宏，方便在代码中进行条件编译
-    $<$<CXX_COMPILER_ID:MSVC>:CORONA_COMPILER_MSVC>
-    $<$<CXX_COMPILER_ID:GNU>:CORONA_COMPILER_GCC>
-    $<$<CXX_COMPILER_ID:Clang>:CORONA_COMPILER_CLANG>
-    $<$<CXX_COMPILER_ID:AppleClang>:CORONA_COMPILER_APPLE_CLANG>
-    
-    # 平台识别宏 (Platform Detection Macros)
-    $<$<PLATFORM_ID:Windows>:CORONA_PLATFORM_WINDOWS>
-    $<$<PLATFORM_ID:Linux>:CORONA_PLATFORM_LINUX>
-    $<$<PLATFORM_ID:Darwin>:CORONA_PLATFORM_MACOS>
-    
-    # 架构识别宏 (Architecture Detection Macros)
-    $<$<STREQUAL:${CMAKE_SIZEOF_VOID_P},8>:CORONA_ARCH_64BIT>
-    $<$<STREQUAL:${CMAKE_SIZEOF_VOID_P},4>:CORONA_ARCH_32BIT>
-
     # (MSVC) 关闭 MSVC 对不安全 CRT 函数的警告（如 fopen/strcpy），保证日志整洁
     $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>
 
