@@ -2,6 +2,7 @@
 #include <Log.h>
 
 #include <algorithm>
+#include <exception>
 #include <mutex>
 
 namespace Corona
@@ -9,7 +10,44 @@ namespace Corona
     ResourceManager::ResourceManager() = default;
     ResourceManager::~ResourceManager()
     {
-        tasks_.wait();
+        wait();
+        taskPool_.shutdown();
+    }
+
+    void ResourceManager::scheduleTask(std::function<void()> task)
+    {
+        pendingTasks_.fetch_add(1, std::memory_order_acq_rel);
+        try
+        {
+            taskPool_.submit_detached([this, task = std::move(task)]() mutable {
+                try
+                {
+                    if (task)
+                    {
+                        task();
+                    }
+                }
+                catch (const std::exception &e)
+                {
+                    CE_LOG_ERROR("ResourceManager async task threw exception: {}", e.what());
+                }
+                catch (...)
+                {
+                    CE_LOG_ERROR("ResourceManager async task threw unknown exception");
+                }
+
+                if (pendingTasks_.fetch_sub(1, std::memory_order_acq_rel) == 1)
+                {
+                    std::lock_guard lk(waitMutex_);
+                    waitCv_.notify_all();
+                }
+            });
+        }
+        catch (...)
+        {
+            pendingTasks_.fetch_sub(1, std::memory_order_acq_rel);
+            throw;
+        }
     }
 
     void ResourceManager::registerLoader(std::shared_ptr<IResourceLoader> loader)
@@ -30,27 +68,34 @@ namespace Corona
 
     std::shared_ptr<IResource> ResourceManager::loadInternal(const ResourceId &id)
     {
-        if (auto it = cache_.find(id); it != cache_.end())
+        if (auto cached = cache_.find(id))
         {
-            return it->second;
+            return *cached;
         }
 
         std::shared_ptr<std::mutex> mtx;
-        if (auto it = locks_.find(id); it != locks_.end())
+        if (auto existingLock = locks_.find(id))
         {
-            mtx = it->second;
+            mtx = *existingLock;
         }
         else
         {
             auto created = std::make_shared<std::mutex>();
-            auto [insIt, ok] = locks_.insert({id, created});
-            mtx = insIt->second;
+            if (locks_.insert(id, created))
+            {
+                mtx = std::move(created);
+            }
+            else
+            {
+                auto retryLock = locks_.find(id);
+                mtx = retryLock ? *retryLock : created;
+            }
         }
 
         std::scoped_lock lk(*mtx);
-        if (auto it2 = cache_.find(id); it2 != cache_.end())
+        if (auto cachedAfterLock = cache_.find(id))
         {
-            return it2->second;
+            return *cachedAfterLock;
         }
 
         auto loader = findLoader(id);
@@ -67,7 +112,7 @@ namespace Corona
             return nullptr;
         }
 
-        cache_.insert({id, res});
+        cache_.insert(id, res);
         return res;
     }
 
@@ -109,7 +154,7 @@ namespace Corona
     {
         auto prom = std::make_shared<std::promise<std::shared_ptr<IResource>>>();
         auto fut = prom->get_future();
-        tasks_.run([this, id, prom] {
+        scheduleTask([this, id, prom] {
             prom->set_value(this->loadInternal(id));
         });
         return fut;
@@ -119,7 +164,7 @@ namespace Corona
     {
         auto prom = std::make_shared<std::promise<std::shared_ptr<IResource>>>();
         auto fut = prom->get_future();
-        tasks_.run([this, id, prom] {
+        scheduleTask([this, id, prom] {
             prom->set_value(this->loadOnce(id));
         });
         return fut;
@@ -127,7 +172,7 @@ namespace Corona
 
     void ResourceManager::loadAsync(const ResourceId &id, LoadCallback cb)
     {
-        tasks_.run([this, id, cb] {
+        scheduleTask([this, id, cb] {
             auto res = loadInternal(id);
             if (cb)
             {
@@ -138,7 +183,7 @@ namespace Corona
 
     void ResourceManager::loadOnceAsync(const ResourceId &id, LoadCallback cb)
     {
-        tasks_.run([this, id, cb] {
+        scheduleTask([this, id, cb] {
             auto res = loadOnce(id);
             if (cb)
             {
@@ -151,7 +196,7 @@ namespace Corona
     {
         for (const auto &rid : ids)
         {
-            tasks_.run([this, rid]() {
+            scheduleTask([this, rid]() {
                 (void)loadInternal(rid);
             });
         }
@@ -159,16 +204,18 @@ namespace Corona
 
     void ResourceManager::wait()
     {
-        tasks_.wait();
+        std::unique_lock lk(waitMutex_);
+        waitCv_.wait(lk, [this]() { return pendingTasks_.load(std::memory_order_acquire) == 0; });
     }
 
     void ResourceManager::clear()
     {
         cache_.clear();
+        locks_.clear();
     }
 
     bool ResourceManager::contains(const ResourceId &id) const
     {
-        return cache_.find(id) != cache_.end();
+        return cache_.find(id).has_value();
     }
 } // namespace Corona

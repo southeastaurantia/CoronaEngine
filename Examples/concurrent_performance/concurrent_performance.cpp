@@ -3,9 +3,9 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <limits>
 #include <string>
 #include <thread>
 #include <vector>
@@ -36,27 +36,27 @@ struct BenchmarkResult {
     }
 };
 
-void print_result(const BenchmarkResult& result) {
+void print_result(std::ostream& os, const BenchmarkResult& result) {
     const auto duration_ms = std::chrono::duration<double, std::milli>(result.duration).count();
-    std::cout << std::left << std::setw(28) << result.name
-              << " | threads: " << std::setw(4) << result.threads
-              << " | ops: " << std::setw(12) << result.total_ops
-              << " | time: " << std::setw(8) << std::fixed << std::setprecision(2) << duration_ms << " ms"
-              << " | throughput: " << std::setw(8) << std::setprecision(2)
-              << (result.throughput_ops_per_sec() / 1'000'000.0) << " Mops/s"
-              << " | latency: " << std::setw(8) << result.avg_latency_ns() << " ns/op";
+    os << std::left << std::setw(28) << result.name
+       << " | threads: " << std::setw(4) << result.threads
+       << " | ops: " << std::setw(12) << result.total_ops
+       << " | time: " << std::setw(8) << std::fixed << std::setprecision(2) << duration_ms << " ms"
+       << " | throughput: " << std::setw(8) << std::setprecision(2)
+       << (result.throughput_ops_per_sec() / 1'000'000.0) << " Mops/s"
+       << " | latency: " << std::setw(8) << result.avg_latency_ns() << " ns/op";
     if (result.errors != 0) {
-        std::cout << " | errors: " << result.errors;
+        os << " | errors: " << result.errors;
     }
-    std::cout << '\n';
+    os << '\n';
 }
 
-void print_table_header() {
-    std::cout << std::left << std::setw(28) << "Test" << " | threads | ops         | time     | throughput | latency" << '\n';
+void print_table_header(std::ostream& os) {
+    os << std::left << std::setw(28) << "Test" << " | threads | ops         | time     | throughput | latency" << '\n';
 }
 
-void print_table_separator() {
-    std::cout << std::string(110, '-') << '\n';
+void print_table_separator(std::ostream& os) {
+    os << std::string(110, '-') << '\n';
 }
 
 inline void wait_for_start(std::atomic<std::size_t>& ready, std::size_t expected) {
@@ -232,46 +232,89 @@ int main(int argc, char** argv) {
 
     initialize();
 
-    std::cout << "==============================\n";
-    std::cout << " Corona Concurrent Performance\n";
-    std::cout << "==============================\n";
+    std::vector<std::ostream*> outputs;
+    outputs.push_back(&std::cout);
+
+    std::string output_file_path{"concurrent_performance_results.txt"};
+    if (argc > 1 && argv[1] != nullptr) {
+        std::string path_arg{argv[1]};
+        if (!path_arg.empty()) {
+            output_file_path = path_arg;
+        }
+    }
+
+    std::ofstream file_stream;
+    if (!output_file_path.empty()) {
+        file_stream.open(output_file_path, std::ios::out | std::ios::trunc);
+        if (file_stream.is_open()) {
+            outputs.push_back(&file_stream);
+            std::cout << "Writing performance results to '" << output_file_path << "'.\n";
+        } else {
+            std::cerr << "Warning: unable to open performance log file '" << output_file_path
+                      << "'. Proceeding with console output only.\n";
+        }
+    }
+
+    auto broadcast = [&](auto&& fn) {
+        for (auto* os : outputs) {
+            fn(*os);
+        }
+    };
+
+    broadcast([](std::ostream& os) {
+        os << "==============================\n";
+        os << " Corona Concurrent Performance\n";
+        os << "==============================\n";
+    });
 
     std::vector<std::size_t> thread_counts{1, 2, 4, 8, 16, 32};
     std::sort(thread_counts.begin(), thread_counts.end());
 
-    std::vector<std::size_t> ops_counts{5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, 55000, 60000};
+    std::vector<std::size_t> ops_counts{5000, 10000, 20000, 30000, 40000, 50000};
     std::sort(ops_counts.begin(), ops_counts.end());
 
-    std::cout << '\n';
-    std::cout << "Thread sweep    : ";
-    for (std::size_t i = 0; i < thread_counts.size(); ++i) {
-        std::cout << thread_counts[i];
-        if (i + 1 < thread_counts.size()) {
-            std::cout << ", ";
+    broadcast([&](std::ostream& os) {
+        os << '\n';
+        os << "Thread sweep    : ";
+        for (std::size_t i = 0; i < thread_counts.size(); ++i) {
+            os << thread_counts[i];
+            if (i + 1 < thread_counts.size()) {
+                os << ", ";
+            }
         }
-    }
-    std::cout << '\n';
-    std::cout << "Ops/thread sweep: ";
-    for (std::size_t i = 0; i < ops_counts.size(); ++i) {
-        std::cout << ops_counts[i];
-        if (i + 1 < ops_counts.size()) {
-            std::cout << ", ";
+        os << '\n';
+        os << "Ops/thread sweep: ";
+        for (std::size_t i = 0; i < ops_counts.size(); ++i) {
+            os << ops_counts[i];
+            if (i + 1 < ops_counts.size()) {
+                os << ", ";
+            }
         }
-    }
-    std::cout << "\n\n";
+        os << "\n\n";
+    });
 
     for (const auto thread_count : thread_counts) {
         for (const auto ops_count : ops_counts) {
-            std::cout << "[Scenario] threads=" << thread_count << ", ops_per_thread=" << ops_count << '\n';
-            print_table_header();
-            print_table_separator();
+            broadcast([&](std::ostream& os) {
+                os << "[Scenario] threads=" << thread_count << ", ops_per_thread=" << ops_count << '\n';
+            });
+            broadcast([](std::ostream& os) {
+                print_table_header(os);
+            });
+            broadcast([](std::ostream& os) {
+                print_table_separator(os);
+            });
 
             ConcurrentHashMap<int, int> map;
             auto insert_result = benchmark_hashmap_insert(map, thread_count, ops_count);
             auto find_result = benchmark_hashmap_find(map, thread_count, ops_count);
 
-            print_result(insert_result);
-            print_result(find_result);
+            broadcast([&](std::ostream& os) {
+                print_result(os, insert_result);
+            });
+            broadcast([&](std::ostream& os) {
+                print_result(os, find_result);
+            });
 
             if (thread_count >= 2) {
                 std::size_t producer_threads = std::max<std::size_t>(1, thread_count / 2);
@@ -281,18 +324,32 @@ int main(int argc, char** argv) {
                     ++producer_threads;
                 }
                 auto queue_result = benchmark_mpmc_queue(producer_threads, consumer_threads, ops_count);
-                print_result(queue_result);
-                print_table_separator();
-                std::cout << "Queue producer threads : " << producer_threads << '\n';
-                std::cout << "Queue consumer threads : " << consumer_threads << '\n';
-                std::cout << "Queue total items      : " << producer_threads * ops_count << '\n';
+                broadcast([&](std::ostream& os) {
+                    print_result(os, queue_result);
+                });
+                broadcast([](std::ostream& os) {
+                    print_table_separator(os);
+                });
+                broadcast([&](std::ostream& os) {
+                    os << "Queue producer threads : " << producer_threads << '\n';
+                    os << "Queue consumer threads : " << consumer_threads << '\n';
+                    os << "Queue total items      : " << producer_threads * ops_count << '\n';
+                });
             } else {
-                print_table_separator();
-                std::cout << "MPMC Queue benchmark skipped (requires at least 2 threads)." << '\n';
+                broadcast([](std::ostream& os) {
+                    print_table_separator(os);
+                    os << "MPMC Queue benchmark skipped (requires at least 2 threads)." << '\n';
+                });
             }
 
-            std::cout << '\n';
+            broadcast([](std::ostream& os) {
+                os << '\n';
+            });
         }
+    }
+
+    if (file_stream.is_open()) {
+        file_stream.flush();
     }
 
     finalize();
