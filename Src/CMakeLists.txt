@@ -19,6 +19,7 @@ target_compile_features(CoronaEngine PUBLIC cxx_std_20)
 
 target_include_directories(CoronaEngine PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}" # 允许头按相对路径引用
+        "${PROJECT_SOURCE_DIR}/Common/include" # 全局头文件目录
         "${stb_SOURCE_DIR}" # stb 单头库
         "${PROJECT_SOURCE_DIR}/Env/oneapi-tbb-2022.2.0/include"
         ${Python3_INCLUDE_DIRS}

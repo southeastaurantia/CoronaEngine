@@ -37,7 +37,7 @@ public:
             std::cout << "Threads: " << thread_count << std::endl;
             std::cout << "Operations per thread: " << operations_per_thread << std::endl;
             std::cout << "Total operations: " << total_operations << std::endl;
-            std::cout << "Duration: " << duration.count() << " μs" << std::endl;
+            std::cout << "Duration: " << duration.count() << " us" << std::endl;
             std::cout << "Throughput: " << std::fixed << std::setprecision(0) 
                       << ops_per_second << " ops/sec" << std::endl;
             std::cout << "Average latency: " << std::fixed << std::setprecision(2) 

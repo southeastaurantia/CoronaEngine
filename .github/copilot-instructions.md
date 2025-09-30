@@ -57,11 +57,24 @@
 - **路径标准化**：`ResourceId::ComputeUid` 统一处理路径格式（小写 + 正斜杠 `/`）
 - **类型扩展**：新增资源类型时复用 UID 生成逻辑，架构应放在 `ResourceTypes` 下
 
+### Concurrent 模块（`Utility/Concurrent`）
+- **目录分层**：`core/` 提供原子、线程、内存与同步原语，`container/` 聚合各类并发容器，`util/` 包含回收器、线程池与基准工具；公共入口统一通过 `include/concurrent.h`
+- **缓存一致性**：复用 `CacheLineAligned`、`CacheLinePadding` 等工具避免伪共享；对跨线程共享的计数器或指针保持 64B 对齐，必要时补齐填充字段
+- **容器扩展**：新增容器默认采用 shard/stripe 方案，保持接口与 STL 语义一致；在 Traits 中显式声明哈希、比较与重哈希策略，并在 `bench/` 下补充微基准
+- **内存回收**：优先使用 `EpochReclaimer` 获取高吞吐；若需要强一致指针语义，改用 `HazardPointer` 或混合策略，并确保在单元测试中覆盖并发释放路径
+- **线程与任务工具**：`ThreadPool` 采用工作窃取调度，提交任务使用 `submit(Priority, Fn, Args...)`；在引擎系统中结合 `SpinWait`、`cpu_relax` 等退避原语控制自旋成本
+- **设计文档**：复杂改动需同步更新 `Utility/Concurrent/detail.md` 与 README 中的性能数据/指标，保持与实测结果一致
+
 ### 通用模块开发规范
 - **目录结构**：源码放在模块根目录，公共头文件集中在 `include/` 子目录
 - **CMake 集成**：通过根目录 `CMakeLists.txt` 暴露公共接口
 - **设计原则**：保持线程安全，提供跨系统通用能力
 - **使用范围**：供 `Src/Core` 和 `Examples` 共享使用
+- **公共接口约定**：导出头文件需通过 `Utility/<Module>/include` 聚合，示例代码使用统一的 umbrella 头（如 `include/concurrent.h`），避免直接依赖内部 `core/`、`detail/` 文件
+- **文档同步**：模块改动后同步更新 `README.md`、`detail.md` 以及相关报告（例如 `utility_common_consolidation_report.md`、`corona_common_implementation_report.md`），保持设计说明与性能数据一致
+- **测试与基准**：功能更新至少覆盖一条 Catch2 单元测试或 `Examples/` 中的演示；性能敏感改动须更新 `bench/` 目录基准或在 `run_performance_tests*.ps1` 中记录新数据
+- **共享依赖**：跨模块复用的工具放入 `Common/include` 或各模块 `core/` 层，通过轻量适配器暴露，禁止形成循环依赖
+- **CMake 目标**：新增 Utility 模块需在 `Utility/CMakeLists.txt` 注册独立 target，并确保顶层构建透传公共 include path、编译选项与必要的第三方依赖
 
 ## 渲染与动画协作
 - `RenderingSystem`（`Src/Core/Engine/Systems/RenderingSystem.*`）在 `onTick()` 消费命令队列后调用 `updateEngine()`：遍历 `Scene` 与 `Model` 缓存、刷新 g-buffer、写回 `HardwareImage`，并将最终输出绑定到 `Scene::displayer`。
@@ -124,6 +137,12 @@
 - **文件命名**：使用 `CamelCase` 格式
 - **命名空间**：使用 `CamelCase` 格式
 - **特殊情况**：main 风格入口函数可适当放宽检查
+
+## 性能基准与验证流程
+- **并发容器示例**：`cmake --build --preset ninja-debug --target Corona_concurrent_containers` 后运行对应可执行，验证 `ConcurrentHashMap`、`MPMCQueue` 等核心路径；提交前记录 ops/s、延迟与线程数配置
+- **性能脚本**：仓库提供 `run_performance_tests.ps1`、`run_performance_tests_simple.ps1` 与英文说明版脚本，默认从项目根目录执行，输出数据同步至 `performance_test_results.txt`
+- **数据追踪**：若调优缓存或哈希策略，需更新 `cache_line_optimization_report.md`、`sharding_optimization_results.md` 等报告，保持基线对比可追溯
+- **监控指标**：基准测试至少包含吞吐、p99 延迟与内存占用；异常结果需附上硬件配置、编译选项（如 `-O3`、`-march=native`）与对照组说明
 
 ## 版本控制排除目录
 以下目录已配置在 `.gitignore` 中，不应提交到版本控制：
