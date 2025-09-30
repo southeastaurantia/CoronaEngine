@@ -117,7 +117,8 @@ void RenderingSystem::gbufferPipeline(std::shared_ptr<Scene> scene)
              rasterizerPipeline["jointWeights"] = m.meshDevice->boneWeightsBuffer;
              rasterizerPipeline["pushConsts.textureIndex"] = m.meshDevice->textureIndex;
         
-             rasterizerPipeline(gbufferSize.x, gbufferSize.y) << rasterizerPipeline.record(m.meshDevice->indexBuffer) << rasterizerPipeline.endRecord();
+             executor(HardwareExecutor::ExecutorType::Graphics)
+                 << rasterizerPipeline(gbufferSize.x, gbufferSize.y) << rasterizerPipeline.record(m.meshDevice->indexBuffer);
          }
     });
 }

@@ -71,6 +71,8 @@ namespace Corona
         HardwareBuffer uniformBuffer;
         HardwareBuffer gbufferUniformBuffer;
 
+        HardwareExecutor executor;
+
         // 对应旧版的渲染流程拆分
         void init();
         void updateEngine();
