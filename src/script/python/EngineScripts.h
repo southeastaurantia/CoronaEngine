@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Python.h>
-#include "Core/CoronaEngineAPI.h"
+#include <CoronaEngineAPI.h>
 
 struct EngineScripts
 {
