@@ -1,7 +1,11 @@
 #define PY_SSIZE_T_CLEAN
 #include "PythonAPI.h"
+#include <windows.h>
+
 #include <Log.h>
 #include <regex>
+#include <iostream>
+#include <set>
 
 namespace CE::Python::Internal {
     struct PyObjPtr {
