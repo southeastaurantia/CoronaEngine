@@ -6,6 +6,7 @@
 #include <functional>
 #include <algorithm>
 #include <thread>
+#include <stdexcept>
 
 namespace Corona::Concurrent {
 
@@ -72,6 +73,10 @@ private:
             // 释放hazard记录
             if (my_hazard_record) {
                 my_hazard_record->active.store(false, std::memory_order_release);
+                my_hazard_record->owner.store(std::thread::id{}, std::memory_order_release);
+                for (auto& hazard : my_hazard_record->hazards) {
+                    hazard.store(nullptr, std::memory_order_release);
+                }
             }
         }
     };
@@ -179,25 +184,28 @@ public:
             // 首先尝试找到已经属于当前线程的记录
             for (auto& record : hazard_records_) {
                 if (record.owner.load(std::memory_order_acquire) == current_thread_id) {
-                    tl_data_.my_hazard_record = &record;
-                    return;
-                }
-            }
-            
-            // 如果没找到，尝试获取一个未使用的记录
-            for (auto& record : hazard_records_) {
-                std::thread::id expected{};
-                if (record.owner.compare_exchange_strong(expected, current_thread_id, 
-                                                       std::memory_order_acq_rel)) {
                     record.active.store(true, std::memory_order_release);
                     tl_data_.my_hazard_record = &record;
                     return;
                 }
             }
             
-            // 如果所有记录都被占用，使用轮询方式等待
-            // 在实际生产环境中，这里应该有更好的处理策略
-            tl_data_.my_hazard_record = &hazard_records_[0];
+            // 如果没找到，尝试获取一个未使用的记录
+            constexpr std::size_t kMaxAttempts = 1024;
+            for (std::size_t attempt = 0; attempt < kMaxAttempts; ++attempt) {
+                for (auto& record : hazard_records_) {
+                    std::thread::id expected{};
+                    if (record.owner.compare_exchange_strong(expected, current_thread_id,
+                                                             std::memory_order_acq_rel)) {
+                        record.active.store(true, std::memory_order_release);
+                        tl_data_.my_hazard_record = &record;
+                        return;
+                    }
+                }
+                std::this_thread::yield();
+            }
+            
+            throw std::runtime_error("HazardPointer: exhausted hazard records; consider increasing MAX_THREADS");
         }
     };
     
