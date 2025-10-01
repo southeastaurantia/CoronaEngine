@@ -15,7 +15,6 @@ include(corona_third_party)     # FetchContent 第三方依赖
 include(build_cabbage_editor)   # 编辑器资源安装
 
 # 库与主引擎
-add_subdirectory(utility)
 add_subdirectory(src)
 
 # 示例工程按需开启

@@ -4,9 +4,9 @@
 - **核心引擎**：`src/core`（包含 `engine`、`systems`、`thread` 等）与 `src/resource`（资源管理）
 - **脚本支持**：`src/script/python` 提供 Python 内嵌脚本入口
 - **通用组件**：
-  - `utility/logger`：统一日志系统
-  - `utility/resource_manager`：资源管理器
-  - `utility/concurrent`：并发工具集
+  - `src/utility/logger`：统一日志系统
+  - `src/utility/resource_manager`：资源管理器
+  - `src/utility/concurrent`：并发工具集
 - **第三方依赖**：由 `misc/cmake/corona_third_party.cmake` 通过 FetchContent 统一管理（assimp、EnTT、GLFW、Vulkan 等）
 - **示例程序**：`examples/` 目录，其中 `interactive_rendering` 展示了完整的系统注册、缓存操作和渲染输出流程，是学习交互逻辑的最佳参考
 
@@ -38,7 +38,7 @@
   - ⚠️ **重要**：回调函数应保持简短，避免阻塞系统线程
 
 ### 资源管理系统
-- **基础功能**：`ResourceManager`（`utility/resource_manager`）默认启用资源缓存
+- **基础功能**：`ResourceManager`（`src/utility/resource_manager`）默认启用资源缓存
 - **加载方式**：
   - `load()`：返回共享指针，适合常规加载
   - `loadOnce()`：一次性读取，不缓存
@@ -47,17 +47,17 @@
 
 ## utility 模块设计约定
 
-### logger 模块（`utility/logger`）
+### logger 模块（`src/utility/logger`）
 - **接口封装**：仅通过 `<Log.h>` 对外暴露，内部隐藏 spdlog 实现细节
 - **初始化**：在入口点（如 `Engine::Init`）调用 `Logger::Init`
 - **使用规范**：业务代码统一使用 `CE_LOG_*` 宏，禁止直接调用第三方日志 API
 
-### resource_manager 模块（`utility/resource_manager`）
+### resource_manager 模块（`src/utility/resource_manager`）
 - **Loader 注册**：所有 Loader 必须在引擎初始化阶段注册
 - **路径标准化**：`ResourceId::ComputeUid` 统一处理路径格式（小写 + 正斜杠 `/`）
 - **类型扩展**：新增资源类型时复用 UID 生成逻辑，架构应放在 `ResourceTypes` 下
 
-### concurrent 模块（`utility/concurrent`）
+### concurrent 模块（`src/utility/concurrent`）
 - **目录分层**：`core/` 提供原子、线程、内存与同步原语，`container/` 聚合各类并发容器，`util/` 包含回收器、线程池与基准工具；公共入口统一通过 `include/concurrent.h`
 - **缓存一致性**：复用 `CacheLineAligned`、`CacheLinePadding` 等工具避免伪共享；对跨线程共享的计数器或指针保持 64B 对齐，必要时补齐填充字段
 - **容器扩展**：新增容器默认采用 shard/stripe 方案，保持接口与 STL 语义一致；在 Traits 中显式声明哈希、比较与重哈希策略，并在 `bench/` 下补充微基准
@@ -70,11 +70,11 @@
 - **CMake 集成**：通过根目录 `CMakeLists.txt` 暴露公共接口
 - **设计原则**：保持线程安全，提供跨系统通用能力
 - **使用范围**：供 `src/core` 和 `examples` 共享使用
-- **公共接口约定**：导出头文件需通过 `utility/<module>/include` 聚合，示例代码使用统一的 umbrella 头（如 `include/concurrent.h`），避免直接依赖内部 `core/`、`detail/` 文件
+- **公共接口约定**：导出头文件需通过 `src/utility/<module>/include` 聚合，示例代码使用统一的 umbrella 头（如 `include/concurrent.h`），避免直接依赖内部 `core/`、`detail/` 文件
 - **文档同步**：模块改动后同步更新 `README.md`、`detail.md` 以及相关报告（例如 `utility_common_consolidation_report.md`、`corona_common_implementation_report.md`），保持设计说明与性能数据一致
 - **测试与基准**：功能更新至少覆盖一条 Catch2 单元测试或 `examples/` 中的演示；性能敏感改动须更新 `bench/` 目录基准或在 `run_performance_tests*.ps1` 中记录新数据
-- **共享依赖**：跨模块复用的工具放入 `Common/include` 或各模块 `core/` 层，通过轻量适配器暴露，禁止形成循环依赖
-- **CMake 目标**：新增 utility 模块需在 `utility/CMakeLists.txt` 注册独立 target，并确保顶层构建透传公共 include path、编译选项与必要的第三方依赖
+- **共享依赖**：跨模块复用的工具放入 `src/common/include` 或各模块 `core/` 层，通过轻量适配器暴露，禁止形成循环依赖
+- **CMake 目标**：新增 utility 模块需在 `src/utility/CMakeLists.txt` 注册独立 target，并确保顶层构建透传公共 include path、编译选项与必要的第三方依赖
 
 ## 渲染与动画协作
 - `RenderingSystem`（`src/core/engine/systems/RenderingSystem.*`）在 `onTick()` 消费命令队列后调用 `updateEngine()`：遍历 `Scene` 与 `Model` 缓存、刷新 g-buffer、写回 `HardwareImage`，并将最终输出绑定到 `Scene::displayer`。
@@ -113,7 +113,7 @@
 ## 代码规范与调试指南
 
 ### 日志规范
-- **统一接口**：使用 `CE_LOG_*` 宏（定义在 `utility/logger/include/Log.h`）
+- **统一接口**：使用 `CE_LOG_*` 宏（定义在 `src/utility/logger/include/Log.h`）
 - **级别配置**：默认日志级别在 `Engine::Init` 时设置，可通过 `Logger::SetLevel` 自定义
 
 ### 资源管理规范

@@ -1,3 +1,6 @@
+# 先构建 utility 模块
+add_subdirectory(utility)
+
 # 收集所有 C/C++ 源与头文件，CONFIGURE_DEPENDS 确保新增文件被自动发现
 file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
@@ -19,7 +22,7 @@ target_compile_features(CoronaEngine PUBLIC cxx_std_20)
 
 target_include_directories(CoronaEngine PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}" # 允许头按相对路径引用
-        "${PROJECT_SOURCE_DIR}/Common/include" # 全局头文件目录
+        "${CMAKE_CURRENT_SOURCE_DIR}/common/include" # 全局头文件目录
         "${stb_SOURCE_DIR}" # stb 单头库
         "${PROJECT_SOURCE_DIR}/third_party/oneapi-tbb-2022.2.0/include"
         ${Python3_INCLUDE_DIRS}
