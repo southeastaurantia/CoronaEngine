@@ -4,10 +4,10 @@
 - **核心引擎**：`src/core`（包含 `engine`、`systems`、`thread` 等）与 `src/resource`（资源管理）
 - **脚本支持**：`src/script/python` 提供 Python 内嵌脚本入口
 - **通用组件**：
-  - `Utility/Logger`：统一日志系统
-  - `Utility/ResourceManager`：资源管理器
-  - `Utility/Concurrent`：并发工具集
-- **第三方依赖**：由 `Misc/cmake/CoronaThirdParty.cmake` 通过 FetchContent 统一管理（assimp、EnTT、GLFW、Vulkan 等）
+  - `utility/logger`：统一日志系统
+  - `utility/resource_manager`：资源管理器
+  - `utility/concurrent`：并发工具集
+- **第三方依赖**：由 `misc/cmake/corona_third_party.cmake` 通过 FetchContent 统一管理（assimp、EnTT、GLFW、Vulkan 等）
 - **示例程序**：`Examples/` 目录，其中 `interactive_rendering` 展示了完整的系统注册、缓存操作和渲染输出流程，是学习交互逻辑的最佳参考
 
 ## 引擎生命周期与线程模型
@@ -38,43 +38,43 @@
   - ⚠️ **重要**：回调函数应保持简短，避免阻塞系统线程
 
 ### 资源管理系统
-- **基础功能**：`ResourceManager`（`Utility/ResourceManager`）默认启用资源缓存
+- **基础功能**：`ResourceManager`（`utility/resource_manager`）默认启用资源缓存
 - **加载方式**：
   - `load()`：返回共享指针，适合常规加载
   - `loadOnce()`：一次性读取，不缓存
   - `loadAsync()`：后台异步加载
 - **扩展开发**：自定义 loader 实现参考 `Examples/resource_management/resource_management.cpp`
 
-## Utility 模块设计约定
+## utility 模块设计约定
 
-### Logger 模块（`Utility/Logger`）
+### logger 模块（`utility/logger`）
 - **接口封装**：仅通过 `<Log.h>` 对外暴露，内部隐藏 spdlog 实现细节
 - **初始化**：在入口点（如 `Engine::Init`）调用 `Logger::Init`
 - **使用规范**：业务代码统一使用 `CE_LOG_*` 宏，禁止直接调用第三方日志 API
 
-### ResourceManager 模块（`Utility/ResourceManager`）
+### resource_manager 模块（`utility/resource_manager`）
 - **Loader 注册**：所有 Loader 必须在引擎初始化阶段注册
 - **路径标准化**：`ResourceId::ComputeUid` 统一处理路径格式（小写 + 正斜杠 `/`）
 - **类型扩展**：新增资源类型时复用 UID 生成逻辑，架构应放在 `ResourceTypes` 下
 
-### Concurrent 模块（`Utility/Concurrent`）
+### concurrent 模块（`utility/concurrent`）
 - **目录分层**：`core/` 提供原子、线程、内存与同步原语，`container/` 聚合各类并发容器，`util/` 包含回收器、线程池与基准工具；公共入口统一通过 `include/concurrent.h`
 - **缓存一致性**：复用 `CacheLineAligned`、`CacheLinePadding` 等工具避免伪共享；对跨线程共享的计数器或指针保持 64B 对齐，必要时补齐填充字段
 - **容器扩展**：新增容器默认采用 shard/stripe 方案，保持接口与 STL 语义一致；在 Traits 中显式声明哈希、比较与重哈希策略，并在 `bench/` 下补充微基准
 - **内存回收**：优先使用 `EpochReclaimer` 获取高吞吐；若需要强一致指针语义，改用 `HazardPointer` 或混合策略，并确保在单元测试中覆盖并发释放路径
 - **线程与任务工具**：`ThreadPool` 采用工作窃取调度，提交任务使用 `submit(Priority, Fn, Args...)`；在引擎系统中结合 `SpinWait`、`cpu_relax` 等退避原语控制自旋成本
-- **设计文档**：复杂改动需同步更新 `Utility/Concurrent/detail.md` 与 README 中的性能数据/指标，保持与实测结果一致
+- **设计文档**：复杂改动需同步更新 `utility/concurrent/detail.md` 与 README 中的性能数据/指标，保持与实测结果一致
 
 ### 通用模块开发规范
 - **目录结构**：源码放在模块根目录，公共头文件集中在 `include/` 子目录
 - **CMake 集成**：通过根目录 `CMakeLists.txt` 暴露公共接口
 - **设计原则**：保持线程安全，提供跨系统通用能力
 - **使用范围**：供 `src/core` 和 `Examples` 共享使用
-- **公共接口约定**：导出头文件需通过 `Utility/<Module>/include` 聚合，示例代码使用统一的 umbrella 头（如 `include/concurrent.h`），避免直接依赖内部 `core/`、`detail/` 文件
+- **公共接口约定**：导出头文件需通过 `utility/<module>/include` 聚合，示例代码使用统一的 umbrella 头（如 `include/concurrent.h`），避免直接依赖内部 `core/`、`detail/` 文件
 - **文档同步**：模块改动后同步更新 `README.md`、`detail.md` 以及相关报告（例如 `utility_common_consolidation_report.md`、`corona_common_implementation_report.md`），保持设计说明与性能数据一致
 - **测试与基准**：功能更新至少覆盖一条 Catch2 单元测试或 `Examples/` 中的演示；性能敏感改动须更新 `bench/` 目录基准或在 `run_performance_tests*.ps1` 中记录新数据
 - **共享依赖**：跨模块复用的工具放入 `Common/include` 或各模块 `core/` 层，通过轻量适配器暴露，禁止形成循环依赖
-- **CMake 目标**：新增 Utility 模块需在 `Utility/CMakeLists.txt` 注册独立 target，并确保顶层构建透传公共 include path、编译选项与必要的第三方依赖
+- **CMake 目标**：新增 utility 模块需在 `utility/CMakeLists.txt` 注册独立 target，并确保顶层构建透传公共 include path、编译选项与必要的第三方依赖
 
 ## 渲染与动画协作
 - `RenderingSystem`（`src/core/engine/systems/RenderingSystem.*`）在 `onTick()` 消费命令队列后调用 `updateEngine()`：遍历 `Scene` 与 `Model` 缓存、刷新 g-buffer、写回 `HardwareImage`，并将最终输出绑定到 `Scene::displayer`。
@@ -83,15 +83,15 @@
 - 需要新增系统时，沿用 `ThreadedSystem` + `SafeCommandQueue` 模式，并在 `Engine::StartSystems()` 前完成 `RegisterSystem`。
 
 ## Python 与编辑器集成
-- `Misc/cmake/CoronaPython.cmake` 会优先检测系统 Python≥`CORONA_PYTHON_MIN_VERSION`，否则回退到 `Env/Python-3.13.7`；配置阶段默认执行 `Misc/pytools/check_pip_modules.py` 校验 requirements。
+- `misc/cmake/corona_python.cmake` 会优先检测系统 Python≥`CORONA_PYTHON_MIN_VERSION`，否则回退到 `Env/Python-3.13.7`；配置阶段默认执行 `misc/pytools/check_pip_modules.py` 校验 requirements。
 - `src/script/python/PythonAPI.*` 将 `Editor/CoronaEditor/Backend` 打包为嵌入式模块 `CoronaEngine`，内置热更新（`PythonHotfix`）与 `PyInit_CoronaEngineEmbedded` 类型注册。
-- 构建编辑器资源需开启 `-DBUILD_CORONA_EDITOR=ON`，随后 `corona_install_corona_editor` 调用 `Misc/pytools/editor_copy_and_build.py` 使用 `Env/node-v22.19.0` 运行 `npm install && npm run build`；错误只发出警告但不会终止构建。
+- 构建编辑器资源需开启 `-DBUILD_CORONA_EDITOR=ON`，随后 `corona_install_corona_editor` 调用 `misc/pytools/editor_copy_and_build.py` 使用 `Env/node-v22.19.0` 运行 `npm install && npm run build`；错误只发出警告但不会终止构建。
 
 ## 构建与运行工作流
 - 首次配置：`cmake --preset ninja-mc`（PowerShell）；常用构建 `cmake --build --preset ninja-debug --target Corona_interactive_rendering`，其他配置参见 `CMakePresets.json`。
-- 关键选项：`CORONA_BUILD_EXAMPLES` 控制示例，`BUILD_CORONA_EDITOR` 控制编辑器资源，`BUILD_SHARED_LIBS` 默认为 OFF；所有开关定义在 `Misc/cmake/CoronaOptions.cmake`。
-- 运行示例前确保 `Misc/pytools/check_pip_modules.py` 通过（如需手动复查可执行 `cmake --build --preset ninja-debug --target check_python_deps`）。
-- 生成的可执行与依赖 DLL 会被 `corona_install_runtime_deps` 复制到目标目录；如添加新依赖，请更新 `Misc/cmake/CoronaRuntimeDeps.cmake`。
+- 关键选项：`CORONA_BUILD_EXAMPLES` 控制示例，`BUILD_CORONA_EDITOR` 控制编辑器资源，`BUILD_SHARED_LIBS` 默认为 OFF；所有开关定义在 `misc/cmake/corona_options.cmake`。
+- 运行示例前确保 `misc/pytools/check_pip_modules.py` 通过（如需手动复查可执行 `cmake --build --preset ninja-debug --target check_python_deps`）。
+- 生成的可执行与依赖 DLL 会被 `corona_install_runtime_deps` 复制到目标目录；如添加新依赖，请更新 `misc/cmake/corona_runtime_deps.cmake`。
 
 ## Examples 开发规范
 
@@ -113,7 +113,7 @@
 ## 代码规范与调试指南
 
 ### 日志规范
-- **统一接口**：使用 `CE_LOG_*` 宏（定义在 `Utility/Logger/include/Log.h`）
+- **统一接口**：使用 `CE_LOG_*` 宏（定义在 `utility/logger/include/Log.h`）
 - **级别配置**：默认日志级别在 `Engine::Init` 时设置，可通过 `Logger::SetLevel` 自定义
 
 ### 资源管理规范

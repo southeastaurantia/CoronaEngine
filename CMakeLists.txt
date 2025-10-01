@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 4.0)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Misc/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/misc/cmake")
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -7,15 +7,15 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 project(CoronaEngine VERSION 0.5.0 HOMEPAGE_URL "https://github.com/CoronaEngine/CoronaEngine" LANGUAGES C CXX)
 
 # 模块化拆分：保持根脚本专注于 orchestrate
-include(CoronaOptions)        # 全局开关
-include(CoronaPython)         # Python 探测与依赖校验
-include(CoronaRuntimeDeps)    # 运行时 DLL/PDB 收集
-include(CoronaCompileConfig)  # 编译宏与 MSVC 运行库
-include(CoronaThirdParty)     # FetchContent 第三方依赖
-include(BuildCabbageEditor)   # 编辑器资源安装
+include(corona_options)        # 全局开关
+include(corona_python)         # Python 探测与依赖校验
+include(corona_runtime_deps)    # 运行时 DLL/PDB 收集
+include(corona_compile_config)  # 编译宏与 MSVC 运行库
+include(corona_third_party)     # FetchContent 第三方依赖
+include(build_cabbage_editor)   # 编辑器资源安装
 
 # 库与主引擎
-add_subdirectory(Utility)
+add_subdirectory(utility)
 add_subdirectory(src)
 
 # 示例工程按需开启

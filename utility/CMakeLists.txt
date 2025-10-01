@@ -64,11 +64,11 @@ function(corona_add_utility)
     endif()
 endfunction()
 
-# Utility模块列表
+# utility模块列表
 set(_CORONA_UTILITY_MODULES
-    Logger
-    ResourceManager
-    Concurrent
+    logger
+    resource_manager
+    concurrent
 )
 
 # Utility目标名称列表
@@ -114,7 +114,7 @@ foreach(_idx RANGE 0 ${_utility_last})
     set(_option_name "BUILD_CORONA_${_upper}")
     
     if(${_option_name})
-        target_link_libraries(CoronaUtilityAll INTERFACE Corona::${_module})
+        target_link_libraries(CoronaUtilityAll INTERFACE ${_target})
         list(APPEND _linked_utilities "${_module}")
     endif()
 endforeach()
