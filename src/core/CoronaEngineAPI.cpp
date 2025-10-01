@@ -2,6 +2,13 @@
 // Created by 25473 on 25-9-19.
 //
 
+#include "core/engine/Engine.h"
+#include "core/engine/systems/AnimationSystem.h"
+#include "core/engine/systems/RenderingSystem.h"
+#include "resource/AnimationState.h"
+#include "resource/Scene.h"
+#include "resource/Model.h"
+
 #include <CoronaEngineAPI.h>
 
 #include <memory>

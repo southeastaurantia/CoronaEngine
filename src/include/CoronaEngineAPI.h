@@ -6,12 +6,6 @@
 #define CORONAENGINEAPI_H
 
 #include <ktm/ktm.h>
-#include "core/engine/Engine.h"
-#include "core/engine/systems/AnimationSystem.h"
-#include "core/engine/systems/RenderingSystem.h"
-#include "resource/AnimationState.h"
-#include "resource/Scene.h"
-#include "resource/Model.h"
 
 struct CoronaEngineAPI
 {
