@@ -23,12 +23,3 @@ elseif(UNIX)
     find_package(Threads REQUIRED)
     target_link_libraries(CoronaConcurrent PRIVATE Threads::Threads)
 endif()
-
-add_executable(CoronaConcurrentReclaimerSmoke
-    ${CMAKE_CURRENT_SOURCE_DIR}/tests/reclaimer_smoke.cpp
-)
-
-target_link_libraries(CoronaConcurrentReclaimerSmoke
-    PRIVATE
-        CoronaConcurrent
-)

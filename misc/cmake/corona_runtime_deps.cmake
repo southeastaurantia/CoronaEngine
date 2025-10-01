@@ -1,4 +1,4 @@
-# CoronaRuntimeDeps.cmake
+﻿# CoronaRuntimeDeps.cmake
 # 运行时依赖（动态库 / 调试符号）收集与复制模块
 # 功能概述：
 # 1. 在配置阶段：通过 corona_configure_runtime_deps() 收集 TBB 与 Python 相关的 DLL / PDB 文件并写入目标属性
@@ -25,7 +25,7 @@ function(corona_install_runtime_deps target_name)
     set(_DESTINATION_DIR "$<TARGET_FILE_DIR:${target_name}>")
 
     # 使用 Python 脚本执行“若不同才复制”，以统一复制行为和日志
-    set(_PY_COPY "${PROJECT_SOURCE_DIR}/Misc/pytools/copy_files.py")
+    set(_PY_COPY "${PROJECT_SOURCE_DIR}/misc/pytools/copy_files.py")
 
     if(EXISTS "${_PY_COPY}")
         if(DEFINED Python3_EXECUTABLE)
@@ -62,8 +62,8 @@ function(corona_configure_runtime_deps target_name)
     endif()
 
     # -------- 1) 收集 TBB 动态库 / 调试符号 --------
-    file(GLOB _TBB_DLLS "${CMAKE_SOURCE_DIR}/Env/oneapi-tbb-2022.2.0/redist/intel64/vc14/*.dll")
-    file(GLOB _TBB_PDBS "${CMAKE_SOURCE_DIR}/Env/oneapi-tbb-2022.2.0/redist/intel64/vc14/*.pdb")
+    file(GLOB _TBB_DLLS "${CMAKE_SOURCE_DIR}/third_party/oneapi-tbb-2022.2.0/redist/intel64/vc14/*.dll")
+    file(GLOB _TBB_PDBS "${CMAKE_SOURCE_DIR}/third_party/oneapi-tbb-2022.2.0/redist/intel64/vc14/*.pdb")
 
     # -------- 2) 收集 Python 运行库 (若已定位其运行时目录) --------
     if(DEFINED Python3_RUNTIME_LIBRARY_DIRS)
