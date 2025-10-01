@@ -6,6 +6,8 @@
 #include <functional>
 #include <algorithm>
 #include <thread>
+#include <stdexcept>
+#include <atomic>
 
 namespace Corona::Concurrent {
 
@@ -23,8 +25,10 @@ template<typename T>
 class HazardPointer {
 public:
     static constexpr std::size_t MAX_THREADS = 128;
-    static constexpr std::size_t HAZARDS_PER_THREAD = 4;  // 每线程hazard指针数量
-    static constexpr std::size_t RETIRE_THRESHOLD = 64;   // 触发扫描的退休对象阈值
+    static constexpr std::size_t HAZARDS_PER_THREAD = 4;   // 每线程hazard指针数量
+    static constexpr std::size_t BASE_RETIRE_THRESHOLD = 64;  // 默认退休列表阈值
+    static constexpr std::size_t MIN_RETIRE_THRESHOLD = 8;    // 空闲态最小阈值
+    static constexpr std::size_t RETIRE_SCALE = 2;            // 每注册线程的增量
     
 private:
     // Hazard 记录结构
@@ -58,9 +62,11 @@ private:
     struct ThreadLocalData {
         HazardRecord* my_hazard_record;
         std::vector<RetiredPointer> retired_list;
+        std::vector<T*> hazard_snapshot;
         
         ThreadLocalData() : my_hazard_record(nullptr) {
-            retired_list.reserve(RETIRE_THRESHOLD * 2);
+            retired_list.reserve(BASE_RETIRE_THRESHOLD * 2);
+            hazard_snapshot.reserve(BASE_RETIRE_THRESHOLD * HAZARDS_PER_THREAD);
         }
         
         ~ThreadLocalData() {
@@ -68,16 +74,25 @@ private:
             for (const auto& retired : retired_list) {
                 retired.deleter(retired.ptr);
             }
+            retired_list.clear();
+            hazard_snapshot.clear();
             
             // 释放hazard记录
             if (my_hazard_record) {
                 my_hazard_record->active.store(false, std::memory_order_release);
+                my_hazard_record->owner.store(std::thread::id{}, std::memory_order_release);
+                for (auto& hazard : my_hazard_record->hazards) {
+                    hazard.store(nullptr, std::memory_order_release);
+                }
+                registered_records_.fetch_sub(1, std::memory_order_acq_rel);
+                my_hazard_record = nullptr;
             }
         }
     };
     
     // 全局hazard记录数组
     static inline std::array<HazardRecord, MAX_THREADS> hazard_records_;
+    static inline std::atomic_size_t registered_records_{0};
     
     // 线程本地数据
     static thread_local ThreadLocalData tl_data_;
@@ -179,25 +194,29 @@ public:
             // 首先尝试找到已经属于当前线程的记录
             for (auto& record : hazard_records_) {
                 if (record.owner.load(std::memory_order_acquire) == current_thread_id) {
-                    tl_data_.my_hazard_record = &record;
-                    return;
-                }
-            }
-            
-            // 如果没找到，尝试获取一个未使用的记录
-            for (auto& record : hazard_records_) {
-                std::thread::id expected{};
-                if (record.owner.compare_exchange_strong(expected, current_thread_id, 
-                                                       std::memory_order_acq_rel)) {
                     record.active.store(true, std::memory_order_release);
                     tl_data_.my_hazard_record = &record;
                     return;
                 }
             }
             
-            // 如果所有记录都被占用，使用轮询方式等待
-            // 在实际生产环境中，这里应该有更好的处理策略
-            tl_data_.my_hazard_record = &hazard_records_[0];
+            // 如果没找到，尝试获取一个未使用的记录
+            constexpr std::size_t kMaxAttempts = 1024;
+            for (std::size_t attempt = 0; attempt < kMaxAttempts; ++attempt) {
+                for (auto& record : hazard_records_) {
+                    std::thread::id expected{};
+                    if (record.owner.compare_exchange_strong(expected, current_thread_id,
+                                                             std::memory_order_acq_rel)) {
+                        record.active.store(true, std::memory_order_release);
+                        registered_records_.fetch_add(1, std::memory_order_acq_rel);
+                        tl_data_.my_hazard_record = &record;
+                        return;
+                    }
+                }
+                std::this_thread::yield();
+            }
+            
+            throw std::runtime_error("HazardPointer: exhausted hazard records; consider increasing MAX_THREADS");
         }
     };
     
@@ -208,16 +227,36 @@ public:
      */
     static void retire(T* ptr, std::function<void(T*)> deleter = nullptr) {
         if (!ptr) return;
+
+        auto registered = registered_records_.load(std::memory_order_acquire);
+        if (registered == 0) {
+            if (deleter) {
+                deleter(ptr);
+            } else {
+                delete ptr;
+            }
+            return;
+        }
         
         // 确保线程本地数据已初始化
         if (!tl_data_.my_hazard_record) {
             Guard dummy_guard;  // 这会初始化hazard记录
+            registered = registered_records_.load(std::memory_order_acquire);
+            if (registered == 0) {
+                if (deleter) {
+                    deleter(ptr);
+                } else {
+                    delete ptr;
+                }
+                return;
+            }
         }
         
         tl_data_.retired_list.emplace_back(ptr, std::move(deleter));
         
         // 检查是否需要执行扫描回收
-        if (tl_data_.retired_list.size() >= RETIRE_THRESHOLD) {
+        const std::size_t threshold = compute_retire_threshold(registered);
+        if (tl_data_.retired_list.size() >= threshold) {
             scan_and_reclaim();
         }
     }
@@ -226,9 +265,24 @@ public:
      * 扫描并回收安全的对象
      */
     static void scan_and_reclaim() {
+        auto& retired_list = tl_data_.retired_list;
+        const std::size_t registered = registered_records_.load(std::memory_order_acquire);
+
+        if (registered == 0) {
+            for (const auto& retired : retired_list) {
+                retired.deleter(retired.ptr);
+            }
+            retired_list.clear();
+            return;
+        }
+        
         // 收集所有当前受保护的指针
-        std::vector<T*> hazard_pointers;
-        hazard_pointers.reserve(MAX_THREADS * HAZARDS_PER_THREAD);
+        auto& hazard_pointers = tl_data_.hazard_snapshot;
+        hazard_pointers.clear();
+        const std::size_t desired_capacity = registered * HAZARDS_PER_THREAD;
+        if (hazard_pointers.capacity() < desired_capacity) {
+            hazard_pointers.reserve(desired_capacity);
+        }
         
         for (const auto& record : hazard_records_) {
             if (record.active.load(std::memory_order_acquire)) {
@@ -245,7 +299,6 @@ public:
         std::sort(hazard_pointers.begin(), hazard_pointers.end());
         
         // 扫描退休列表，回收安全的对象
-        auto& retired_list = tl_data_.retired_list;
         auto it = retired_list.begin();
         
         while (it != retired_list.end()) {
@@ -262,6 +315,8 @@ public:
                 ++it;
             }
         }
+
+        hazard_pointers.clear();
     }
     
     /**
@@ -282,12 +337,14 @@ public:
         std::size_t protected_pointers;
         std::size_t retired_objects;
         std::size_t total_hazard_records;
+        std::size_t registered_records;
     };
     
     static Statistics get_statistics() {
         Statistics stats{};
         stats.total_hazard_records = MAX_THREADS;
         stats.retired_objects = tl_data_.retired_list.size();
+        stats.registered_records = registered_records_.load(std::memory_order_acquire);
         
         for (const auto& record : hazard_records_) {
             if (record.active.load(std::memory_order_acquire)) {
@@ -308,6 +365,18 @@ public:
      */
     static void maintenance() {
         scan_and_reclaim();
+    }
+
+private:
+    static std::size_t compute_retire_threshold(std::size_t registered) {
+        std::size_t scaled = registered * RETIRE_SCALE;
+        if (scaled < MIN_RETIRE_THRESHOLD) {
+            scaled = MIN_RETIRE_THRESHOLD;
+        }
+        if (scaled > BASE_RETIRE_THRESHOLD) {
+            scaled = BASE_RETIRE_THRESHOLD;
+        }
+        return scaled;
     }
 };
 

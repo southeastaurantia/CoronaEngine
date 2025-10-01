@@ -5,6 +5,11 @@
 #include <array>
 #include <functional>
 #include <memory>
+#include <algorithm>
+#include <thread>
+#include <stdexcept>
+#include <limits>
+#include <atomic>
 
 namespace Corona::Concurrent {
 
@@ -23,11 +28,16 @@ class EpochReclaimer {
 private:
     // 全局epoch计数器
     static inline Core::AtomicSize global_epoch_{0};
+
+    static constexpr std::size_t BASE_CLEANUP_THRESHOLD = 64;
+    static constexpr std::size_t MIN_CLEANUP_THRESHOLD = 8;
+    static constexpr std::size_t CLEANUP_SCALE = 2;
     
     // 每个线程的epoch记录
     struct alignas(Core::CACHE_LINE_SIZE) ThreadEpoch {
         Core::AtomicSize local_epoch{0};
         std::atomic<bool> active{false};
+        std::atomic<bool> registered{false};
         
         ThreadEpoch() = default;
         ThreadEpoch(const ThreadEpoch&) = delete;
@@ -48,10 +58,11 @@ private:
     struct alignas(Core::CACHE_LINE_SIZE) ThreadLocalData {
         std::vector<RetiredObject> retired_objects;
         ThreadEpoch* epoch_record;
+        std::size_t epoch_index;
         std::size_t last_cleanup_epoch;
         
-        ThreadLocalData() : epoch_record(nullptr), last_cleanup_epoch(0) {
-            retired_objects.reserve(64);  // 预分配空间
+        ThreadLocalData() : epoch_record(nullptr), epoch_index(MAX_THREADS), last_cleanup_epoch(0) {
+            retired_objects.reserve(BASE_CLEANUP_THRESHOLD * 2);  // 预分配空间
         }
         
         ~ThreadLocalData() {
@@ -59,6 +70,12 @@ private:
             force_cleanup();
             if (epoch_record) {
                 epoch_record->active.store(false, std::memory_order_release);
+                epoch_record->registered.store(false, std::memory_order_release);
+                epoch_record->local_epoch.store(0, std::memory_order_relaxed);
+                registered_records_.fetch_sub(1, std::memory_order_acq_rel);
+                release_index(epoch_index);
+                epoch_record = nullptr;
+                epoch_index = MAX_THREADS;
             }
         }
         
@@ -73,13 +90,13 @@ private:
     // 全局线程epoch记录数组
     static constexpr std::size_t MAX_THREADS = 128;
     static inline std::array<ThreadEpoch, MAX_THREADS> thread_epochs_;
-    static inline Core::AtomicSize next_thread_index_{0};
+    static inline std::array<std::atomic<bool>, MAX_THREADS> index_slots_{};
+    static inline std::atomic_size_t registered_records_{0};
     
     // 线程本地数据
     static thread_local ThreadLocalData tl_data_;
     
     // 清理参数
-    static constexpr std::size_t CLEANUP_THRESHOLD = 64;  // 触发清理的对象数量阈值
     static constexpr std::size_t EPOCH_ADVANCE_THRESHOLD = 32;  // epoch推进阈值
 
 public:
@@ -92,7 +109,7 @@ public:
         std::size_t saved_epoch_;
         
     public:
-        explicit Guard(const EpochReclaimer& reclaimer) {
+        explicit Guard([[maybe_unused]] const EpochReclaimer& reclaimer) {
             // 获取线程的epoch记录
             if (!tl_data_.epoch_record) {
                 acquire_epoch_record();
@@ -129,18 +146,27 @@ public:
         
     private:
         void acquire_epoch_record() {
-            // 尝试找到一个未使用的epoch记录
-            for (auto& record : thread_epochs_) {
-                bool expected = false;
-                if (record.active.compare_exchange_strong(expected, false, std::memory_order_acquire)) {
-                    tl_data_.epoch_record = &record;
-                    return;
+            constexpr std::size_t kMaxAttempts = 1024;
+
+            for (std::size_t attempt = 0; attempt < kMaxAttempts; ++attempt) {
+                std::size_t index = acquire_index();
+                if (index < MAX_THREADS) {
+                    auto& record = thread_epochs_[index];
+                    bool expected = false;
+                    if (record.registered.compare_exchange_strong(expected, true, std::memory_order_acq_rel)) {
+                        record.active.store(false, std::memory_order_relaxed);
+                        record.local_epoch.store(0, std::memory_order_relaxed);
+                        tl_data_.epoch_record = &record;
+                        tl_data_.epoch_index = index;
+                        registered_records_.fetch_add(1, std::memory_order_acq_rel);
+                        return;
+                    }
+                    release_index(index);
                 }
+                std::this_thread::yield();
             }
-            
-            // 如果没有找到，使用循环分配策略
-            std::size_t index = next_thread_index_.fetch_add(1, std::memory_order_relaxed) % MAX_THREADS;
-            tl_data_.epoch_record = &thread_epochs_[index];
+
+            throw std::runtime_error("EpochReclaimer: exhausted thread epoch slots; increase MAX_THREADS");
         }
         
         void try_advance_global_epoch() {
@@ -150,7 +176,17 @@ public:
             std::size_t min_epoch = current_epoch;
             bool has_active_threads = false;
             
+            const std::size_t registered = registered_records_.load(std::memory_order_acquire);
+            if (registered == 0) {
+                global_epoch_.compare_exchange_strong(current_epoch, current_epoch + 1,
+                                                    std::memory_order_acq_rel);
+                return;
+            }
+
             for (const auto& record : thread_epochs_) {
+                if (!record.registered.load(std::memory_order_acquire)) {
+                    continue;
+                }
                 if (record.active.load(std::memory_order_acquire)) {
                     has_active_threads = true;
                     std::size_t local_epoch = record.local_epoch.load(std::memory_order_acquire);
@@ -159,8 +195,8 @@ public:
             }
             
             // 如果所有活跃线程都到达当前epoch，推进全局epoch
-            if (has_active_threads && min_epoch >= current_epoch) {
-                global_epoch_.compare_exchange_strong(current_epoch, current_epoch + 1, 
+            if (!has_active_threads || min_epoch >= current_epoch) {
+                global_epoch_.compare_exchange_strong(current_epoch, current_epoch + 1,
                                                     std::memory_order_acq_rel);
             }
         }
@@ -183,7 +219,9 @@ public:
         tl_data_.retired_objects.emplace_back(ptr, current_epoch, std::move(deleter));
         
         // 检查是否需要清理
-        if (tl_data_.retired_objects.size() >= CLEANUP_THRESHOLD) {
+        const std::size_t registered = registered_records_.load(std::memory_order_acquire);
+        const std::size_t threshold = compute_cleanup_threshold(registered);
+        if (tl_data_.retired_objects.size() >= threshold) {
             try_cleanup();
         }
     }
@@ -230,6 +268,7 @@ public:
         std::size_t global_epoch;
         std::size_t safe_epoch;
         std::size_t active_threads;
+        std::size_t registered_threads;
     };
     
     Statistics get_statistics() const {
@@ -239,7 +278,11 @@ public:
         stats.safe_epoch = get_safe_epoch();
         
         stats.active_threads = 0;
+        stats.registered_threads = registered_records_.load(std::memory_order_acquire);
         for (const auto& record : thread_epochs_) {
+            if (!record.registered.load(std::memory_order_relaxed)) {
+                continue;
+            }
             if (record.active.load(std::memory_order_relaxed)) {
                 stats.active_threads++;
             }
@@ -249,6 +292,35 @@ public:
     }
 
 private:
+    static std::size_t acquire_index() {
+        for (std::size_t i = 0; i < MAX_THREADS; ++i) {
+            bool expected = false;
+            if (index_slots_[i].compare_exchange_strong(expected, true, std::memory_order_acq_rel)) {
+                return i;
+            }
+        }
+        return MAX_THREADS;
+    }
+
+    static void release_index(std::size_t index) {
+        if (index < MAX_THREADS) {
+            index_slots_[index].store(false, std::memory_order_release);
+        }
+    }
+
+    static std::size_t compute_cleanup_threshold(std::size_t registered) {
+        if (registered == 0) {
+            return MIN_CLEANUP_THRESHOLD;
+        }
+        std::size_t scaled = registered * CLEANUP_SCALE;
+        if (scaled < MIN_CLEANUP_THRESHOLD) {
+            scaled = MIN_CLEANUP_THRESHOLD;
+        } else if (scaled > BASE_CLEANUP_THRESHOLD) {
+            scaled = BASE_CLEANUP_THRESHOLD;
+        }
+        return scaled;
+    }
+
     /**
      * 计算安全的回收epoch
      * 只有epoch小于此值的对象才能被安全回收
@@ -258,6 +330,9 @@ private:
         bool found_active = false;
         
         for (const auto& record : thread_epochs_) {
+            if (!record.registered.load(std::memory_order_acquire)) {
+                continue;
+            }
             if (record.active.load(std::memory_order_acquire)) {
                 found_active = true;
                 std::size_t local_epoch = record.local_epoch.load(std::memory_order_acquire);
@@ -267,7 +342,11 @@ private:
         
         // 如果没有活跃线程，可以回收所有对象
         // 否则返回最小的活跃epoch
-        return found_active ? min_epoch : min_epoch + 1;
+        if (!found_active) {
+            const std::size_t registered = registered_records_.load(std::memory_order_acquire);
+            return registered == 0 ? std::numeric_limits<std::size_t>::max() : min_epoch + 1;
+        }
+        return min_epoch;
     }
 };
 

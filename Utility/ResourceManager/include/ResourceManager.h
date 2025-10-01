@@ -7,9 +7,10 @@
 #include "IResourceLoader.h"
 #include "ResourceTypes.h"
 
-#include <oneapi/tbb/concurrent_unordered_map.h>
-#include <oneapi/tbb/task_group.h>
+#include <concurrent.h>
 
+#include <atomic>
+#include <condition_variable>
 #include <functional>
 #include <future>
 #include <memory>
@@ -55,12 +56,16 @@ namespace Corona
       private:
         std::shared_ptr<IResource> loadInternal(const ResourceId &id);
         std::shared_ptr<IResourceLoader> findLoader(const ResourceId &id);
+        void scheduleTask(std::function<void()> task);
 
       private:
-        tbb::concurrent_unordered_map<ResourceId, std::shared_ptr<IResource>, ResourceIdHash> cache_;
-        tbb::concurrent_unordered_map<ResourceId, std::shared_ptr<std::mutex>, ResourceIdHash> locks_;
+        Corona::Concurrent::ConcurrentHashMap<ResourceId, std::shared_ptr<IResource>, ResourceIdHash> cache_;
+        Corona::Concurrent::ConcurrentHashMap<ResourceId, std::shared_ptr<std::mutex>, ResourceIdHash> locks_;
         mutable std::shared_mutex loadersMutex_;
         std::vector<std::shared_ptr<IResourceLoader>> loaders_;
-        tbb::task_group tasks_;
+        Corona::Concurrent::ThreadPool taskPool_;
+        std::atomic<std::size_t> pendingTasks_{0};
+        mutable std::mutex waitMutex_;
+        std::condition_variable waitCv_;
     };
 } // namespace Corona
