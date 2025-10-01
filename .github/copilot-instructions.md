@@ -1,8 +1,8 @@
 # CoronaEngine Copilot 指南
 
 ## 项目架构概览
-- **核心引擎**：`Src/Core`（包含 `Engine`、`Systems`、`Thread` 等）与 `Src/Resource`（资源管理）
-- **脚本支持**：`Src/Script/Python` 提供 Python 内嵌脚本入口
+- **核心引擎**：`src/core`（包含 `engine`、`systems`、`thread` 等）与 `src/resource`（资源管理）
+- **脚本支持**：`src/script/python` 提供 Python 内嵌脚本入口
 - **通用组件**：
   - `Utility/Logger`：统一日志系统
   - `Utility/ResourceManager`：资源管理器
@@ -24,7 +24,7 @@
   - 使用时：业务线程用 `Engine::GetQueue(name()).enqueue(...)` 投递任务
 
 ### 高层 API
-- `CoronaEngineAPI`（`Src/Core/CoronaEngineAPI.*`）封装 actor/scene 生命周期管理
+- `CoronaEngineAPI`（`src/core/CoronaEngineAPI.*`）封装 actor/scene 生命周期管理
 - 内部机制：使用 `DataId::Next()` 生成唯一 ID、缓存写入和系统队列
 - 目标用户：外部模块（Python 脚本、客户端应用）
 
@@ -69,7 +69,7 @@
 - **目录结构**：源码放在模块根目录，公共头文件集中在 `include/` 子目录
 - **CMake 集成**：通过根目录 `CMakeLists.txt` 暴露公共接口
 - **设计原则**：保持线程安全，提供跨系统通用能力
-- **使用范围**：供 `Src/Core` 和 `Examples` 共享使用
+- **使用范围**：供 `src/core` 和 `Examples` 共享使用
 - **公共接口约定**：导出头文件需通过 `Utility/<Module>/include` 聚合，示例代码使用统一的 umbrella 头（如 `include/concurrent.h`），避免直接依赖内部 `core/`、`detail/` 文件
 - **文档同步**：模块改动后同步更新 `README.md`、`detail.md` 以及相关报告（例如 `utility_common_consolidation_report.md`、`corona_common_implementation_report.md`），保持设计说明与性能数据一致
 - **测试与基准**：功能更新至少覆盖一条 Catch2 单元测试或 `Examples/` 中的演示；性能敏感改动须更新 `bench/` 目录基准或在 `run_performance_tests*.ps1` 中记录新数据
@@ -77,14 +77,14 @@
 - **CMake 目标**：新增 Utility 模块需在 `Utility/CMakeLists.txt` 注册独立 target，并确保顶层构建透传公共 include path、编译选项与必要的第三方依赖
 
 ## 渲染与动画协作
-- `RenderingSystem`（`Src/Core/Engine/Systems/RenderingSystem.*`）在 `onTick()` 消费命令队列后调用 `updateEngine()`：遍历 `Scene` 与 `Model` 缓存、刷新 g-buffer、写回 `HardwareImage`，并将最终输出绑定到 `Scene::displayer`。
+- `RenderingSystem`（`src/core/engine/systems/RenderingSystem.*`）在 `onTick()` 消费命令队列后调用 `updateEngine()`：遍历 `Scene` 与 `Model` 缓存、刷新 g-buffer、写回 `HardwareImage`，并将最终输出绑定到 `Scene::displayer`。
 - `AnimationSystem` 通过 `state_cache_keys_` 与 `model_cache_keys_` 管理骨骼动画和碰撞；`updateAnimationState` 会填充 `AnimationState::bones` 并刷新 `Model::bonesMatrixBuffer`。
 - 向渲染或动画系统注册资源时务必调用 `WatchScene` / `WatchModel`（见 `CoronaEngineAPI::Scene`、`CoronaEngineAPI::Actor` 构造函数），销毁前对称调用 `Unwatch*` 以避免悬挂引用。
 - 需要新增系统时，沿用 `ThreadedSystem` + `SafeCommandQueue` 模式，并在 `Engine::StartSystems()` 前完成 `RegisterSystem`。
 
 ## Python 与编辑器集成
 - `Misc/cmake/CoronaPython.cmake` 会优先检测系统 Python≥`CORONA_PYTHON_MIN_VERSION`，否则回退到 `Env/Python-3.13.7`；配置阶段默认执行 `Misc/pytools/check_pip_modules.py` 校验 requirements。
-- `Script/Python/PythonAPI.*` 将 `Editor/CoronaEditor/Backend` 打包为嵌入式模块 `CoronaEngine`，内置热更新（`PythonHotfix`）与 `PyInit_CoronaEngineEmbedded` 类型注册。
+- `src/script/python/PythonAPI.*` 将 `Editor/CoronaEditor/Backend` 打包为嵌入式模块 `CoronaEngine`，内置热更新（`PythonHotfix`）与 `PyInit_CoronaEngineEmbedded` 类型注册。
 - 构建编辑器资源需开启 `-DBUILD_CORONA_EDITOR=ON`，随后 `corona_install_corona_editor` 调用 `Misc/pytools/editor_copy_and_build.py` 使用 `Env/node-v22.19.0` 运行 `npm install && npm run build`；错误只发出警告但不会终止构建。
 
 ## 构建与运行工作流

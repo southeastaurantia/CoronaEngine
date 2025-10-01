@@ -16,7 +16,7 @@ include(BuildCabbageEditor)   # 编辑器资源安装
 
 # 库与主引擎
 add_subdirectory(Utility)
-add_subdirectory(Src)
+add_subdirectory(src)
 
 # 示例工程按需开启
 if(CORONA_BUILD_EXAMPLES)
