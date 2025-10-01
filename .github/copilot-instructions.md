@@ -2,11 +2,13 @@
 
 ## 项目架构概览
 - **核心引擎**：`src/core`（包含 `engine`、`systems`、`thread` 等）与 `src/resource`（资源管理）
+- **公共 API**：`src/include`（对外暴露的公共头文件，如 `CoronaEngineAPI.h`）
 - **脚本支持**：`src/script/python` 提供 Python 内嵌脚本入口
 - **通用组件**：
   - `src/utility/logger`：统一日志系统
   - `src/utility/resource_manager`：资源管理器
   - `src/utility/concurrent`：并发工具集
+  - `src/common/include`：跨模块共享的通用头文件
 - **第三方依赖**：由 `misc/cmake/corona_third_party.cmake` 通过 FetchContent 统一管理（assimp、EnTT、GLFW、Vulkan 等）
 - **示例程序**：`examples/` 目录，其中 `interactive_rendering` 展示了完整的系统注册、缓存操作和渲染输出流程，是学习交互逻辑的最佳参考
 
@@ -24,9 +26,11 @@
   - 使用时：业务线程用 `Engine::GetQueue(name()).enqueue(...)` 投递任务
 
 ### 高层 API
-- `CoronaEngineAPI`（`src/core/CoronaEngineAPI.*`）封装 actor/scene 生命周期管理
+- `CoronaEngineAPI`（`src/include/CoronaEngineAPI.h`）封装 actor/scene 生命周期管理,作为公共 API 头文件暴露
+- 实现文件：`src/core/CoronaEngineAPI.cpp`
 - 内部机制：使用 `DataId::Next()` 生成唯一 ID、缓存写入和系统队列
 - 目标用户：外部模块（Python 脚本、客户端应用）
+- 使用方式：`#include <CoronaEngineAPI.h>`
 
 ## 数据缓存与资源加载
 
