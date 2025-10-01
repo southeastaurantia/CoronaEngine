@@ -11,5 +11,5 @@ corona_add_utility(
 # 特殊配置：添加spdlog包含目录
 target_include_directories(CoronaLogger
     PUBLIC
-        "${PROJECT_SOURCE_DIR}/env/spdlog-1.15.3/include"
+        "${PROJECT_SOURCE_DIR}/third_party/spdlog-1.15.3/include"
 )

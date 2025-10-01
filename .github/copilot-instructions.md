@@ -83,9 +83,9 @@
 - 需要新增系统时，沿用 `ThreadedSystem` + `SafeCommandQueue` 模式，并在 `Engine::StartSystems()` 前完成 `RegisterSystem`。
 
 ## Python 与编辑器集成
-- `misc/cmake/corona_python.cmake` 会优先检测系统 Python≥`CORONA_PYTHON_MIN_VERSION`，否则回退到 `env/Python-3.13.7`；配置阶段默认执行 `misc/pytools/check_pip_modules.py` 校验 requirements。
+- `misc/cmake/corona_python.cmake` 会优先检测系统 Python≥`CORONA_PYTHON_MIN_VERSION`，否则回退到 `third_party/Python-3.13.7`；配置阶段默认执行 `misc/pytools/check_pip_modules.py` 校验 requirements。
 - `src/script/python/PythonAPI.*` 将 `Editor/CoronaEditor/Backend` 打包为嵌入式模块 `CoronaEngine`，内置热更新（`PythonHotfix`）与 `PyInit_CoronaEngineEmbedded` 类型注册。
-- 构建编辑器资源需开启 `-DBUILD_CORONA_EDITOR=ON`，随后 `corona_install_corona_editor` 调用 `misc/pytools/editor_copy_and_build.py` 使用 `env/node-v22.19.0` 运行 `npm install && npm run build`；错误只发出警告但不会终止构建。
+- 构建编辑器资源需开启 `-DBUILD_CORONA_EDITOR=ON`，随后 `corona_install_corona_editor` 调用 `misc/pytools/editor_copy_and_build.py` 使用 `third_party/node-v22.19.0` 运行 `npm install && npm run build`；错误只发出警告但不会终止构建。
 
 ## 构建与运行工作流
 - 首次配置：`cmake --preset ninja-mc`（PowerShell）；常用构建 `cmake --build --preset ninja-debug --target Corona_interactive_rendering`，其他配置参见 `CMakePresets.json`。
