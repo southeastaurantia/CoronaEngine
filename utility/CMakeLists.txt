@@ -37,7 +37,7 @@ function(corona_add_utility)
     target_include_directories(${COR_UTIL_NAME}
         ${_lib_type}
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-            $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/Common/include>
+            $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/common/include>
             $<INSTALL_INTERFACE:include>
     )
     
