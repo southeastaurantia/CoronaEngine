@@ -8,7 +8,7 @@
   - `utility/resource_manager`：资源管理器
   - `utility/concurrent`：并发工具集
 - **第三方依赖**：由 `misc/cmake/corona_third_party.cmake` 通过 FetchContent 统一管理（assimp、EnTT、GLFW、Vulkan 等）
-- **示例程序**：`Examples/` 目录，其中 `interactive_rendering` 展示了完整的系统注册、缓存操作和渲染输出流程，是学习交互逻辑的最佳参考
+- **示例程序**：`examples/` 目录，其中 `interactive_rendering` 展示了完整的系统注册、缓存操作和渲染输出流程，是学习交互逻辑的最佳参考
 
 ## 引擎生命周期与线程模型
 
@@ -43,7 +43,7 @@
   - `load()`：返回共享指针，适合常规加载
   - `loadOnce()`：一次性读取，不缓存
   - `loadAsync()`：后台异步加载
-- **扩展开发**：自定义 loader 实现参考 `Examples/resource_management/resource_management.cpp`
+- **扩展开发**：自定义 loader 实现参考 `examples/resource_management/resource_management.cpp`
 
 ## utility 模块设计约定
 
@@ -69,10 +69,10 @@
 - **目录结构**：源码放在模块根目录，公共头文件集中在 `include/` 子目录
 - **CMake 集成**：通过根目录 `CMakeLists.txt` 暴露公共接口
 - **设计原则**：保持线程安全，提供跨系统通用能力
-- **使用范围**：供 `src/core` 和 `Examples` 共享使用
+- **使用范围**：供 `src/core` 和 `examples` 共享使用
 - **公共接口约定**：导出头文件需通过 `utility/<module>/include` 聚合，示例代码使用统一的 umbrella 头（如 `include/concurrent.h`），避免直接依赖内部 `core/`、`detail/` 文件
 - **文档同步**：模块改动后同步更新 `README.md`、`detail.md` 以及相关报告（例如 `utility_common_consolidation_report.md`、`corona_common_implementation_report.md`），保持设计说明与性能数据一致
-- **测试与基准**：功能更新至少覆盖一条 Catch2 单元测试或 `Examples/` 中的演示；性能敏感改动须更新 `bench/` 目录基准或在 `run_performance_tests*.ps1` 中记录新数据
+- **测试与基准**：功能更新至少覆盖一条 Catch2 单元测试或 `examples/` 中的演示；性能敏感改动须更新 `bench/` 目录基准或在 `run_performance_tests*.ps1` 中记录新数据
 - **共享依赖**：跨模块复用的工具放入 `Common/include` 或各模块 `core/` 层，通过轻量适配器暴露，禁止形成循环依赖
 - **CMake 目标**：新增 utility 模块需在 `utility/CMakeLists.txt` 注册独立 target，并确保顶层构建透传公共 include path、编译选项与必要的第三方依赖
 
@@ -83,9 +83,9 @@
 - 需要新增系统时，沿用 `ThreadedSystem` + `SafeCommandQueue` 模式，并在 `Engine::StartSystems()` 前完成 `RegisterSystem`。
 
 ## Python 与编辑器集成
-- `misc/cmake/corona_python.cmake` 会优先检测系统 Python≥`CORONA_PYTHON_MIN_VERSION`，否则回退到 `Env/Python-3.13.7`；配置阶段默认执行 `misc/pytools/check_pip_modules.py` 校验 requirements。
+- `misc/cmake/corona_python.cmake` 会优先检测系统 Python≥`CORONA_PYTHON_MIN_VERSION`，否则回退到 `env/Python-3.13.7`；配置阶段默认执行 `misc/pytools/check_pip_modules.py` 校验 requirements。
 - `src/script/python/PythonAPI.*` 将 `Editor/CoronaEditor/Backend` 打包为嵌入式模块 `CoronaEngine`，内置热更新（`PythonHotfix`）与 `PyInit_CoronaEngineEmbedded` 类型注册。
-- 构建编辑器资源需开启 `-DBUILD_CORONA_EDITOR=ON`，随后 `corona_install_corona_editor` 调用 `misc/pytools/editor_copy_and_build.py` 使用 `Env/node-v22.19.0` 运行 `npm install && npm run build`；错误只发出警告但不会终止构建。
+- 构建编辑器资源需开启 `-DBUILD_CORONA_EDITOR=ON`，随后 `corona_install_corona_editor` 调用 `misc/pytools/editor_copy_and_build.py` 使用 `env/node-v22.19.0` 运行 `npm install && npm run build`；错误只发出警告但不会终止构建。
 
 ## 构建与运行工作流
 - 首次配置：`cmake --preset ninja-mc`（PowerShell）；常用构建 `cmake --build --preset ninja-debug --target Corona_interactive_rendering`，其他配置参见 `CMakePresets.json`。
@@ -93,12 +93,12 @@
 - 运行示例前确保 `misc/pytools/check_pip_modules.py` 通过（如需手动复查可执行 `cmake --build --preset ninja-debug --target check_python_deps`）。
 - 生成的可执行与依赖 DLL 会被 `corona_install_runtime_deps` 复制到目标目录；如添加新依赖，请更新 `misc/cmake/corona_runtime_deps.cmake`。
 
-## Examples 开发规范
+## examples 开发规范
 
 ### 添加新示例
-- **注册方式**：在 `Examples/CMakeLists.txt` 中使用 `corona_add_example` 函数
+- **注册方式**：在 `examples/CMakeLists.txt` 中使用 `corona_add_example` 函数
 - **必要参数**：`NAME`（示例名称）、`SOURCES`（源文件列表）
-- **可选参数**：`COPY_ASSETS`（控制是否拷贝 `Examples/assets/` 目录）
+- **可选参数**：`COPY_ASSETS`（控制是否拷贝 `examples/assets/` 目录）
 
 ### 构建配置
 - **构建开关**：每个示例自动生成 `BUILD_EXAMPLE_<NAME>` 开关，默认启用

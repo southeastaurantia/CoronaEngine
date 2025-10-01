@@ -20,7 +20,7 @@ add_subdirectory(src)
 
 # 示例工程按需开启
 if(CORONA_BUILD_EXAMPLES)
-    add_subdirectory(Examples)
+    add_subdirectory(examples)
 endif()
 
 # 配置摘要，方便在 CI / 本地快速核对
