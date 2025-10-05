@@ -1,5 +1,32 @@
-*
-editor/CoronaEditor
+# 构建输出
+build/
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+
+# IDE 和编辑器
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 编译数据库
+compile_commands.json
+
+# 缓存
+.cache/
+
+# 编辑器（特定配置）
+editor/CoronaEditor/Env/
+editor/CoronaEditor/Frontend/node_modules/
+editor/CoronaEditor/Frontend/dist/
 
 # AI 代理指令（本地配置，不提交到仓库）
 .github/copilot-instructions.md

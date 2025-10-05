@@ -466,12 +466,15 @@ src/
 │   │   ├── Engine.h
 │   │   ├── Engine.cpp
 │   │   ├── ISystem.h
+│   │   ├── ThreadedSystem.h
 │   │   └── systems/
-│   │       ├── rendering_system.h
-│   │       └── animation_system.h
+│   │       ├── AnimationSystem.h
+│   │       ├── AudioSystem.h
+│   │       ├── DisplaySystem.h
+│   │       └── RenderingSystem.h
 │   └── thread/
-│       ├── safe_command_queue.h
-│       └── safe_data_cache.h
+│       ├── SafeCommandQueue.h
+│       └── SafeDataCache.h
 └── utility/
     ├── logger/
     │   ├── include/
@@ -521,20 +524,21 @@ add_library(Corona::Logger ALIAS CoronaLogger)
 
 ```
 CoronaEngine/
-├── .github/                    # GitHub 配置
-│   └── copilot-instructions.md # AI 代理指令
+├── .github/                    # GitHub 配置（copilot-instructions.md 为本地配置，不提交）
 ├── build/                      # 构建输出目录（.gitignore）
 ├── doc/                        # 项目文档
 │   ├── CMAKE_BUILD_GUIDE.md
-│   ├── DEVELOPER_GUIDE.md
-│   └── compiler_features.md
+│   ├── COMPILER_FEATURES.md
+│   └── DEVELOPER_GUIDE.md
 ├── editor/                     # 编辑器
 │   └── CoronaEditor/
 │       ├── Backend/            # PyQt6 后端
 │       └── Frontend/           # Vue.js 前端
 ├── examples/                   # 示例程序
 │   ├── assets/                 # 共享资源
+│   ├── concurrent_performance/
 │   ├── interactive_rendering/
+│   ├── multi_window_rendering/
 │   ├── python_scripting/
 │   └── resource_management/
 ├── misc/                       # 辅助脚本
@@ -1074,8 +1078,7 @@ CE_BUILTIN_MAYBE_UNUSED int result = calculate();
 ### 项目文档
 
 - [CMAKE_BUILD_GUIDE.md](CMAKE_BUILD_GUIDE.md) - CMake 构建系统指南
-- [compiler_features.md](compiler_features.md) - 编译器特性宏文档
-- [.github/copilot-instructions.md](../.github/copilot-instructions.md) - AI 代理指令
+- [COMPILER_FEATURES.md](COMPILER_FEATURES.md) - 编译器特性宏文档
 
 ### 工具
 
