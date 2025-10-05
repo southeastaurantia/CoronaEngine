@@ -1,15 +1,14 @@
 {
-  "version": 6,
+  "version": 8,
   "cmakeMinimumRequired": {
-    "major": 3,
-    "minor": 23,
+    "major": 4,
+    "minor": 0,
     "patch": 0
   },
   "configurePresets": [
     {
       "name": "base",
       "hidden": true,
-      "description": "基础配置，所有其他预设继承此配置",
       "binaryDir": "${sourceDir}/build",
       "installDir": "${sourceDir}/install",
       "cacheVariables": {
@@ -17,386 +16,236 @@
       }
     },
     {
-      "name": "windows-base",
-      "hidden": true,
+      "name": "ninja-msvc",
+      "displayName": "Ninja MSVC",
+      "description": "Windows - Ninja Multi-Config + MSVC",
       "inherits": "base",
-      "description": "Windows 平台基础配置",
+      "generator": "Ninja Multi-Config",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "ninja-clang",
+      "displayName": "Ninja Clang",
+      "description": "Windows - Ninja Multi-Config + LLVM Clang (GNU style)",
+      "inherits": "base",
+      "generator": "Ninja Multi-Config",
       "condition": {
         "type": "equals",
         "lhs": "${hostSystemName}",
         "rhs": "Windows"
       },
-      "vendor": {
-        "microsoft.com/VisualStudioSettings/CMake/1.0": {
-          "hostOS": ["Windows"]
-        }
-      }
-    },
-    {
-      "name": "linux-base",
-      "hidden": true,
-      "inherits": "base",
-      "description": "Linux 平台基础配置",
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Linux"
-      }
-    },
-    {
-      "name": "macos-base",
-      "hidden": true,
-      "inherits": "base",
-      "description": "macOS 平台基础配置",
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Darwin"
-      }
-    },
-    {
-      "name": "ninja-base",
-      "hidden": true,
-      "inherits": "base",
-      "description": "Ninja 生成器基础配置",
-      "generator": "Ninja Multi-Config"
-    },
-    {
-      "name": "vs2022-base",
-      "hidden": true,
-      "inherits": "windows-base",
-      "description": "Visual Studio 2022 基础配置",
-      "generator": "Visual Studio 17 2022",
-      "architecture": "x64",
-      "toolset": "host=x64"
-    },
-    {
-      "name": "vs2019-base",
-      "hidden": true,
-      "inherits": "windows-base",
-      "description": "Visual Studio 2019 基础配置",
-      "generator": "Visual Studio 16 2019",
-      "architecture": "x64",
-      "toolset": "host=x64"
-    },
-    {
-      "name": "clang-base",
-      "hidden": true,
-      "inherits": "base",
-      "description": "Clang 编译器基础配置",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++"
       }
     },
     {
-      "name": "gcc-base",
-      "hidden": true,
+      "name": "vs2022",
+      "displayName": "Visual Studio 2022",
+      "description": "Windows - Visual Studio 2022 Generator",
       "inherits": "base",
-      "description": "GCC 编译器基础配置",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "toolset": "host=x64",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "ninja-linux-gcc",
+      "displayName": "Ninja GCC",
+      "description": "Linux - Ninja Multi-Config + GCC",
+      "inherits": "base",
+      "generator": "Ninja Multi-Config",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
       "cacheVariables": {
         "CMAKE_C_COMPILER": "gcc",
         "CMAKE_CXX_COMPILER": "g++"
       }
     },
     {
-      "name": "clang-cl-base",
-      "hidden": true,
-      "inherits": "windows-base",
-      "description": "Clang-CL 编译器基础配置（Windows）",
-      "cacheVariables": {
-        "CMAKE_C_COMPILER": "clang-cl",
-        "CMAKE_CXX_COMPILER": "clang-cl"
-      }
-    },
-    {
-      "name": "ninja-mc",
-      "displayName": "Ninja Multi-Config (MSVC)",
-      "description": "使用 Ninja Multi-Config 生成器和 MSVC 编译器（推荐）",
-      "inherits": ["ninja-base", "windows-base"]
-    },
-    {
-      "name": "ninja-clang-cl",
-      "displayName": "Ninja Multi-Config (Clang-CL)",
-      "description": "使用 Ninja Multi-Config 生成器和 Clang-CL 编译器",
-      "inherits": ["ninja-base", "clang-cl-base"]
-    },
-    {
-      "name": "ninja-linux",
-      "displayName": "Ninja Multi-Config (Linux GCC)",
-      "description": "Linux 平台使用 Ninja 和 GCC",
-      "inherits": ["ninja-base", "linux-base", "gcc-base"]
-    },
-    {
       "name": "ninja-linux-clang",
-      "displayName": "Ninja Multi-Config (Linux Clang)",
-      "description": "Linux 平台使用 Ninja 和 Clang",
-      "inherits": ["ninja-base", "linux-base", "clang-base"]
+      "displayName": "Ninja Clang",
+      "description": "Linux - Ninja Multi-Config + Clang",
+      "inherits": "base",
+      "generator": "Ninja Multi-Config",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
     },
     {
       "name": "ninja-macos",
-      "displayName": "Ninja Multi-Config (macOS)",
-      "description": "macOS 平台使用 Ninja",
-      "inherits": ["ninja-base", "macos-base"]
-    },
-    {
-      "name": "vs2022",
-      "displayName": "Visual Studio 2022 x64",
-      "description": "Visual Studio 2022 解决方案生成器",
-      "inherits": "vs2022-base"
-    },
-    {
-      "name": "vs2019",
-      "displayName": "Visual Studio 2019 x64",
-      "description": "Visual Studio 2019 解决方案生成器",
-      "inherits": "vs2019-base"
-    },
-    {
-      "name": "dev-debug",
-      "displayName": "Development Debug",
-      "description": "开发用 Debug 配置（启用所有示例和编辑器）",
-      "inherits": "ninja-mc",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CORONA_BUILD_EXAMPLES": "ON",
-        "BUILD_CORONA_EDITOR": "ON"
-      }
-    },
-    {
-      "name": "dev-release",
-      "displayName": "Development Release",
-      "description": "开发用 Release 配置（启用所有示例和编辑器）",
-      "inherits": "ninja-mc",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "CORONA_BUILD_EXAMPLES": "ON",
-        "BUILD_CORONA_EDITOR": "ON"
-      }
-    },
-    {
-      "name": "ci-build",
-      "displayName": "CI Build",
-      "description": "持续集成构建配置（关闭编辑器，启用测试）",
-      "inherits": "ninja-mc",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "CORONA_BUILD_EXAMPLES": "ON",
-        "BUILD_CORONA_EDITOR": "OFF"
+      "displayName": "Ninja",
+      "description": "macOS - Ninja Multi-Config",
+      "inherits": "base",
+      "generator": "Ninja Multi-Config",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Darwin"
       }
     }
   ],
   "buildPresets": [
     {
-      "name": "ninja-debug",
-      "displayName": "Ninja Debug",
-      "description": "Debug 构建",
-      "configurePreset": "ninja-mc",
+      "name": "msvc-debug",
+      "displayName": "Debug",
+      "configurePreset": "ninja-msvc",
       "configuration": "Debug"
     },
     {
-      "name": "ninja-release",
-      "displayName": "Ninja Release",
-      "description": "Release 构建",
-      "configurePreset": "ninja-mc",
+      "name": "msvc-release",
+      "displayName": "Release",
+      "configurePreset": "ninja-msvc",
       "configuration": "Release"
     },
     {
-      "name": "ninja-relwithdebinfo",
-      "displayName": "Ninja RelWithDebInfo",
-      "description": "RelWithDebInfo 构建",
-      "configurePreset": "ninja-mc",
+      "name": "msvc-relwithdebinfo",
+      "displayName": "RelWithDebInfo",
+      "configurePreset": "ninja-msvc",
       "configuration": "RelWithDebInfo"
     },
     {
-      "name": "ninja-minsizerel",
-      "displayName": "Ninja MinSizeRel",
-      "description": "MinSizeRel 构建",
-      "configurePreset": "ninja-mc",
+      "name": "msvc-minsizerel",
+      "displayName": "MinSizeRel",
+      "configurePreset": "ninja-msvc",
       "configuration": "MinSizeRel"
     },
     {
-      "name": "ninja-clang-debug",
-      "displayName": "Ninja Clang-CL Debug",
-      "description": "Clang-CL Debug 构建",
-      "configurePreset": "ninja-clang-cl",
+      "name": "clang-debug",
+      "displayName": "Debug",
+      "configurePreset": "ninja-clang",
       "configuration": "Debug"
     },
     {
-      "name": "ninja-clang-release",
-      "displayName": "Ninja Clang-CL Release",
-      "description": "Clang-CL Release 构建",
-      "configurePreset": "ninja-clang-cl",
+      "name": "clang-release",
+      "displayName": "Release",
+      "configurePreset": "ninja-clang",
       "configuration": "Release"
     },
     {
-      "name": "ninja-linux-debug",
-      "displayName": "Linux GCC Debug",
-      "description": "Linux GCC Debug 构建",
-      "configurePreset": "ninja-linux",
-      "configuration": "Debug"
+      "name": "clang-relwithdebinfo",
+      "displayName": "RelWithDebInfo",
+      "configurePreset": "ninja-clang",
+      "configuration": "RelWithDebInfo"
     },
     {
-      "name": "ninja-linux-release",
-      "displayName": "Linux GCC Release",
-      "description": "Linux GCC Release 构建",
-      "configurePreset": "ninja-linux",
-      "configuration": "Release"
-    },
-    {
-      "name": "ninja-linux-clang-debug",
-      "displayName": "Linux Clang Debug",
-      "description": "Linux Clang Debug 构建",
-      "configurePreset": "ninja-linux-clang",
-      "configuration": "Debug"
-    },
-    {
-      "name": "ninja-linux-clang-release",
-      "displayName": "Linux Clang Release",
-      "description": "Linux Clang Release 构建",
-      "configurePreset": "ninja-linux-clang",
-      "configuration": "Release"
-    },
-    {
-      "name": "ninja-macos-debug",
-      "displayName": "macOS Debug",
-      "description": "macOS Debug 构建",
-      "configurePreset": "ninja-macos",
-      "configuration": "Debug"
-    },
-    {
-      "name": "ninja-macos-release",
-      "displayName": "macOS Release",
-      "description": "macOS Release 构建",
-      "configurePreset": "ninja-macos",
-      "configuration": "Release"
+      "name": "clang-minsizerel",
+      "displayName": "MinSizeRel",
+      "configurePreset": "ninja-clang",
+      "configuration": "MinSizeRel"
     },
     {
       "name": "vs2022-debug",
-      "displayName": "VS2022 Debug",
-      "description": "Visual Studio 2022 Debug 构建",
+      "displayName": "Debug",
       "configurePreset": "vs2022",
       "configuration": "Debug"
     },
     {
       "name": "vs2022-release",
-      "displayName": "VS2022 Release",
-      "description": "Visual Studio 2022 Release 构建",
+      "displayName": "Release",
       "configurePreset": "vs2022",
       "configuration": "Release"
     },
     {
-      "name": "dev-debug-build",
-      "displayName": "Development Debug Build",
-      "description": "开发用 Debug 构建",
-      "configurePreset": "dev-debug",
+      "name": "vs2022-relwithdebinfo",
+      "displayName": "RelWithDebInfo",
+      "configurePreset": "vs2022",
+      "configuration": "RelWithDebInfo"
+    },
+    {
+      "name": "vs2022-minsizerel",
+      "displayName": "MinSizeRel",
+      "configurePreset": "vs2022",
+      "configuration": "MinSizeRel"
+    },
+    {
+      "name": "linux-gcc-debug",
+      "displayName": "Debug",
+      "configurePreset": "ninja-linux-gcc",
       "configuration": "Debug"
     },
     {
-      "name": "dev-release-build",
-      "displayName": "Development Release Build",
-      "description": "开发用 Release 构建",
-      "configurePreset": "dev-release",
+      "name": "linux-gcc-release",
+      "displayName": "Release",
+      "configurePreset": "ninja-linux-gcc",
       "configuration": "Release"
     },
     {
-      "name": "ci-build-release",
-      "displayName": "CI Release Build",
-      "description": "CI Release 构建",
-      "configurePreset": "ci-build",
+      "name": "linux-gcc-relwithdebinfo",
+      "displayName": "RelWithDebInfo",
+      "configurePreset": "ninja-linux-gcc",
+      "configuration": "RelWithDebInfo"
+    },
+    {
+      "name": "linux-gcc-minsizerel",
+      "displayName": "MinSizeRel",
+      "configurePreset": "ninja-linux-gcc",
+      "configuration": "MinSizeRel"
+    },
+    {
+      "name": "linux-clang-debug",
+      "displayName": "Debug",
+      "configurePreset": "ninja-linux-clang",
+      "configuration": "Debug"
+    },
+    {
+      "name": "linux-clang-release",
+      "displayName": "Release",
+      "configurePreset": "ninja-linux-clang",
       "configuration": "Release"
-    }
-  ],
-  "testPresets": [
-    {
-      "name": "ninja-test",
-      "displayName": "Ninja Test",
-      "description": "运行所有测试",
-      "configurePreset": "ninja-mc",
-      "output": {
-        "outputOnFailure": true
-      },
-      "execution": {
-        "noTestsAction": "error",
-        "stopOnFailure": false
-      }
     },
     {
-      "name": "ninja-linux-test",
-      "displayName": "Linux Test",
-      "description": "Linux 平台运行测试",
-      "configurePreset": "ninja-linux",
-      "output": {
-        "outputOnFailure": true
-      },
-      "execution": {
-        "noTestsAction": "error",
-        "stopOnFailure": false
-      }
+      "name": "linux-clang-relwithdebinfo",
+      "displayName": "RelWithDebInfo",
+      "configurePreset": "ninja-linux-clang",
+      "configuration": "RelWithDebInfo"
     },
     {
-      "name": "ci-test",
-      "displayName": "CI Test",
-      "description": "CI 环境测试",
-      "configurePreset": "ci-build",
-      "output": {
-        "outputOnFailure": true
-      },
-      "execution": {
-        "noTestsAction": "error",
-        "stopOnFailure": false
-      }
-    }
-  ],
-  "packagePresets": [],
-  "workflowPresets": [
-    {
-      "name": "dev-workflow",
-      "displayName": "Development Workflow",
-      "description": "开发工作流：配置 + Debug 构建",
-      "steps": [
-        {
-          "type": "configure",
-          "name": "dev-debug"
-        },
-        {
-          "type": "build",
-          "name": "dev-debug-build"
-        }
-      ]
+      "name": "linux-clang-minsizerel",
+      "displayName": "MinSizeRel",
+      "configurePreset": "ninja-linux-clang",
+      "configuration": "MinSizeRel"
     },
     {
-      "name": "release-workflow",
-      "displayName": "Release Workflow",
-      "description": "发布工作流：配置 + Release 构建",
-      "steps": [
-        {
-          "type": "configure",
-          "name": "dev-release"
-        },
-        {
-          "type": "build",
-          "name": "dev-release-build"
-        }
-      ]
+      "name": "macos-debug",
+      "displayName": "Debug",
+      "configurePreset": "ninja-macos",
+      "configuration": "Debug"
     },
     {
-      "name": "ci-workflow",
-      "displayName": "CI Workflow",
-      "description": "CI 工作流：配置 + 构建 + 测试",
-      "steps": [
-        {
-          "type": "configure",
-          "name": "ci-build"
-        },
-        {
-          "type": "build",
-          "name": "ci-build-release"
-        },
-        {
-          "type": "test",
-          "name": "ci-test"
-        }
-      ]
+      "name": "macos-release",
+      "displayName": "Release",
+      "configurePreset": "ninja-macos",
+      "configuration": "Release"
+    },
+    {
+      "name": "macos-relwithdebinfo",
+      "displayName": "RelWithDebInfo",
+      "configurePreset": "ninja-macos",
+      "configuration": "RelWithDebInfo"
+    },
+    {
+      "name": "macos-minsizerel",
+      "displayName": "MinSizeRel",
+      "configurePreset": "ninja-macos",
+      "configuration": "MinSizeRel"
     }
   ]
 }
