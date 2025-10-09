@@ -12,7 +12,7 @@ include(corona_python)         # Python 探测与依赖校验
 include(corona_runtime_deps)    # 运行时 DLL/PDB 收集
 include(corona_compile_config)  # 编译宏与 MSVC 运行库
 include(corona_third_party)     # FetchContent 第三方依赖
-include(build_cabbage_editor)   # 编辑器资源安装 (待重命名为 corona_editor)
+include(corona_editor)          # 编辑器资源安装
 
 # 库与主引擎
 add_subdirectory(src)
