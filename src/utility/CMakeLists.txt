@@ -8,59 +8,59 @@ function(corona_add_utility)
     set(options INTERFACE HEADER_ONLY)
     set(oneValueArgs NAME TYPE DESCRIPTION)
     set(multiValueArgs SOURCES PUBLIC_HEADERS PRIVATE_HEADERS DEPENDENCIES)
-    cmake_parse_arguments(COR_UTIL "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+    cmake_parse_arguments(CORONA_UTIL "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
     
-    if(NOT COR_UTIL_NAME)
+    if(NOT CORONA_UTIL_NAME)
         message(FATAL_ERROR "corona_add_utility requires NAME")
     endif()
     
     # 默认类型为STATIC
-    if(NOT COR_UTIL_TYPE)
-        set(COR_UTIL_TYPE "STATIC")
+    if(NOT CORONA_UTIL_TYPE)
+        set(CORONA_UTIL_TYPE "STATIC")
     endif()
     
     # 根据类型创建库
-    if(COR_UTIL_INTERFACE OR COR_UTIL_HEADER_ONLY)
-        add_library(${COR_UTIL_NAME} INTERFACE)
-        set(_lib_type "INTERFACE")
+    if(CORONA_UTIL_INTERFACE OR CORONA_UTIL_HEADER_ONLY)
+        add_library(${CORONA_UTIL_NAME} INTERFACE)
+        set(_corona_lib_type "INTERFACE")
     else()
-        add_library(${COR_UTIL_NAME} ${COR_UTIL_TYPE} ${COR_UTIL_SOURCES})
-        set(_lib_type "PUBLIC")
+        add_library(${CORONA_UTIL_NAME} ${CORONA_UTIL_TYPE} ${CORONA_UTIL_SOURCES})
+        set(_corona_lib_type "PUBLIC")
     endif()
     
     # 设置C++标准
-    if(NOT COR_UTIL_INTERFACE AND NOT COR_UTIL_HEADER_ONLY)
-        target_compile_features(${COR_UTIL_NAME} PRIVATE cxx_std_20)
+    if(NOT CORONA_UTIL_INTERFACE AND NOT CORONA_UTIL_HEADER_ONLY)
+        target_compile_features(${CORONA_UTIL_NAME} PRIVATE cxx_std_20)
     endif()
     
     # 设置包含目录
-    target_include_directories(${COR_UTIL_NAME}
-        ${_lib_type}
+    target_include_directories(${CORONA_UTIL_NAME}
+        ${_corona_lib_type}
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../common/include>
             $<INSTALL_INTERFACE:include>
     )
     
     # 链接依赖
-    if(COR_UTIL_DEPENDENCIES)
-        target_link_libraries(${COR_UTIL_NAME} ${_lib_type} ${COR_UTIL_DEPENDENCIES})
+    if(CORONA_UTIL_DEPENDENCIES)
+        target_link_libraries(${CORONA_UTIL_NAME} ${_corona_lib_type} ${CORONA_UTIL_DEPENDENCIES})
     endif()
     
     # 应用编译器配置
     if(COMMAND corona_apply_compile_config)
-        corona_apply_compile_config(${COR_UTIL_NAME})
+        corona_apply_compile_config(${CORONA_UTIL_NAME})
     endif()
     
     # 创建别名
-    string(REGEX REPLACE "^Corona" "Corona::" _alias_name "${COR_UTIL_NAME}")
-    add_library(${_alias_name} ALIAS ${COR_UTIL_NAME})
+    string(REGEX REPLACE "^Corona" "Corona::" _corona_alias_name "${CORONA_UTIL_NAME}")
+    add_library(${_corona_alias_name} ALIAS ${CORONA_UTIL_NAME})
     
     # 输出配置信息
-    message(STATUS "Corona Utility [${COR_UTIL_NAME}]:")
-    message(STATUS "  - Type: ${COR_UTIL_TYPE}")
-    message(STATUS "  - Alias: ${_alias_name}")
-    if(COR_UTIL_DESCRIPTION)
-        message(STATUS "  - Description: ${COR_UTIL_DESCRIPTION}")
+    message(STATUS "[Corona:Utility] ${CORONA_UTIL_NAME}:")
+    message(STATUS "  - Type: ${CORONA_UTIL_TYPE}")
+    message(STATUS "  - Alias: ${_corona_alias_name}")
+    if(CORONA_UTIL_DESCRIPTION)
+        message(STATUS "  - Description: ${CORONA_UTIL_DESCRIPTION}")
     endif()
 endfunction()
 
@@ -79,43 +79,43 @@ set(_CORONA_UTILITY_TARGETS
 )
 
 # 自动为每个模块创建构建选项
-list(LENGTH _CORONA_UTILITY_MODULES _utility_count)
-math(EXPR _utility_last "${_utility_count} - 1")
-foreach(_idx RANGE 0 ${_utility_last})
-    list(GET _CORONA_UTILITY_MODULES ${_idx} _module)
-    list(GET _CORONA_UTILITY_TARGETS ${_idx} _target)
+list(LENGTH _CORONA_UTILITY_MODULES _corona_utility_count)
+math(EXPR _corona_utility_last "${_corona_utility_count} - 1")
+foreach(_corona_idx RANGE 0 ${_corona_utility_last})
+    list(GET _CORONA_UTILITY_MODULES ${_corona_idx} _corona_module)
+    list(GET _CORONA_UTILITY_TARGETS ${_corona_idx} _corona_target)
     
-    string(TOUPPER "${_module}" _upper)
-    set(_option_name "BUILD_CORONA_${_upper}")
+    string(TOUPPER "${_corona_module}" _corona_upper)
+    set(_corona_option_name "BUILD_CORONA_${_corona_upper}")
     
-    option(${_option_name} "Build Corona ${_module} utility" ON)
+    option(${_corona_option_name} "Build Corona ${_corona_module} utility" ON)
     
-    if(${_option_name})
-        if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${_module}/CMakeLists.txt")
-            message(STATUS "Building Corona ${_module}...")
-            add_subdirectory(${_module})
+    if(${_corona_option_name})
+        if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${_corona_module}/CMakeLists.txt")
+            message(STATUS "[Corona:Utility] Building ${_corona_module}...")
+            add_subdirectory(${_corona_module})
         else()
-            message(WARNING "[Utility] ${_module} subdir not found, skip")
+            message(WARNING "[Corona:Utility] ${_corona_module} subdir not found, skip")
         endif()
     else()
-        message(STATUS "Skipping Corona ${_module} (disabled)")
+        message(STATUS "[Corona:Utility] Skipping ${_corona_module} (disabled)")
     endif()
 endforeach()
 
 # 创建聚合目标（包含所有启用的Utility库）
 add_library(CoronaUtilityAll INTERFACE)
-set(_linked_utilities "")
+set(_corona_linked_utilities "")
 
-foreach(_idx RANGE 0 ${_utility_last})
-    list(GET _CORONA_UTILITY_MODULES ${_idx} _module)
-    list(GET _CORONA_UTILITY_TARGETS ${_idx} _target)
+foreach(_corona_idx RANGE 0 ${_corona_utility_last})
+    list(GET _CORONA_UTILITY_MODULES ${_corona_idx} _corona_module)
+    list(GET _CORONA_UTILITY_TARGETS ${_corona_idx} _corona_target)
     
-    string(TOUPPER "${_module}" _upper)
-    set(_option_name "BUILD_CORONA_${_upper}")
+    string(TOUPPER "${_corona_module}" _corona_upper)
+    set(_corona_option_name "BUILD_CORONA_${_corona_upper}")
     
-    if(${_option_name})
-        target_link_libraries(CoronaUtilityAll INTERFACE ${_target})
-        list(APPEND _linked_utilities "${_module}")
+    if(${_corona_option_name})
+        target_link_libraries(CoronaUtilityAll INTERFACE ${_corona_target})
+        list(APPEND _corona_linked_utilities "${_corona_module}")
     endif()
 endforeach()
 
@@ -127,18 +127,18 @@ message(STATUS "")
 message(STATUS "========================================")
 message(STATUS "Corona Utility Build Summary")
 message(STATUS "========================================")
-foreach(_idx RANGE 0 ${_utility_last})
-    list(GET _CORONA_UTILITY_MODULES ${_idx} _module)
-    string(TOUPPER "${_module}" _upper)
-    set(_option_name "BUILD_CORONA_${_upper}")
+foreach(_corona_idx RANGE 0 ${_corona_utility_last})
+    list(GET _CORONA_UTILITY_MODULES ${_corona_idx} _corona_module)
+    string(TOUPPER "${_corona_module}" _corona_upper)
+    set(_corona_option_name "BUILD_CORONA_${_corona_upper}")
     
-    if(${_option_name})
-        message(STATUS "✓ ${_module}")
+    if(${_corona_option_name})
+        message(STATUS "✓ ${_corona_module}")
     else()
-        message(STATUS "✗ ${_module} (disabled)")
+        message(STATUS "✗ ${_corona_module} (disabled)")
     endif()
 endforeach()
 message(STATUS "========================================")
-message(STATUS "Linked utilities: ${_linked_utilities}")
+message(STATUS "Linked utilities: ${_corona_linked_utilities}")
 message(STATUS "========================================")
 message(STATUS "")

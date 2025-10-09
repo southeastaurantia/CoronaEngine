@@ -1,4 +1,4 @@
-﻿# CoronaRuntimeDeps.cmake
+# CoronaRuntimeDeps.cmake
 # 运行时依赖（动态库 / 调试符号）收集与复制模块
 # 功能概述：
 # 1. 在配置阶段：通过 corona_configure_runtime_deps() 收集 TBB 与 Python 相关的 DLL / PDB 文件并写入目标属性
@@ -18,38 +18,38 @@ function(corona_install_runtime_deps target_name)
     get_target_property(_CORONA_DEPS CoronaEngine INTERFACE_CORONA_RUNTIME_DEPS)
 
     if(NOT _CORONA_DEPS)
-    message(STATUS "[RuntimeDeps] No INTERFACE_CORONA_RUNTIME_DEPS; skip copy")
+    message(STATUS "[Corona:RuntimeDeps] No INTERFACE_CORONA_RUNTIME_DEPS; skip copy")
         return()
     endif()
 
-    set(_DESTINATION_DIR "$<TARGET_FILE_DIR:${target_name}>")
+    set(_CORONA_DESTINATION_DIR "$<TARGET_FILE_DIR:${target_name}>")
 
-    # 使用 Python 脚本执行“若不同才复制”，以统一复制行为和日志
-    set(_PY_COPY "${PROJECT_SOURCE_DIR}/misc/pytools/copy_files.py")
+    # 使用 Python 脚本执行"若不同才复制"，以统一复制行为和日志
+    set(_CORONA_PY_COPY "${PROJECT_SOURCE_DIR}/misc/pytools/copy_files.py")
 
-    if(EXISTS "${_PY_COPY}")
+    if(EXISTS "${_CORONA_PY_COPY}")
         if(DEFINED Python3_EXECUTABLE)
             add_custom_command(
                 TARGET ${target_name} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E echo "[RuntimeDeps] Copy via Python -> ${_DESTINATION_DIR}"
-                COMMAND "${Python3_EXECUTABLE}" "${_PY_COPY}" --dest "${_DESTINATION_DIR}" ${_CORONA_DEPS}
-                COMMENT "[RuntimeDeps] Copy Corona runtime dependencies to target directory -> ${target_name}"
+                COMMAND ${CMAKE_COMMAND} -E echo "[Corona:RuntimeDeps] Copy via Python -> ${_CORONA_DESTINATION_DIR}"
+                COMMAND "${Python3_EXECUTABLE}" "${_CORONA_PY_COPY}" --dest "${_CORONA_DESTINATION_DIR}" ${_CORONA_DEPS}
+                COMMENT "[Corona:RuntimeDeps] Copy Corona runtime dependencies to target directory -> ${target_name}"
                 VERBATIM
             )
         else()
-            message(STATUS "[RuntimeDeps] Python3 not available; fallback to copy_if_different")
+            message(STATUS "[Corona:RuntimeDeps] Python3 not available; fallback to copy_if_different")
             add_custom_command(
                 TARGET ${target_name} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_CORONA_DEPS} "${_DESTINATION_DIR}"
-                COMMENT "[RuntimeDeps] Copy runtime deps (fallback) -> ${target_name}"
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_CORONA_DEPS} "${_CORONA_DESTINATION_DIR}"
+                COMMENT "[Corona:RuntimeDeps] Copy runtime deps (fallback) -> ${target_name}"
                 VERBATIM
             )
         endif()
     else()
         add_custom_command(
             TARGET ${target_name} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_CORONA_DEPS} "${_DESTINATION_DIR}"
-            COMMENT "[RuntimeDeps] Copy runtime deps (no python) -> ${target_name}"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_CORONA_DEPS} "${_CORONA_DESTINATION_DIR}"
+            COMMENT "[Corona:RuntimeDeps] Copy runtime deps (no python) -> ${target_name}"
             VERBATIM
         )
     endif()
@@ -57,46 +57,46 @@ endfunction()
 
 function(corona_configure_runtime_deps target_name)
     if(NOT TARGET ${target_name})
-        message(WARNING "[RuntimeDeps] Target ${target_name} does not exist; cannot configure runtime dependencies.")
+        message(WARNING "[Corona:RuntimeDeps] Target ${target_name} does not exist; cannot configure runtime dependencies.")
         return()
     endif()
 
     # -------- 1) 收集 TBB 动态库 / 调试符号 --------
-    file(GLOB _TBB_DLLS "${CMAKE_SOURCE_DIR}/third_party/oneapi-tbb-2022.2.0/redist/intel64/vc14/*.dll")
-    file(GLOB _TBB_PDBS "${CMAKE_SOURCE_DIR}/third_party/oneapi-tbb-2022.2.0/redist/intel64/vc14/*.pdb")
+    file(GLOB _CORONA_TBB_DLLS "${CMAKE_SOURCE_DIR}/third_party/oneapi-tbb-2022.2.0/redist/intel64/vc14/*.dll")
+    file(GLOB _CORONA_TBB_PDBS "${CMAKE_SOURCE_DIR}/third_party/oneapi-tbb-2022.2.0/redist/intel64/vc14/*.pdb")
 
     # -------- 2) 收集 Python 运行库 (若已定位其运行时目录) --------
     if(DEFINED Python3_RUNTIME_LIBRARY_DIRS)
-        file(GLOB _PY_DLLS "${Python3_RUNTIME_LIBRARY_DIRS}/*.dll")
-        file(GLOB _PY_PDBS "${Python3_RUNTIME_LIBRARY_DIRS}/*.pdb")
+        file(GLOB _CORONA_PY_DLLS "${Python3_RUNTIME_LIBRARY_DIRS}/*.dll")
+        file(GLOB _CORONA_PY_PDBS "${Python3_RUNTIME_LIBRARY_DIRS}/*.pdb")
     endif()
 
-    # 汇总所有候选文件到 _ALL_DEPS 列表
-    set(_ALL_DEPS)
+    # 汇总所有候选文件到 _CORONA_ALL_DEPS 列表
+    set(_CORONA_ALL_DEPS)
 
-    if(_TBB_DLLS)
-        list(APPEND _ALL_DEPS ${_TBB_DLLS})
+    if(_CORONA_TBB_DLLS)
+        list(APPEND _CORONA_ALL_DEPS ${_CORONA_TBB_DLLS})
     endif()
 
-    if(_TBB_PDBS)
-        list(APPEND _ALL_DEPS ${_TBB_PDBS})
+    if(_CORONA_TBB_PDBS)
+        list(APPEND _CORONA_ALL_DEPS ${_CORONA_TBB_PDBS})
     endif()
 
-    if(_PY_DLLS)
-        list(APPEND _ALL_DEPS ${_PY_DLLS})
+    if(_CORONA_PY_DLLS)
+        list(APPEND _CORONA_ALL_DEPS ${_CORONA_PY_DLLS})
     endif()
 
-    if(_PY_PDBS)
-        list(APPEND _ALL_DEPS ${_PY_PDBS})
+    if(_CORONA_PY_PDBS)
+        list(APPEND _CORONA_ALL_DEPS ${_CORONA_PY_PDBS})
     endif()
 
-    if(NOT _ALL_DEPS)
-        message(WARNING "[RuntimeDeps] No runtime files collected (TBB / Python).")
+    if(NOT _CORONA_ALL_DEPS)
+        message(WARNING "[Corona:RuntimeDeps] No runtime files collected (TBB / Python).")
         return()
     endif()
 
     # 去重，写入目标属性供后续复制使用
-    list(REMOVE_DUPLICATES _ALL_DEPS)
-    set_target_properties(${target_name} PROPERTIES INTERFACE_CORONA_RUNTIME_DEPS "${_ALL_DEPS}")
-    message(STATUS "[RuntimeDeps] Collected ${target_name} files: ${_ALL_DEPS}")
+    list(REMOVE_DUPLICATES _CORONA_ALL_DEPS)
+    set_target_properties(${target_name} PROPERTIES INTERFACE_CORONA_RUNTIME_DEPS "${_CORONA_ALL_DEPS}")
+    message(STATUS "[Corona:RuntimeDeps] Collected ${target_name} files: ${_CORONA_ALL_DEPS}")
 endfunction()
