@@ -118,7 +118,8 @@ bool PythonAPI::ensureInitialized()
     PyConfig_SetBytesString(&config, &config.pythonpath_env, CORONA_PYTHON_HOME_DIR);
     config.module_search_paths_set = 1;
 
-    std::string runtimePath = codePath + "/Editor/CoronaEditor/Backend";
+    auto runtimePathFs = std::filesystem::current_path() / "CoronaEditor" / "Backend";
+    std::string runtimePath = runtimePathFs.string();
     std::ranges::replace(runtimePath, '\\', '/');
     PyWideStringList_Append(&config.module_search_paths, str2wstr(runtimePath).c_str());
     PyWideStringList_Append(&config.module_search_paths, str2wstr(CORONA_PYTHON_MODULE_DLL_DIR).c_str());
