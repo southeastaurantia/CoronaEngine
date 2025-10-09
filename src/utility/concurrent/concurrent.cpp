@@ -1,5 +1,7 @@
 #include "include/concurrent.h"
 
+#include <atomic>
+
 namespace Corona::Concurrent {
 
 namespace {
@@ -8,7 +10,17 @@ namespace {
     
     // 初始化标志
     std::atomic<bool> g_initialized{false};
-}
+
+    void apply_performance_config() noexcept {
+        auto cpu_info = Core::get_cpu_info();
+
+        if (g_config.enable_cpu_affinity && cpu_info.physical_cores > 1) {
+            Core::CpuAffinity::bind_to_cpu(0);
+        } else {
+            Core::CpuAffinity::reset_affinity();
+        }
+    }
+} // namespace
 
 void initialize() noexcept {
     bool expected = false;
@@ -17,14 +29,7 @@ void initialize() noexcept {
     }
     
     // 执行全局初始化
-    // 获取 CPU 信息并进行优化配置
-    auto cpu_info = Core::get_cpu_info();
-    
-    // 如果启用了 CPU 亲和性，可以在这里设置
-    if (g_config.enable_cpu_affinity && cpu_info.physical_cores > 1) {
-        // 为主线程设置亲和性（可选）
-        Core::CpuAffinity::bind_to_cpu(0);
-    }
+    apply_performance_config();
 }
 
 void finalize() noexcept {
@@ -35,6 +40,7 @@ void finalize() noexcept {
     
     // 清理全局资源
     // 线程本地缓存会在线程结束时自动清理
+    Core::CpuAffinity::reset_affinity();
 }
 
 RuntimeStats get_runtime_stats() noexcept {
@@ -58,6 +64,10 @@ RuntimeStats get_runtime_stats() noexcept {
 
 void set_performance_config(const PerformanceConfig& config) noexcept {
     g_config = config;
+
+    if (g_initialized.load(std::memory_order_acquire)) {
+        apply_performance_config();
+    }
 }
 
 PerformanceConfig get_performance_config() noexcept {

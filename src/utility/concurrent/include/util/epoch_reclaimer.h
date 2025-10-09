@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../core/atomic.h"
+#include "../detail/runtime_init.h"
 #include <vector>
 #include <array>
 #include <functional>
@@ -118,6 +119,7 @@ public:
         
     public:
         explicit Guard([[maybe_unused]] const EpochReclaimer& reclaimer) {
+            detail::ensure_runtime_initialized();
             // 获取线程的epoch记录
             if (!tl_data_.epoch_record) {
                 acquire_epoch_record();

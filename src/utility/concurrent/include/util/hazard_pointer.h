@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../core/atomic.h"
+#include "../detail/runtime_init.h"
 #include <array>
 #include <vector>
 #include <functional>
@@ -119,6 +120,7 @@ public:
         
     public:
         explicit Guard(std::size_t slot = 0) : record_(nullptr), slot_(slot) {
+            detail::ensure_runtime_initialized();
             if (slot >= HAZARDS_PER_THREAD) {
                 slot_ = 0;  // 防止越界
             }

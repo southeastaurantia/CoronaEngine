@@ -11,6 +11,9 @@
  * - 易于使用的 API
  */
 
+// 运行时工具
+#include "detail/runtime_init.h"          // 运行时自动初始化
+
 // 核心组件
 #include "core/atomic.h"   // 原子操作封装
 #include "core/thread.h"   // 线程管理和工具
@@ -47,13 +50,13 @@ constexpr struct {
 
 /**
  * 初始化并发库
- * 在使用库之前调用，进行必要的全局初始化
+ * 通常无需手动调用：在首次使用任何并发组件时会自动触发，析构阶段自动清理
  */
 void initialize() noexcept;
 
 /**
  * 清理并发库资源
- * 程序结束前调用，清理全局资源
+ * 如果调用过 `initialize`，会在进程退出时自动执行；仅在需要显式提前释放时调用
  */
 void finalize() noexcept;
 
