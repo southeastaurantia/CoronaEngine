@@ -14,7 +14,7 @@
 
 set(CORONA_PYTHON_MIN_VERSION 3.13 CACHE STRING "Minimum required Python3 version (major.minor)")
 option(CORONA_PYTHON_USE_EMBEDDED_FALLBACK "Use embedded Env fallback if required version not found system-wide" ON)
-set(CORONA_EMBEDDED_PY_DIR "${PROJECT_SOURCE_DIR}/Env/Python-3.13.7" CACHE PATH "Embedded (bundled) Python directory path")
+set(CORONA_EMBEDDED_PY_DIR "${PROJECT_SOURCE_DIR}/third_party/Python-3.13.7" CACHE PATH "Embedded (bundled) Python directory path")
 
 # 步骤一：检测 Python (优先系统，再选择是否回退嵌入式)
 if(DEFINED Python3_ROOT_DIR AND EXISTS "${Python3_ROOT_DIR}")
