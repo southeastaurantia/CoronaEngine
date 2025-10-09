@@ -62,7 +62,8 @@ private:
         std::size_t last_cleanup_epoch;
         
         ThreadLocalData() : epoch_record(nullptr), epoch_index(MAX_THREADS), last_cleanup_epoch(0) {
-            retired_objects.reserve(BASE_CLEANUP_THRESHOLD * 2);  // 预分配空间
+            // 移除 reserve 调用,避免在 TLS 初始化时触发 CRT 锁
+            // retired_objects.reserve(BASE_CLEANUP_THRESHOLD * 2);
         }
         
         ~ThreadLocalData() {
@@ -76,6 +77,13 @@ private:
                 release_index(epoch_index);
                 epoch_record = nullptr;
                 epoch_index = MAX_THREADS;
+            }
+        }
+        
+        // 延迟初始化容量
+        void ensure_capacity() {
+            if (retired_objects.capacity() < BASE_CLEANUP_THRESHOLD * 2) {
+                retired_objects.reserve(BASE_CLEANUP_THRESHOLD * 2);
             }
         }
         
@@ -215,6 +223,9 @@ public:
             Guard dummy_guard(*this);  // 初始化epoch记录
         }
         
+        // 延迟初始化容量
+        tl_data_.ensure_capacity();
+        
         std::size_t current_epoch = global_epoch_.load(std::memory_order_acquire);
         tl_data_.retired_objects.emplace_back(ptr, current_epoch, std::move(deleter));
         
@@ -230,6 +241,9 @@ public:
      * 立即尝试清理可以安全回收的对象
      */
     void try_cleanup() {
+        // 确保容量已初始化
+        tl_data_.ensure_capacity();
+        
         std::size_t safe_epoch = get_safe_epoch();
         
         // 清理epoch小于安全epoch的对象

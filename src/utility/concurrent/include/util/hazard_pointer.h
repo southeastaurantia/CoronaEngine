@@ -65,8 +65,19 @@ private:
         std::vector<T*> hazard_snapshot;
         
         ThreadLocalData() : my_hazard_record(nullptr) {
-            retired_list.reserve(BASE_RETIRE_THRESHOLD * 2);
-            hazard_snapshot.reserve(BASE_RETIRE_THRESHOLD * HAZARDS_PER_THREAD);
+            // 移除 reserve 调用,避免在 TLS 初始化时触发 CRT 锁
+            // 这可以防止在程序启动早期阶段发生访问违例
+            // Vector 会在需要时自动增长,性能影响可忽略不计
+        }
+        
+        // 延迟初始化容量,在首次使用时调用
+        void ensure_capacity() {
+            if (retired_list.capacity() < BASE_RETIRE_THRESHOLD * 2) {
+                retired_list.reserve(BASE_RETIRE_THRESHOLD * 2);
+            }
+            if (hazard_snapshot.capacity() < BASE_RETIRE_THRESHOLD * HAZARDS_PER_THREAD) {
+                hazard_snapshot.reserve(BASE_RETIRE_THRESHOLD * HAZARDS_PER_THREAD);
+            }
         }
         
         ~ThreadLocalData() {
@@ -196,6 +207,8 @@ public:
                 if (record.owner.load(std::memory_order_acquire) == current_thread_id) {
                     record.active.store(true, std::memory_order_release);
                     tl_data_.my_hazard_record = &record;
+                    // 在重新激活已有记录时也确保容量
+                    tl_data_.ensure_capacity();
                     return;
                 }
             }
@@ -210,6 +223,8 @@ public:
                         record.active.store(true, std::memory_order_release);
                         registered_records_.fetch_add(1, std::memory_order_acq_rel);
                         tl_data_.my_hazard_record = &record;
+                        // 在获取 hazard 记录后确保容量
+                        tl_data_.ensure_capacity();
                         return;
                     }
                 }
@@ -252,6 +267,9 @@ public:
             }
         }
         
+        // 确保容量已分配
+        tl_data_.ensure_capacity();
+        
         tl_data_.retired_list.emplace_back(ptr, std::move(deleter));
         
         // 检查是否需要执行扫描回收
@@ -265,6 +283,9 @@ public:
      * 扫描并回收安全的对象
      */
     static void scan_and_reclaim() {
+        // 确保容量已分配
+        tl_data_.ensure_capacity();
+        
         auto& retired_list = tl_data_.retired_list;
         const std::size_t registered = registered_records_.load(std::memory_order_acquire);
 
