@@ -176,14 +176,14 @@ options.cmake                    # 缺少 corona 前缀
 
 从旧命名迁移到新规范时，检查以下项：
 
-- [ ] 所有函数使用 `corona_` 前缀
-- [ ] 全局变量使用 `_CORONA_` 前缀（大写）
-- [ ] 局部变量使用 `_corona_` 前缀（小写）
-- [ ] 函数参数使用 `CORONA_<缩写>_` 前缀
-- [ ] 构建选项使用 `BUILD_CORONA_` 前缀
-- [ ] 消息标签使用 `[Corona:Module]` 格式
-- [ ] CMake 文件使用 `corona_*.cmake` 命名
-- [ ] 移除所有旧项目名 `Cabbage` 引用
+- [x] 所有函数使用 `corona_` 前缀
+- [x] 全局变量使用 `_CORONA_` 前缀（大写）
+- [x] 局部变量使用 `_corona_` 前缀（小写）
+- [x] 函数参数使用 `CORONA_<缩写>_` 前缀
+- [x] 构建选项使用 `BUILD_CORONA_` 前缀
+- [x] 消息标签使用 `[Corona:Module]` 格式
+- [x] CMake 文件使用 `corona_*.cmake` 命名
+- [x] 移除所有旧项目名 `Cabbage` 引用
 
 ## 九、完整示例
 
