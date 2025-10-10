@@ -60,7 +60,7 @@ namespace PathCfg {
     }
 
     inline const std::string& EditorBackendRel() {
-        static const std::string rel = "Editor/CoronaEditor/Backend";
+        static const std::string rel = "Editor/CabbageEditor/Backend";
         return rel;
     }
 
@@ -70,7 +70,7 @@ namespace PathCfg {
     }
 
     inline std::string RuntimeBackendAbs() {
-        auto p = std::filesystem::current_path() / "CoronaEditor" / "Backend";
+        auto p = std::filesystem::current_path() / "CabbageEditor" / "Backend";
         return Normalize(p.string());
     }
 
@@ -252,8 +252,8 @@ void PythonAPI::runPythonScript() {
 
 void PythonAPI::checkPythonScriptChange()
 {
-    // const std::string sourcePath  = codePath + "/Editor/CoronaEditor/Backend";
-    // std::string runtimePath = "./CoronaEditor/Backend";
+    // const std::string sourcePath  = codePath + "/Editor/CabbageEditor/Backend";
+    // std::string runtimePath = "./CabbageEditor/Backend";
     // std::ranges::replace(runtimePath, '\\', '/');
     // int64_t checkTime = hotfixManger.GetCurrentTimeMsec();
     // copyModifiedFiles(sourcePath, runtimePath, checkTime);
