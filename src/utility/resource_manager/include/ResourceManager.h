@@ -3,10 +3,6 @@
 // 迁移版 ResourceManager：从 Src/Core/IO 移至 Utility/ResourceManager
 // 对外暴露统一头 <ResourceManager.h>
 
-#include "IResource.h"
-#include "IResourceLoader.h"
-#include "ResourceTypes.h"
-
 #include <concurrent.h>
 
 #include <atomic>
@@ -18,54 +14,55 @@
 #include <shared_mutex>
 #include <vector>
 
-namespace Corona
-{
-    class ResourceManager
-    {
-      public:
-        using LoadCallback = std::function<void(const ResourceId &, std::shared_ptr<IResource>)>; // nullptr 表示失败
+#include "IResource.h"
+#include "IResourceLoader.h"
+#include "ResourceTypes.h"
 
-        ResourceManager();
-        ~ResourceManager();
+namespace Corona {
+class ResourceManager {
+   public:
+    using LoadCallback = std::function<void(const ResourceId&, std::shared_ptr<IResource>)>;  // nullptr 表示失败
 
-        void register_loader(std::shared_ptr<IResourceLoader> loader);
-        void unregister_loader(std::shared_ptr<IResourceLoader> loader);
+    ResourceManager();
+    ~ResourceManager();
 
-        std::shared_ptr<IResource> load(const ResourceId &id);
+    void register_loader(std::shared_ptr<IResourceLoader> loader);
+    void unregister_loader(std::shared_ptr<IResourceLoader> loader);
 
-        template <typename T>
-        std::shared_ptr<T> load_typed(const ResourceId &id)
-        {
-            auto r = load(id);
-            return std::static_pointer_cast<T>(r);
-        }
+    std::shared_ptr<IResource> load(const ResourceId& id);
 
-        std::future<std::shared_ptr<IResource>> load_async(const ResourceId &id);
-        void load_async(const ResourceId &id, LoadCallback cb);
+    template <typename T>
+    std::shared_ptr<T> load_typed(const ResourceId& id) {
+        auto r = load(id);
+        return std::static_pointer_cast<T>(r);
+    }
 
-        std::shared_ptr<IResource> load_once(const ResourceId &id);
-        std::future<std::shared_ptr<IResource>> load_once_async(const ResourceId &id);
-        void load_once_async(const ResourceId &id, LoadCallback cb);
+    std::future<std::shared_ptr<IResource>> load_async(const ResourceId& id);
+    void load_async(const ResourceId& id, LoadCallback cb);
 
-        void preload(const std::vector<ResourceId> &ids);
-        void wait();
+    std::shared_ptr<IResource> load_once(const ResourceId& id);
+    std::future<std::shared_ptr<IResource>> load_once_async(const ResourceId& id);
+    void load_once_async(const ResourceId& id, LoadCallback cb);
 
-        void clear();
-        bool contains(const ResourceId &id) const;
+    void preload(const std::vector<ResourceId>& ids);
+    void wait();
 
-      private:
-        std::shared_ptr<IResource> load_internal(const ResourceId &id);
-        std::shared_ptr<IResourceLoader> find_loader(const ResourceId &id);
-        void schedule_task(std::function<void()> task);
+    void clear();
+    bool contains(const ResourceId& id) const;
 
-      private:
-        Corona::Concurrent::ConcurrentHashMap<ResourceId, std::shared_ptr<IResource>, ResourceIdHash> cache_;
-        Corona::Concurrent::ConcurrentHashMap<ResourceId, std::shared_ptr<std::mutex>, ResourceIdHash> locks_;
-        mutable std::shared_mutex loaders_mutex_;
-        std::vector<std::shared_ptr<IResourceLoader>> loaders_;
-        Corona::Concurrent::ThreadPool task_pool_;
-        std::atomic<std::size_t> pending_tasks_{0};
-        mutable std::mutex wait_mutex_;
-        std::condition_variable wait_cv_;
-    };
-} // namespace Corona
+   private:
+    std::shared_ptr<IResource> load_internal(const ResourceId& id);
+    std::shared_ptr<IResourceLoader> find_loader(const ResourceId& id);
+    void schedule_task(std::function<void()> task);
+
+   private:
+    Corona::Concurrent::ConcurrentHashMap<ResourceId, std::shared_ptr<IResource>, ResourceIdHash> cache_;
+    Corona::Concurrent::ConcurrentHashMap<ResourceId, std::shared_ptr<std::mutex>, ResourceIdHash> locks_;
+    mutable std::shared_mutex loaders_mutex_;
+    std::vector<std::shared_ptr<IResourceLoader>> loaders_;
+    Corona::Concurrent::ThreadPool task_pool_;
+    std::atomic<std::size_t> pending_tasks_{0};
+    mutable std::mutex wait_mutex_;
+    std::condition_variable wait_cv_;
+};
+}  // namespace Corona
