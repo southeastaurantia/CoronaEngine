@@ -1,7 +1,5 @@
 #pragma once
 
-#include <compiler_features.h>
-
 #include <algorithm>
 #include <functional>
 #include <memory>

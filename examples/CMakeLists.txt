@@ -4,7 +4,7 @@ include(CMakeParseArguments)
 # 复制示例资产到可执行目录
 function(corona_examples_copy_assets target_name)
     add_custom_command(TARGET ${target_name} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E echo "[${target_name}] Copy assets -> $<TARGET_FILE_DIR:${target_name}>/assets"
+        COMMAND ${CMAKE_COMMAND} -E echo "[${target_name}] Copy assets to $<TARGET_FILE_DIR:${target_name}>/assets"
         COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:${target_name}>/assets
         COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/examples/assets" $<TARGET_FILE_DIR:${target_name}>/assets
         VERBATIM)
@@ -16,9 +16,11 @@ function(corona_add_example)
     set(oneValueArgs NAME)
     set(multiValueArgs SOURCES)
     cmake_parse_arguments(CORONA_EX "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
     if(NOT CORONA_EX_NAME)
         message(FATAL_ERROR "corona_add_example requires NAME")
     endif()
+
     if(NOT CORONA_EX_SOURCES)
         message(FATAL_ERROR "corona_add_example requires SOURCES for ${CORONA_EX_NAME}")
     endif()
@@ -33,7 +35,9 @@ function(corona_add_example)
     else()
         message(STATUS "[Corona:Example:${CORONA_EX_NAME}] helicon_install_runtime_deps not available; skip")
     endif()
+
     corona_install_runtime_deps(${CORONA_EX_NAME})
+
     if(BUILD_CORONA_EDITOR)
         corona_install_corona_editor(${CORONA_EX_NAME} CoronaEngine)
     endif()
@@ -64,6 +68,7 @@ set(_CORONA_EXAMPLE_TARGETS
 set(_corona_startup_target "")
 list(LENGTH _CORONA_EXAMPLE_FOLDERS _corona_example_count)
 math(EXPR _corona_example_last "${_corona_example_count} - 1")
+
 foreach(_corona_idx RANGE 0 ${_corona_example_last})
     list(GET _CORONA_EXAMPLE_FOLDERS ${_corona_idx} _corona_folder)
     list(GET _CORONA_EXAMPLE_TARGETS ${_corona_idx} _corona_target)
@@ -72,9 +77,11 @@ foreach(_corona_idx RANGE 0 ${_corona_example_last})
     string(REPLACE "-" "_" _corona_upper "${_corona_upper}")
     set(_corona_option_name "BUILD_CORONA_EXAMPLE_${_corona_upper}")
     option(${_corona_option_name} "Build ${_corona_folder} example" ON)
+
     if(${_corona_option_name})
         if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${_corona_folder}/CMakeLists.txt")
             add_subdirectory(${_corona_folder})
+
             if(_corona_startup_target STREQUAL "")
                 set(_corona_startup_target ${_corona_target})
             endif()

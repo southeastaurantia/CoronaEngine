@@ -1,7 +1,7 @@
 # CoronaRuntimeDeps.cmake
 # 运行时依赖（动态库 / 调试符号）收集与复制模块
 # 功能概述：
-# 1. 在配置阶段：通过 corona_configure_runtime_deps() 收集 TBB 与 Python 相关的 DLL / PDB 文件并写入目标属性
+# 1. 在配置阶段：通过 corona_configure_runtime_deps() 收集 Python 相关的 DLL / PDB 文件并写入目标属性
 # INTERFACE_CORONA_RUNTIME_DEPS（设置在核心库 CoronaEngine 上）。
 # 2. 在构建后：通过 corona_install_runtime_deps(<target>) 自定义命令把上述文件复制到指定目标生成目录，
 # 以便示例或可执行程序直接运行无需手工拷贝依赖。
@@ -18,7 +18,7 @@ function(corona_install_runtime_deps target_name)
     get_target_property(_CORONA_DEPS CoronaEngine INTERFACE_CORONA_RUNTIME_DEPS)
 
     if(NOT _CORONA_DEPS)
-    message(STATUS "[Corona:RuntimeDeps] No INTERFACE_CORONA_RUNTIME_DEPS; skip copy")
+        message(STATUS "[Corona:RuntimeDeps] No INTERFACE_CORONA_RUNTIME_DEPS; skip copy")
         return()
     endif()
 
@@ -29,10 +29,19 @@ function(corona_install_runtime_deps target_name)
 
     if(EXISTS "${_CORONA_PY_COPY}")
         if(DEFINED Python3_EXECUTABLE)
+            set(_CORONA_DEPS_DIR "${CMAKE_BINARY_DIR}/runtime_deps")
+            file(MAKE_DIRECTORY "${_CORONA_DEPS_DIR}")
+            string(MD5 _corona_target_hash "${target_name}")
+            set(_CORONA_DEPS_LIST "${_CORONA_DEPS_DIR}/${_corona_target_hash}.txt")
+            file(WRITE "${_CORONA_DEPS_LIST}" "")
+
+            foreach(_corona_dep_file IN LISTS _CORONA_DEPS)
+                file(APPEND "${_CORONA_DEPS_LIST}" "${_corona_dep_file}\n")
+            endforeach()
+
             add_custom_command(
                 TARGET ${target_name} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E echo "[Corona:RuntimeDeps] Copy via Python -> ${_CORONA_DESTINATION_DIR}"
-                COMMAND "${Python3_EXECUTABLE}" "${_CORONA_PY_COPY}" --dest "${_CORONA_DESTINATION_DIR}" ${_CORONA_DEPS}
+                COMMAND "${Python3_EXECUTABLE}" "${_CORONA_PY_COPY}" --dest "${_CORONA_DESTINATION_DIR}" --list "${_CORONA_DEPS_LIST}"
                 COMMENT "[Corona:RuntimeDeps] Copy Corona runtime dependencies to target directory -> ${target_name}"
                 VERBATIM
             )
@@ -61,11 +70,7 @@ function(corona_configure_runtime_deps target_name)
         return()
     endif()
 
-    # -------- 1) 收集 TBB 动态库 / 调试符号 --------
-    file(GLOB _CORONA_TBB_DLLS "${CMAKE_SOURCE_DIR}/third_party/oneapi-tbb-2022.2.0/redist/intel64/vc14/*.dll")
-    file(GLOB _CORONA_TBB_PDBS "${CMAKE_SOURCE_DIR}/third_party/oneapi-tbb-2022.2.0/redist/intel64/vc14/*.pdb")
-
-    # -------- 2) 收集 Python 运行库 (若已定位其运行时目录) --------
+    # -------- 收集 Python 运行库 (若已定位其运行时目录) --------
     if(DEFINED Python3_RUNTIME_LIBRARY_DIRS)
         file(GLOB _CORONA_PY_DLLS "${Python3_RUNTIME_LIBRARY_DIRS}/*.dll")
         file(GLOB _CORONA_PY_PDBS "${Python3_RUNTIME_LIBRARY_DIRS}/*.pdb")
@@ -73,14 +78,6 @@ function(corona_configure_runtime_deps target_name)
 
     # 汇总所有候选文件到 _CORONA_ALL_DEPS 列表
     set(_CORONA_ALL_DEPS)
-
-    if(_CORONA_TBB_DLLS)
-        list(APPEND _CORONA_ALL_DEPS ${_CORONA_TBB_DLLS})
-    endif()
-
-    if(_CORONA_TBB_PDBS)
-        list(APPEND _CORONA_ALL_DEPS ${_CORONA_TBB_PDBS})
-    endif()
 
     if(_CORONA_PY_DLLS)
         list(APPEND _CORONA_ALL_DEPS ${_CORONA_PY_DLLS})
@@ -91,7 +88,7 @@ function(corona_configure_runtime_deps target_name)
     endif()
 
     if(NOT _CORONA_ALL_DEPS)
-        message(WARNING "[Corona:RuntimeDeps] No runtime files collected (TBB / Python).")
+        message(WARNING "[Corona:RuntimeDeps] No runtime files collected (Python).")
         return()
     endif()
 

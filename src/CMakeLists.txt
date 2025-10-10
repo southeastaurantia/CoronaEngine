@@ -25,12 +25,10 @@ target_include_directories(CoronaEngine PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/include" # 公共 API 头文件目录
         "${CMAKE_CURRENT_SOURCE_DIR}/common/include" # 全局头文件目录
         "${stb_SOURCE_DIR}" # stb 单头库
-        "${PROJECT_SOURCE_DIR}/third_party/oneapi-tbb-2022.2.0/include"
         ${Python3_INCLUDE_DIRS}
 )
 
 target_link_directories(CoronaEngine PUBLIC
-        "${PROJECT_SOURCE_DIR}/third_party/oneapi-tbb-2022.2.0/lib/intel64/vc14"
         ${Python3_LIBRARY_DIRS}
 )
 
@@ -42,12 +40,6 @@ target_link_libraries(CoronaEngine PUBLIC
         CoronaLogger
         CoronaResources
         python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}
-
-        # 生成器表达式按配置切换 Debug / Release 依赖
-        $<IF:$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>,tbb12_debug,tbb12>
-        $<IF:$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>,tbbbind_2_5_debug,tbbbind_2_5>
-        $<IF:$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>,tbbmalloc_debug,tbbmalloc>
-        $<IF:$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>,tbbmalloc_proxy_debug,tbbmalloc_proxy>
 )
 
 # 将运行时依赖写入目标属性，供示例和应用复制
