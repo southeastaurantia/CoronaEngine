@@ -116,6 +116,8 @@ void PythonHotfix::CheckPythonFileDependence() {
 }
 
 bool PythonHotfix::ReloadPythonFile() {
+    PyGILState_STATE gstate = PyGILState_Ensure();
+
     CheckPythonFileDependence();
     bool reload = !packageSet.empty();
     for (int i = static_cast<int>(dependencyVec.size()) - 1; i >= 0; --i) {
@@ -135,6 +137,8 @@ bool PythonHotfix::ReloadPythonFile() {
     packageSet.clear();
     dependencyGraph.clear();
     dependencyVec.clear();
+
+    PyGILState_Release(gstate);
     return reload;
 }
 
