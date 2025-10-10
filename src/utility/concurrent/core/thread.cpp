@@ -1,11 +1,11 @@
-#include <compiler_features.h>
-
 #include "../include/core/thread.h"
+
+#include <compiler_features.h>
 
 #include <memory>
 
 #if CE_BUILTIN_PLATFORM_WINDOWS
-#include <windows.h>
+#include <windows.h>  // Ensure windows.h is included before processthreadsapi.h
 #include <processthreadsapi.h>
 #elif CE_BUILTIN_PLATFORM_LINUX || CE_BUILTIN_PLATFORM_ANDROID
 #include <pthread.h>
@@ -25,13 +25,13 @@ namespace Corona::Concurrent::Core {
  */
 CpuInfo get_cpu_info() noexcept {
     CpuInfo info{};
-    
+
 #if CE_BUILTIN_PLATFORM_WINDOWS
     // Windows 实现
     SYSTEM_INFO sys_info;
     GetSystemInfo(&sys_info);
     info.logical_cores = sys_info.dwNumberOfProcessors;
-    
+
     // 获取物理核心数
     DWORD length = 0;
     GetLogicalProcessorInformation(nullptr, &length);
@@ -47,17 +47,17 @@ CpuInfo get_cpu_info() noexcept {
             }
         }
     }
-    
+
     info.has_hyper_threading = (info.logical_cores > info.physical_cores);
-    info.numa_nodes = 1; // 简化处理，实际应该查询 NUMA 信息
-    
+    info.numa_nodes = 1;  // 简化处理，实际应该查询 NUMA 信息
+
 #elif CE_BUILTIN_PLATFORM_LINUX || CE_BUILTIN_PLATFORM_ANDROID
     // Linux 实现
     info.logical_cores = std::thread::hardware_concurrency();
-    info.physical_cores = info.logical_cores; // 简化处理
+    info.physical_cores = info.logical_cores;  // 简化处理
     info.has_hyper_threading = false;
     info.numa_nodes = 1;
-    
+
 #elif CE_BUILTIN_PLATFORM_MACOS
     // macOS 实现
     size_t size = sizeof(info.logical_cores);
@@ -65,7 +65,7 @@ CpuInfo get_cpu_info() noexcept {
     sysctlbyname("hw.physicalcpu", &info.physical_cores, &size, nullptr, 0);
     info.has_hyper_threading = (info.logical_cores > info.physical_cores);
     info.numa_nodes = 1;
-    
+
 #else
     // 通用实现
     info.logical_cores = std::thread::hardware_concurrency();
@@ -77,7 +77,7 @@ CpuInfo get_cpu_info() noexcept {
     // 防止返回 0
     if (info.logical_cores == 0) info.logical_cores = 1;
     if (info.physical_cores == 0) info.physical_cores = 1;
-    
+
     return info;
 }
 
@@ -100,19 +100,19 @@ bool CpuAffinity::bind_to_cpu(std::uint32_t cpu_id) noexcept {
 #if CE_BUILTIN_PLATFORM_WINDOWS
     DWORD_PTR mask = 1ULL << cpu_id;
     return SetThreadAffinityMask(GetCurrentThread(), mask) != 0;
-    
+
 #elif CE_BUILTIN_PLATFORM_LINUX || CE_BUILTIN_PLATFORM_ANDROID
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
     CPU_SET(cpu_id, &cpuset);
     return pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) == 0;
-    
+
 #elif CE_BUILTIN_PLATFORM_MACOS
     // macOS 不直接支持线程 CPU 亲和性设置
     // 这里返回 true 但实际不执行操作
-    (void)cpu_id; // 避免未使用参数警告
+    (void)cpu_id;  // 避免未使用参数警告
     return true;
-    
+
 #else
     (void)cpu_id;
     return false;
@@ -126,13 +126,13 @@ bool CpuAffinity::bind_thread_to_cpu(std::thread::id thread_id, std::uint32_t cp
     (void)thread_id;
     (void)cpu_id;
     return false;
-    
+
 #elif CE_BUILTIN_PLATFORM_LINUX || CE_BUILTIN_PLATFORM_ANDROID
     // 类似问题，需要 pthread_t
     (void)thread_id;
     (void)cpu_id;
     return false;
-    
+
 #else
     (void)thread_id;
     (void)cpu_id;
@@ -142,7 +142,7 @@ bool CpuAffinity::bind_thread_to_cpu(std::thread::id thread_id, std::uint32_t cp
 
 std::vector<std::uint32_t> CpuAffinity::get_current_affinity() noexcept {
     std::vector<std::uint32_t> result;
-    
+
 #if CE_BUILTIN_PLATFORM_WINDOWS
     DWORD_PTR process_mask, system_mask;
     if (GetProcessAffinityMask(GetCurrentProcess(), &process_mask, &system_mask)) {
@@ -152,7 +152,7 @@ std::vector<std::uint32_t> CpuAffinity::get_current_affinity() noexcept {
             }
         }
     }
-    
+
 #elif CE_BUILTIN_PLATFORM_LINUX || CE_BUILTIN_PLATFORM_ANDROID
     cpu_set_t cpuset;
     if (pthread_getaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) == 0) {
@@ -162,7 +162,7 @@ std::vector<std::uint32_t> CpuAffinity::get_current_affinity() noexcept {
             }
         }
     }
-    
+
 #else
     // 返回所有可用核心
     auto cpu_info = get_cpu_info();
@@ -170,7 +170,7 @@ std::vector<std::uint32_t> CpuAffinity::get_current_affinity() noexcept {
         result.push_back(i);
     }
 #endif
-    
+
     return result;
 }
 
@@ -181,7 +181,7 @@ bool CpuAffinity::reset_affinity() noexcept {
         return SetThreadAffinityMask(GetCurrentThread(), process_mask) != 0;
     }
     return false;
-    
+
 #elif CE_BUILTIN_PLATFORM_LINUX || CE_BUILTIN_PLATFORM_ANDROID
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
@@ -189,9 +189,9 @@ bool CpuAffinity::reset_affinity() noexcept {
         CPU_SET(i, &cpuset);
     }
     return pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) == 0;
-    
+
 #else
-    return true; // 假设成功
+    return true;  // 假设成功
 #endif
 }
 
@@ -203,4 +203,4 @@ ThreadLocalStats& ThreadLocal::get_stats() noexcept {
     return stats;
 }
 
-} // namespace Corona::Concurrent::Core
+}  // namespace Corona::Concurrent::Core

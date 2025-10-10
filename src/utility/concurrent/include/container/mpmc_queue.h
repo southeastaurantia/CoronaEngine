@@ -1,11 +1,12 @@
 #pragma once
 
+#include <optional>
+#include <utility>
+
 #include "../core/atomic.h"
 #include "../detail/runtime_init.h"
 #include "../util/hazard_pointer.h"
 
-#include <optional>
-#include <utility>
 
 namespace Corona::Concurrent {
 
@@ -35,7 +36,7 @@ class MPMCQueue {
 
    public:
     MPMCQueue() {
-           detail::ensure_runtime_initialized();
+        detail::ensure_runtime_initialized();
         Node* dummy = new Node();
         head_.store(dummy, std::memory_order_relaxed);
         tail_.store(dummy, std::memory_order_relaxed);
@@ -128,8 +129,8 @@ class MPMCQueue {
             }
 
             if (head_.compare_exchange_weak(head, next,
-                                             std::memory_order_release,
-                                             std::memory_order_relaxed)) {
+                                            std::memory_order_release,
+                                            std::memory_order_relaxed)) {
                 next->value.reset();
                 head_guard.reset();
                 next_guard.reset();

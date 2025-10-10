@@ -89,7 +89,7 @@ int main()
 
     // 1) Sync load
     auto &io = Corona::Engine::Instance().Resources();
-    Corona::ResourceId idText{"text", target.string()};
+    Corona::ResourceId idText{"shader", target.string()};
     // auto txtRes = io.loadTyped<Corona::TextResource>(idText);
     // if (txtRes)
     // {
@@ -111,7 +111,7 @@ int main()
     });
 
     // 4) Preload a batch (if frag exists, otherwise preload the same file twice)
-    Corona::ResourceId idFrag{"text", fs::exists(shaderFrag) ? shaderFrag.string() : target.string()};
+    Corona::ResourceId idFrag{"shader", fs::exists(shaderFrag) ? shaderFrag.string() : target.string()};
     io.preload({idText, idFrag});
     io.wait(); // wait all async tasks
 

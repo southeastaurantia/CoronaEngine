@@ -8,7 +8,7 @@ void finalize() noexcept;
 namespace detail {
 
 class RuntimeAutoInit {
-public:
+   public:
     RuntimeAutoInit() noexcept { initialize(); }
     ~RuntimeAutoInit() noexcept { finalize(); }
 };
@@ -18,6 +18,6 @@ inline void ensure_runtime_initialized() noexcept {
     (void)guard;
 }
 
-} // namespace detail
+}  // namespace detail
 
-} // namespace Corona::Concurrent
+}  // namespace Corona::Concurrent

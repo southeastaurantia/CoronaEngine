@@ -1,10 +1,12 @@
 #pragma once
 
 #include <compiler_features.h>
+
 #include <atomic>
-#include <type_traits>
 #include <cstdint>
 #include <thread>  // IWYU pragma: keep
+#include <type_traits>
+
 
 #if CE_BUILTIN_COMPILER_MSVC && (CE_BUILTIN_ARCH_X86_64 || CE_BUILTIN_ARCH_X86_32)
 #include <intrin.h>
@@ -21,17 +23,17 @@ constexpr size_t CACHE_LINE_SIZE = 64;
 /**
  * 缓存线对齐的包装器，防止伪共享
  */
-template<typename T>
+template <typename T>
 struct alignas(CACHE_LINE_SIZE) CacheLineAligned {
     T value;
-    
-    template<typename... Args>
-    explicit CacheLineAligned(Args&&... args) 
+
+    template <typename... Args>
+    explicit CacheLineAligned(Args&&... args)
         : value(std::forward<Args>(args)...) {}
-    
+
     T& get() noexcept { return value; }
     const T& get() const noexcept { return value; }
-    
+
     explicit operator T&() noexcept { return value; }
     explicit operator const T&() const noexcept { return value; }
 };
@@ -40,145 +42,145 @@ struct alignas(CACHE_LINE_SIZE) CacheLineAligned {
  * 原子操作的统一接口
  * 提供类型安全的原子操作封装
  */
-template<typename T>
+template <typename T>
 class Atomic {
-private:
+   private:
     mutable std::atomic<T> value_;
 
-public:
+   public:
     using value_type = T;
-    
+
     constexpr Atomic() noexcept : value_{} {}
     explicit constexpr Atomic(T initial_value) noexcept : value_(initial_value) {}
-    
+
     // 禁止拷贝和移动
     Atomic(const Atomic&) = delete;
     Atomic& operator=(const Atomic&) = delete;
     Atomic(Atomic&&) = delete;
     Atomic& operator=(Atomic&&) = delete;
-    
+
     /**
      * 原子加载操作
      */
     T load(std::memory_order order = std::memory_order_seq_cst) const noexcept {
         return value_.load(order);
     }
-    
+
     /**
      * 原子存储操作
      */
     void store(T desired, std::memory_order order = std::memory_order_seq_cst) noexcept {
         value_.store(desired, order);
     }
-    
+
     /**
      * 原子交换操作
      */
     T exchange(T desired, std::memory_order order = std::memory_order_seq_cst) noexcept {
         return value_.exchange(desired, order);
     }
-    
+
     /**
      * 比较并交换（弱版本）
      */
     bool compare_exchange_weak(T& expected, T desired,
-                              std::memory_order success = std::memory_order_seq_cst,
-                              std::memory_order failure = std::memory_order_seq_cst) noexcept {
+                               std::memory_order success = std::memory_order_seq_cst,
+                               std::memory_order failure = std::memory_order_seq_cst) noexcept {
         return value_.compare_exchange_weak(expected, desired, success, failure);
     }
-    
+
     /**
      * 比较并交换（强版本）
      */
     bool compare_exchange_strong(T& expected, T desired,
-                                std::memory_order success = std::memory_order_seq_cst,
-                                std::memory_order failure = std::memory_order_seq_cst) noexcept {
+                                 std::memory_order success = std::memory_order_seq_cst,
+                                 std::memory_order failure = std::memory_order_seq_cst) noexcept {
         return value_.compare_exchange_strong(expected, desired, success, failure);
     }
-    
+
     /**
      * 获取底层原子对象的引用
      */
     std::atomic<T>& native() noexcept { return value_; }
     const std::atomic<T>& native() const noexcept { return value_; }
-    
+
     // 整数类型特有的操作
-    template<typename U = T>
-    requires std::is_integral_v<U>
+    template <typename U = T>
+        requires std::is_integral_v<U>
     U fetch_add(U arg, std::memory_order order = std::memory_order_seq_cst) noexcept {
         return value_.fetch_add(arg, order);
     }
-    
-    template<typename U = T>
-    requires std::is_integral_v<U>
+
+    template <typename U = T>
+        requires std::is_integral_v<U>
     U fetch_sub(U arg, std::memory_order order = std::memory_order_seq_cst) noexcept {
         return value_.fetch_sub(arg, order);
     }
-    
-    template<typename U = T>
-    requires std::is_integral_v<U>
+
+    template <typename U = T>
+        requires std::is_integral_v<U>
     U fetch_and(U arg, std::memory_order order = std::memory_order_seq_cst) noexcept {
         return value_.fetch_and(arg, order);
     }
-    
-    template<typename U = T>
-    requires std::is_integral_v<U>
+
+    template <typename U = T>
+        requires std::is_integral_v<U>
     U fetch_or(U arg, std::memory_order order = std::memory_order_seq_cst) noexcept {
         return value_.fetch_or(arg, order);
     }
-    
-    template<typename U = T>
-    requires std::is_integral_v<U>
+
+    template <typename U = T>
+        requires std::is_integral_v<U>
     U fetch_xor(U arg, std::memory_order order = std::memory_order_seq_cst) noexcept {
         return value_.fetch_xor(arg, order);
     }
-    
+
     // 指针类型特有的操作
-    template<typename U = T>
-    requires std::is_pointer_v<U>
+    template <typename U = T>
+        requires std::is_pointer_v<U>
     U fetch_add(std::ptrdiff_t arg, std::memory_order order = std::memory_order_seq_cst) noexcept {
         return value_.fetch_add(arg, order);
     }
-    
-    template<typename U = T>
-    requires std::is_pointer_v<U>
+
+    template <typename U = T>
+        requires std::is_pointer_v<U>
     U fetch_sub(std::ptrdiff_t arg, std::memory_order order = std::memory_order_seq_cst) noexcept {
         return value_.fetch_sub(arg, order);
     }
-    
+
     // 便利操作符（仅对整数类型）
-    template<typename U = T>
-    requires std::is_integral_v<U>
+    template <typename U = T>
+        requires std::is_integral_v<U>
     U operator++() noexcept {
         return fetch_add(static_cast<U>(1)) + 1;
     }
-    
-    template<typename U = T>
-    requires std::is_integral_v<U>
+
+    template <typename U = T>
+        requires std::is_integral_v<U>
     U operator++(int) noexcept {
         return fetch_add(static_cast<U>(1));
     }
-    
-    template<typename U = T>
-    requires std::is_integral_v<U>
+
+    template <typename U = T>
+        requires std::is_integral_v<U>
     U operator--() noexcept {
         return fetch_sub(static_cast<U>(1)) - 1;
     }
-    
-    template<typename U = T>
-    requires std::is_integral_v<U>
+
+    template <typename U = T>
+        requires std::is_integral_v<U>
     U operator--(int) noexcept {
         return fetch_sub(static_cast<U>(1));
     }
-    
-    template<typename U = T>
-    requires std::is_integral_v<U>
+
+    template <typename U = T>
+        requires std::is_integral_v<U>
     U operator+=(U arg) noexcept {
         return fetch_add(arg) + arg;
     }
-    
-    template<typename U = T>
-    requires std::is_integral_v<U>
+
+    template <typename U = T>
+        requires std::is_integral_v<U>
     U operator-=(U arg) noexcept {
         return fetch_sub(arg) - arg;
     }
@@ -197,7 +199,7 @@ using AtomicUInt64 = Atomic<std::uint64_t>;
 using AtomicSize = Atomic<std::size_t>;
 using AtomicPtrDiff = Atomic<std::ptrdiff_t>;
 
-template<typename T>
+template <typename T>
 using AtomicPtr = Atomic<T*>;
 
 /**
@@ -207,14 +209,14 @@ using AtomicPtr = Atomic<T*>;
 struct DoubleWord {
     alignas(16) std::uint64_t low;
     std::uint64_t high;
-    
+
     constexpr DoubleWord() noexcept : low(0), high(0) {}
     constexpr DoubleWord(std::uint64_t l, std::uint64_t h) noexcept : low(l), high(h) {}
-    
+
     bool operator==(const DoubleWord& other) const noexcept {
         return low == other.low && high == other.high;
     }
-    
+
     bool operator!=(const DoubleWord& other) const noexcept {
         return !(*this == other);
     }
@@ -225,31 +227,31 @@ struct DoubleWord {
  * 在支持的平台上使用硬件 128 位 CAS，否则回退到锁
  */
 class DoubleWordAtomic {
-private:
+   private:
     alignas(16) std::atomic<DoubleWord> value_;
 
-public:
+   public:
     constexpr DoubleWordAtomic() noexcept : value_{} {}
     explicit constexpr DoubleWordAtomic(DoubleWord initial) noexcept : value_(initial) {}
-    
+
     DoubleWordAtomic(const DoubleWordAtomic&) = delete;
     DoubleWordAtomic& operator=(const DoubleWordAtomic&) = delete;
-    
+
     DoubleWord load(std::memory_order order = std::memory_order_seq_cst) const noexcept {
         return value_.load(order);
     }
-    
+
     void store(DoubleWord desired, std::memory_order order = std::memory_order_seq_cst) noexcept {
         value_.store(desired, order);
     }
-    
+
     bool compare_exchange_weak(DoubleWord& expected, DoubleWord desired,
-                              std::memory_order order = std::memory_order_seq_cst) noexcept {
+                               std::memory_order order = std::memory_order_seq_cst) noexcept {
         return value_.compare_exchange_weak(expected, desired, order);
     }
-    
+
     bool compare_exchange_strong(DoubleWord& expected, DoubleWord desired,
-                                std::memory_order order = std::memory_order_seq_cst) noexcept {
+                                 std::memory_order order = std::memory_order_seq_cst) noexcept {
         return value_.compare_exchange_strong(expected, desired, order);
     }
 };
@@ -295,4 +297,4 @@ inline void compiler_fence() noexcept {
 #endif
 }
 
-} // namespace Corona::Concurrent::Core
+}  // namespace Corona::Concurrent::Core

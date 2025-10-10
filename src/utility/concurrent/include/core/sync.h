@@ -1,8 +1,10 @@
 #pragma once
 
 #include <cstdint>
+
 #include "atomic.h"
 #include "thread.h"
+
 
 namespace Corona::Concurrent::Core {
 
@@ -11,25 +13,25 @@ namespace Corona::Concurrent::Core {
  * 适用于临界区很短的场景
  */
 class SpinLock {
-private:
+   private:
     AtomicBool locked_{false};
 
-public:
+   public:
     SpinLock() = default;
-    
+
     // 禁止拷贝和移动
     SpinLock(const SpinLock&) = delete;
     SpinLock& operator=(const SpinLock&) = delete;
     SpinLock(SpinLock&&) = delete;
     SpinLock& operator=(SpinLock&&) = delete;
-    
+
     /**
      * 尝试获取锁（非阻塞）
      */
     bool try_lock() noexcept {
         return !locked_.exchange(true, std::memory_order_acquire);
     }
-    
+
     /**
      * 获取锁（阻塞直到成功）
      */
@@ -42,14 +44,14 @@ public:
             }
         }
     }
-    
+
     /**
      * 释放锁
      */
     void unlock() noexcept {
         locked_.store(false, std::memory_order_release);
     }
-    
+
     /**
      * 检查锁是否被持有
      */
@@ -63,57 +65,57 @@ public:
  * 保证获取锁的公平性（FIFO）
  */
 class TicketLock {
-private:
+   private:
     AtomicUInt64 next_ticket_{0};
     AtomicUInt64 serving_ticket_{0};
 
-public:
+   public:
     TicketLock() = default;
-    
+
     TicketLock(const TicketLock&) = delete;
     TicketLock& operator=(const TicketLock&) = delete;
     TicketLock(TicketLock&&) = delete;
     TicketLock& operator=(TicketLock&&) = delete;
-    
+
     /**
      * 获取锁
      */
     void lock() noexcept {
         std::uint64_t ticket = next_ticket_++;
         SpinWait spinner;
-        
+
         while (serving_ticket_.load(std::memory_order_acquire) != ticket) {
             spinner.spin_once();
         }
     }
-    
+
     /**
      * 尝试获取锁
      */
     bool try_lock() noexcept {
         std::uint64_t current_serving = serving_ticket_.load(std::memory_order_acquire);
         std::uint64_t current_next = next_ticket_.load(std::memory_order_relaxed);
-        
+
         if (current_serving == current_next) {
             return next_ticket_.compare_exchange_weak(current_next, current_next + 1,
-                                                     std::memory_order_acquire,
-                                                     std::memory_order_relaxed);
+                                                      std::memory_order_acquire,
+                                                      std::memory_order_relaxed);
         }
         return false;
     }
-    
+
     /**
      * 释放锁
      */
     void unlock() noexcept {
         serving_ticket_++;
     }
-    
+
     /**
      * 获取等待队列长度
      */
     std::uint64_t queue_length() const noexcept {
-        return next_ticket_.load(std::memory_order_relaxed) - 
+        return next_ticket_.load(std::memory_order_relaxed) -
                serving_ticket_.load(std::memory_order_relaxed);
     }
 };
@@ -123,17 +125,17 @@ public:
  * 适用于读多写少的场景，读者无锁，写者独占
  */
 class SeqLock {
-private:
+   private:
     AtomicUInt64 sequence_{0};
 
-public:
+   public:
     SeqLock() = default;
-    
+
     SeqLock(const SeqLock&) = delete;
     SeqLock& operator=(const SeqLock&) = delete;
     SeqLock(SeqLock&&) = delete;
     SeqLock& operator=(SeqLock&&) = delete;
-    
+
     /**
      * 写者获取锁
      */
@@ -146,14 +148,14 @@ public:
             expected = sequence_.load(std::memory_order_relaxed);
         }
     }
-    
+
     /**
      * 写者释放锁
      */
     void write_unlock() noexcept {
         sequence_.fetch_add(1, std::memory_order_release);
     }
-    
+
     /**
      * 读者开始读取（获取序列号）
      */
@@ -161,10 +163,10 @@ public:
         std::uint64_t seq;
         do {
             seq = sequence_.load(std::memory_order_acquire);
-        } while (seq & 1); // 等待写操作完成
+        } while (seq & 1);  // 等待写操作完成
         return seq;
     }
-    
+
     /**
      * 读者完成读取（验证序列号）
      */
@@ -172,7 +174,7 @@ public:
         acquire_fence();
         return sequence_.load(std::memory_order_acquire) == seq;
     }
-    
+
     /**
      * 便利的读取重试宏
      * 使用方法：
@@ -181,24 +183,24 @@ public:
      * } SEQ_LOCK_READ_RETRY_END;
      */
     class ReadTransaction {
-    private:
+       private:
         const SeqLock& lock_;
         std::uint64_t seq_;
-        
-    public:
+
+       public:
         explicit ReadTransaction(const SeqLock& lock) : lock_(lock) {
             seq_ = lock_.read_begin();
         }
-        
+
         bool valid() const noexcept {
             return lock_.read_end(seq_);
         }
-        
+
         void retry() noexcept {
             seq_ = lock_.read_begin();
         }
     };
-    
+
     ReadTransaction begin_read() const {
         return ReadTransaction(*this);
     }
@@ -209,20 +211,20 @@ public:
  * 支持多个读者或单个写者
  */
 class RWLock {
-private:
+   private:
     static constexpr std::uint32_t READER_MASK = 0x7FFFFFFF;
     static constexpr std::uint32_t WRITER_FLAG = 0x80000000;
-    
-    AtomicUInt32 state_{0}; // 低31位：读者计数，高1位：写者标记
 
-public:
+    AtomicUInt32 state_{0};  // 低31位：读者计数，高1位：写者标记
+
+   public:
     RWLock() = default;
-    
+
     RWLock(const RWLock&) = delete;
     RWLock& operator=(const RWLock&) = delete;
     RWLock(RWLock&&) = delete;
     RWLock& operator=(RWLock&&) = delete;
-    
+
     /**
      * 读者获取锁
      */
@@ -230,44 +232,44 @@ public:
         SpinWait spinner;
         while (true) {
             std::uint32_t current = state_.load(std::memory_order_acquire);
-            
+
             // 如果有写者或读者已满，等待
             if ((current & WRITER_FLAG) || (current & READER_MASK) == READER_MASK) {
                 spinner.spin_once();
                 continue;
             }
-            
+
             // 尝试增加读者计数
             if (state_.compare_exchange_weak(current, current + 1,
-                                           std::memory_order_acquire,
-                                           std::memory_order_relaxed)) {
+                                             std::memory_order_acquire,
+                                             std::memory_order_relaxed)) {
                 break;
             }
         }
     }
-    
+
     /**
      * 读者尝试获取锁
      */
     bool try_read_lock() noexcept {
         std::uint32_t current = state_.load(std::memory_order_acquire);
-        
+
         if ((current & WRITER_FLAG) || (current & READER_MASK) == READER_MASK) {
             return false;
         }
-        
+
         return state_.compare_exchange_strong(current, current + 1,
-                                            std::memory_order_acquire,
-                                            std::memory_order_relaxed);
+                                              std::memory_order_acquire,
+                                              std::memory_order_relaxed);
     }
-    
+
     /**
      * 读者释放锁
      */
     void read_unlock() noexcept {
         state_.fetch_sub(1, std::memory_order_release);
     }
-    
+
     /**
      * 写者获取锁
      */
@@ -275,17 +277,17 @@ public:
         SpinWait spinner;
         while (true) {
             std::uint32_t current = state_.load(std::memory_order_acquire);
-            
+
             // 如果有其他写者，等待
             if (current & WRITER_FLAG) {
                 spinner.spin_once();
                 continue;
             }
-            
+
             // 尝试设置写者标记
             if (state_.compare_exchange_weak(current, current | WRITER_FLAG,
-                                           std::memory_order_acquire,
-                                           std::memory_order_relaxed)) {
+                                             std::memory_order_acquire,
+                                             std::memory_order_relaxed)) {
                 // 等待所有读者完成
                 while ((state_.load(std::memory_order_acquire) & READER_MASK) != 0) {
                     spinner.spin_once();
@@ -294,31 +296,31 @@ public:
             }
         }
     }
-    
+
     /**
      * 写者尝试获取锁
      */
     bool try_write_lock() noexcept {
         std::uint32_t expected = 0;
         return state_.compare_exchange_strong(expected, WRITER_FLAG,
-                                            std::memory_order_acquire,
-                                            std::memory_order_relaxed);
+                                              std::memory_order_acquire,
+                                              std::memory_order_relaxed);
     }
-    
+
     /**
      * 写者释放锁
      */
     void write_unlock() noexcept {
         state_.fetch_and(~WRITER_FLAG, std::memory_order_release);
     }
-    
+
     /**
      * 获取当前读者数量
      */
     std::uint32_t reader_count() const noexcept {
         return state_.load(std::memory_order_relaxed) & READER_MASK;
     }
-    
+
     /**
      * 检查是否有写者
      */
@@ -330,20 +332,20 @@ public:
 /**
  * RAII 锁守卫
  */
-template<typename Lock>
+template <typename Lock>
 class LockGuard {
-private:
+   private:
     Lock& lock_;
 
-public:
+   public:
     explicit LockGuard(Lock& lock) : lock_(lock) {
         lock_.lock();
     }
-    
+
     ~LockGuard() {
         lock_.unlock();
     }
-    
+
     LockGuard(const LockGuard&) = delete;
     LockGuard& operator=(const LockGuard&) = delete;
     LockGuard(LockGuard&&) = delete;
@@ -353,20 +355,20 @@ public:
 /**
  * 读锁守卫
  */
-template<typename RWLock>
+template <typename RWLock>
 class ReadGuard {
-private:
+   private:
     RWLock& lock_;
 
-public:
+   public:
     explicit ReadGuard(RWLock& lock) : lock_(lock) {
         lock_.read_lock();
     }
-    
+
     ~ReadGuard() {
         lock_.read_unlock();
     }
-    
+
     ReadGuard(const ReadGuard&) = delete;
     ReadGuard& operator=(const ReadGuard&) = delete;
     ReadGuard(ReadGuard&&) = delete;
@@ -376,20 +378,20 @@ public:
 /**
  * 写锁守卫
  */
-template<typename RWLock>
+template <typename RWLock>
 class WriteGuard {
-private:
+   private:
     RWLock& lock_;
 
-public:
+   public:
     explicit WriteGuard(RWLock& lock) : lock_(lock) {
         lock_.write_lock();
     }
-    
+
     ~WriteGuard() {
         lock_.write_unlock();
     }
-    
+
     WriteGuard(const WriteGuard&) = delete;
     WriteGuard& operator=(const WriteGuard&) = delete;
     WriteGuard(WriteGuard&&) = delete;
@@ -400,14 +402,15 @@ public:
 using SpinGuard = LockGuard<SpinLock>;
 using TicketGuard = LockGuard<TicketLock>;
 
-#define SEQ_LOCK_READ_RETRY(seqlock) \
-    do { \
+#define SEQ_LOCK_READ_RETRY(seqlock)               \
+    do {                                           \
         auto __seq_trans = (seqlock).begin_read(); \
         do {
+#define SEQ_LOCK_READ_RETRY_END                    \
+    }                                              \
+    while (!__seq_trans.valid());                  \
+    if (!__seq_trans.valid()) __seq_trans.retry(); \
+    }                                              \
+    while (false)
 
-#define SEQ_LOCK_READ_RETRY_END \
-        } while (!__seq_trans.valid()); \
-        if (!__seq_trans.valid()) __seq_trans.retry(); \
-    } while (false)
-
-} // namespace Corona::Concurrent::Core
+}  // namespace Corona::Concurrent::Core
