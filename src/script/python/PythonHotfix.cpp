@@ -101,15 +101,24 @@ void PythonHotfix::CheckPythonFileDependence() {
     std::unordered_set<std::string> visited;
     std::queue<std::string> bfs;
     dependencyVec.clear();
-    for (const auto& m : packageSet) {
-        if (visited.insert(m).second) { bfs.push(m); dependencyVec.push_back(m); }
+    for (const auto& kv : packageSet) {
+        const std::string& mod = kv.first;
+        if (visited.find(mod) == visited.end()) {
+            visited.insert(mod);
+            bfs.push(mod);
+            dependencyVec.push_back(mod);
+        }
     }
     while (!bfs.empty()) {
         auto cur = bfs.front(); bfs.pop();
         auto it = dependencyGraph.find(cur);
         if (it == dependencyGraph.end()) continue;
         for (const auto& dep : it->second) {
-            if (visited.insert(dep).second) { bfs.push(dep); dependencyVec.push_back(dep); }
+            if (visited.find(dep) == visited.end()) {
+                visited.insert(dep);
+                bfs.push(dep);
+                dependencyVec.push_back(dep);
+            }
         }
     }
     PyErr_Clear();
@@ -141,4 +150,3 @@ bool PythonHotfix::ReloadPythonFile() {
     PyGILState_Release(gstate);
     return reload;
 }
-

@@ -265,12 +265,17 @@ void PythonAPI::checkReleaseScriptChange() {
     lastCheckTime = currentTime;
 
     std::queue<std::unordered_set<std::string>> messageQue;
-    const std::string& runtimePath = PathCfg::EditorBackendAbs();
+    const std::string runtimePath = PathCfg::RuntimeBackendAbs();
     PythonHotfix::TraverseDirectory(runtimePath, messageQue, currentTime);
 
     if (!messageQue.empty()) {
         std::unique_lock lk(queMtx);
-        hotfixManger.packageSet = std::move(messageQue.front());
+        const auto& mods = messageQue.front();
+        for (const auto& mod : mods) {
+            if (!hotfixManger.packageSet.contains(mod)) {
+                hotfixManger.packageSet.emplace(mod, currentTime);
+            }
+        }
     }
 }
 
