@@ -1,9 +1,5 @@
 #pragma once
 
-#include "../core/atomic.h"
-#include "../container/mpmc_queue.h"
-#include "../detail/runtime_init.h"
-
 #include <chrono>
 #include <condition_variable>
 #include <functional>
@@ -16,11 +12,16 @@
 #include <type_traits>
 #include <vector>
 
+#include "../container/mpmc_queue.h"
+#include "../core/atomic.h"
+#include "../detail/runtime_init.h"
+
+
 namespace Corona::Concurrent {
 
 /**
  * 高性能线程池实现
- * 
+ *
  * 特性：
  * - 无锁任务队列
  * - 工作窃取机制
@@ -107,7 +108,7 @@ class ThreadPool {
           max_threads_(min_threads_ * 2),
           idle_timeout_(idle_timeout),
           enable_work_stealing_(enable_work_stealing) {
-                detail::ensure_runtime_initialized();
+        detail::ensure_runtime_initialized();
         if (max_threads_ == 0) {
             max_threads_ = min_threads_;
         }
@@ -204,9 +205,9 @@ class ThreadPool {
         stats.steals_attempted = total_steals_attempted_.load(std::memory_order_relaxed);
         stats.steals_successful = total_steals_successful_.load(std::memory_order_relaxed);
         stats.steal_success_rate = stats.steals_attempted > 0
-                                        ? static_cast<double>(stats.steals_successful) /
-                                              static_cast<double>(stats.steals_attempted)
-                                        : 0.0;
+                                       ? static_cast<double>(stats.steals_successful) /
+                                             static_cast<double>(stats.steals_attempted)
+                                       : 0.0;
 
         stats.worker_tasks_processed.reserve(workers_.size());
         for (const auto& worker : workers_) {
@@ -373,4 +374,4 @@ class ThreadPool {
     }
 };
 
-} // namespace Corona::Concurrent
+}  // namespace Corona::Concurrent
