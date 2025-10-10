@@ -6,6 +6,7 @@
 #include <regex>
 #include <iostream>
 #include <set>
+#include <ranges>
 
 namespace CE::Python::Internal {
     struct PyObjPtr {
@@ -33,22 +34,52 @@ namespace CE::Python::Internal {
 using CE::Python::Internal::PyObjPtr;
 using CE::Python::Internal::GILGuard;
 
-const std::string PythonAPI::codePath =
-[] {
-    std::string resultPath; // 默认空
-    std::string runtimePath = std::filesystem::current_path().string();
-    std::regex pattern(R"((.*)CoronaEngine\b)");
-    std::smatch matches;
-    if (std::regex_search(runtimePath, matches, pattern)) {
-        if (matches.size() > 1) {
-            resultPath = matches[1].str() + "CoronaEngine";
-        } else {
-            throw std::runtime_error("Failed to resolve source path.");
-        }
+// Unified path configuration
+namespace PathCfg {
+    inline std::string Normalize(std::string s) {
+        std::ranges::replace(s, '\\', '/');
+        return s;
     }
-    std::ranges::replace(resultPath, '\\', '/');
-    return resultPath;
-}();
+
+    inline const std::string& EngineRoot() {
+        static std::string root = []{
+            std::string resultPath;
+            std::string runtimePath = std::filesystem::current_path().string();
+            std::regex pattern(R"((.*)CoronaEngine\b)");
+            std::smatch matches;
+            if (std::regex_search(runtimePath, matches, pattern)) {
+                if (matches.size() > 1) {
+                    resultPath = matches[1].str() + "CoronaEngine";
+                } else {
+                    throw std::runtime_error("Failed to resolve source path.");
+                }
+            }
+            return Normalize(resultPath);
+        }();
+        return root;
+    }
+
+    inline const std::string& EditorBackendRel() {
+        static const std::string rel = "Editor/CoronaEditor/Backend";
+        return rel;
+    }
+
+    inline const std::string& EditorBackendAbs() {
+        static const std::string abs = []{ return Normalize(EngineRoot() + "/" + EditorBackendRel()); }();
+        return abs;
+    }
+
+    inline std::string RuntimeBackendAbs() {
+        auto p = std::filesystem::current_path() / "CoronaEditor" / "Backend";
+        return Normalize(p.string());
+    }
+
+    inline std::string SitePackagesDir() {
+        return Normalize(std::string(CORONA_PYTHON_MODULE_LIB_DIR) + "/site-packages");
+    }
+} // namespace PathCfg
+
+const std::string PythonAPI::codePath = PathCfg::EngineRoot();
 
 PyObject *PyInit_CoronaEngineEmbedded()
 {
@@ -83,11 +114,7 @@ PyObject *PyInit_CoronaEngineEmbedded()
     return m;
 }
 
-PythonAPI::PythonAPI()
-{
-    hotreloadPath = PythonAPI::codePath + "/Editor/CoronaEditor/Backend";
-    std::ranges::replace(hotreloadPath, '\\', '/');
-}
+PythonAPI::PythonAPI() = default;
 
 PythonAPI::~PythonAPI()
 {
@@ -118,13 +145,13 @@ bool PythonAPI::ensureInitialized()
     PyConfig_SetBytesString(&config, &config.pythonpath_env, CORONA_PYTHON_HOME_DIR);
     config.module_search_paths_set = 1;
 
-    auto runtimePathFs = std::filesystem::current_path() / "CoronaEditor" / "Backend";
-    std::string runtimePath = runtimePathFs.string();
-    std::ranges::replace(runtimePath, '\\', '/');
-    PyWideStringList_Append(&config.module_search_paths, str2wstr(runtimePath).c_str());
-    PyWideStringList_Append(&config.module_search_paths, str2wstr(CORONA_PYTHON_MODULE_DLL_DIR).c_str());
-    PyWideStringList_Append(&config.module_search_paths, str2wstr(CORONA_PYTHON_MODULE_LIB_DIR).c_str());
-    PyWideStringList_Append(&config.module_search_paths, str2wstr(std::string(CORONA_PYTHON_MODULE_LIB_DIR) + "/site-packages").c_str());
+    {
+        std::string runtimePath = PathCfg::RuntimeBackendAbs();
+        PyWideStringList_Append(&config.module_search_paths, str2wstr(runtimePath).c_str());
+        PyWideStringList_Append(&config.module_search_paths, str2wstr(CORONA_PYTHON_MODULE_DLL_DIR).c_str());
+        PyWideStringList_Append(&config.module_search_paths, str2wstr(CORONA_PYTHON_MODULE_LIB_DIR).c_str());
+        PyWideStringList_Append(&config.module_search_paths, str2wstr(PathCfg::SitePackagesDir()).c_str());
+    }
 
     Py_InitializeFromConfig(&config);
 
@@ -225,10 +252,11 @@ void PythonAPI::runPythonScript() {
 
 void PythonAPI::checkPythonScriptChange()
 {
+    // const std::string sourcePath  = codePath + "/Editor/CoronaEditor/Backend";
     // std::string runtimePath = "./CoronaEditor/Backend";
     // std::ranges::replace(runtimePath, '\\', '/');
     // int64_t checkTime = hotfixManger.GetCurrentTimeMsec();
-    // copyModifiedFiles(hotreloadPath, runtimePath, checkTime);
+    // copyModifiedFiles(sourcePath, runtimePath, checkTime);
 }
 
 void PythonAPI::checkReleaseScriptChange() {
@@ -238,8 +266,7 @@ void PythonAPI::checkReleaseScriptChange() {
     lastCheckTime = currentTime;
 
     std::queue<std::unordered_set<std::string>> messageQue;
-    std::string runtimePath = codePath + "/Editor/CoronaEditor/Backend";
-    std::ranges::replace(runtimePath, '\\', '/');
+    const std::string& runtimePath = PathCfg::EditorBackendAbs();
     PythonHotfix::TraverseDirectory(runtimePath, messageQue, currentTime);
 
     if (!messageQue.empty()) {
