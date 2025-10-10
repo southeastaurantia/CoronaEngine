@@ -16,9 +16,9 @@ function(corona_configure_corona_editor target_name)
         return()
     endif()
 
-    # Source directories under Editor/CoronaEditor
-    set(_CORONA_BACKEND_DIR "${PROJECT_SOURCE_DIR}/Editor/CoronaEditor/Backend")
-    set(_CORONA_FRONTEND_DIR "${PROJECT_SOURCE_DIR}/Editor/CoronaEditor/Frontend")
+    # Source directories under editor/CabbageEditor
+    set(_CORONA_BACKEND_DIR "${PROJECT_SOURCE_DIR}/editor/CabbageEditor/Backend")
+    set(_CORONA_FRONTEND_DIR "${PROJECT_SOURCE_DIR}/editor/CabbageEditor/Frontend")
     set(_CORONA_EXISTING_DIRS)
 
     if(EXISTS "${_CORONA_BACKEND_DIR}")
@@ -55,16 +55,16 @@ function(corona_install_corona_editor target_name core_target)
         return()
     endif()
 
-    set(_CORONA_DEST_ROOT "$<TARGET_FILE_DIR:${target_name}>/CoronaEditor")
+    set(_CORONA_DEST_ROOT "$<TARGET_FILE_DIR:${target_name}>/CabbageEditor")
     set(_CORONA_COMMANDS)
     list(APPEND _CORONA_COMMANDS COMMAND ${CMAKE_COMMAND} -E echo "[Corona:Editor] Install resources -> ${_CORONA_DEST_ROOT}")
     list(APPEND _CORONA_COMMANDS COMMAND ${CMAKE_COMMAND} -E make_directory "${_CORONA_DEST_ROOT}")
 
-    # 上述目录复制到 <exe>/CoronaEditor 下
+    # 上述目录复制到 <exe>/CabbageEditor 下
     # 使用 Python 脚本完成目录复制并执行 npm 构建（仅注释为中文，代码为英文）
-    set(_CORONA_PY_SCRIPT "${PROJECT_SOURCE_DIR}/Misc/pytools/editor_copy_and_build.py")
-    set(_CORONA_NODE_DIR  "${PROJECT_SOURCE_DIR}/Editor/CoronaEditor/Env/node-v22.19.0-win-x64")
-    set(_CORONA_FRONTEND_DIR "$<TARGET_FILE_DIR:${target_name}>/CoronaEditor/Frontend")
+    set(_CORONA_PY_SCRIPT "${PROJECT_SOURCE_DIR}/misc/pytools/editor_copy_and_build.py")
+    set(_CORONA_NODE_DIR  "${PROJECT_SOURCE_DIR}/editor/CabbageEditor/Env/node-v22.19.0-win-x64")
+    set(_CORONA_FRONTEND_DIR "$<TARGET_FILE_DIR:${target_name}>/CabbageEditor/Frontend")
 
     # 组装 --src-dir 参数列表
     set(_CORONA_EDITOR_COPY_ARGS)

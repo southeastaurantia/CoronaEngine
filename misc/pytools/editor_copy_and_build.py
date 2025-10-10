@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """
-复制 Editor 资源目录到目标可执行目录下的 CoronaEditor/ 子目录，并使用本地 Node 环境执行前端构建。
+复制 Editor 资源目录到目标可执行目录下的 CabbageEditor/ 子目录，并使用本地 Node 环境执行前端构建。
 - 通过多次传入 --src-dir 指定多个源目录（如 Backend、Frontend 等）
-- 目标根目录由 --dest-root 指定（通常是 $<TARGET_FILE_DIR:...>/CoronaEditor ）
+- 目标根目录由 --dest-root 指定（通常是 $<TARGET_FILE_DIR:...>/CabbageEditor ）
 - 然后用 --node-dir 和 --frontend-dir 触发 npm install / npm run build
 注意：日志输出为英文，便于在构建日志中检索。
 """
@@ -96,7 +96,7 @@ def maybe_run_npm(frontend_dir: Path, node_dir: Path) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Copy editor resources and run npm build")
-    ap.add_argument("--dest-root", required=True, help="Destination root directory (CoronaEditor under target dir)")
+    ap.add_argument("--dest-root", required=True, help="Destination root directory (CabbageEditor under target dir)")
     ap.add_argument("--src-dir", action="append", default=[], help="Source directory to copy (can be specified multiple times)")
     ap.add_argument("--frontend-dir", required=True, help="Frontend directory path for npm build")
     ap.add_argument("--node-dir", required=True, help="Bundled Node directory path")

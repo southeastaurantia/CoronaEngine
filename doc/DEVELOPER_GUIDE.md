@@ -531,7 +531,7 @@ CoronaEngine/
 │   ├── COMPILER_FEATURES.md
 │   └── DEVELOPER_GUIDE.md
 ├── editor/                     # 编辑器
-│   └── CoronaEditor/
+│   └── CabbageEditor/
 │       ├── Backend/            # PyQt6 后端
 │       └── Frontend/           # Vue.js 前端
 ├── examples/                   # 示例程序
