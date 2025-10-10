@@ -173,8 +173,10 @@ bool PythonAPI::performHotReload() {
 
     Py_XDECREF(pModule);
     Py_XDECREF(pFunc);
+    Py_XDECREF(messageFunc);
     pModule = newMod.release();
     pFunc   = newFunc.release();
+    messageFunc = PyObject_GetAttrString(pModule, "put_queue");
 
     lastHotReloadTime = currentTime;
     hasHotReload = true;
@@ -207,7 +209,7 @@ void PythonAPI::runPythonScript() {
         return;
     }
 
-    sendMessage("hello world");
+    // sendMessage("hello world");
 
     bool reloaded = false;
     {
@@ -223,11 +225,10 @@ void PythonAPI::runPythonScript() {
 
 void PythonAPI::checkPythonScriptChange()
 {
-#if CABBAGE_ENGINE_DEBUG
-    std::string runtimePath = "./Resource/CabbageEditorBackend";
-    int64_t checkTime = hotfixManger.GetCurrentTimeMsec();
-    copyModifiedFiles(hotreloadPath, runtimePath, checkTime);
-#endif
+    // std::string runtimePath = "./CoronaEditor/Backend";
+    // std::ranges::replace(runtimePath, '\\', '/');
+    // int64_t checkTime = hotfixManger.GetCurrentTimeMsec();
+    // copyModifiedFiles(hotreloadPath, runtimePath, checkTime);
 }
 
 void PythonAPI::checkReleaseScriptChange() {
