@@ -6,7 +6,6 @@
 #include <cstdlib>
 #include <new>
 
-
 #if CE_BUILTIN_PLATFORM_WINDOWS
 #include <malloc.h>
 #endif

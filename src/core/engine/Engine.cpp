@@ -28,9 +28,9 @@ namespace Corona
         Logger::Init(cfg);
 
         // 鍒涘缓璧勬簮绠＄悊鍣ㄥ苟娉ㄥ唽榛樿鍔犺浇鍣?
-        resMgr_ = std::make_unique<ResourceManager>();
-        resMgr_->registerLoader(std::make_shared<ModelLoader>());
-        resMgr_->registerLoader(std::make_shared<ShaderLoader>());
+    resMgr_ = std::make_unique<ResourceManager>();
+    resMgr_->register_loader(std::make_shared<ModelLoader>());
+    resMgr_->register_loader(std::make_shared<ShaderLoader>());
 
         inited_ = true;
     }

@@ -11,15 +11,15 @@ namespace Corona
     ResourceManager::~ResourceManager()
     {
         wait();
-        taskPool_.shutdown();
+        task_pool_.shutdown();
     }
 
-    void ResourceManager::scheduleTask(std::function<void()> task)
+    void ResourceManager::schedule_task(std::function<void()> task)
     {
-        pendingTasks_.fetch_add(1, std::memory_order_acq_rel);
+        pending_tasks_.fetch_add(1, std::memory_order_acq_rel);
         try
         {
-            taskPool_.submit_detached([this, task = std::move(task)]() mutable {
+            task_pool_.submit_detached([this, task = std::move(task)]() mutable {
                 try
                 {
                     if (task)
@@ -36,37 +36,37 @@ namespace Corona
                     CE_LOG_ERROR("ResourceManager async task threw unknown exception");
                 }
 
-                if (pendingTasks_.fetch_sub(1, std::memory_order_acq_rel) == 1)
+                if (pending_tasks_.fetch_sub(1, std::memory_order_acq_rel) == 1)
                 {
-                    std::lock_guard lk(waitMutex_);
-                    waitCv_.notify_all();
+                    std::lock_guard lk(wait_mutex_);
+                    wait_cv_.notify_all();
                 }
             });
         }
         catch (...)
         {
-            pendingTasks_.fetch_sub(1, std::memory_order_acq_rel);
+            pending_tasks_.fetch_sub(1, std::memory_order_acq_rel);
             throw;
         }
     }
 
-    void ResourceManager::registerLoader(std::shared_ptr<IResourceLoader> loader)
+    void ResourceManager::register_loader(std::shared_ptr<IResourceLoader> loader)
     {
         if (!loader)
         {
             return;
         }
-        std::unique_lock lk(loadersMutex_);
+        std::unique_lock lk(loaders_mutex_);
         loaders_.push_back(std::move(loader));
     }
 
-    void ResourceManager::unregisterLoader(std::shared_ptr<IResourceLoader> loader)
+    void ResourceManager::unregister_loader(std::shared_ptr<IResourceLoader> loader)
     {
-        std::unique_lock lk(loadersMutex_);
+        std::unique_lock lk(loaders_mutex_);
         loaders_.erase(std::remove(loaders_.begin(), loaders_.end(), loader), loaders_.end());
     }
 
-    std::shared_ptr<IResource> ResourceManager::loadInternal(const ResourceId &id)
+    std::shared_ptr<IResource> ResourceManager::load_internal(const ResourceId &id)
     {
         if (auto cached = cache_.find(id))
         {
@@ -98,7 +98,7 @@ namespace Corona
             return *cachedAfterLock;
         }
 
-        auto loader = findLoader(id);
+        auto loader = find_loader(id);
         if (!loader)
         {
             CE_LOG_ERROR("No loader for type='{}' path='{}'", id.type, id.path);
@@ -116,9 +116,9 @@ namespace Corona
         return res;
     }
 
-    std::shared_ptr<IResourceLoader> ResourceManager::findLoader(const ResourceId &id)
+    std::shared_ptr<IResourceLoader> ResourceManager::find_loader(const ResourceId &id)
     {
-        std::shared_lock lk(loadersMutex_);
+        std::shared_lock lk(loaders_mutex_);
         for (auto &l : loaders_)
         {
             if (l && l->supports(id))
@@ -131,49 +131,49 @@ namespace Corona
 
     std::shared_ptr<IResource> ResourceManager::load(const ResourceId &id)
     {
-        return loadInternal(id);
+        return load_internal(id);
     }
 
-    std::shared_ptr<IResource> ResourceManager::loadOnce(const ResourceId &id)
+    std::shared_ptr<IResource> ResourceManager::load_once(const ResourceId &id)
     {
-        auto loader = findLoader(id);
+        auto loader = find_loader(id);
         if (!loader)
         {
-            CE_LOG_ERROR("No loader for type='{}' path='{}' (loadOnce)", id.type, id.path);
+            CE_LOG_ERROR("No loader for type='{}' path='{}' (load_once)", id.type, id.path);
             return nullptr;
         }
         auto res = loader->load(id);
         if (!res)
         {
-            CE_LOG_ERROR("LoadOnce failed for type='{}' path='{}'", id.type, id.path);
+            CE_LOG_ERROR("load_once failed for type='{}' path='{}'", id.type, id.path);
         }
         return res;
     }
 
-    std::future<std::shared_ptr<IResource>> ResourceManager::loadAsync(const ResourceId &id)
+    std::future<std::shared_ptr<IResource>> ResourceManager::load_async(const ResourceId &id)
     {
         auto prom = std::make_shared<std::promise<std::shared_ptr<IResource>>>();
         auto fut = prom->get_future();
-        scheduleTask([this, id, prom] {
-            prom->set_value(this->loadInternal(id));
+        schedule_task([this, id, prom] {
+            prom->set_value(this->load_internal(id));
         });
         return fut;
     }
 
-    std::future<std::shared_ptr<IResource>> ResourceManager::loadOnceAsync(const ResourceId &id)
+    std::future<std::shared_ptr<IResource>> ResourceManager::load_once_async(const ResourceId &id)
     {
         auto prom = std::make_shared<std::promise<std::shared_ptr<IResource>>>();
         auto fut = prom->get_future();
-        scheduleTask([this, id, prom] {
-            prom->set_value(this->loadOnce(id));
+        schedule_task([this, id, prom] {
+            prom->set_value(this->load_once(id));
         });
         return fut;
     }
 
-    void ResourceManager::loadAsync(const ResourceId &id, LoadCallback cb)
+    void ResourceManager::load_async(const ResourceId &id, LoadCallback cb)
     {
-        scheduleTask([this, id, cb] {
-            auto res = loadInternal(id);
+        schedule_task([this, id, cb] {
+            auto res = load_internal(id);
             if (cb)
             {
                 cb(id, res);
@@ -181,10 +181,10 @@ namespace Corona
         });
     }
 
-    void ResourceManager::loadOnceAsync(const ResourceId &id, LoadCallback cb)
+    void ResourceManager::load_once_async(const ResourceId &id, LoadCallback cb)
     {
-        scheduleTask([this, id, cb] {
-            auto res = loadOnce(id);
+        schedule_task([this, id, cb] {
+            auto res = load_once(id);
             if (cb)
             {
                 cb(id, res);
@@ -196,16 +196,16 @@ namespace Corona
     {
         for (const auto &rid : ids)
         {
-            scheduleTask([this, rid]() {
-                (void)loadInternal(rid);
+            schedule_task([this, rid]() {
+                (void)load_internal(rid);
             });
         }
     }
 
     void ResourceManager::wait()
     {
-        std::unique_lock lk(waitMutex_);
-        waitCv_.wait(lk, [this]() { return pendingTasks_.load(std::memory_order_acquire) == 0; });
+        std::unique_lock lk(wait_mutex_);
+        wait_cv_.wait(lk, [this]() { return pending_tasks_.load(std::memory_order_acquire) == 0; });
     }
 
     void ResourceManager::clear()

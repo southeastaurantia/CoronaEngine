@@ -13,8 +13,8 @@ namespace Corona
         ResourceType type;
         ResourcePath path;
         std::uint64_t uid{0};
-        static std::uint64_t ComputeUid(const ResourceType &type, const ResourcePath &path);
-        static ResourceId From(ResourceType type, ResourcePath path);
+    static std::uint64_t compute_uid(const ResourceType &type, const ResourcePath &path);
+    static ResourceId from(ResourceType type, ResourcePath path);
         bool operator==(const ResourceId &o) const noexcept;
         bool operator<(const ResourceId &o) const noexcept;
     };
@@ -40,9 +40,9 @@ namespace Corona
         std::uint64_t uid{0};
         std::uint64_t parentUid{0};
         SubResourceKind kind{SubResourceKind::Unknown};
-        static std::uint64_t Compute(std::uint64_t parent, SubResourceKind kind, std::uint64_t localNumeric, std::string_view localString = {});
-        static SubResourceId FromIndex(const ResourceId &parent, SubResourceKind kind, std::uint64_t index);
-        static SubResourceId FromKey(const ResourceId &parent, SubResourceKind kind, std::string_view key);
-        static SubResourceId Compose(std::uint64_t parentUid, SubResourceKind kind, std::uint64_t localNumeric, std::string_view localString = {});
+    static std::uint64_t compute(std::uint64_t parent, SubResourceKind kind, std::uint64_t local_numeric, std::string_view local_string = {});
+    static SubResourceId from_index(const ResourceId &parent, SubResourceKind kind, std::uint64_t index);
+    static SubResourceId from_key(const ResourceId &parent, SubResourceKind kind, std::string_view key);
+    static SubResourceId compose(std::uint64_t parent_uid, SubResourceKind kind, std::uint64_t local_numeric, std::string_view local_string = {});
     };
 } // namespace Corona

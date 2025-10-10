@@ -81,43 +81,35 @@ set(_CORONA_UTILITY_TARGETS
 # 自动为每个模块创建构建选项
 list(LENGTH _CORONA_UTILITY_MODULES _corona_utility_count)
 math(EXPR _corona_utility_last "${_corona_utility_count} - 1")
+set(_corona_built_modules "")
+
 foreach(_corona_idx RANGE 0 ${_corona_utility_last})
     list(GET _CORONA_UTILITY_MODULES ${_corona_idx} _corona_module)
-    list(GET _CORONA_UTILITY_TARGETS ${_corona_idx} _corona_target)
-    
-    string(TOUPPER "${_corona_module}" _corona_upper)
-    set(_corona_option_name "BUILD_CORONA_${_corona_upper}")
-    
-    option(${_corona_option_name} "Build Corona ${_corona_module} utility" ON)
-    
-    if(${_corona_option_name})
-        if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${_corona_module}/CMakeLists.txt")
-            message(STATUS "[Corona:Utility] Building ${_corona_module}...")
-            add_subdirectory(${_corona_module})
-        else()
-            message(WARNING "[Corona:Utility] ${_corona_module} subdir not found, skip")
-        endif()
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${_corona_module}/CMakeLists.txt")
+        message(STATUS "[Corona:Utility] Building ${_corona_module}...")
+        add_subdirectory(${_corona_module})
+        list(APPEND _corona_built_modules "${_corona_module}")
     else()
-        message(STATUS "[Corona:Utility] Skipping ${_corona_module} (disabled)")
+        message(WARNING "[Corona:Utility] ${_corona_module} subdir not found, skip")
     endif()
 endforeach()
 
-# 创建聚合目标（包含所有启用的Utility库）
+# 创建聚合目标（包含所有已构建的Utility库）
 add_library(CoronaUtilityAll INTERFACE)
-set(_corona_linked_utilities "")
 
 foreach(_corona_idx RANGE 0 ${_corona_utility_last})
     list(GET _CORONA_UTILITY_MODULES ${_corona_idx} _corona_module)
-    list(GET _CORONA_UTILITY_TARGETS ${_corona_idx} _corona_target)
-    
-    string(TOUPPER "${_corona_module}" _corona_upper)
-    set(_corona_option_name "BUILD_CORONA_${_corona_upper}")
-    
-    if(${_corona_option_name})
+    list(FIND _corona_built_modules ${_corona_module} _corona_built_index)
+    if(_corona_built_index GREATER -1)
+        list(GET _CORONA_UTILITY_TARGETS ${_corona_idx} _corona_target)
         target_link_libraries(CoronaUtilityAll INTERFACE ${_corona_target})
-        list(APPEND _corona_linked_utilities "${_corona_module}")
     endif()
 endforeach()
+
+set(_corona_linked_utilities "")
+if(_corona_built_modules)
+    string(JOIN ";" _corona_linked_utilities ${_corona_built_modules})
+endif()
 
 # 创建聚合别名
 add_library(Corona::Utility::All ALIAS CoronaUtilityAll)
@@ -129,13 +121,11 @@ message(STATUS "Corona Utility Build Summary")
 message(STATUS "========================================")
 foreach(_corona_idx RANGE 0 ${_corona_utility_last})
     list(GET _CORONA_UTILITY_MODULES ${_corona_idx} _corona_module)
-    string(TOUPPER "${_corona_module}" _corona_upper)
-    set(_corona_option_name "BUILD_CORONA_${_corona_upper}")
-    
-    if(${_corona_option_name})
+    list(FIND _corona_built_modules ${_corona_module} _corona_built_index)
+    if(_corona_built_index GREATER -1)
         message(STATUS "✓ ${_corona_module}")
     else()
-        message(STATUS "✗ ${_corona_module} (disabled)")
+        message(STATUS "✗ ${_corona_module} (missing)")
     endif()
 endforeach()
 message(STATUS "========================================")

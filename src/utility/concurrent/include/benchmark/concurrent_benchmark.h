@@ -11,7 +11,6 @@
 
 #include "../core/atomic.h"
 
-
 namespace Corona::Concurrent::Benchmark {
 
 /**
