@@ -252,11 +252,10 @@ void PythonAPI::runPythonScript() {
 
 void PythonAPI::checkPythonScriptChange()
 {
-    // const std::string sourcePath  = codePath + "/Editor/CabbageEditor/Backend";
-    // std::string runtimePath = "./CabbageEditor/Backend";
-    // std::ranges::replace(runtimePath, '\\', '/');
-    // int64_t checkTime = hotfixManger.GetCurrentTimeMsec();
-    // copyModifiedFiles(sourcePath, runtimePath, checkTime);
+    const std::string& sourcePath = PathCfg::EditorBackendAbs();
+    const std::string runtimePath = PathCfg::RuntimeBackendAbs();
+    int64_t checkTime = PythonHotfix::GetCurrentTimeMsec();
+    copyModifiedFiles(sourcePath, runtimePath, checkTime);
 }
 
 void PythonAPI::checkReleaseScriptChange() {
