@@ -23,7 +23,7 @@ struct PythonAPI
     static const std::string codePath;
 
     PythonHotfix hotfixManger;
-    std::shared_mutex queMtx;
+    mutable std::shared_mutex queMtx;
 
     int64_t lastHotReloadTime = 0; // ms
     bool hasHotReload = false;
@@ -32,7 +32,6 @@ struct PythonAPI
     PyObject *pFunc = nullptr;
     PyObject *messageFunc = nullptr;
 
-    std::string hotreloadPath; // 无需冗余初始化
     std::vector<std::string> moduleList;
     std::vector<std::string> callableList;
 
