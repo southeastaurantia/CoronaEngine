@@ -1,4 +1,3 @@
-#include <Python.h>
 #include <Script/Python/PythonAPI.h>
 #include <Core/Engine/Engine.h>
 #include <Core/Engine/Systems/AnimationSystem.h>
@@ -32,7 +31,7 @@ int main()
     std::thread([&]() {
         while (true)
         {
-            pythonManager.checkPythonScriptChange();
+            // pythonManager.checkPythonScriptChange();
             pythonManager.checkReleaseScriptChange();
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }

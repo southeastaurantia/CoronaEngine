@@ -1,12 +1,28 @@
 #define PY_SSIZE_T_CLEAN
 #include "PythonAPI.h"
 #include <windows.h>
+#include <cstdlib>
 
 #include <Log.h>
 #include <regex>
 #include <iostream>
 #include <set>
 #include <ranges>
+#include <unordered_map>
+
+// Helper: safe DECREF with diagnostics for API layer
+static inline void APISafeDecRef(PyObject* obj, const char* tag) {
+    if (!obj) { std::cout << "[Hotfix][API] SafeDecRef skip null: " << tag << std::endl; return; }
+    Py_ssize_t rc = Py_REFCNT(obj);
+    int64_t rc64 = static_cast<int64_t>(rc);
+    std::cout << "[Hotfix][API] SafeDecRef attempt '" << tag << "' ptr=" << obj << " refcnt=" << rc64 << std::endl;
+    if (rc64 <= 0 || rc64 > 1000000000LL) {
+        std::cout << "[Hotfix][API] SafeDecRef suspicious refcnt, skip: " << tag << std::endl; return;
+    }
+    Py_DECREF(obj);
+}
+
+// Remove compile-time toggle; use runtime member 'leakSafeMainReload_'
 
 namespace CE::Python::Internal {
     struct PyObjPtr {
@@ -114,15 +130,37 @@ PyObject *PyInit_CoronaEngineEmbedded()
     return m;
 }
 
-PythonAPI::PythonAPI() = default;
+PythonAPI::PythonAPI() {
+    // Initialize leak-safe from environment variable: CORONA_PY_LEAKSAFE
+    // Accepts: 1/true/on/yes to enable; 0/false/off/no to disable; default true if unset.
+    if (const char* env = std::getenv("CORONA_PY_LEAKSAFE")) {
+        std::string v = env; std::ranges::transform(v, v.begin(), ::tolower);
+        if (v == "1" || v == "true" || v == "on" || v == "yes") leakSafeMainReload_ = true;
+        else if (v == "0" || v == "false" || v == "off" || v == "no") leakSafeMainReload_ = false;
+    }
+    std::cout << "[Hotfix][API] leak-safe default=" << (leakSafeMainReload_ ? "ON" : "OFF")
+              << " (CORONA_PY_LEAKSAFE env)" << std::endl;
+}
+
+void PythonAPI::setLeakSafeReload(bool enabled) {
+    if (leakSafeMainReload_ == enabled) return;
+    leakSafeMainReload_ = enabled;
+    std::cout << "[Hotfix][API] leak-safe toggled to " << (enabled ? "ON" : "OFF") << std::endl;
+}
+
+bool PythonAPI::isLeakSafeReload() const { return leakSafeMainReload_; }
 
 PythonAPI::~PythonAPI()
 {
     if (Py_IsInitialized()) {
         GILGuard guard;
-        Py_XDECREF(messageFunc);
-        Py_XDECREF(pFunc);
-        Py_XDECREF(pModule);
+        if (!leakSafeMainReload_) {
+            Py_XDECREF(messageFunc);
+            Py_XDECREF(pFunc);
+            Py_XDECREF(pModule);
+        } else {
+            std::cout << "[Hotfix][API] leak-safe: skip DECREF in destructor" << std::endl;
+        }
         Py_FinalizeEx();
     }
     PyConfig_Clear(&config);
@@ -184,29 +222,160 @@ bool PythonAPI::performHotReload() {
         return false;
     }
 
-    if (!hotfixManger.ReloadPythonFile()) {
-        return false;
+    std::cout << "[Hotfix] performHotReload triggered. packageSet.size=" << hotfixManger.packageSet.size() << std::endl;
+
+    bool reloadedDeps = true;
+    if (leakSafeMainReload_) {
+        std::cout << "[Hotfix][API] leak-safe: skip ReloadPythonFile (submodules), will reload 'main' only" << std::endl;
+        // Clear pending set so we don't spin on it
+        hotfixManger.packageSet.clear();
+        hotfixManger.dependencyGraph.clear();
+        hotfixManger.dependencyVec.clear();
+    } else {
+        reloadedDeps = hotfixManger.ReloadPythonFile();
+        if (!reloadedDeps) {
+            std::cout << "[Hotfix] hotfixManger.ReloadPythonFile returned false" << std::endl;
+            return false;
+        }
     }
 
     GILGuard gil;
-    PyObjPtr newMod(PyImport_ReloadModule(pModule));
-    if (!newMod.get()) { if (PyErr_Occurred()) { PyErr_Print(); } return false; }
+    std::cout << "[Hotfix] reloading 'main' module (via importlib.reload)" << std::endl;
 
-    PyObjPtr newFunc(PyObject_GetAttrString(newMod.get(), "run"));
-    if (!newFunc.get() || !PyCallable_Check(newFunc.get())) {
-        if (PyErr_Occurred()) { PyErr_Print(); }
+    PyObject* importlib = PyImport_ImportModule("importlib");
+    PyObject* reload_func = importlib ? PyObject_GetAttrString(importlib, "reload") : nullptr;
+    if (!reload_func) {
+        std::cout << "[Hotfix][API] importlib.reload not available, fallback to PyImport_ReloadModule" << std::endl;
+    }
+
+    PyObject* sys_modules = PyImport_GetModuleDict();
+    bool from_sys_modules = false;
+    PyObject* mod = nullptr;
+    if (sys_modules) {
+        mod = PyDict_GetItemString(sys_modules, "main"); // borrowed
+        if (mod) from_sys_modules = true;
+    }
+    if (!mod) {
+        mod = PyImport_ImportModule("main"); // new ref
+        from_sys_modules = false;
+    }
+    if (!mod || !PyModule_Check(mod)) {
+        std::cout << "[Hotfix][API] failed to get 'main' module for reload" << std::endl;
+        if (PyErr_Occurred()) PyErr_Print();
+        if (reload_func && !leakSafeMainReload_) Py_XDECREF(reload_func);
+        if (importlib && !leakSafeMainReload_) Py_XDECREF(importlib);
         return false;
     }
 
-    Py_XDECREF(pModule);
-    Py_XDECREF(pFunc);
-    Py_XDECREF(messageFunc);
-    pModule = newMod.release();
-    pFunc   = newFunc.release();
-    messageFunc = PyObject_GetAttrString(pModule, "put_queue");
+    std::cout << "[Hotfix][API] main module acquired ptr=" << mod
+              << (from_sys_modules ? " (borrowed)" : " (owned)") << std::endl;
+
+    PyObject* new_mod = nullptr;
+    if (reload_func) {
+        new_mod = PyObject_CallFunctionObjArgs(reload_func, mod, nullptr);
+    } else {
+        new_mod = PyImport_ReloadModule(mod);
+    }
+    if (!new_mod) {
+        std::cout << "[Hotfix][API] reload(main) failed" << std::endl;
+        if (PyErr_Occurred()) PyErr_Print();
+        if (!from_sys_modules && !leakSafeMainReload_) { APISafeDecRef(mod, "main.mod(owned, reload fail)"); }
+        if (reload_func && !leakSafeMainReload_) Py_XDECREF(reload_func);
+        if (importlib && !leakSafeMainReload_) Py_XDECREF(importlib);
+        return false;
+    }
+
+    std::cout << "[Hotfix][API] reload(main) ok: new_mod=" << new_mod << " old_mod=" << mod
+              << (new_mod == mod ? " (same)" : " (different)") << std::endl;
+
+    // In leak-safe mode, acquire a fresh owned reference for 'main' to avoid INCREF on borrowed
+    if (leakSafeMainReload_) {
+        PyObject* owned_main = PyImport_ImportModule("main"); // new ref
+        if (owned_main && PyModule_Check(owned_main)) {
+            std::cout << "[Hotfix][API] leak-safe: acquired owned 'main' via ImportModule ptr=" << owned_main << std::endl;
+            mod = owned_main; // take ownership; no DECREF in leak-safe mode
+            from_sys_modules = false;
+        } else {
+            if (owned_main) { Py_XDECREF(owned_main); }
+            std::cout << "[Hotfix][API] leak-safe: failed to acquire owned 'main', fallback to borrowed" << std::endl;
+        }
+    }
+
+    // After reload, re-fetch main from sys.modules to ensure up-to-date module object
+    if (sys_modules && !leakSafeMainReload_) {
+        PyObject* mod2 = PyDict_GetItemString(sys_modules, "main"); // borrowed
+        if (mod2 && PyModule_Check(mod2)) {
+            std::cout << "[Hotfix][API] refreshed 'main' from sys.modules ptr=" << mod2 << std::endl;
+            mod = mod2;
+            from_sys_modules = true;
+        }
+    }
+
+    // After reload, get new attributes from the (reloaded) module object.
+    PyObjPtr newFunc(PyObject_GetAttrString(mod, "run"));
+    if (!newFunc.get() || !PyCallable_Check(newFunc.get())) {
+        std::cout << "[Hotfix][API] new run attr invalid" << std::endl;
+        if (PyErr_Occurred()) PyErr_Print();
+        if (!from_sys_modules && !leakSafeMainReload_) {
+            if (new_mod != mod) APISafeDecRef(new_mod, "main.new_mod(owned, attr fail)");
+            APISafeDecRef(mod, "main.mod(owned, attr fail)");
+        } else if (!leakSafeMainReload_) {
+            if (new_mod != mod) APISafeDecRef(new_mod, "main.new_mod(borrowed, attr fail)");
+        }
+        if (reload_func && !leakSafeMainReload_) Py_XDECREF(reload_func);
+        if (importlib && !leakSafeMainReload_) Py_XDECREF(importlib);
+        return false;
+    }
+
+    PyObjPtr newMsg(PyObject_GetAttrString(mod, "put_queue"));
+    if (!newMsg.get()) {
+        std::cout << "[Hotfix][API] new put_queue missing" << std::endl;
+        if (PyErr_Occurred()) PyErr_Print();
+        if (!from_sys_modules && !leakSafeMainReload_) {
+            if (new_mod != mod) APISafeDecRef(new_mod, "main.new_mod(owned, msg fail)");
+            APISafeDecRef(mod, "main.mod(owned, msg fail)");
+        } else if (!leakSafeMainReload_) {
+            if (new_mod != mod) APISafeDecRef(new_mod, "main.new_mod(borrowed, msg fail)");
+        }
+        if (reload_func && !leakSafeMainReload_) Py_XDECREF(reload_func);
+        if (importlib && !leakSafeMainReload_) Py_XDECREF(importlib);
+        return false;
+    }
+
+    // Swap in new bindings; manage refs conservatively
+    if (!leakSafeMainReload_) {
+        APISafeDecRef(pModule, "old pModule");
+        APISafeDecRef(pFunc, "old pFunc");
+        APISafeDecRef(messageFunc, "old messageFunc");
+    } else {
+        std::cout << "[Hotfix][API] leak-safe: skip DECREF old pModule/pFunc/messageFunc" << std::endl;
+    }
+
+    if (!leakSafeMainReload_) {
+        if (from_sys_modules) { Py_INCREF(mod); }
+    } else {
+        std::cout << "[Hotfix][API] leak-safe: skip INCREF main (borrowed)" << std::endl;
+    }
+    pModule = mod; // now owned if INCREFed (or borrowed if leak-safe)
+    pFunc = newFunc.release();
+    messageFunc = newMsg.release();
+
+    if (!leakSafeMainReload_) {
+        if (new_mod != mod) { APISafeDecRef(new_mod, "main.new_mod post-swap"); }
+    } else {
+        std::cout << "[Hotfix][API] leak-safe: skip DECREF new_mod/importlib" << std::endl;
+    }
+
+    if (!leakSafeMainReload_) {
+        Py_XDECREF(reload_func);
+        Py_XDECREF(importlib);
+    } else {
+        std::cout << "[Hotfix][API] leak-safe: skip XDECREF(importlib, reload_func)" << std::endl;
+    }
 
     lastHotReloadTime = currentTime;
     hasHotReload = true;
+    std::cout << "[Hotfix] performHotReload finished successfully" << std::endl;
     return true;
 }
 
@@ -236,8 +405,6 @@ void PythonAPI::runPythonScript() {
         return;
     }
 
-    // sendMessage("hello world");
-
     bool reloaded = false;
     {
         std::unique_lock lk(queMtx);
@@ -255,27 +422,66 @@ void PythonAPI::checkPythonScriptChange()
     const std::string& sourcePath = PathCfg::EditorBackendAbs();
     const std::string runtimePath = PathCfg::RuntimeBackendAbs();
     int64_t checkTime = PythonHotfix::GetCurrentTimeMsec();
+    std::cout << "[Hotfix] checkPythonScriptChange: src=" << sourcePath
+              << ", dst=" << runtimePath
+              << ", t=" << checkTime << std::endl;
     copyModifiedFiles(sourcePath, runtimePath, checkTime);
 }
 
 void PythonAPI::checkReleaseScriptChange() {
     static int64_t lastCheckTime = 0;
+    static std::unordered_map<std::string, int64_t> lastProcessedMtime; // mod -> last mtime processed
+
     int64_t currentTime = PythonHotfix::GetCurrentTimeMsec();
     if (currentTime - lastCheckTime < 100) { return; }
     lastCheckTime = currentTime;
 
     std::queue<std::unordered_set<std::string>> messageQue;
-    const std::string runtimePath = PathCfg::RuntimeBackendAbs();
-    PythonHotfix::TraverseDirectory(runtimePath, messageQue, currentTime);
+    const std::string runtimePathStr = PathCfg::RuntimeBackendAbs();
+    const std::filesystem::path runtimePath(runtimePathStr);
+    PythonHotfix::TraverseDirectory(runtimePathStr, messageQue, currentTime);
 
-    if (!messageQue.empty()) {
-        std::unique_lock lk(queMtx);
-        const auto& mods = messageQue.front();
-        for (const auto& mod : mods) {
-            if (!hotfixManger.packageSet.contains(mod)) {
-                hotfixManger.packageSet.emplace(mod, currentTime);
-            }
+    if (messageQue.empty()) {
+        return;
+    }
+
+    std::unique_lock lk(queMtx);
+    const auto& mods = messageQue.front();
+    std::cout << "[Hotfix] detected modified modules (" << mods.size() << ") from runtime scan: ";
+    bool first = true;
+    for (const auto& m : mods) { if (!first) std::cout << ", "; std::cout << m; first = false; }
+    std::cout << std::endl;
+
+    auto modToPath = [&](const std::string& mod){
+        std::string rel = mod; // replace '.' with '/'
+        std::ranges::replace(rel, '.', '/');
+        return runtimePath / (rel + ".py");
+    };
+
+    for (const auto& mod : mods) {
+        int64_t fileMtimeMs = 0;
+        std::error_code ec;
+        const auto filePath = modToPath(mod);
+        auto ftime = std::filesystem::last_write_time(filePath, ec);
+        if (!ec) {
+            auto sysTime = std::chrono::clock_cast<std::chrono::system_clock>(ftime);
+            fileMtimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(sysTime.time_since_epoch()).count();
         }
+
+        auto it = lastProcessedMtime.find(mod);
+        if (it != lastProcessedMtime.end() && fileMtimeMs > 0 && fileMtimeMs <= it->second) {
+            std::cout << "[Hotfix] skip duplicate module in window: '" << mod << "' mtime=" << fileMtimeMs
+                      << " lastProcessed=" << it->second << std::endl;
+            continue;
+        }
+
+        if (!hotfixManger.packageSet.contains(mod)) {
+            hotfixManger.packageSet.emplace(mod, currentTime);
+            std::cout << "[Hotfix] packageSet.emplace: '" << mod << "' @" << currentTime << std::endl;
+        } else {
+            std::cout << "[Hotfix] packageSet already contains: '" << mod << "' (skip)" << std::endl;
+        }
+        if (fileMtimeMs > 0) { lastProcessedMtime[mod] = fileMtimeMs; }
     }
 }
 
@@ -295,6 +501,7 @@ void PythonAPI::copyModifiedFiles(const std::filesystem::path& sourceDir,
     static const std::set<std::string> skip = {
         "__pycache__", "__init__.py", ".pyc", "StaticComponents.py"
     };
+    static std::unordered_map<std::string, int64_t> lastCopiedMtime;
 
     for (const auto& entry : std::filesystem::recursive_directory_iterator(sourceDir)) {
         if (!entry.is_regular_file()) { continue; }
@@ -310,12 +517,25 @@ void PythonAPI::copyModifiedFiles(const std::filesystem::path& sourceDir,
             auto ftime = std::filesystem::last_write_time(filePath);
             auto sysTime = std::chrono::clock_cast<std::chrono::system_clock>(ftime);
             int64_t modifyMs = std::chrono::duration_cast<std::chrono::milliseconds>(sysTime.time_since_epoch()).count();
-            if (checkTimeMs - modifyMs <= PythonHotfix::kFileRecentWindowMs) {
+
+            auto srcKey = filePath.string();
+            auto it = lastCopiedMtime.find(srcKey);
+            bool newerThanLastCopy = (it == lastCopiedMtime.end()) || (modifyMs > it->second);
+            if (checkTimeMs - modifyMs <= PythonHotfix::kFileRecentWindowMs && newerThanLastCopy) {
                 auto relativePath = std::filesystem::relative(filePath, sourceDir);
                 auto destFilePath = destDir / relativePath;
                 std::filesystem::create_directories(destFilePath.parent_path());
                 std::filesystem::copy_file(filePath, destFilePath,
                     std::filesystem::copy_options::overwrite_existing);
+                std::filesystem::last_write_time(destFilePath, ftime);
+
+                lastCopiedMtime[srcKey] = modifyMs;
+
+                std::string modName = destFilePath.string();
+                PythonHotfix::NormalizeModuleName(modName);
+                std::cout << "[Hotfix] copied recent file: " << filePath.string()
+                          << " -> " << destFilePath.string()
+                          << ", module='" << modName << "' src_mtime=" << modifyMs << std::endl;
             }
         } catch (const std::exception& e) {
             std::cerr << "File copy error: " << e.what() << std::endl;

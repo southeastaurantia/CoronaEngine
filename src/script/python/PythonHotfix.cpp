@@ -4,13 +4,15 @@
 #include <chrono>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <queue>
 #include <regex>
 #include <set>
 #include <string>
-#include <unordered_set>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
+#include <ranges>
 
 // 静态工具函数实现
 int64_t PythonHotfix::GetCurrentTimeMsec() {
@@ -129,19 +131,74 @@ bool PythonHotfix::ReloadPythonFile() {
 
     CheckPythonFileDependence();
     bool reload = !packageSet.empty();
+
+    // Log dependency reload order for visibility
+    if (reload) {
+        std::cout << "[Hotfix][Reload] dependency order (before reverse): ";
+        for (size_t i = 0; i < dependencyVec.size(); ++i) {
+            if (i) std::cout << " -> ";
+            std::cout << dependencyVec[i];
+        }
+        std::cout << std::endl;
+    }
+
     for (int i = static_cast<int>(dependencyVec.size()) - 1; i >= 0; --i) {
         const std::string& name = dependencyVec[i];
-        PyObject* name_obj = PyUnicode_FromString(name.c_str());
-        if (!name_obj) { PyErr_Clear(); continue; }
-        PyObject* old_mod = PyImport_GetModule(name_obj); // borrowed
-        Py_DECREF(name_obj);
-        if (!old_mod) { PyErr_Clear(); continue; }
+        std::cout << "[Hotfix][Reload] begin reload idx=" << (dependencyVec.size() - 1 - i)
+                  << "/" << dependencyVec.size() << ": " << name << std::endl;
+
+        // Use sys.modules directly to avoid allocating temporary Unicode objects
+        PyObject* sys_modules = PyImport_GetModuleDict();
+        PyObject* old_mod = sys_modules ? PyDict_GetItemString(sys_modules, name.c_str()) : nullptr; // borrowed
+        bool owned_old = false;
+        if (!old_mod) {
+            // As a fallback, import the module to get a handle (owned)
+            old_mod = PyImport_ImportModule(name.c_str()); // new ref
+            if (!old_mod) {
+                std::cout << "[Hotfix][Reload] skip (module not found and import failed): " << name << std::endl;
+                if (PyErr_Occurred()) PyErr_Clear();
+                continue;
+            }
+            owned_old = true;
+        }
+
+        // Sanity
+        if (!PyModule_Check(old_mod)) {
+            std::cout << "[Hotfix][Reload] skip (not a module): " << name << " ptr=" << old_mod << std::endl;
+            if (owned_old) { /* leak-safe: skip DECREF */ }
+            continue;
+        }
+
+        // Cross-check pointer in sys.modules
+        if (sys_modules) {
+            PyObject* smod = PyDict_GetItemString(sys_modules, name.c_str()); // borrowed
+            std::cout << "[Hotfix][Reload] sys.modules['" << name << "']=" << smod
+                      << (smod == old_mod ? " (same)" : " (different)") << std::endl;
+        }
+
         PyObject* new_mod = PyImport_ReloadModule(old_mod);
         if (!new_mod) {
+            std::cout << "[Hotfix][Reload] reload failed: " << name << std::endl;
             if (PyErr_Occurred()) PyErr_Print();
-        } else {
-            Py_DECREF(new_mod); // discard new reference
+            // leak-safe: if we owned 'old_mod', skip DECREF on failure to avoid risky paths
+            continue; // keep trying other modules
         }
+
+        std::cout << "[Hotfix][Reload] reload ok: name=" << name
+                  << " new_mod=" << new_mod
+                  << (new_mod == old_mod ? " (same ptr)" : " (new ptr)") << std::endl;
+
+        // Log current sys.modules pointer for this name after reload
+        if (sys_modules) {
+            PyObject* smod2 = PyDict_GetItemString(sys_modules, name.c_str()); // borrowed
+            std::cout << "[Hotfix][Reload] post sys.modules['" << name << "']=" << smod2
+                      << (smod2 == new_mod ? " (matches new_mod)" : (smod2 == old_mod ? " (matches old_mod)" : " (different)"))
+                      << std::endl;
+        }
+
+        // leak-safe: skip DECREF(new_mod) and any owned_old DECREF to avoid potential DECREF crash paths
+        // if (owned_old) { Py_DECREF(old_mod); }
+        // Py_DECREF(new_mod);
     }
     packageSet.clear();
     dependencyGraph.clear();
