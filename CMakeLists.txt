@@ -17,6 +17,10 @@ include(corona_editor)          # 编辑器资源安装
 # 库与主引擎
 add_subdirectory(src)
 
+if(BUILD_CORONA_RUNTIME)
+    add_subdirectory(engine)
+endif()
+
 # 示例工程按需开启
 if(CORONA_BUILD_EXAMPLES)
     add_subdirectory(examples)

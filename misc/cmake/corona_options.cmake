@@ -12,6 +12,8 @@ endif()
 option(BUILD_SHARED_LIBS "Build as shared libraries (default OFF for static)" OFF)
 # 是否编译Corona编辑器 (ON -> 编译; OFF -> 不编译)
 option(BUILD_CORONA_EDITOR "Build corona editor" OFF)
+# 是否编译Corona运行时 (ON -> 编译; OFF -> 不编译)
+option(BUILD_CORONA_RUNTIME "Build corona runtime" ON)
 
 # 是否编译示例工程：
 #   ON  -> 生成 Examples 目录下的演示可执行，便于调试 / 验证功能
