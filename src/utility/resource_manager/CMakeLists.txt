@@ -21,7 +21,7 @@ else()
 endif()
 
 target_link_libraries(CoronaResourceManager
-    PUBLIC Corona::Concurrent
+    PUBLIC cabbage::concurrent
 )
 
 # 特殊配置：添加spdlog包含目录

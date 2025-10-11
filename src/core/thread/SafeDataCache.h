@@ -5,7 +5,7 @@
 #pragma once
 
 #include <Log.h>
-#include <container/concurrent_hash_map.h>
+#include <cabbage_concurrent/container/concurrent_hash_map.h>
 
 #include <cstdint>
 #include <functional>
@@ -21,8 +21,8 @@ template <typename TData>
 class SafeDataCache final {
    public:
     using id_type = uint64_t;
-    using mutexes_type = Concurrent::ConcurrentHashMap<id_type, std::shared_ptr<std::mutex>>;
-    using caches_type = Concurrent::ConcurrentHashMap<id_type, std::shared_ptr<TData>>;
+    using mutexes_type = Cabbage::Concurrent::ConcurrentHashMap<id_type, std::shared_ptr<std::mutex>>;
+    using caches_type = Cabbage::Concurrent::ConcurrentHashMap<id_type, std::shared_ptr<TData>>;
 
     // 当前缓存的元素个数
     auto size() const {

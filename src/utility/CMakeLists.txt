@@ -65,17 +65,16 @@ function(corona_add_utility)
 endfunction()
 
 # utility模块列表
+
 set(_CORONA_UTILITY_MODULES
     logger
     resource_manager
-    concurrent
 )
 
 # Utility目标名称列表
 set(_CORONA_UTILITY_TARGETS
     CoronaLogger
     CoronaResourceManager
-    CoronaConcurrent
 )
 
 # 自动为每个模块创建构建选项

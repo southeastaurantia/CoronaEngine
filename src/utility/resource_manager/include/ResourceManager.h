@@ -3,7 +3,7 @@
 // 迁移版 ResourceManager：从 Src/Core/IO 移至 Utility/ResourceManager
 // 对外暴露统一头 <ResourceManager.h>
 
-#include <concurrent.h>
+#include <cabbage_concurrent/concurrent.h>
 
 #include <atomic>
 #include <condition_variable>
@@ -56,11 +56,11 @@ class ResourceManager {
     void schedule_task(std::function<void()> task);
 
    private:
-    Corona::Concurrent::ConcurrentHashMap<ResourceId, std::shared_ptr<IResource>, ResourceIdHash> cache_;
-    Corona::Concurrent::ConcurrentHashMap<ResourceId, std::shared_ptr<std::mutex>, ResourceIdHash> locks_;
+    Cabbage::Concurrent::ConcurrentHashMap<ResourceId, std::shared_ptr<IResource>, ResourceIdHash> cache_;
+    Cabbage::Concurrent::ConcurrentHashMap<ResourceId, std::shared_ptr<std::mutex>, ResourceIdHash> locks_;
     mutable std::shared_mutex loaders_mutex_;
     std::vector<std::shared_ptr<IResourceLoader>> loaders_;
-    Corona::Concurrent::ThreadPool task_pool_;
+    Cabbage::Concurrent::ThreadPool task_pool_;
     std::atomic<std::size_t> pending_tasks_{0};
     mutable std::mutex wait_mutex_;
     std::condition_variable wait_cv_;

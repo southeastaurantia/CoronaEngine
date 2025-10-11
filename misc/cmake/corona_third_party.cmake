@@ -9,40 +9,47 @@ include(FetchContent)
 FetchContent_Declare(
     CabbageHardware
     GIT_REPOSITORY https://github.com/CoronaEngine/CabbageHardware.git
-    GIT_TAG main            # 硬件/平台抽象相关组件（示例：输入/设备适配等）
-    GIT_SHALLOW TRUE        # 浅克隆加速配置
-    EXCLUDE_FROM_ALL        # 不主动参与 ALL 构建，由依赖它的目标决定是否编译
+    GIT_TAG main # 硬件/平台抽象相关组件（示例：输入/设备适配等）
+    GIT_SHALLOW TRUE # 浅克隆加速配置
+    EXCLUDE_FROM_ALL # 不主动参与 ALL 构建，由依赖它的目标决定是否编译
 )
 FetchContent_Declare(
     assimp
     GIT_REPOSITORY https://github.com/assimp/assimp.git
-    GIT_TAG master          # 模型/场景导入库 (OBJ/FBX/GLTF 等)
+    GIT_TAG master # 模型/场景导入库 (OBJ/FBX/GLTF 等)
     GIT_SHALLOW TRUE
     EXCLUDE_FROM_ALL
 )
 FetchContent_Declare(
     stb
     GIT_REPOSITORY https://github.com/nothings/stb.git
-    GIT_TAG master          # 单头工具集合 (图像加载 stb_image.h 等)
+    GIT_TAG master # 单头工具集合 (图像加载 stb_image.h 等)
     GIT_SHALLOW TRUE
     EXCLUDE_FROM_ALL
 )
 FetchContent_Declare(
     entt
     GIT_REPOSITORY https://github.com/skypjack/entt.git
-    GIT_TAG master          # ECS (实体组件系统) 框架
+    GIT_TAG master # ECS (实体组件系统) 框架
+    GIT_SHALLOW TRUE
+    EXCLUDE_FROM_ALL
+)
+FetchContent_Declare(
+    CabbageConcurrent
+    GIT_REPOSITORY https://github.com/CoronaEngine/CabbageConcurrent.git
+    GIT_TAG main # CabbageConcurrent: 轻量级跨平台并发库 (线程/同步/原子操作等)
     GIT_SHALLOW TRUE
     EXCLUDE_FROM_ALL
 )
 
-FetchContent_MakeAvailable(assimp stb entt CabbageHardware) # 按组一次性拉取并添加子目录
-message(STATUS "[3rdparty] Enabled: assimp, stb, entt, CabbageHardware")
+FetchContent_MakeAvailable(assimp stb entt CabbageHardware CabbageConcurrent) # 按组一次性拉取并添加子目录
+message(STATUS "[3rdparty] Enabled: assimp, stb, entt, CabbageHardware, CabbageConcurrent")
 
 if(CORONA_BUILD_EXAMPLES)
     FetchContent_Declare(
         glfw
         GIT_REPOSITORY https://github.com/glfw/glfw.git
-        GIT_TAG master      # 示例窗口/输入管理 (可替换为 SDL/平台层)
+        GIT_TAG master # 示例窗口/输入管理 (可替换为 SDL/平台层)
         GIT_SHALLOW TRUE
         EXCLUDE_FROM_ALL
     )

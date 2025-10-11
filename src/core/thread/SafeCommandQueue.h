@@ -1,5 +1,5 @@
 #pragma once
-#include <container/mpmc_queue.h>
+#include <cabbage_concurrent/container/mpmc_queue.h>
 
 #include <functional>
 #include <memory>
@@ -106,6 +106,6 @@ class SafeCommandQueue {
     }
 
    private:
-    Concurrent::MPMCQueue<Command> safe_queue;
+    Cabbage::Concurrent::MPMCQueue<Command> safe_queue;
 };
 }  // namespace Corona
