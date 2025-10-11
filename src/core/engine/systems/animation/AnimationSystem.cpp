@@ -1,4 +1,4 @@
-﻿#include "AnimationSystem.h"
+#include "AnimationSystem.h"
 #include "Core/Engine/Engine.h"
 #include "Resource/Animation.h"
 #include "Resource/Bone.h"

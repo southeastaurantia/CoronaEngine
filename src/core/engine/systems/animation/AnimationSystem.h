@@ -13,6 +13,7 @@ namespace Corona
 {
     class Animation;
     class Bone;
+    class Model;
 } // namespace Corona
 
 namespace Corona

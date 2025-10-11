@@ -1,7 +1,9 @@
 #include "RenderingSystem.h"
-#include "Core/Engine/Engine.h"
-#include "Resource/Mesh.h"
-#include "Resource/Model.h"
+
+#include "core/engine/Engine.h"
+#include "resource/Mesh.h"
+#include "resource/Model.h"
+#include "resource/Shader.h"
 
 #include <memory>
 

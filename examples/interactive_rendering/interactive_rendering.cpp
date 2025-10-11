@@ -1,16 +1,17 @@
-#include <Core/Engine/Engine.h>
-#include <Core/Engine/Systems/AnimationSystem.h>
-#include <Core/Engine/Systems/AudioSystem.h>
-#include <Core/Engine/Systems/DisplaySystem.h>
-#include <Core/Engine/Systems/RenderingSystem.h>
+#include <core/engine/Engine.h>
+#include <core/engine/systems/animation/AnimationSystem.h>
+#include <core/engine/systems/audio/AudioSystem.h>
+#include <core/engine/systems/display/DisplaySystem.h>
+#include <core/engine/systems/rendering/RenderingSystem.h>
 
 #define GLFW_EXPOSE_NATIVE_WIN32
-#include "Resource/Scene.h"
+#include "resource/Scene.h"
 
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 
-#include <Resource/Model.h>
+#include <resource/Model.h>
+#include <resource/Shader.h>
 #include <chrono>
 #include <filesystem>
 #include <thread>

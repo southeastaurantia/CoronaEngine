@@ -1,6 +1,18 @@
 # 先构建 utility 模块
 add_subdirectory(utility)
 
+set(CORONA_ENGINE_BASE_DEPENDENCIES
+        assimp
+        Helicon
+        EnTT::EnTT
+        CabbageHardware
+        CoronaLogger
+        CoronaResources
+        python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}
+)
+
+set(CORONA_ENGINE_SYSTEM_DEPENDENCIES ${CORONA_ENGINE_BASE_DEPENDENCIES})
+
 # 收集所有 C/C++ 源与头文件，CONFIGURE_DEPENDS 确保新增文件被自动发现
 file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
@@ -8,6 +20,22 @@ file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/*.c"
 )
+
+set(_CORONA_SYSTEM_REGEX "[\\\\/]core[\\\\/]engine[\\\\/]systems[\\\\/].*\\.cpp$")
+set(_CORONA_SYSTEM_SOURCE_FILES)
+foreach(_corona_src ${SOURCE_FILES})
+        if(_corona_src MATCHES "${_CORONA_SYSTEM_REGEX}")
+                list(APPEND _CORONA_SYSTEM_SOURCE_FILES ${_corona_src})
+        endif()
+endforeach()
+
+if(_CORONA_SYSTEM_SOURCE_FILES)
+        list(REMOVE_ITEM SOURCE_FILES ${_CORONA_SYSTEM_SOURCE_FILES})
+endif()
+
+set(CORONA_ENGINE_SYSTEM_SOURCES ${_CORONA_SYSTEM_SOURCE_FILES})
+
+add_subdirectory(core/engine/systems)
 
 if(NOT SOURCE_FILES)
         message(WARNING "[src] 未在 ${CMAKE_CURRENT_SOURCE_DIR} 中找到任何源文件，请确认路径或文件扩展名。")
@@ -33,13 +61,8 @@ target_link_directories(CoronaEngine PUBLIC
 )
 
 target_link_libraries(CoronaEngine PUBLIC
-        assimp
-        Helicon
-        EnTT::EnTT
-        CabbageHardware
-        CoronaLogger
-        CoronaResources
-        python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}
+        ${CORONA_ENGINE_BASE_DEPENDENCIES}
+        CoronaSystemsAll
 )
 
 # 将运行时依赖写入目标属性，供示例和应用复制

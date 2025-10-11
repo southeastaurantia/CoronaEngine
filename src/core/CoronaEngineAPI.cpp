@@ -3,8 +3,8 @@
 //
 
 #include "core/engine/Engine.h"
-#include "core/engine/systems/AnimationSystem.h"
-#include "core/engine/systems/RenderingSystem.h"
+#include "core/engine/systems/animation/AnimationSystem.h"
+#include "core/engine/systems/rendering/RenderingSystem.h"
 #include "resource/AnimationState.h"
 #include "resource/Scene.h"
 #include "resource/Model.h"
