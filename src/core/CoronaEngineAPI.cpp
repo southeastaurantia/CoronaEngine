@@ -109,6 +109,10 @@ CoronaEngineAPI::Actor::Actor(const std::string &path)
         return;
     }
 
+    auto &animationSystem = Corona::Engine::Instance().GetSystem<Corona::AnimationSystem>();
+    auto &anim_queue = Corona::Engine::Instance().GetQueue(animationSystem.name());
+    anim_queue.enqueue(&animationSystem, &Corona::AnimationSystem::WatchModel, actorID);
+
     auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
     auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
     render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchModel, actorID);
@@ -127,6 +131,10 @@ CoronaEngineAPI::Actor::~Actor()
     auto &modelCache = Corona::Engine::Instance().Cache<Corona::Model>();
     if (modelCache.get(actorID) != nullptr)
     {
+        auto &animationSystem = Corona::Engine::Instance().GetSystem<Corona::AnimationSystem>();
+        auto &anim_queue = Corona::Engine::Instance().GetQueue(animationSystem.name());
+        anim_queue.enqueue(&animationSystem, &Corona::AnimationSystem::UnwatchModel, actorID);
+
         auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
         auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
         render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::UnwatchModel, actorID);
