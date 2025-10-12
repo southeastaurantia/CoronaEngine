@@ -12,7 +12,7 @@ using namespace Corona;
 RenderingSystem::RenderingSystem()
     : ThreadedSystem("RenderingSystem")
 {
-    Engine::Instance().AddQueue(name(), std::make_unique<SafeCommandQueue>());
+    Engine::instance().add_queue(name(), std::make_unique<SafeCommandQueue>());
 }
 
 void RenderingSystem::onStart()
@@ -23,7 +23,7 @@ void RenderingSystem::onStart()
 void RenderingSystem::onTick()
 {
     // 最小消费命令队列，避免无限增长
-    auto &rq = Engine::Instance().GetQueue(name());
+    auto &rq = Engine::instance().get_queue(name());
     int spun = 0;
     while (spun < 100 && !rq.empty())
     {
@@ -32,7 +32,7 @@ void RenderingSystem::onTick()
         ++spun;
     }
 
-    updateEngine();
+    update_engine();
 }
 
 void RenderingSystem::onStop()
@@ -52,36 +52,36 @@ void RenderingSystem::init()
     finalOutputImage = HardwareImage(gbufferSize, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
 }
 
-void RenderingSystem::initShader(std::shared_ptr<Shader> shader)
+void RenderingSystem::init_shader(std::shared_ptr<Shader> shader)
 {
     rasterizerPipeline = RasterizerPipeline(shader->vertCode, shader->fragCode);
     computePipeline = ComputePipeline(shader->computeCode);
     shaderHasInit = true;
 }
 
-void RenderingSystem::setDisplaySurface(std::shared_ptr<Scene> scene)
+void RenderingSystem::set_display_surface(std::shared_ptr<Scene> scene)
 {
     scene->displayer.setSurface(scene->displaySurface);
     //scene->displayer = finalOutputImage;
 }
 
-void RenderingSystem::updateEngine()
+void RenderingSystem::update_engine()
 {
     if (shaderHasInit)
     {
-        auto &sceneCache = Engine::Instance().Cache<Scene>();
-        sceneCache.safe_loop_foreach(scene_cache_keys_, [&](std::shared_ptr<Scene> scene) {
+    auto &scene_cache = Engine::instance().cache<Scene>();
+    scene_cache.safe_loop_foreach(scene_cache_keys_, [&](std::shared_ptr<Scene> scene) {
             if (!scene)
                 return;
 
-            gbufferPipeline(scene);
-            compositePipeline();
+            gbuffer_pipeline(scene);
+            composite_pipeline();
 
             scene->displayer = finalOutputImage;
         });
     }
 }
-void RenderingSystem::gbufferPipeline(std::shared_ptr<Scene> scene)
+void RenderingSystem::gbuffer_pipeline(std::shared_ptr<Scene> scene)
 {
 
     uniformBufferObjects.eyePosition = scene->camera.pos;
@@ -92,8 +92,8 @@ void RenderingSystem::gbufferPipeline(std::shared_ptr<Scene> scene)
     gbufferUniformBufferObjects.viewProjMatrix = uniformBufferObjects.eyeProjMatrix * uniformBufferObjects.eyeViewMatrix;
     gbufferUniformBuffer.copyFromData(&gbufferUniformBufferObjects, sizeof(gbufferUniformBufferObjects));
 
-    auto &modelCache = Engine::Instance().Cache<Model>();
-    modelCache.safe_loop_foreach(model_cache_keys_, [&](std::shared_ptr<Model> model) {
+    auto &model_cache = Engine::instance().cache<Model>();
+    model_cache.safe_loop_foreach(model_cache_keys_, [&](std::shared_ptr<Model> model) {
         if (!model)
             return;
 
@@ -125,7 +125,7 @@ void RenderingSystem::gbufferPipeline(std::shared_ptr<Scene> scene)
          }
     });
 }
-void RenderingSystem::compositePipeline(ktm::fvec3 sunDir)
+void RenderingSystem::composite_pipeline(ktm::fvec3 sunDir)
 {
 
     computePipeline["pushConsts.gbufferSize"] = gbufferSize;
@@ -148,27 +148,27 @@ void RenderingSystem::compositePipeline(ktm::fvec3 sunDir)
         << executor.commit();
 }
 
-void RenderingSystem::WatchModel(uint64_t id)
+void RenderingSystem::watch_model(uint64_t id)
 {
     model_cache_keys_.insert(id);
 }
 
-void RenderingSystem::UnwatchModel(uint64_t id)
+void RenderingSystem::unwatch_model(uint64_t id)
 {
     model_cache_keys_.erase(id);
 }
 
-void RenderingSystem::WatchScene(uint64_t id)
+void RenderingSystem::watch_scene(uint64_t id)
 {
     scene_cache_keys_.insert(id);
 }
 
-void RenderingSystem::UnwatchScene(uint64_t id)
+void RenderingSystem::unwatch_scene(uint64_t id)
 {
     scene_cache_keys_.erase(id);
 }
 
-void RenderingSystem::ClearWatched()
+void RenderingSystem::clear_watched()
 {
     scene_cache_keys_.clear();
     model_cache_keys_.clear();

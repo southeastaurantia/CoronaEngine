@@ -17,33 +17,33 @@ namespace Corona
 {
     enum class LogLevel : uint8_t
     {
-        Trace = 0,
-        Debug = 1,
-        Info = 2,
-        Warn = 3,
-        Error = 4,
-        Critical = 5,
-        Off = 6
+        kTrace = 0,
+        kDebug = 1,
+        kInfo = 2,
+        kWarn = 3,
+        kError = 4,
+        kCritical = 5,
+        kOff = 6
     };
 
     struct LogConfig
     {
-        bool enableConsole = true;
-        bool enableFile = false;
-        // 滚动文件输出配置（当 enableFile = true 生效）
-        std::string filePath = "logs/Corona.log";
-        std::size_t maxFileSizeBytes = 5 * 1024 * 1024; // 5MB
-        std::size_t maxFiles = 3;
+        bool enable_console_ = true;
+        bool enable_file_ = false;
+    // 滚动文件输出配置（当 enable_file_ = true 生效）
+        std::string file_path_ = "logs/Corona.log";
+        std::size_t max_file_size_bytes_ = 5 * 1024 * 1024; // 5MB
+        std::size_t max_files_ = 3;
 
         // 异步日志（若后端支持）
-        bool async = false;
+        bool async_ = false;
 
         // 日志格式字符串（参见后端语法，如 spdlog）：
         // 形如：[时间][Logger名][级别][文件:行] 消息
-        std::string pattern = "%^[%Y-%m-%d %H:%M:%S.%e][%n][%-5!l][%g:%#] %v%$";
+        std::string pattern_ = "%^[%Y-%m-%d %H:%M:%S.%e][%n][%-5!l][%g:%#] %v%$";
 
         // 初始日志级别
-        LogLevel level = LogLevel::Debug;
+        LogLevel level_ = LogLevel::kDebug;
     };
 
     // Backend interface (hidden from users; forward-declared only in header)
@@ -53,105 +53,105 @@ namespace Corona
     {
       public:
         // 以配置初始化全局日志器（幂等）
-        static void Init(const LogConfig &config = {});
-        static void Shutdown();
+        static void init(const LogConfig &config = {});
+        static void shutdown();
 
-        static void SetLevel(LogLevel level);
-        static LogLevel GetLevel();
+        static void set_level(LogLevel level);
+        static LogLevel get_level();
 
         // 格式化日志（fmt 风格），不暴露后端类型
         template <typename... Args>
-        static void Trace(fmt::format_string<Args...> fmtStr, Args &&...args)
+        static void trace(fmt::format_string<Args...> fmtStr, Args &&...args)
         {
-            LogFormatted(LogLevel::Trace, fmtStr, std::forward<Args>(args)...);
+            log_formatted(LogLevel::kTrace, fmtStr, std::forward<Args>(args)...);
         }
 
         // 带位置信息重载（便于日志宏自动注入 source_location）
         template <typename... Args>
-        static void Trace(const std::source_location &loc, fmt::format_string<Args...> fmtStr, Args &&...args)
+        static void trace(const std::source_location &loc, fmt::format_string<Args...> fmtStr, Args &&...args)
         {
-            LogFormatted(LogLevel::Trace, loc, fmtStr, std::forward<Args>(args)...);
+            log_formatted(LogLevel::kTrace, loc, fmtStr, std::forward<Args>(args)...);
         }
 
         template <typename... Args>
-        static void Debug(fmt::format_string<Args...> fmtStr, Args &&...args)
+        static void debug(fmt::format_string<Args...> fmtStr, Args &&...args)
         {
-            LogFormatted(LogLevel::Debug, fmtStr, std::forward<Args>(args)...);
+            log_formatted(LogLevel::kDebug, fmtStr, std::forward<Args>(args)...);
         }
 
         template <typename... Args>
-        static void Debug(const std::source_location &loc, fmt::format_string<Args...> fmtStr, Args &&...args)
+        static void debug(const std::source_location &loc, fmt::format_string<Args...> fmtStr, Args &&...args)
         {
-            LogFormatted(LogLevel::Debug, loc, fmtStr, std::forward<Args>(args)...);
+            log_formatted(LogLevel::kDebug, loc, fmtStr, std::forward<Args>(args)...);
         }
 
         template <typename... Args>
-        static void Info(fmt::format_string<Args...> fmtStr, Args &&...args)
+        static void info(fmt::format_string<Args...> fmtStr, Args &&...args)
         {
-            LogFormatted(LogLevel::Info, fmtStr, std::forward<Args>(args)...);
+            log_formatted(LogLevel::kInfo, fmtStr, std::forward<Args>(args)...);
         }
 
         template <typename... Args>
-        static void Info(const std::source_location &loc, fmt::format_string<Args...> fmtStr, Args &&...args)
+        static void info(const std::source_location &loc, fmt::format_string<Args...> fmtStr, Args &&...args)
         {
-            LogFormatted(LogLevel::Info, loc, fmtStr, std::forward<Args>(args)...);
+            log_formatted(LogLevel::kInfo, loc, fmtStr, std::forward<Args>(args)...);
         }
 
         template <typename... Args>
-        static void Warn(fmt::format_string<Args...> fmtStr, Args &&...args)
+        static void warn(fmt::format_string<Args...> fmtStr, Args &&...args)
         {
-            LogFormatted(LogLevel::Warn, fmtStr, std::forward<Args>(args)...);
+            log_formatted(LogLevel::kWarn, fmtStr, std::forward<Args>(args)...);
         }
 
         template <typename... Args>
-        static void Warn(const std::source_location &loc, fmt::format_string<Args...> fmtStr, Args &&...args)
+        static void warn(const std::source_location &loc, fmt::format_string<Args...> fmtStr, Args &&...args)
         {
-            LogFormatted(LogLevel::Warn, loc, fmtStr, std::forward<Args>(args)...);
+            log_formatted(LogLevel::kWarn, loc, fmtStr, std::forward<Args>(args)...);
         }
 
         template <typename... Args>
-        static void Error(fmt::format_string<Args...> fmtStr, Args &&...args)
+        static void error(fmt::format_string<Args...> fmtStr, Args &&...args)
         {
-            LogFormatted(LogLevel::Error, fmtStr, std::forward<Args>(args)...);
+            log_formatted(LogLevel::kError, fmtStr, std::forward<Args>(args)...);
         }
 
         template <typename... Args>
-        static void Error(const std::source_location &loc, fmt::format_string<Args...> fmtStr, Args &&...args)
+        static void error(const std::source_location &loc, fmt::format_string<Args...> fmtStr, Args &&...args)
         {
-            LogFormatted(LogLevel::Error, loc, fmtStr, std::forward<Args>(args)...);
+            log_formatted(LogLevel::kError, loc, fmtStr, std::forward<Args>(args)...);
         }
 
         template <typename... Args>
-        static void Critical(fmt::format_string<Args...> fmtStr, Args &&...args)
+        static void critical(fmt::format_string<Args...> fmtStr, Args &&...args)
         {
-            LogFormatted(LogLevel::Critical, fmtStr, std::forward<Args>(args)...);
+            log_formatted(LogLevel::kCritical, fmtStr, std::forward<Args>(args)...);
         }
 
         template <typename... Args>
-        static void Critical(const std::source_location &loc, fmt::format_string<Args...> fmtStr, Args &&...args)
+        static void critical(const std::source_location &loc, fmt::format_string<Args...> fmtStr, Args &&...args)
         {
-            LogFormatted(LogLevel::Critical, loc, fmtStr, std::forward<Args>(args)...);
+            log_formatted(LogLevel::kCritical, loc, fmtStr, std::forward<Args>(args)...);
         }
 
-        static void Flush();
+        static void flush();
 
         // 原始字符串日志（已格式化）
-        static void Log(LogLevel level, std::string_view message);
-        static void Log(LogLevel level, std::string_view message, const std::source_location &loc);
+        static void log(LogLevel level, std::string_view message);
+        static void log(LogLevel level, std::string_view message, const std::source_location &loc);
 
       private:
-        static std::shared_ptr<ILogBackend> GetOrCreateBackend();
+        static std::shared_ptr<ILogBackend> get_or_create_backend();
 
         template <typename... Args>
-        static inline void LogFormatted(LogLevel level, fmt::format_string<Args...> fmtStr, Args &&...args)
+        static inline void log_formatted(LogLevel level, fmt::format_string<Args...> fmtStr, Args &&...args)
         {
-            Log(level, fmt::vformat(fmtStr, fmt::make_format_args(args...)));
+            log(level, fmt::vformat(fmtStr, fmt::make_format_args(args...)));
         }
 
         template <typename... Args>
-        static inline void LogFormatted(LogLevel level, const std::source_location &loc, fmt::format_string<Args...> fmtStr, Args &&...args)
+        static inline void log_formatted(LogLevel level, const std::source_location &loc, fmt::format_string<Args...> fmtStr, Args &&...args)
         {
-            Log(level, fmt::vformat(fmtStr, fmt::make_format_args(args...)), loc);
+            log(level, fmt::vformat(fmtStr, fmt::make_format_args(args...)), loc);
         }
     };
 } // namespace Corona
@@ -212,37 +212,37 @@ namespace Corona
 
 // Convenience macros (compiled out when disabled)
 #if CE_LOG_LEVEL_TRACE
-#define CE_LOG_TRACE(...) ::Corona::Logger::Trace(std::source_location::current(), __VA_ARGS__)
+#define CE_LOG_TRACE(...) ::Corona::Logger::trace(std::source_location::current(), __VA_ARGS__)
 #else
 #define CE_LOG_TRACE(...) (void)0
 #endif
 
 #if CE_LOG_LEVEL_DEBUG
-#define CE_LOG_DEBUG(...) ::Corona::Logger::Debug(std::source_location::current(), __VA_ARGS__)
+#define CE_LOG_DEBUG(...) ::Corona::Logger::debug(std::source_location::current(), __VA_ARGS__)
 #else
 #define CE_LOG_DEBUG(...) (void)0
 #endif
 
 #if CE_LOG_LEVEL_INFO
-#define CE_LOG_INFO(...) ::Corona::Logger::Info(std::source_location::current(), __VA_ARGS__)
+#define CE_LOG_INFO(...) ::Corona::Logger::info(std::source_location::current(), __VA_ARGS__)
 #else
 #define CE_LOG_INFO(...) (void)0
 #endif
 
 #if CE_LOG_LEVEL_WARN
-#define CE_LOG_WARN(...) ::Corona::Logger::Warn(std::source_location::current(), __VA_ARGS__)
+#define CE_LOG_WARN(...) ::Corona::Logger::warn(std::source_location::current(), __VA_ARGS__)
 #else
 #define CE_LOG_WARN(...) (void)0
 #endif
 
 #if CE_LOG_LEVEL_ERROR
-#define CE_LOG_ERROR(...) ::Corona::Logger::Error(std::source_location::current(), __VA_ARGS__)
+#define CE_LOG_ERROR(...) ::Corona::Logger::error(std::source_location::current(), __VA_ARGS__)
 #else
 #define CE_LOG_ERROR(...) (void)0
 #endif
 
 #if CE_LOG_LEVEL_CRITICAL
-#define CE_LOG_CRITICAL(...) ::Corona::Logger::Critical(std::source_location::current(), __VA_ARGS__)
+#define CE_LOG_CRITICAL(...) ::Corona::Logger::critical(std::source_location::current(), __VA_ARGS__)
 #else
 #define CE_LOG_CRITICAL(...) (void)0
 #endif

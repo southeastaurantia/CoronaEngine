@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Engine/ThreadedSystem.h"
+#include "core/engine/ThreadedSystem.h"
 
 namespace Corona
 {
@@ -15,6 +15,6 @@ namespace Corona
         void onStop() override;
 
       private:
-        void processDisplay(uint64_t id);
+  void process_display(uint64_t id);
     };
 } // namespace Corona

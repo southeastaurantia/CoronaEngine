@@ -15,36 +15,36 @@
 
 
 CoronaEngineAPI::Scene::Scene(void *surface, bool lightField)
-    : sceneID(Corona::DataId::Next())
+    : sceneID(Corona::DataId::next())
 {
     auto scene = std::make_shared<Corona::Scene>();
-    auto &sceneCache = Corona::Engine::Instance().Cache<Corona::Scene>();
-    sceneCache.insert(sceneID, scene);
+    auto &scene_cache = Corona::Engine::instance().cache<Corona::Scene>();
+    scene_cache.insert(sceneID, scene);
     if (surface)
     {
-        sceneCache.modify(sceneID, [surface](const std::shared_ptr<Corona::Scene> &scene) {
+        scene_cache.modify(sceneID, [surface](const std::shared_ptr<Corona::Scene> &scene) {
             scene->displaySurface = surface;
         });
-        auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
-        auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
-        render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchScene, sceneID);
-        render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::setDisplaySurface, scene);
+        auto &rendering_system = Corona::Engine::instance().get_system<Corona::RenderingSystem>();
+        auto &render_queue = Corona::Engine::instance().get_queue(rendering_system.name());
+    render_queue.enqueue(&rendering_system, &Corona::RenderingSystem::watch_scene, sceneID);
+    render_queue.enqueue(&rendering_system, &Corona::RenderingSystem::set_display_surface, scene);
     }
 }
 
 CoronaEngineAPI::Scene::~Scene()
 {
-    auto &sceneCache = Corona::Engine::Instance().Cache<Corona::Scene>();
-    auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
-    auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
-    render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::UnwatchScene, sceneID);
-    sceneCache.erase(sceneID);
+    auto &scene_cache = Corona::Engine::instance().cache<Corona::Scene>();
+    auto &rendering_system = Corona::Engine::instance().get_system<Corona::RenderingSystem>();
+    auto &render_queue = Corona::Engine::instance().get_queue(rendering_system.name());
+    render_queue.enqueue(&rendering_system, &Corona::RenderingSystem::unwatch_scene, sceneID);
+    scene_cache.erase(sceneID);
 }
 
 void CoronaEngineAPI::Scene::setCamera(const ktm::fvec3 &position, const ktm::fvec3 &forward, const ktm::fvec3 &worldUp, float fov) const
 {
-    auto &sceneCache = Corona::Engine::Instance().Cache<Corona::Scene>();
-    sceneCache.modify(sceneID, [position, forward, worldUp, fov](const std::shared_ptr<Corona::Scene> &scene) {
+    auto &scene_cache = Corona::Engine::instance().cache<Corona::Scene>();
+    scene_cache.modify(sceneID, [position, forward, worldUp, fov](const std::shared_ptr<Corona::Scene> &scene) {
         scene->camera.pos = position;
         scene->camera.forward = forward;
         scene->camera.worldUp = worldUp;
@@ -55,38 +55,38 @@ void CoronaEngineAPI::Scene::setCamera(const ktm::fvec3 &position, const ktm::fv
 
 void CoronaEngineAPI::Scene::setSunDirection(ktm::fvec3 direction) const
 {
-    auto &sceneCache = Corona::Engine::Instance().Cache<Corona::Scene>();
-    sceneCache.modify(sceneID, [direction](const std::shared_ptr<Corona::Scene> &scene) {
+    auto &scene_cache = Corona::Engine::instance().cache<Corona::Scene>();
+    scene_cache.modify(sceneID, [direction](const std::shared_ptr<Corona::Scene> &scene) {
         scene->sunDirection = direction;
     });
 }
 
 void CoronaEngineAPI::Scene::setDisplaySurface(void *surface)
 {
-    auto &sceneCache = Corona::Engine::Instance().Cache<Corona::Scene>();
-    auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
-    auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
-    sceneCache.modify(sceneID, [surface, &renderingSystem, &render_queue](const std::shared_ptr<Corona::Scene> &scene) {
+    auto &scene_cache = Corona::Engine::instance().cache<Corona::Scene>();
+    auto &rendering_system = Corona::Engine::instance().get_system<Corona::RenderingSystem>();
+    auto &render_queue = Corona::Engine::instance().get_queue(rendering_system.name());
+    scene_cache.modify(sceneID, [surface, &rendering_system, &render_queue](const std::shared_ptr<Corona::Scene> &scene) {
         scene->displaySurface = surface;
-        render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::setDisplaySurface, scene);
+        render_queue.enqueue(&rendering_system, &Corona::RenderingSystem::set_display_surface, scene);
     });
-    render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchScene, sceneID);
+    render_queue.enqueue(&rendering_system, &Corona::RenderingSystem::watch_scene, sceneID);
 }
 
 
 CoronaEngineAPI::Actor::Actor(const std::string &path)
-    : actorID(Corona::DataId::Next()),
+    : actorID(Corona::DataId::next()),
     animationID(0)
 {
-    const auto res = Corona::Engine::Instance().Resources().load({"model", path});
+    const auto res = Corona::Engine::instance().resources().load({"model", path});
     auto model = std::dynamic_pointer_cast<Corona::Model>(res);
     if (!model)
     {
         CE_LOG_WARN("Failed to load model: %s", path.c_str());
         return;
     }
-    auto &modelCache = Corona::Engine::Instance().Cache<Corona::Model>();
-    modelCache.insert(actorID, model);
+    auto &model_cache = Corona::Engine::instance().cache<Corona::Model>();
+    model_cache.insert(actorID, model);
 
     if (!model->skeletalAnimations.empty())
     {
@@ -94,66 +94,66 @@ CoronaEngineAPI::Actor::Actor(const std::string &path)
         animState->model = model;
         animState->animationIndex = 0;
 
-        animationID = Corona::DataId::Next();
+    animationID = Corona::DataId::next();
 
-        auto &animStateCache = Corona::Engine::Instance().Cache<Corona::AnimationState>();
-        auto &animationSystem = Corona::Engine::Instance().GetSystem<Corona::AnimationSystem>();
-        auto &anim_queue = Corona::Engine::Instance().GetQueue(animationSystem.name());
+        auto &anim_state_cache = Corona::Engine::instance().cache<Corona::AnimationState>();
+        auto &animation_system = Corona::Engine::instance().get_system<Corona::AnimationSystem>();
+        auto &anim_queue = Corona::Engine::instance().get_queue(animation_system.name());
 
-        animStateCache.insert(animationID, animState);
-        anim_queue.enqueue(&animationSystem, &Corona::AnimationSystem::WatchState, animationID);
+        anim_state_cache.insert(animationID, animState);
+        anim_queue.enqueue(&animation_system, &Corona::AnimationSystem::watch_state, animationID);
 
-        auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
-        auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
-        render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchModel, actorID);
+        auto &rendering_system = Corona::Engine::instance().get_system<Corona::RenderingSystem>();
+        auto &render_queue = Corona::Engine::instance().get_queue(rendering_system.name());
+        render_queue.enqueue(&rendering_system, &Corona::RenderingSystem::watch_model, actorID);
         return;
     }
 
-    auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
-    auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
-    render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchModel, actorID);
+    auto &rendering_system = Corona::Engine::instance().get_system<Corona::RenderingSystem>();
+    auto &render_queue = Corona::Engine::instance().get_queue(rendering_system.name());
+    render_queue.enqueue(&rendering_system, &Corona::RenderingSystem::watch_model, actorID);
 }
 
 CoronaEngineAPI::Actor::~Actor()
 {
     if (animationID != 0)
     {
-        auto &animStateCache = Corona::Engine::Instance().Cache<Corona::AnimationState>();
-        auto &animationSystem = Corona::Engine::Instance().GetSystem<Corona::AnimationSystem>();
-        auto &anim_queue = Corona::Engine::Instance().GetQueue(animationSystem.name());
-        anim_queue.enqueue(&animationSystem, &Corona::AnimationSystem::UnwatchState, animationID);
-        animStateCache.erase(animationID);
+        auto &anim_state_cache = Corona::Engine::instance().cache<Corona::AnimationState>();
+        auto &animation_system = Corona::Engine::instance().get_system<Corona::AnimationSystem>();
+        auto &anim_queue = Corona::Engine::instance().get_queue(animation_system.name());
+        anim_queue.enqueue(&animation_system, &Corona::AnimationSystem::unwatch_state, animationID);
+        anim_state_cache.erase(animationID);
     }
-    auto &modelCache = Corona::Engine::Instance().Cache<Corona::Model>();
-    if (modelCache.get(actorID) != nullptr)
+    auto &model_cache = Corona::Engine::instance().cache<Corona::Model>();
+    if (model_cache.get(actorID) != nullptr)
     {
-        auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
-        auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
-        render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::UnwatchModel, actorID);
-        modelCache.erase(actorID);
+        auto &rendering_system = Corona::Engine::instance().get_system<Corona::RenderingSystem>();
+        auto &render_queue = Corona::Engine::instance().get_queue(rendering_system.name());
+        render_queue.enqueue(&rendering_system, &Corona::RenderingSystem::unwatch_model, actorID);
+        model_cache.erase(actorID);
     }
 }
 
 void CoronaEngineAPI::Actor::move(ktm::fvec3 pos) const
 {
-    auto &modelCache = Corona::Engine::Instance().Cache<Corona::Model>();
-    modelCache.modify(actorID, [pos](const std::shared_ptr<Corona::Model> &model) {
+    auto &model_cache = Corona::Engine::instance().cache<Corona::Model>();
+    model_cache.modify(actorID, [pos](const std::shared_ptr<Corona::Model> &model) {
         model->positon = pos;
     });
 }
 
 void CoronaEngineAPI::Actor::rotate(ktm::fvec3 euler) const
 {
-    auto &modelCache = Corona::Engine::Instance().Cache<Corona::Model>();
-    modelCache.modify(actorID, [euler](const std::shared_ptr<Corona::Model> &model) {
+    auto &model_cache = Corona::Engine::instance().cache<Corona::Model>();
+    model_cache.modify(actorID, [euler](const std::shared_ptr<Corona::Model> &model) {
         model->rotation = euler;
     });
 }
 
 void CoronaEngineAPI::Actor::scale(ktm::fvec3 size) const
 {
-    auto &modelCache = Corona::Engine::Instance().Cache<Corona::Model>();
-    modelCache.modify(actorID, [size](const std::shared_ptr<Corona::Model> &model) {
+    auto &model_cache = Corona::Engine::instance().cache<Corona::Model>();
+    model_cache.modify(actorID, [size](const std::shared_ptr<Corona::Model> &model) {
         model->scale = size;
     });
 }

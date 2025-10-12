@@ -26,56 +26,56 @@ namespace Corona
     {
       public:
         virtual ~ILogBackend() = default;
-        virtual void Configure(const LogConfig &cfg) = 0;
-        virtual void SetLevel(LogLevel level) = 0;
-        virtual LogLevel GetLevel() const = 0;
-        virtual void Log(LogLevel level, std::string_view msg) = 0;
-        virtual void Log(LogLevel level, std::string_view msg, const std::source_location &loc) = 0;
-        virtual void Flush() = 0;
+        virtual void configure(const LogConfig &cfg) = 0;
+        virtual void set_level(LogLevel level) = 0;
+        virtual LogLevel get_level() const = 0;
+        virtual void log(LogLevel level, std::string_view msg) = 0;
+        virtual void log(LogLevel level, std::string_view msg, const std::source_location &loc) = 0;
+        virtual void flush() = 0;
     };
 
-    static spdlog::level::level_enum ToSpd(LogLevel lvl)
+    static spdlog::level::level_enum to_spd(LogLevel lvl)
     {
         switch (lvl)
         {
-        case LogLevel::Trace:
+        case LogLevel::kTrace:
             return spdlog::level::trace;
-        case LogLevel::Debug:
+        case LogLevel::kDebug:
             return spdlog::level::debug;
-        case LogLevel::Info:
+        case LogLevel::kInfo:
             return spdlog::level::info;
-        case LogLevel::Warn:
+        case LogLevel::kWarn:
             return spdlog::level::warn;
-        case LogLevel::Error:
+        case LogLevel::kError:
             return spdlog::level::err;
-        case LogLevel::Critical:
+        case LogLevel::kCritical:
             return spdlog::level::critical;
-        case LogLevel::Off:
+        case LogLevel::kOff:
             return spdlog::level::off;
         }
         return spdlog::level::info;
     }
 
-    static LogLevel FromSpd(spdlog::level::level_enum lvl)
+    static LogLevel from_spd(spdlog::level::level_enum lvl)
     {
         switch (lvl)
         {
         case spdlog::level::trace:
-            return LogLevel::Trace;
+            return LogLevel::kTrace;
         case spdlog::level::debug:
-            return LogLevel::Debug;
+            return LogLevel::kDebug;
         case spdlog::level::info:
-            return LogLevel::Info;
+            return LogLevel::kInfo;
         case spdlog::level::warn:
-            return LogLevel::Warn;
+            return LogLevel::kWarn;
         case spdlog::level::err:
-            return LogLevel::Error;
+            return LogLevel::kError;
         case spdlog::level::critical:
-            return LogLevel::Critical;
+            return LogLevel::kCritical;
         case spdlog::level::off:
-            return LogLevel::Off;
+            return LogLevel::kOff;
         default:
-            return LogLevel::Info;
+            return LogLevel::kInfo;
         }
     }
 
@@ -92,9 +92,9 @@ namespace Corona
         {
             try
             {
-                if (m_logger)
+                if (logger_)
                 {
-                    m_logger->flush();
+                    logger_->flush();
                 }
             }
             catch (...)
@@ -102,83 +102,83 @@ namespace Corona
             }
         }
 
-        void Configure(const LogConfig &cfg) override
+        void configure(const LogConfig &cfg) override
         {
             std::vector<spdlog::sink_ptr> sinks;
-            if (cfg.enableConsole)
+            if (cfg.enable_console_)
             {
                 auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
                 sinks.emplace_back(console_sink);
             }
-            if (cfg.enableFile)
+            if (cfg.enable_file_)
             {
-                auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(cfg.filePath, cfg.maxFileSizeBytes, cfg.maxFiles);
+                auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(cfg.file_path_, cfg.max_file_size_bytes_, cfg.max_files_);
                 sinks.emplace_back(file_sink);
             }
 
-            if (cfg.async)
+            if (cfg.async_)
             {
-                m_logger = std::make_shared<spdlog::async_logger>("Corona", begin(sinks), end(sinks), spdlog::thread_pool(), spdlog::async_overflow_policy::block);
-                spdlog::register_logger(m_logger);
+                logger_ = std::make_shared<spdlog::async_logger>("Corona", begin(sinks), end(sinks), spdlog::thread_pool(), spdlog::async_overflow_policy::block);
+                spdlog::register_logger(logger_);
             }
             else
             {
-                m_logger = std::make_shared<spdlog::logger>("Corona", begin(sinks), end(sinks));
-                spdlog::register_logger(m_logger);
+                logger_ = std::make_shared<spdlog::logger>("Corona", begin(sinks), end(sinks));
+                spdlog::register_logger(logger_);
             }
 
-            m_logger->set_pattern(cfg.pattern);
-            m_logger->set_level(ToSpd(cfg.level));
-            m_logger->flush_on(spdlog::level::warn);
+            logger_->set_pattern(cfg.pattern_);
+            logger_->set_level(to_spd(cfg.level_));
+            logger_->flush_on(spdlog::level::warn);
         }
 
-        void SetLevel(LogLevel level) override
+        void set_level(LogLevel level) override
         {
-            if (m_logger)
+            if (logger_)
             {
-                m_logger->set_level(ToSpd(level));
+                logger_->set_level(to_spd(level));
             }
         }
 
-        LogLevel GetLevel() const override
+        LogLevel get_level() const override
         {
-            return m_logger ? FromSpd(m_logger->level()) : LogLevel::Info;
+            return logger_ ? from_spd(logger_->level()) : LogLevel::kInfo;
         }
 
-        void Log(LogLevel level, std::string_view msg) override
+        void log(LogLevel level, std::string_view msg) override
         {
-            if (!m_logger)
+            if (!logger_)
             {
                 return;
             }
             switch (level)
             {
-            case LogLevel::Trace:
-                m_logger->trace("{}", msg);
+            case LogLevel::kTrace:
+                logger_->trace("{}", msg);
                 break;
-            case LogLevel::Debug:
-                m_logger->debug("{}", msg);
+            case LogLevel::kDebug:
+                logger_->debug("{}", msg);
                 break;
-            case LogLevel::Info:
-                m_logger->info("{}", msg);
+            case LogLevel::kInfo:
+                logger_->info("{}", msg);
                 break;
-            case LogLevel::Warn:
-                m_logger->warn("{}", msg);
+            case LogLevel::kWarn:
+                logger_->warn("{}", msg);
                 break;
-            case LogLevel::Error:
-                m_logger->error("{}", msg);
+            case LogLevel::kError:
+                logger_->error("{}", msg);
                 break;
-            case LogLevel::Critical:
-                m_logger->critical("{}", msg);
+            case LogLevel::kCritical:
+                logger_->critical("{}", msg);
                 break;
-            case LogLevel::Off: /* no-op */
+            case LogLevel::kOff: /* no-op */
                 break;
             }
         }
 
-        void Log(LogLevel level, std::string_view msg, const std::source_location &loc) override
+        void log(LogLevel level, std::string_view msg, const std::source_location &loc) override
         {
-            if (!m_logger)
+            if (!logger_)
             {
                 return;
             }
@@ -186,47 +186,47 @@ namespace Corona
             spdlog::source_loc sloc{loc.file_name(), static_cast<int>(loc.line()), loc.function_name()};
             switch (level)
             {
-            case LogLevel::Trace:
-                m_logger->log(sloc, spdlog::level::trace, "{}", msg);
+            case LogLevel::kTrace:
+                logger_->log(sloc, spdlog::level::trace, "{}", msg);
                 break;
-            case LogLevel::Debug:
-                m_logger->log(sloc, spdlog::level::debug, "{}", msg);
+            case LogLevel::kDebug:
+                logger_->log(sloc, spdlog::level::debug, "{}", msg);
                 break;
-            case LogLevel::Info:
-                m_logger->log(sloc, spdlog::level::info, "{}", msg);
+            case LogLevel::kInfo:
+                logger_->log(sloc, spdlog::level::info, "{}", msg);
                 break;
-            case LogLevel::Warn:
-                m_logger->log(sloc, spdlog::level::warn, "{}", msg);
+            case LogLevel::kWarn:
+                logger_->log(sloc, spdlog::level::warn, "{}", msg);
                 break;
-            case LogLevel::Error:
-                m_logger->log(sloc, spdlog::level::err, "{}", msg);
+            case LogLevel::kError:
+                logger_->log(sloc, spdlog::level::err, "{}", msg);
                 break;
-            case LogLevel::Critical:
-                m_logger->log(sloc, spdlog::level::critical, "{}", msg);
+            case LogLevel::kCritical:
+                logger_->log(sloc, spdlog::level::critical, "{}", msg);
                 break;
-            case LogLevel::Off:
+            case LogLevel::kOff:
                 break;
             }
         }
 
-        void Flush() override
+        void flush() override
         {
-            if (m_logger)
+            if (logger_)
             {
-                m_logger->flush();
+                logger_->flush();
             }
         }
 
       private:
-        std::shared_ptr<spdlog::logger> m_logger;
+        std::shared_ptr<spdlog::logger> logger_;
     };
 
-    static std::shared_ptr<ILogBackend> CreateBackend()
+    static std::shared_ptr<ILogBackend> create_backend()
     {
         return std::make_shared<SpdLogBackend>();
     }
 
-    void Logger::Init(const LogConfig &config)
+    void Logger::init(const LogConfig &config)
     {
         if (g_inited.load(std::memory_order_acquire))
         {
@@ -235,55 +235,55 @@ namespace Corona
         std::lock_guard<std::mutex> lock(g_mutex);
         if (!g_backend)
         {
-            g_backend = CreateBackend();
-            g_backend->Configure(config);
+            g_backend = create_backend();
+            g_backend->configure(config);
         }
         g_inited.store(true, std::memory_order_release);
     }
 
-    void Logger::Shutdown()
+    void Logger::shutdown()
     {
         std::lock_guard<std::mutex> lock(g_mutex);
         if (g_backend)
         {
-            g_backend->Flush();
+            g_backend->flush();
             g_backend.reset();
         }
         g_inited.store(false, std::memory_order_release);
         spdlog::shutdown();
     }
 
-    void Logger::SetLevel(LogLevel level)
+    void Logger::set_level(LogLevel level)
     {
-        auto backend = GetOrCreateBackend();
-        backend->SetLevel(level);
+        auto backend = get_or_create_backend();
+        backend->set_level(level);
     }
 
-    LogLevel Logger::GetLevel()
+    LogLevel Logger::get_level()
     {
-        auto backend = GetOrCreateBackend();
-        return backend->GetLevel();
+        auto backend = get_or_create_backend();
+        return backend->get_level();
     }
 
-    void Logger::Log(LogLevel level, std::string_view message)
+    void Logger::log(LogLevel level, std::string_view message)
     {
-        auto backend = GetOrCreateBackend();
-        backend->Log(level, message);
+        auto backend = get_or_create_backend();
+        backend->log(level, message);
     }
 
-    void Logger::Log(LogLevel level, std::string_view message, const std::source_location &loc)
+    void Logger::log(LogLevel level, std::string_view message, const std::source_location &loc)
     {
-        auto backend = GetOrCreateBackend();
-        backend->Log(level, message, loc);
+        auto backend = get_or_create_backend();
+        backend->log(level, message, loc);
     }
 
-    void Logger::Flush()
+    void Logger::flush()
     {
-        auto backend = GetOrCreateBackend();
-        backend->Flush();
+        auto backend = get_or_create_backend();
+        backend->flush();
     }
 
-    std::shared_ptr<ILogBackend> Logger::GetOrCreateBackend()
+    std::shared_ptr<ILogBackend> Logger::get_or_create_backend()
     {
         if (g_backend)
         {
@@ -292,9 +292,9 @@ namespace Corona
         std::lock_guard<std::mutex> lock(g_mutex);
         if (!g_backend)
         {
-            g_backend = CreateBackend();
-            LogConfig defaultCfg{};
-            g_backend->Configure(defaultCfg);
+            g_backend = create_backend();
+            LogConfig default_config{};
+            g_backend->configure(default_config);
             g_inited.store(true, std::memory_order_release);
         }
         return g_backend;

@@ -11,23 +11,23 @@
 
 int main()
 {
-    Corona::Engine::Instance().Init({/* LogConfig */});
+    Corona::Engine::instance().init({/* LogConfig */});
 
     // 注册系统
-    Corona::Engine::Instance().RegisterSystem<Corona::RenderingSystem>();
-    Corona::Engine::Instance().RegisterSystem<Corona::DisplaySystem>();
-    Corona::Engine::Instance().RegisterSystem<Corona::AudioSystem>();
-    Corona::Engine::Instance().RegisterSystem<Corona::AnimationSystem>();
+    Corona::Engine::instance().register_system<Corona::RenderingSystem>();
+    Corona::Engine::instance().register_system<Corona::DisplaySystem>();
+    Corona::Engine::instance().register_system<Corona::AudioSystem>();
+    Corona::Engine::instance().register_system<Corona::AnimationSystem>();
 
     // 启动
-    Corona::Engine::Instance().StartSystems();
+    Corona::Engine::instance().start_systems();
 
-    auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
-    auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
+    auto &rendering_system = Corona::Engine::instance().get_system<Corona::RenderingSystem>();
+    auto &render_queue = Corona::Engine::instance().get_queue(rendering_system.name());
 
-    auto shaderCode = Corona::Engine::Instance().Resources().load({"shader", (std::filesystem::current_path() / "assets").string()});
-    std::shared_ptr<Corona::Shader> shader = std::static_pointer_cast<Corona::Shader>(shaderCode);
-    render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::initShader, shader);
+    auto shader_code = Corona::Engine::instance().resources().load({"shader", (std::filesystem::current_path() / "assets").string()});
+    std::shared_ptr<Corona::Shader> shader = std::static_pointer_cast<Corona::Shader>(shader_code);
+    render_queue.enqueue(&rendering_system, &Corona::RenderingSystem::init_shader, shader);
 
     PythonAPI pythonManager;
     std::thread([&]() {

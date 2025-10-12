@@ -1,12 +1,12 @@
 #include "DisplaySystem.h"
-#include "Core/Engine/Engine.h"
+#include "core/engine/Engine.h"
 
 using namespace Corona;
 
 DisplaySystem::DisplaySystem()
     : ThreadedSystem("DisplaySystem")
 {
-    Engine::Instance().AddQueue(name(), std::make_unique<SafeCommandQueue>());
+    Engine::instance().add_queue(name(), std::make_unique<SafeCommandQueue>());
 }
 
 void DisplaySystem::onStart()
@@ -14,7 +14,7 @@ void DisplaySystem::onStart()
 }
 void DisplaySystem::onTick()
 {
-    auto &rq = Engine::Instance().GetQueue(name());
+    auto &rq = Engine::instance().get_queue(name());
     int spun = 0;
     while (spun < 100 && !rq.empty())
     {
@@ -26,6 +26,6 @@ void DisplaySystem::onTick()
 void DisplaySystem::onStop()
 {
 }
-void DisplaySystem::processDisplay(uint64_t /*id*/)
+void DisplaySystem::process_display(uint64_t /*id*/)
 {
 }

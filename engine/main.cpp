@@ -28,9 +28,9 @@ int main(int argc, char **argv)
     std::signal(SIGINT, handle_signal);
 
     Corona::LogConfig log_config{};
-    auto &engine = Corona::Engine::Instance();
-    engine.Init(log_config);
-    engine.StartSystems();
+    auto &engine = Corona::Engine::instance();
+    engine.init(log_config);
+    engine.start_systems();
 
     while (g_running.load(std::memory_order_relaxed))
     {
@@ -45,7 +45,7 @@ int main(int argc, char **argv)
         }
     }
 
-    engine.StopSystems();
-    engine.Shutdown();
+    engine.stop_systems();
+    engine.shutdown();
     return 0;
 }

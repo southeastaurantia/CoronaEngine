@@ -14,6 +14,7 @@
 #include <resource/Shader.h>
 #include <chrono>
 #include <filesystem>
+#include <optional>
 #include <thread>
 #include <unordered_map>
 
@@ -44,68 +45,68 @@ static KeyRateLimiter key_limiter;
 int main()
 {
     // 初始化
-    Corona::Engine::Instance().Init({/* LogConfig */});
+    auto &engine = Corona::Engine::instance();
+    engine.init({/* LogConfig */});
 
     // 注册系统
-    Corona::Engine::Instance().RegisterSystem<Corona::RenderingSystem>();
-    Corona::Engine::Instance().RegisterSystem<Corona::DisplaySystem>();
-    Corona::Engine::Instance().RegisterSystem<Corona::AudioSystem>();
-    Corona::Engine::Instance().RegisterSystem<Corona::AnimationSystem>();
+    engine.register_system<Corona::RenderingSystem>();
+    engine.register_system<Corona::DisplaySystem>();
+    engine.register_system<Corona::AudioSystem>();
+    engine.register_system<Corona::AnimationSystem>();
 
     // 启动
-    Corona::Engine::Instance().StartSystems();
+    engine.start_systems();
 
-    auto &sceneCache = Corona::Engine::Instance().Cache<Corona::Scene>();
-    auto &modelCache = Corona::Engine::Instance().Cache<Corona::Model>();
-    auto &animStateCache = Corona::Engine::Instance().Cache<Corona::AnimationState>();
-    auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
-    auto &animationSystem = Corona::Engine::Instance().GetSystem<Corona::AnimationSystem>();
-    auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
-    auto &anim_queue = Corona::Engine::Instance().GetQueue(animationSystem.name());
+    auto &scene_cache = engine.cache<Corona::Scene>();
+    auto &model_cache = engine.cache<Corona::Model>();
+    auto &anim_state_cache = engine.cache<Corona::AnimationState>();
+    auto &rendering_system = engine.get_system<Corona::RenderingSystem>();
+    auto &animation_system = engine.get_system<Corona::AnimationSystem>();
+    auto &render_queue = engine.get_queue(rendering_system.name());
+    auto &anim_queue = engine.get_queue(animation_system.name());
 
     // 使用数据缓存：加载模型并构建动画状态（若资源存在）
-    std::shared_ptr<Corona::Model> model1;
-    std::shared_ptr<Corona::Model> model2;
+    std::shared_ptr<Corona::Model> model_primary;
+    std::shared_ptr<Corona::Model> model_secondary;
     {
         // 这里假设 ResourceManager 已配置了模型加载器；路径按工程实际
-        auto res1 = Corona::Engine::Instance().Resources().load({"model", (std::filesystem::current_path() / "assets/model/armadillo.obj").string()});
-        model1 = std::static_pointer_cast<Corona::Model>(res1);
+        auto res1 = engine.resources().load({"model", (std::filesystem::current_path() / "assets/model/armadillo.obj").string()});
+        model_primary = std::static_pointer_cast<Corona::Model>(res1);
         // std::shared_ptr<Corona::AnimationState> animState;
-        if (model1)
+        if (model_primary)
         {
-            auto modelId = Corona::DataId::Next();
-            modelCache.insert(modelId, model1);
-            anim_queue.enqueue(&animationSystem, &Corona::AnimationSystem::WatchModel, modelId);
-            render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchModel, modelId);
+            const auto model_id = Corona::DataId::next();
+            model_cache.insert(model_id, model_primary);
+            anim_queue.enqueue(&animation_system, &Corona::AnimationSystem::watch_model, model_id);
+            render_queue.enqueue(&rendering_system, &Corona::RenderingSystem::watch_model, model_id);
             // if (!model->skeletalAnimations.empty())
             // {
             //     animState = std::make_shared<Corona::AnimationState>();
             //     animState->model = model;
             //     animState->animationIndex = 0;
             //
-            //     auto animStateId = Corona::DataId::Next();
-            //     animStateCache.insert(animStateId, animState);
-            //     anim_queue.enqueue(&animationSystem, &Corona::AnimationSystem::WatchState, animStateId);
+            //     auto anim_state_id = Corona::DataId::next();
+            //     anim_state_cache.insert(anim_state_id, animState);
+            //     anim_queue.enqueue(&animation_system, &Corona::AnimationSystem::watch_state, anim_state_id);
             // }
         }
-        auto res2 = Corona::Engine::Instance().Resources().load({"model", (std::filesystem::current_path() / "assets/model/Ball.obj").string()});
-        model2 = std::static_pointer_cast<Corona::Model>(res2);
-        if (model2)
+        auto res2 = engine.resources().load({"model", (std::filesystem::current_path() / "assets/model/Ball.obj").string()});
+        model_secondary = std::static_pointer_cast<Corona::Model>(res2);
+        if (model_secondary)
         {
-            auto modelId = Corona::DataId::Next();
-            modelCache.insert(modelId, model2);
-            anim_queue.enqueue(&animationSystem, &Corona::AnimationSystem::WatchModel, modelId);
-            render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchModel, modelId);
+            const auto model_id = Corona::DataId::next();
+            model_cache.insert(model_id, model_secondary);
+            anim_queue.enqueue(&animation_system, &Corona::AnimationSystem::watch_model, model_id);
+            render_queue.enqueue(&rendering_system, &Corona::RenderingSystem::watch_model, model_id);
         }
         CE_LOG_INFO("Model loaded");
     }
 
-    auto shaderCode = Corona::Engine::Instance().Resources().load({"shader", (std::filesystem::current_path() / "assets").string()});
-    std::shared_ptr<Corona::Shader> shader = std::static_pointer_cast<Corona::Shader>(shaderCode);
-    render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::initShader, shader);
+    auto shader_code = engine.resources().load({"shader", (std::filesystem::current_path() / "assets").string()});
+    std::shared_ptr<Corona::Shader> shader = std::static_pointer_cast<Corona::Shader>(shader_code);
+    render_queue.enqueue(&rendering_system, &Corona::RenderingSystem::init_shader, shader);
 
-
-    std::optional<uint64_t> animStateId;
+    std::optional<uint64_t> anim_state_id;
 
     // 旧的模拟客户端：GLFW 多窗口主循环（无 OpenGL 上下文，便于与 Vulkan/自研渲染对接）
     if (glfwInit() >= 0)
@@ -117,22 +118,24 @@ int main()
         window = glfwCreateWindow(800, 800, "Cabbage Engine", nullptr, nullptr);
         if (window)
         {
-            auto sceneId = Corona::DataId::Next();
-            sceneCache.insert(sceneId, scene);
+            const auto scene_id = Corona::DataId::next();
+            scene_cache.insert(scene_id, scene);
             scene->displaySurface = glfwGetWin32Window(window);
             scene->camera.pos = ktm::fvec3(10.0f, 10.0f, 0.0f);
-            render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchScene, sceneId);
-            render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::setDisplaySurface, scene);
+            render_queue.enqueue(&rendering_system, &Corona::RenderingSystem::watch_scene, scene_id);
+            render_queue.enqueue(&rendering_system, &Corona::RenderingSystem::set_display_surface, scene);
         }
 
-        auto shouldClosed = [&]() {
+        auto should_close = [&]() {
             if (!window)
+            {
                 return true;
+            }
             return glfwWindowShouldClose(window) != 0;
         };
 
-        uint64_t frameCount = 0;
-        while (!shouldClosed())
+        uint64_t frame_count = 0;
+        while (!should_close())
         {
             static constexpr uint64_t FPS = 120;
             static constexpr uint64_t TIME = 1000 / FPS;
@@ -144,14 +147,14 @@ int main()
             // DO SOMETHING（与系统/渲染交互的占位处）
             {
                 // 每 120 帧打印一次动画骨骼数量（若存在）
-                if (animStateId && (frameCount % 120 == 0))
+                if (anim_state_id && (frame_count % 120 == 0))
                 {
-                    auto &animCache = Corona::Engine::Instance().Cache<Corona::AnimationState>();
-                    auto stConst = animCache.get(*animStateId);
-                    if (stConst)
+                    auto &anim_cache = engine.cache<Corona::AnimationState>();
+                    auto state_const = anim_cache.get(*anim_state_id);
+                    if (state_const)
                     {
                         // 注意：const 访问仅用于调试读取
-                        const auto bones = stConst->bones.size();
+                        const auto bones = state_const->bones.size();
                         (void)bones; // 在没有日志系统的场合避免未使用告警
                     }
                 }
@@ -181,12 +184,12 @@ int main()
                     }
                     if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS && key_limiter.allow(GLFW_KEY_ENTER, cooldown_ms))
                     {
-                        model1->positon = ktm::fvec3(-1.0f, 0.0f, 0.0f);
-                        model2->positon = ktm::fvec3(0.0f, 0.0f, 0.0f);
+                        model_primary->positon = ktm::fvec3(-1.0f, 0.0f, 0.0f);
+                        model_secondary->positon = ktm::fvec3(0.0f, 0.0f, 0.0f);
                         CE_LOG_INFO("Key ENTER pressed");
                     }
                 }
-                ++frameCount;
+                ++frame_count;
             }
 
             auto end = std::chrono::high_resolution_clock::now();
@@ -197,11 +200,13 @@ int main()
             }
         }
         if (window)
+        {
             glfwDestroyWindow(window);
+        }
         glfwTerminate();
     }
 
     // 收尾
-    Corona::Engine::Instance().Shutdown();
+    engine.shutdown();
     return 0;
 }

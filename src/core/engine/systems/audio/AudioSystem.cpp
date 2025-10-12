@@ -1,12 +1,12 @@
 #include "AudioSystem.h"
-#include "Core/Engine/Engine.h"
+#include "core/engine/Engine.h"
 
 using namespace Corona;
 
 AudioSystem::AudioSystem()
     : ThreadedSystem("AudioSystem")
 {
-    Engine::Instance().AddQueue(name(), std::make_unique<SafeCommandQueue>());
+    Engine::instance().add_queue(name(), std::make_unique<SafeCommandQueue>());
 }
 
 void AudioSystem::onStart()
@@ -14,7 +14,7 @@ void AudioSystem::onStart()
 }
 void AudioSystem::onTick()
 {
-    auto &rq = Engine::Instance().GetQueue(name());
+    auto &rq = Engine::instance().get_queue(name());
     int spun = 0;
     while (spun < 100 && !rq.empty())
     {
@@ -26,6 +26,6 @@ void AudioSystem::onTick()
 void AudioSystem::onStop()
 {
 }
-void AudioSystem::processAudio(uint64_t /*id*/)
+void AudioSystem::process_audio(uint64_t /*id*/)
 {
 }

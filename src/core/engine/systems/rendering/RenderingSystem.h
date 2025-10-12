@@ -20,14 +20,14 @@ namespace Corona
       public:
         RenderingSystem();
 
-        void WatchModel(uint64_t id);
-        void UnwatchModel(uint64_t id);
-        void WatchScene(uint64_t id);
-        void UnwatchScene(uint64_t id);
-        void ClearWatched();
+        void watch_model(uint64_t id);
+        void unwatch_model(uint64_t id);
+        void watch_scene(uint64_t id);
+        void unwatch_scene(uint64_t id);
+        void clear_watched();
 
-        void initShader(std::shared_ptr<Shader> shader);
-        void setDisplaySurface(std::shared_ptr<Scene> scene);
+        void init_shader(std::shared_ptr<Shader> shader);
+        void set_display_surface(std::shared_ptr<Scene> scene);
 
       protected:
         void onStart() override;
@@ -36,9 +36,9 @@ namespace Corona
 
       private:
         void init();
-        void updateEngine();
-        void gbufferPipeline(std::shared_ptr<Scene> scene);
-        void compositePipeline(ktm::fvec3 sunDir = ktm::normalize(ktm::fvec3(-0.2f, -1.0f, -0.3f)));
+        void update_engine();
+        void gbuffer_pipeline(std::shared_ptr<Scene> scene);
+        void composite_pipeline(ktm::fvec3 sunDir = ktm::normalize(ktm::fvec3(-0.2f, -1.0f, -0.3f)));
 
         HardwareImage gbufferPostionImage;
         HardwareImage gbufferBaseColorImage;
@@ -52,7 +52,7 @@ namespace Corona
         bool shaderHasInit = false;
         RasterizerPipeline rasterizerPipeline;
         ComputePipeline computePipeline;
-  HardwareExecutor executor;
+        HardwareExecutor executor;
 
         struct UniformBufferObject
         {

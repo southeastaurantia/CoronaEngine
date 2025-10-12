@@ -60,10 +60,10 @@ int main()
 {
     // Init logger
     Corona::LogConfig cfg;
-    cfg.enableConsole = true;
-    cfg.enableFile = false;
-    cfg.level = Corona::LogLevel::Debug;
-    Corona::Engine::Instance().Init(cfg);
+    cfg.enable_console_ = true;
+    cfg.enable_file_ = false;
+    cfg.level_ = Corona::LogLevel::kDebug;
+    Corona::Engine::instance().init(cfg);
 
     CE_LOG_INFO("CoronaEngine ResourceManager demo start");
 
@@ -88,7 +88,7 @@ int main()
     }
 
     // 1) Sync load
-    auto &io = Corona::Engine::Instance().Resources();
+    auto &io = Corona::Engine::instance().resources();
     Corona::ResourceId idText{"shader", target.string()};
     // auto txtRes = io.load_typed<Corona::TextResource>(idText);
     // if (txtRes)
@@ -191,6 +191,6 @@ int main()
     }
 
     // Clean shutdown
-    Corona::Engine::Instance().Shutdown();
+    Corona::Engine::instance().shutdown();
     return 0;
 }
