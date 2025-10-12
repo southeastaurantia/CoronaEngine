@@ -4,6 +4,8 @@
 # 好处：避免手工预下载并行发起拉取；统一管理版本；支持后续切换为本地 override。
 # 提示：若需锁定稳定性，可将 GIT_TAG 从 master/main 改为特定提交哈希或发布版本号。
 
+include_guard(GLOBAL)
+
 include(FetchContent)
 
 FetchContent_Declare(

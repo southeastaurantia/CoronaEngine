@@ -1,5 +1,7 @@
 # CoronaRuntimeDeps.cmake
 # 运行时依赖（动态库 / 调试符号）收集与复制模块
+include_guard(GLOBAL)
+
 # 功能概述：
 # 1. 在配置阶段：通过 corona_configure_runtime_deps() 收集 Python 相关的 DLL / PDB 文件并写入目标属性
 # INTERFACE_CORONA_RUNTIME_DEPS（设置在核心库 CoronaEngine 上）。
@@ -12,7 +14,6 @@
 # 使用示例：
 # corona_configure_runtime_deps(CoronaEngine)  # 在定义 CoronaEngine 并找到相关依赖路径后调用一次
 # corona_install_runtime_deps(MyExampleExe)    # 对每个需要独立运行的可执行目标调用
-
 function(corona_install_runtime_deps target_name)
     # 从核心库读取之前收集的依赖文件列表（可能为空）
     get_target_property(_CORONA_DEPS CoronaEngine INTERFACE_CORONA_RUNTIME_DEPS)

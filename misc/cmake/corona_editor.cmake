@@ -1,15 +1,16 @@
 # corona_editor.cmake
 # Corona Editor resource collection and installation (mirrors corona_runtime_deps pattern)
 # Overview:
-#   1. corona_configure_corona_editor(<core_target>) collects existing backend/frontend directories and stores them as
-#      an INTERFACE property (INTERFACE_CORONA_EDITOR_DIRS) on the given target (typically CoronaEngine).
-#   2. corona_install_corona_editor(<executable_target>) copies those directories next to the executable at build time
-#      using a POST_BUILD custom command.
-# Design Notes:
-#   - Separation of collection & installation for reuse by multiple executables.
-#   - Uses target property instead of global variables; easy to extend later (e.g., add more editor resources).
-#   - Idempotent: re-configuring overwrites the property; install only runs for the target(s) you invoke it on.
+include_guard(GLOBAL)
 
+# 1. corona_configure_corona_editor(<core_target>) collects existing backend/frontend directories and stores them as
+# an INTERFACE property (INTERFACE_CORONA_EDITOR_DIRS) on the given target (typically CoronaEngine).
+# 2. corona_install_corona_editor(<executable_target>) copies those directories next to the executable at build time
+# using a POST_BUILD custom command.
+# Design Notes:
+# - Separation of collection & installation for reuse by multiple executables.
+# - Uses target property instead of global variables; easy to extend later (e.g., add more editor resources).
+# - Idempotent: re-configuring overwrites the property; install only runs for the target(s) you invoke it on.
 function(corona_configure_corona_editor target_name)
     if(NOT TARGET ${target_name})
         message(WARNING "[Corona:Editor] Target ${target_name} does not exist; cannot configure editor resources.")
@@ -63,11 +64,12 @@ function(corona_install_corona_editor target_name core_target)
     # 上述目录复制到 <exe>/CabbageEditor 下
     # 使用 Python 脚本完成目录复制并执行 npm 构建（仅注释为中文，代码为英文）
     set(_CORONA_PY_SCRIPT "${PROJECT_SOURCE_DIR}/misc/pytools/editor_copy_and_build.py")
-    set(_CORONA_NODE_DIR  "${PROJECT_SOURCE_DIR}/editor/CabbageEditor/Env/node-v22.19.0-win-x64")
+    set(_CORONA_NODE_DIR "${PROJECT_SOURCE_DIR}/editor/CabbageEditor/Env/node-v22.19.0-win-x64")
     set(_CORONA_FRONTEND_DIR "$<TARGET_FILE_DIR:${target_name}>/CabbageEditor/Frontend")
 
     # 组装 --src-dir 参数列表
     set(_CORONA_EDITOR_COPY_ARGS)
+
     foreach(_CORONA_DIR IN LISTS _CORONA_EDITOR_DIRS)
         list(APPEND _CORONA_EDITOR_COPY_ARGS --src-dir "${_CORONA_DIR}")
     endforeach()

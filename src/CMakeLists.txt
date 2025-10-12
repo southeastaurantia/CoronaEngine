@@ -20,20 +20,8 @@ file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/*.c"
 )
-
-set(_CORONA_SYSTEM_REGEX "[\\\\/]core[\\\\/]engine[\\\\/]systems[\\\\/].*\\.cpp$")
-set(_CORONA_SYSTEM_SOURCE_FILES)
-foreach(_corona_src ${SOURCE_FILES})
-        if(_corona_src MATCHES "${_CORONA_SYSTEM_REGEX}")
-                list(APPEND _CORONA_SYSTEM_SOURCE_FILES ${_corona_src})
-        endif()
-endforeach()
-
-if(_CORONA_SYSTEM_SOURCE_FILES)
-        list(REMOVE_ITEM SOURCE_FILES ${_CORONA_SYSTEM_SOURCE_FILES})
-endif()
-
-set(CORONA_ENGINE_SYSTEM_SOURCES ${_CORONA_SYSTEM_SOURCE_FILES})
+set(_CORONA_SYSTEM_REGEX "[\\/]core[\\/]engine[\\/]systems[\\/].*\\.(c|cc|cxx|cpp|h|hpp)$")
+list(FILTER SOURCE_FILES EXCLUDE REGEX "${_CORONA_SYSTEM_REGEX}")
 
 add_subdirectory(core/engine/systems)
 

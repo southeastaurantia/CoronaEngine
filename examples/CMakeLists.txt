@@ -1,7 +1,15 @@
 # 为每个示例提供独立开关并共享构建逻辑
 include(CMakeParseArguments)
 
-# 复制示例资产到可执行目录
+define_property(GLOBAL PROPERTY _CORONA_EXAMPLE_TARGETS
+    BRIEF_DOCS "Corona example targets"
+    FULL_DOCS "List of Corona example targets created via corona_add_example")
+define_property(GLOBAL PROPERTY _CORONA_EXAMPLE_REGISTRY
+    BRIEF_DOCS "Corona example registry"
+    FULL_DOCS "Pairs of <folder>|<target> captured when corona_add_example is invoked")
+set_property(GLOBAL PROPERTY _CORONA_EXAMPLE_TARGETS "")
+set_property(GLOBAL PROPERTY _CORONA_EXAMPLE_REGISTRY "")
+
 function(corona_examples_copy_assets target_name)
     add_custom_command(TARGET ${target_name} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E echo "[${target_name}] Copy assets to $<TARGET_FILE_DIR:${target_name}>/assets"
@@ -10,7 +18,6 @@ function(corona_examples_copy_assets target_name)
         VERBATIM)
 endfunction()
 
-# 统一的示例目标创建入口
 function(corona_add_example)
     set(options COPY_ASSETS)
     set(oneValueArgs NAME)
@@ -45,29 +52,30 @@ function(corona_add_example)
     if(CORONA_EX_COPY_ASSETS)
         corona_examples_copy_assets(${CORONA_EX_NAME})
     endif()
+
+    set_property(GLOBAL APPEND PROPERTY _CORONA_EXAMPLE_TARGETS ${CORONA_EX_NAME})
+
+    if(DEFINED CORONA_CURRENT_EXAMPLE_FOLDER)
+        set_property(GLOBAL APPEND PROPERTY _CORONA_EXAMPLE_REGISTRY
+            "${CORONA_CURRENT_EXAMPLE_FOLDER}|${CORONA_EX_NAME}")
+    endif()
+
+    message(STATUS "[Corona:Example] ${CORONA_EX_NAME} configured")
 endfunction()
 
-set(_CORONA_EXAMPLE_FOLDERS
-    resource_management
-    multi_window_rendering
-    python_scripting
-    interactive_rendering
-)
+file(GLOB _corona_example_dirs RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*)
+list(SORT _corona_example_dirs)
+set(_corona_enabled_examples)
 
-set(_CORONA_EXAMPLE_TARGETS
-    Corona_resource_management
-    Corona_multi_window_rendering
-    Corona_python_scripting
-    Corona_interactive_rendering
-)
+foreach(_corona_folder IN LISTS _corona_example_dirs)
+    if(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${_corona_folder}")
+        continue()
+    endif()
 
-set(_corona_startup_target "")
-list(LENGTH _CORONA_EXAMPLE_FOLDERS _corona_example_count)
-math(EXPR _corona_example_last "${_corona_example_count} - 1")
+    if(_corona_folder STREQUAL "assets")
+        continue()
+    endif()
 
-foreach(_corona_idx RANGE 0 ${_corona_example_last})
-    list(GET _CORONA_EXAMPLE_FOLDERS ${_corona_idx} _corona_folder)
-    list(GET _CORONA_EXAMPLE_TARGETS ${_corona_idx} _corona_target)
     string(TOUPPER "${_corona_folder}" _corona_upper)
     string(REPLACE "/" "_" _corona_upper "${_corona_upper}")
     string(REPLACE "-" "_" _corona_upper "${_corona_upper}")
@@ -76,17 +84,66 @@ foreach(_corona_idx RANGE 0 ${_corona_example_last})
 
     if(${_corona_option_name})
         if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${_corona_folder}/CMakeLists.txt")
+            set(CORONA_CURRENT_EXAMPLE_FOLDER "${_corona_folder}")
             add_subdirectory(${_corona_folder})
-
-            if(_corona_startup_target STREQUAL "")
-                set(_corona_startup_target ${_corona_target})
-            endif()
+            list(APPEND _corona_enabled_examples "${_corona_folder}")
         else()
             message(WARNING "[Corona:Examples] ${_corona_folder} subdir not found, skip")
         endif()
     endif()
 endforeach()
 
-if(NOT _corona_startup_target STREQUAL "")
-    set_property(DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${_corona_startup_target})
+unset(CORONA_CURRENT_EXAMPLE_FOLDER)
+
+get_property(_corona_example_targets GLOBAL PROPERTY _CORONA_EXAMPLE_TARGETS)
+
+if(_corona_example_targets)
+    list(FILTER _corona_example_targets EXCLUDE REGEX "^$")
+    list(REMOVE_DUPLICATES _corona_example_targets)
+    list(LENGTH _corona_example_targets _corona_target_count)
+
+    if(_corona_target_count GREATER 0)
+        list(GET _corona_example_targets 0 _corona_startup_target)
+        set_property(DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${_corona_startup_target})
+    endif()
 endif()
+
+message(STATUS "")
+message(STATUS "================ Corona Examples Summary ===============")
+
+if(_corona_enabled_examples)
+    foreach(_corona_folder IN LISTS _corona_enabled_examples)
+        message(STATUS "✓ ${_corona_folder}")
+    endforeach()
+else()
+    message(STATUS "(no examples enabled)")
+endif()
+
+get_property(_corona_example_registry GLOBAL PROPERTY _CORONA_EXAMPLE_REGISTRY)
+
+if(_corona_example_registry)
+    list(FILTER _corona_example_registry EXCLUDE REGEX "^$")
+    list(REMOVE_DUPLICATES _corona_example_registry)
+    set(_corona_pairs)
+
+    foreach(_corona_entry IN LISTS _corona_example_registry)
+        string(REPLACE "|" ";" _corona_split "${_corona_entry}")
+        list(LENGTH _corona_split _corona_split_len)
+
+        if(_corona_split_len EQUAL 2)
+            list(GET _corona_split 0 _corona_folder_name)
+            list(GET _corona_split 1 _corona_target_name)
+            list(APPEND _corona_pairs "${_corona_folder_name}->${_corona_target_name}")
+        else()
+            list(APPEND _corona_pairs "${_corona_entry}")
+        endif()
+    endforeach()
+
+    string(JOIN ", " _corona_pairs_joined ${_corona_pairs})
+    message(STATUS "Linked targets: ${_corona_pairs_joined}")
+else()
+    message(STATUS "Linked targets: (none)")
+endif()
+
+message(STATUS "========================================================")
+message(STATUS "")

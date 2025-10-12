@@ -3,131 +3,154 @@
 
 include(CMakeParseArguments)
 
+define_property(GLOBAL PROPERTY _CORONA_UTILITY_TARGETS
+    BRIEF_DOCS "Corona utility targets"
+    FULL_DOCS "List of Corona utility targets created via corona_add_utility")
+define_property(GLOBAL PROPERTY _CORONA_UTILITY_REGISTRY
+    BRIEF_DOCS "Corona utility registry"
+    FULL_DOCS "Pairs of <module>|<target> captured when corona_add_utility is invoked")
+set_property(GLOBAL PROPERTY _CORONA_UTILITY_TARGETS "")
+set_property(GLOBAL PROPERTY _CORONA_UTILITY_REGISTRY "")
+
 # 统一的Utility库创建入口
 function(corona_add_utility)
     set(options INTERFACE HEADER_ONLY)
     set(oneValueArgs NAME TYPE DESCRIPTION)
     set(multiValueArgs SOURCES PUBLIC_HEADERS PRIVATE_HEADERS DEPENDENCIES)
     cmake_parse_arguments(CORONA_UTIL "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-    
+
     if(NOT CORONA_UTIL_NAME)
         message(FATAL_ERROR "corona_add_utility requires NAME")
     endif()
-    
-    # 默认类型为STATIC
+
+    if(NOT CORONA_UTIL_INTERFACE AND NOT CORONA_UTIL_HEADER_ONLY AND NOT CORONA_UTIL_SOURCES)
+        message(FATAL_ERROR "corona_add_utility(${CORONA_UTIL_NAME}) requires SOURCES unless INTERFACE/HEADER_ONLY is set")
+    endif()
+
     if(NOT CORONA_UTIL_TYPE)
         set(CORONA_UTIL_TYPE "STATIC")
     endif()
-    
-    # 根据类型创建库
+
     if(CORONA_UTIL_INTERFACE OR CORONA_UTIL_HEADER_ONLY)
         add_library(${CORONA_UTIL_NAME} INTERFACE)
-        set(_corona_lib_type "INTERFACE")
+        set(_corona_lib_scope "INTERFACE")
     else()
         add_library(${CORONA_UTIL_NAME} ${CORONA_UTIL_TYPE} ${CORONA_UTIL_SOURCES})
-        set(_corona_lib_type "PUBLIC")
+        set(_corona_lib_scope "PUBLIC")
     endif()
-    
-    # 设置C++标准
+
     if(NOT CORONA_UTIL_INTERFACE AND NOT CORONA_UTIL_HEADER_ONLY)
         target_compile_features(${CORONA_UTIL_NAME} PRIVATE cxx_std_20)
     endif()
-    
-    # 设置包含目录
+
     target_include_directories(${CORONA_UTIL_NAME}
-        ${_corona_lib_type}
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../common/include>
-            $<INSTALL_INTERFACE:include>
+        ${_corona_lib_scope}
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../common/include>
+        $<INSTALL_INTERFACE:include>
     )
-    
-    # 链接依赖
+
     if(CORONA_UTIL_DEPENDENCIES)
-        target_link_libraries(${CORONA_UTIL_NAME} ${_corona_lib_type} ${CORONA_UTIL_DEPENDENCIES})
+        target_link_libraries(${CORONA_UTIL_NAME} ${_corona_lib_scope} ${CORONA_UTIL_DEPENDENCIES})
     endif()
-    
-    # 应用编译器配置
+
     if(COMMAND corona_apply_compile_config)
         corona_apply_compile_config(${CORONA_UTIL_NAME})
     endif()
-    
-    # 创建别名
+
     string(REGEX REPLACE "^Corona" "Corona::" _corona_alias_name "${CORONA_UTIL_NAME}")
     add_library(${_corona_alias_name} ALIAS ${CORONA_UTIL_NAME})
-    
-    # 输出配置信息
-    message(STATUS "[Corona:Utility] ${CORONA_UTIL_NAME}:")
-    message(STATUS "  - Type: ${CORONA_UTIL_TYPE}")
-    message(STATUS "  - Alias: ${_corona_alias_name}")
+
+    set_property(GLOBAL APPEND PROPERTY _CORONA_UTILITY_TARGETS ${CORONA_UTIL_NAME})
+
+    if(DEFINED CORONA_CURRENT_UTILITY_MODULE)
+        set_property(GLOBAL APPEND PROPERTY _CORONA_UTILITY_REGISTRY
+            "${CORONA_CURRENT_UTILITY_MODULE}|${CORONA_UTIL_NAME}")
+    endif()
+
+    message(STATUS "[Corona:Utility] ${CORONA_UTIL_NAME} -> ${_corona_alias_name} (${CORONA_UTIL_TYPE})")
+
     if(CORONA_UTIL_DESCRIPTION)
-        message(STATUS "  - Description: ${CORONA_UTIL_DESCRIPTION}")
+        message(STATUS "  - ${CORONA_UTIL_DESCRIPTION}")
     endif()
 endfunction()
 
-# utility模块列表
+file(GLOB _corona_candidate_dirs RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*)
+list(SORT _corona_candidate_dirs)
+set(_corona_built_modules)
 
-set(_CORONA_UTILITY_MODULES
-    logger
-    resource_manager
-)
+foreach(_corona_dir IN LISTS _corona_candidate_dirs)
+    if(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${_corona_dir}")
+        continue()
+    endif()
 
-# Utility目标名称列表
-set(_CORONA_UTILITY_TARGETS
-    CoronaLogger
-    CoronaResourceManager
-)
+    if(_corona_dir STREQUAL "include")
+        continue()
+    endif()
 
-# 自动为每个模块创建构建选项
-list(LENGTH _CORONA_UTILITY_MODULES _corona_utility_count)
-math(EXPR _corona_utility_last "${_corona_utility_count} - 1")
-set(_corona_built_modules "")
-
-foreach(_corona_idx RANGE 0 ${_corona_utility_last})
-    list(GET _CORONA_UTILITY_MODULES ${_corona_idx} _corona_module)
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${_corona_module}/CMakeLists.txt")
-        message(STATUS "[Corona:Utility] Building ${_corona_module}...")
-        add_subdirectory(${_corona_module})
-        list(APPEND _corona_built_modules "${_corona_module}")
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${_corona_dir}/CMakeLists.txt")
+        set(CORONA_CURRENT_UTILITY_MODULE "${_corona_dir}")
+        add_subdirectory(${_corona_dir})
+        list(APPEND _corona_built_modules "${_corona_dir}")
     else()
-        message(WARNING "[Corona:Utility] ${_corona_module} subdir not found, skip")
+        message(WARNING "[Corona:Utility] ${_corona_dir} missing CMakeLists.txt; skip")
     endif()
 endforeach()
 
-# 创建聚合目标（包含所有已构建的Utility库）
+unset(CORONA_CURRENT_UTILITY_MODULE)
+
 add_library(CoronaUtilityAll INTERFACE)
+get_property(_corona_utility_targets GLOBAL PROPERTY _CORONA_UTILITY_TARGETS)
 
-foreach(_corona_idx RANGE 0 ${_corona_utility_last})
-    list(GET _CORONA_UTILITY_MODULES ${_corona_idx} _corona_module)
-    list(FIND _corona_built_modules ${_corona_module} _corona_built_index)
-    if(_corona_built_index GREATER -1)
-        list(GET _CORONA_UTILITY_TARGETS ${_corona_idx} _corona_target)
+if(_corona_utility_targets)
+    list(FILTER _corona_utility_targets EXCLUDE REGEX "^$")
+    list(REMOVE_DUPLICATES _corona_utility_targets)
+
+    foreach(_corona_target IN LISTS _corona_utility_targets)
         target_link_libraries(CoronaUtilityAll INTERFACE ${_corona_target})
-    endif()
-endforeach()
-
-set(_corona_linked_utilities "")
-if(_corona_built_modules)
-    string(JOIN ";" _corona_linked_utilities ${_corona_built_modules})
+    endforeach()
 endif()
 
-# 创建聚合别名
 add_library(Corona::Utility::All ALIAS CoronaUtilityAll)
 
-# 输出构建摘要
 message(STATUS "")
 message(STATUS "========================================")
 message(STATUS "Corona Utility Build Summary")
 message(STATUS "========================================")
-foreach(_corona_idx RANGE 0 ${_corona_utility_last})
-    list(GET _CORONA_UTILITY_MODULES ${_corona_idx} _corona_module)
-    list(FIND _corona_built_modules ${_corona_module} _corona_built_index)
-    if(_corona_built_index GREATER -1)
+
+if(_corona_built_modules)
+    foreach(_corona_module IN LISTS _corona_built_modules)
         message(STATUS "✓ ${_corona_module}")
-    else()
-        message(STATUS "✗ ${_corona_module} (missing)")
-    endif()
-endforeach()
-message(STATUS "========================================")
-message(STATUS "Linked utilities: ${_corona_linked_utilities}")
+    endforeach()
+else()
+    message(STATUS "(no utility modules discovered)")
+endif()
+
+get_property(_corona_registry GLOBAL PROPERTY _CORONA_UTILITY_REGISTRY)
+
+if(_corona_registry)
+    list(FILTER _corona_registry EXCLUDE REGEX "^$")
+    list(REMOVE_DUPLICATES _corona_registry)
+    set(_corona_pairs)
+
+    foreach(_corona_entry IN LISTS _corona_registry)
+        string(REPLACE "|" ";" _corona_split "${_corona_entry}")
+        list(LENGTH _corona_split _corona_split_len)
+
+        if(_corona_split_len EQUAL 2)
+            list(GET _corona_split 0 _corona_module_name)
+            list(GET _corona_split 1 _corona_target_name)
+            list(APPEND _corona_pairs "${_corona_module_name}->${_corona_target_name}")
+        else()
+            list(APPEND _corona_pairs "${_corona_entry}")
+        endif()
+    endforeach()
+
+    string(JOIN ", " _corona_pairs_joined ${_corona_pairs})
+    message(STATUS "Linked targets: ${_corona_pairs_joined}")
+else()
+    message(STATUS "Linked targets: (none)")
+endif()
+
 message(STATUS "========================================")
 message(STATUS "")

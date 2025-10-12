@@ -3,6 +3,8 @@
 # 作用：统一管理跨模块需要共享或保持一致的编译定义，减少分散定义导致的冲突与遗漏。
 # 说明：使用 generator expression($<...>) 根据编译器/配置类型动态注入。
 
+include_guard(GLOBAL)
+
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
