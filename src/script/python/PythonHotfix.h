@@ -38,7 +38,7 @@ struct PythonHotfix {
     static void NormalizeModuleName(std::string& path_like);
 
     // 已修改模块集合（基础重载顺序按依赖拓扑反向执行）
-    std::unordered_set<std::string> packageSet;
+    std::unordered_map<std::string, int64_t> packageSet;
     std::unordered_map<std::string, std::unordered_set<std::string>> dependencyGraph;
     std::vector<std::string> dependencyVec;
 };

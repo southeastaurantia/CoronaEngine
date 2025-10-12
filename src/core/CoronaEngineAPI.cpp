@@ -109,9 +109,13 @@ CoronaEngineAPI::Actor::Actor(const std::string &path)
         return;
     }
 
-    auto &rendering_system = Corona::Engine::instance().get_system<Corona::RenderingSystem>();
-    auto &render_queue = Corona::Engine::instance().get_queue(rendering_system.name());
-    render_queue.enqueue(&rendering_system, &Corona::RenderingSystem::watch_model, actorID);
+    auto &animationSystem = Corona::Engine::Instance().GetSystem<Corona::AnimationSystem>();
+    auto &anim_queue = Corona::Engine::Instance().GetQueue(animationSystem.name());
+    anim_queue.enqueue(&animationSystem, &Corona::AnimationSystem::WatchModel, actorID);
+
+    auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
+    auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
+    render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::WatchModel, actorID);
 }
 
 CoronaEngineAPI::Actor::~Actor()
@@ -127,10 +131,14 @@ CoronaEngineAPI::Actor::~Actor()
     auto &model_cache = Corona::Engine::instance().cache<Corona::Model>();
     if (model_cache.get(actorID) != nullptr)
     {
-        auto &rendering_system = Corona::Engine::instance().get_system<Corona::RenderingSystem>();
-        auto &render_queue = Corona::Engine::instance().get_queue(rendering_system.name());
-        render_queue.enqueue(&rendering_system, &Corona::RenderingSystem::unwatch_model, actorID);
-        model_cache.erase(actorID);
+        auto &animationSystem = Corona::Engine::Instance().GetSystem<Corona::AnimationSystem>();
+        auto &anim_queue = Corona::Engine::Instance().GetQueue(animationSystem.name());
+        anim_queue.enqueue(&animationSystem, &Corona::AnimationSystem::UnwatchModel, actorID);
+
+        auto &renderingSystem = Corona::Engine::Instance().GetSystem<Corona::RenderingSystem>();
+        auto &render_queue = Corona::Engine::Instance().GetQueue(renderingSystem.name());
+        render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::UnwatchModel, actorID);
+        modelCache.erase(actorID);
     }
 }
 

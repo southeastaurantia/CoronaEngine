@@ -11,42 +11,52 @@ namespace
     using namespace Corona;
 
     // 在本 cpp 内部隐藏的帮助函数，避免在头文件暴露重量类型
-    static const Bone *findBone(const Animation &anim, const std::string &name)
+    const Bone *findBone(const Animation &anim, const std::string &name)
     {
-        for (const Bone &b : anim.m_Bones)
-            if (b.m_Name == name)
+        for (const Bone &b : anim.m_Bones) {
+            if (b.m_Name == name) {
                 return &b;
+            }
+        }
         return nullptr;
     }
 
-    static int getPositionIndex(const Bone &bone, float time)
+    int getPositionIndex(const Bone &bone, float time)
     {
-        for (int i = 0; i < bone.m_NumPositions - 1; ++i)
-            if (time < bone.m_Positions[i + 1].timeStamp)
+        for (int i = 0; i < bone.m_NumPositions - 1; ++i) {
+            if (time < bone.m_Positions[i + 1].timeStamp) {
                 return i;
+            }
+        }
         return bone.m_NumPositions - 2;
     }
-    static int getRotationIndex(const Bone &bone, float time)
+    int getRotationIndex(const Bone &bone, float time)
     {
-        for (int i = 0; i < bone.m_NumRotations - 1; ++i)
-            if (time < bone.m_Rotations[i + 1].timeStamp)
+        for (int i = 0; i < bone.m_NumRotations - 1; ++i) {
+            if (time < bone.m_Rotations[i + 1].timeStamp) {
                 return i;
+            }
+        }
         return bone.m_NumRotations - 2;
     }
-    static int getScaleIndex(const Bone &bone, float time)
+    int getScaleIndex(const Bone &bone, float time)
     {
-        for (int i = 0; i < bone.m_NumScales - 1; ++i)
-            if (time < bone.m_Scales[i + 1].timeStamp)
+        for (int i = 0; i < bone.m_NumScales - 1; ++i) {
+            if (time < bone.m_Scales[i + 1].timeStamp) {
                 return i;
+            }
+        }
         return bone.m_NumScales - 2;
     }
 
-    static ktm::fmat4x4 interpolatePosition(const Bone &bone, float time)
+    ktm::fmat4x4 interpolatePosition(const Bone &bone, float time)
     {
-        if (bone.m_NumPositions <= 0)
+        if (bone.m_NumPositions <= 0) {
             return ktm::translate3d(ktm::fvec3(0, 0, 0));
-        if (bone.m_NumPositions == 1)
+        }
+        if (bone.m_NumPositions == 1) {
             return ktm::translate3d(bone.m_Positions[0].position);
+        }
         const int p0 = getPositionIndex(bone, time);
         const int p1 = p0 + 1;
         const float last = bone.m_Positions[p0].timeStamp;
@@ -55,12 +65,14 @@ namespace
         const ktm::fvec3 pos = ktm::lerp(bone.m_Positions[p0].position, bone.m_Positions[p1].position, factor);
         return ktm::translate3d(pos);
     }
-    static ktm::fmat4x4 interpolateRotation(const Bone &bone, float time)
+    ktm::fmat4x4 interpolateRotation(const Bone &bone, float time)
     {
-        if (bone.m_NumRotations <= 0)
+        if (bone.m_NumRotations <= 0) {
             return ktm::fquat(0, 0, 0, 1).matrix4x4();
-        if (bone.m_NumRotations == 1)
+        }
+        if (bone.m_NumRotations == 1) {
             return ktm::normalize(bone.m_Rotations[0].orientation).matrix4x4();
+        }
         const int r0 = getRotationIndex(bone, time);
         const int r1 = r0 + 1;
         const float last = bone.m_Rotations[r0].timeStamp;
@@ -70,12 +82,14 @@ namespace
         rot = ktm::normalize(rot);
         return rot.matrix4x4();
     }
-    static ktm::fmat4x4 interpolateScale(const Bone &bone, float time)
+    ktm::fmat4x4 interpolateScale(const Bone &bone, float time)
     {
-        if (bone.m_NumScales <= 0)
+        if (bone.m_NumScales <= 0) {
             return ktm::scale3d(ktm::fvec3(1, 1, 1));
-        if (bone.m_NumScales == 1)
+        }
+        if (bone.m_NumScales == 1) {
             return ktm::scale3d(bone.m_Scales[0].scale);
+        }
         const int s0 = getScaleIndex(bone, time);
         const int s1 = s0 + 1;
         const float last = bone.m_Scales[s0].timeStamp;
@@ -85,7 +99,7 @@ namespace
         return ktm::scale3d(sc);
     }
 
-    static void calculateBoneTransform(const AnimationState &state,
+    void calculateBoneTransform(const AnimationState &state,
                                        const Animation &anim,
                                        const Animation::AssimpNodeData &node,
                                        const ktm::fmat4x4 &parent,
@@ -104,29 +118,31 @@ namespace
         {
             const int index = it->second->ID;
             const ktm::fmat4x4 &offset = it->second->OffsetMatrix;
-            if (index >= 0 && static_cast<size_t>(index) < outBones.size())
+            if (index >= 0 && static_cast<size_t>(index) < outBones.size()) {
                 outBones[index] = global * offset;
+            }
         }
-        for (const auto &child : node.children)
+        for (const auto &child : node.children) {
             calculateBoneTransform(state, anim, child, global, outBones);
+        }
     }
 
-    static std::vector<ktm::fvec3> calculateVertices(const ktm::fvec3 &startMin, const ktm::fvec3 &startMax)
+    std::vector<ktm::fvec3> calculateVertices(const ktm::fvec3 &startMin, const ktm::fvec3 &startMax)
     {
         std::vector<ktm::fvec3> vertices;
         vertices.reserve(8);
         vertices.push_back(startMin);
-        vertices.push_back(ktm::fvec3(startMax.x, startMin.y, startMin.z));
-        vertices.push_back(ktm::fvec3(startMin.x, startMax.y, startMin.z));
-        vertices.push_back(ktm::fvec3(startMax.x, startMax.y, startMin.z));
-        vertices.push_back(ktm::fvec3(startMin.x, startMin.y, startMax.z));
-        vertices.push_back(ktm::fvec3(startMax.x, startMin.y, startMax.z));
-        vertices.push_back(ktm::fvec3(startMin.x, startMax.y, startMax.z));
+        vertices.emplace_back(startMax.x, startMin.y, startMin.z);
+        vertices.emplace_back(startMin.x, startMax.y, startMin.z);
+        vertices.emplace_back(startMax.x, startMax.y, startMin.z);
+        vertices.emplace_back(startMin.x, startMin.y, startMax.z);
+        vertices.emplace_back(startMax.x, startMin.y, startMax.z);
+        vertices.emplace_back(startMin.x, startMax.y, startMax.z);
         vertices.push_back(startMax);
         return vertices;
     }
 
-    static bool checkCollision(const std::vector<ktm::fvec3> &vertices1, const std::vector<ktm::fvec3> &vertices2)
+    bool checkCollision(const std::vector<ktm::fvec3> &vertices1, const std::vector<ktm::fvec3> &vertices2)
     {
         // 计算vertices2的AABB
         ktm::fvec3 min2 = vertices2[0], max2 = vertices2[0];
@@ -189,8 +205,9 @@ void AnimationSystem::onTick()
     int spun = 0;
     while (spun < 100 && !rq.empty())
     {
-        if (!rq.try_execute())
+        if (!rq.try_execute()) {
             continue;
+        }
         ++spun;
     }
 
@@ -206,6 +223,7 @@ void AnimationSystem::onTick()
     model_cache.safe_loop_foreach(model_cache_keys_, [&](uint64_t id, std::shared_ptr<Model> m) {
         if (!m)
             return;
+        }
         other_model_cache_keys_.erase(id);
     update_physics(*m);
         other_model_cache_keys_.insert(id);
@@ -253,18 +271,21 @@ void AnimationSystem::clear_watched()
 
 void AnimationSystem::update_animation_state(AnimationState &state, float dt)
 {
-    if (!state.model)
+    if (!state.model) {
         return;
+    }
     const auto animCount = state.model->skeletalAnimations.size();
-    if (animCount == 0 || state.animationIndex >= animCount)
+    if (animCount == 0 || state.animationIndex >= animCount) {
         return;
+    }
 
     const Animation &anim = state.model->skeletalAnimations[state.animationIndex];
     // 推进时间（anim.m_TicksPerSecond 为动画时钟刻度）
     state.currentTime += static_cast<float>(anim.m_TicksPerSecond) * dt;
-    const float duration = static_cast<float>(anim.m_Duration);
-    if (duration > 0.0f)
+    const auto duration = static_cast<float>(anim.m_Duration);
+    if (duration > 0.0f) {
         state.currentTime = fmod(state.currentTime, duration);
+    }
 
     // 准备输出骨矩阵数组
     const size_t boneCount = state.model->m_BoneInfoMap.size();
@@ -302,6 +323,7 @@ void AnimationSystem::update_physics(Model &m)
     model_cache.safe_loop_foreach(other_model_cache_keys_, [&](std::shared_ptr<Model> otherModel) {
         if (!otherModel)
             return;
+        }
 
         auto otherStartMin = otherModel->minXYZ;
         auto otherStartMax = otherModel->maxXYZ;

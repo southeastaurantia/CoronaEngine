@@ -42,9 +42,9 @@ namespace Corona
         std::unordered_set<uint64_t> model_cache_keys_{};
         std::unordered_set<uint64_t> other_model_cache_keys_{};
         std::set<Model *> collisionActors_{};
-        void process_animation(uint64_t id);
+        static void processAnimation(uint64_t id);
         // 关注的动画状态 id 集合
-        void update_animation_state(AnimationState &state, float dt);
-        void update_physics(Model &model);
+        static void updateAnimationState(AnimationState &state, float dt);
+        void updatePhysics(Model &model);
     };
 } // namespace Corona

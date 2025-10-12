@@ -19,6 +19,11 @@ struct PythonAPI
     static void checkPythonScriptChange();
     void checkReleaseScriptChange();
 
+    // Leak-safe hot-reload toggle (runtime). When enabled, we skip DECREF on reused
+    // objects to avoid crashes at the cost of small leaks during development.
+    void setLeakSafeReload(bool enabled);
+    [[nodiscard]] bool isLeakSafeReload() const;
+
   private:
     static const std::string codePath;
 
@@ -27,6 +32,10 @@ struct PythonAPI
 
     int64_t lastHotReloadTime = 0; // ms
     bool hasHotReload = false;
+
+    // Controls DECREF behavior on hot reload; default comes from env CORONA_PY_LEAKSAFE (1/0),
+    // falling back to true if unset.
+    bool leakSafeMainReload_ = true;
 
     PyObject *pModule = nullptr;
     PyObject *pFunc = nullptr;
