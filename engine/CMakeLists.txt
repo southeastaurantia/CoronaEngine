@@ -2,8 +2,8 @@
 # CoronaEngine - 主程序可执行文件构建配置
 # ==============================================================================
 # 说明：
-#   - 创建 Corona_runtime 可执行文件（引擎主程序）
-#   - 安装所有运行时依赖（Helicon/Python DLLs/编辑器资源/Assets）
+# - 创建 Corona_runtime 可执行文件（引擎主程序）
+# - 安装所有运行时依赖（Helicon/Python DLLs/编辑器资源/Assets）
 # ==============================================================================
 
 set(CORONA_ENGINE_RUNTIME_TARGET Corona_runtime)
@@ -20,7 +20,10 @@ set_target_properties(${CORONA_ENGINE_RUNTIME_TARGET} PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY $<TARGET_FILE_DIR:${CORONA_ENGINE_RUNTIME_TARGET}>
 )
 
-target_link_libraries(${CORONA_ENGINE_RUNTIME_TARGET} PRIVATE CoronaEngine)
+target_link_libraries(${CORONA_ENGINE_RUNTIME_TARGET} PRIVATE
+    CoronaEngine
+    EnTT::EnTT
+)
 
 # ------------------------------------------------------------------------------
 # 安装运行时依赖

@@ -9,7 +9,6 @@
 #include "RenderingSystem.h"
 #include "Shader.h"
 
-
 namespace Corona {
 Engine& Engine::instance() {
     static Engine inst;
@@ -29,11 +28,6 @@ void Engine::init(const LogConfig& cfg) {
 
     // 鍒濆鍖栨棩蹇?
     Logger::init(cfg);
-
-    register_system<AnimationSystem>();
-    register_system<RenderingSystem>();
-    register_system<AudioSystem>();
-    register_system<DisplaySystem>();
 
     // 鍒涘缓璧勬簮绠＄悊鍣ㄥ苟娉ㄥ唽榛樿鍔犺浇鍣?
     resource_manager_ = std::make_unique<ResourceManager>();

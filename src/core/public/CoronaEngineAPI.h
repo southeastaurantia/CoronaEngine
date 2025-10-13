@@ -6,8 +6,10 @@ struct CoronaEngineAPI {
     CoronaEngineAPI() = delete;
     ~CoronaEngineAPI() = delete;
 
-    struct Actor;
-    struct Scene;
+    struct RenderTag {};
+    struct AnimationTag {};
+    struct AudioTag {};
+    struct DisplayTag {};
 
     struct Actor {
        public:
