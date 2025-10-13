@@ -11,14 +11,28 @@ set_target_properties(${CORONA_ENGINE_RUNTIME_TARGET} PROPERTIES
 
 target_link_libraries(${CORONA_ENGINE_RUNTIME_TARGET} PRIVATE CoronaEngine)
 
+# 安装 Helicon/Vulkan 运行时依赖 (DLLs)
 if(COMMAND helicon_install_runtime_deps)
     helicon_install_runtime_deps(${CORONA_ENGINE_RUNTIME_TARGET})
 else()
     message(STATUS "[Corona:EngineRuntime] helicon_install_runtime_deps not available; skip")
 endif()
 
+# 安装 Corona 运行时依赖 (Python DLLs/PDBs 等)
 corona_install_runtime_deps(${CORONA_ENGINE_RUNTIME_TARGET})
 
+# 安装编辑器资源 (Backend/Frontend)
 if(BUILD_CORONA_EDITOR)
     corona_install_corona_editor(${CORONA_ENGINE_RUNTIME_TARGET} CoronaEngine)
 endif()
+
+# 拷贝 assets 资源文件到运行时目录
+add_custom_command(TARGET ${CORONA_ENGINE_RUNTIME_TARGET} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E echo "[Corona_runtime] Copy assets to $<TARGET_FILE_DIR:${CORONA_ENGINE_RUNTIME_TARGET}>/assets"
+    COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:${CORONA_ENGINE_RUNTIME_TARGET}>/assets
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/assets" $<TARGET_FILE_DIR:${CORONA_ENGINE_RUNTIME_TARGET}>/assets
+    COMMENT "[Corona_runtime] Installing assets directory"
+    VERBATIM
+)
+
+message(STATUS "[Corona:EngineRuntime] ${CORONA_ENGINE_RUNTIME_TARGET} configured with full runtime dependencies")
