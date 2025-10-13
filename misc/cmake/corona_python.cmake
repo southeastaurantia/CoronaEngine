@@ -1,24 +1,44 @@
-# CoronaPython.cmake
-# Python 解释器发现与依赖校验功能模块
-# 功能概述：
-# 1. 首选系统已安装的 Python (满足最小版本要求)；若找不到且允许回退，则尝试使用内置/嵌入式目录。
-# 2. 暴露选项控制：
-# CORONA_PYTHON_MIN_VERSION            -> 期望的最低 Python 版本 (主.次)
-# CORONA_PYTHON_USE_EMBEDDED_FALLBACK  -> 找不到系统 Python 时是否启用 Env/ 下嵌入式回退
-# 3. 依赖检查：
-# 读取 Misc/requirements.txt，通过辅助脚本 check_pip_modules.py 校验并可按需自动安装缺失包。
-# 4. 生成辅助自定义目标：check_python_deps 方便用户手动触发再次校验。
+# ==============================================================================
+# corona_python.cmake
+# ==============================================================================
+# 功能：Python 解释器发现与依赖校验功能模块
+#
+# 概述：
+#   1. 首选系统已安装的 Python (满足最小版本要求)
+#      若找不到且允许回退，则尝试使用内置/嵌入式目录
+#   2. 暴露选项控制：
+#      - CORONA_PYTHON_MIN_VERSION: 期望的最低 Python 版本 (主.次)
+#      - CORONA_PYTHON_USE_EMBEDDED_FALLBACK: 启用嵌入式 Python 回退
+#   3. 依赖检查：
+#      读取 misc/pytools/requirements.txt，通过 check_pip_modules.py 校验
+#      并可按需自动安装缺失包
+#   4. 生成辅助自定义目标：check_python_deps 方便用户手动触发再次校验
+#
 # 设计原则：
-# - 配置阶段给出尽可能清晰的问题诊断（缺失解释器/缺失 requirements 文件等）。
-# - 避免在未启用自动安装时静默失败，必须明确 FATAL_ERROR 终止提示。
+#   - 配置阶段给出尽可能清晰的问题诊断
+#   - 避免在未启用自动安装时静默失败，必须明确 FATAL_ERROR 终止提示
+# ==============================================================================
 
 include_guard(GLOBAL)
 
-set(CORONA_PYTHON_MIN_VERSION 3.13 CACHE STRING "Minimum required Python3 version (major.minor)")
-option(CORONA_PYTHON_USE_EMBEDDED_FALLBACK "Use embedded Env fallback if required version not found system-wide" ON)
-set(CORONA_EMBEDDED_PY_DIR "${PROJECT_SOURCE_DIR}/third_party/Python-3.13.7" CACHE PATH "Embedded (bundled) Python directory path")
+# ------------------------------------------------------------------------------
+# Python 配置选项
+# ------------------------------------------------------------------------------
 
-# 步骤一：检测 Python (优先系统，再选择是否回退嵌入式)
+set(CORONA_PYTHON_MIN_VERSION 3.13 
+    CACHE STRING "Minimum required Python3 version (major.minor)")
+
+option(CORONA_PYTHON_USE_EMBEDDED_FALLBACK 
+    "Use embedded fallback if required version not found system-wide" 
+    ON)
+
+set(CORONA_EMBEDDED_PY_DIR "${PROJECT_SOURCE_DIR}/third_party/Python-3.13.7" 
+    CACHE PATH "Embedded (bundled) Python directory path")
+
+# ------------------------------------------------------------------------------
+# Python 探测
+# ------------------------------------------------------------------------------
+# 优先使用用户指定的 Python 根目录
 if(DEFINED Python3_ROOT_DIR AND EXISTS "${Python3_ROOT_DIR}")
     message(STATUS "[Python] Using user-specified Python root: ${Python3_ROOT_DIR}")
     find_package(Python3 ${CORONA_PYTHON_MIN_VERSION} COMPONENTS Interpreter Development)
@@ -42,13 +62,23 @@ endif()
 
 message(STATUS "[Python] Final chosen interpreter: ${Python3_EXECUTABLE}")
 
-# Requirements checking -----------------------------------------------------------
-option(CORONA_CHECK_PY_DEPS "Check Python dependencies (requirements) during configure" ON)
-option(CORONA_AUTO_INSTALL_PY_DEPS "Auto-install missing Python packages during configure" ON)
+# ------------------------------------------------------------------------------
+# Python 依赖校验配置
+# ------------------------------------------------------------------------------
+option(CORONA_CHECK_PY_DEPS 
+    "Check Python dependencies (requirements) during configure" 
+    ON)
+
+option(CORONA_AUTO_INSTALL_PY_DEPS 
+    "Auto-install missing Python packages during configure" 
+    ON)
+
 set(CORONA_PY_REQUIREMENTS_FILE "${PROJECT_SOURCE_DIR}/misc/pytools/requirements.txt")
 set(CORONA_PY_CHECK_SCRIPT "${PROJECT_SOURCE_DIR}/misc/pytools/check_pip_modules.py")
 
-# 统一以缓冲模式调用 Python 脚本的小工具函数（仅封装引号与工作目录惯例）
+# ------------------------------------------------------------------------------
+# 工具函数：运行 Python 脚本
+# ------------------------------------------------------------------------------
 function(corona_run_python OUT_RESULT)
     set(options)
     set(oneValueArgs SCRIPT WORKING_DIRECTORY)

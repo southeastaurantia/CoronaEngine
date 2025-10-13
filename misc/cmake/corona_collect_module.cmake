@@ -1,25 +1,28 @@
+# ==============================================================================
 # corona_collect_module.cmake
-# 用于标准化收集单个模块 (采用 public / private 分层) 的源文件/头文件。
-# 规则:
+# ==============================================================================
+# 功能：标准化收集单个模块（public/private 分层）的源文件和头文件
+#
+# 规则：
 #   - 仅在模块根目录下非递归收集
-#   - public 下收集: *.h *.hpp (导出头文件)
-#   - private 下收集: *.c *.cc *.cxx *.cpp (实现文件)
-#   - 生成变量 (全部大写):
-#       CORONA_<MODULE>_PUBLIC_HEADERS
-#       CORONA_<MODULE>_PRIVATE_SOURCES
-#   - 同时生成聚合列表 CORONA_<MODULE>_ALL_FILES (便于 source_group 或调试)
-#   - 如果目录不存在，对应变量为空
-#   - 变量导出至调用者 (PARENT_SCOPE)
-# 使用示例:
+#   - public 目录：收集 *.h *.hpp (导出头文件)
+#   - private 目录：收集 *.c *.cc *.cxx *.cpp (实现文件)
+#
+# 生成变量（全部大写）：
+#   CORONA_<MODULE>_PUBLIC_HEADERS  - 公共头文件列表
+#   CORONA_<MODULE>_PRIVATE_SOURCES - 私有源文件列表
+#   CORONA_<MODULE>_ALL_FILES       - 所有文件聚合列表
+#
+# 使用示例：
 #   corona_collect_module(Core "${CMAKE_CURRENT_SOURCE_DIR}/src/core")
-#   add_library(CoronaCore STATIC ${CORONA_CORE_PRIVATE_SOURCES} ${CORONA_CORE_PUBLIC_HEADERS})
+#   add_library(CoronaCore STATIC 
+#       ${CORONA_CORE_PRIVATE_SOURCES} 
+#       ${CORONA_CORE_PUBLIC_HEADERS}
+#   )
 #
-# 允许的调用形式:
-#   corona_collect_module(<ModuleName> <ModulePath>)
-#
-# 额外行为:
-#   - 打印收集结果数量 (STATUS)
-#   - 可通过可选参数 QUIET 关闭输出: corona_collect_module(Core path QUIET)
+# 可选参数：
+#   QUIET - 关闭收集结果输出
+# ==============================================================================
 
 function(corona_collect_module MODULE_NAME MODULE_DIR)
     set(options QUIET)

@@ -1,6 +1,18 @@
-# 为每个示例提供独立开关并共享构建逻辑
+# ==============================================================================
+# CoronaEngine - 示例程序构建配置
+# ==============================================================================
+# 说明：
+#   - 为每个示例子目录提供独立开关（BUILD_CORONA_EXAMPLE_<NAME>）
+#   - 定义 corona_add_example() 函数统一配置示例程序
+#   - 自动发现并添加示例子目录
+#   - 设置 VS 启动项目为第一个示例
+# ==============================================================================
+
 include(CMakeParseArguments)
 
+# ------------------------------------------------------------------------------
+# 定义全局属性用于跟踪示例目标
+# ------------------------------------------------------------------------------
 define_property(GLOBAL PROPERTY _CORONA_EXAMPLE_TARGETS
     BRIEF_DOCS "Corona example targets"
     FULL_DOCS "List of Corona example targets created via corona_add_example")
@@ -10,6 +22,10 @@ define_property(GLOBAL PROPERTY _CORONA_EXAMPLE_REGISTRY
 set_property(GLOBAL PROPERTY _CORONA_EXAMPLE_TARGETS "")
 set_property(GLOBAL PROPERTY _CORONA_EXAMPLE_REGISTRY "")
 
+# ------------------------------------------------------------------------------
+# 工具函数：拷贝 assets 资源到示例目录
+# ------------------------------------------------------------------------------
+
 function(corona_examples_copy_assets target_name)
     add_custom_command(TARGET ${target_name} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E echo "[${target_name}] Copy assets to $<TARGET_FILE_DIR:${target_name}>/assets"
@@ -18,6 +34,18 @@ function(corona_examples_copy_assets target_name)
         VERBATIM)
 endfunction()
 
+# ------------------------------------------------------------------------------
+# 工具函数：添加示例程序
+# ------------------------------------------------------------------------------
+# 参数：
+#   NAME <name>           - 示例程序名称（必需）
+#   SOURCES <files...>    - 源文件列表（必需）
+#   COPY_ASSETS          - 是否拷贝 assets 资源（可选标志）
+# 功能：
+#   - 创建可执行目标并链接 CoronaEngine
+#   - 自动安装运行时依赖（Helicon/Python/Editor）
+#   - 可选拷贝 assets 资源
+# ------------------------------------------------------------------------------
 function(corona_add_example)
     set(options COPY_ASSETS)
     set(oneValueArgs NAME)
@@ -63,15 +91,20 @@ function(corona_add_example)
     message(STATUS "[Corona:Example] ${CORONA_EX_NAME} configured")
 endfunction()
 
+# ------------------------------------------------------------------------------
+# 自动发现并添加示例子目录
+# ------------------------------------------------------------------------------
 file(GLOB _corona_example_dirs RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*)
 list(SORT _corona_example_dirs)
 set(_corona_enabled_examples)
 
 foreach(_corona_folder IN LISTS _corona_example_dirs)
+    # 跳过非目录项
     if(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${_corona_folder}")
         continue()
     endif()
 
+    # 跳过 assets 目录（已移至根目录）
     if(_corona_folder STREQUAL "assets")
         continue()
     endif()
@@ -108,15 +141,20 @@ if(_corona_example_targets)
     endif()
 endif()
 
+# ------------------------------------------------------------------------------
+# 输出示例配置摘要
+# ------------------------------------------------------------------------------
 message(STATUS "")
-message(STATUS "================ Corona Examples Summary ===============")
+message(STATUS "================================================================================")
+message(STATUS "  Corona Examples Summary")
+message(STATUS "================================================================================")
 
 if(_corona_enabled_examples)
     foreach(_corona_folder IN LISTS _corona_enabled_examples)
-        message(STATUS "✓ ${_corona_folder}")
+        message(STATUS "  ✓ ${_corona_folder}")
     endforeach()
 else()
-    message(STATUS "(no examples enabled)")
+    message(STATUS "  (no examples enabled)")
 endif()
 
 get_property(_corona_example_registry GLOBAL PROPERTY _CORONA_EXAMPLE_REGISTRY)
@@ -140,10 +178,10 @@ if(_corona_example_registry)
     endforeach()
 
     string(JOIN ", " _corona_pairs_joined ${_corona_pairs})
-    message(STATUS "Linked targets: ${_corona_pairs_joined}")
+    message(STATUS "  Linked targets: ${_corona_pairs_joined}")
 else()
-    message(STATUS "Linked targets: (none)")
+    message(STATUS "  Linked targets: (none)")
 endif()
 
-message(STATUS "========================================================")
+message(STATUS "================================================================================")
 message(STATUS "")

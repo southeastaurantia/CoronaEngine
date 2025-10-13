@@ -1,21 +1,34 @@
-# CoronaRuntimeDeps.cmake
-# 运行时依赖（动态库 / 调试符号）收集与复制模块
+# ==============================================================================
+# corona_runtime_deps.cmake
+# ==============================================================================
+# 功能：运行时依赖（动态库/调试符号）收集与复制模块
+#
+# 概述：
+#   1. 配置阶段：corona_configure_runtime_deps() 收集 Python 相关的 DLL/PDB 文件
+#      并写入目标属性 INTERFACE_CORONA_RUNTIME_DEPS（设置在 CoronaEngine 上）
+#   2. 构建后：corona_install_runtime_deps(<target>) 通过自定义命令把上述文件
+#      复制到指定目标生成目录，以便示例或可执行程序直接运行
+#
+# 设计要点：
+#   - 收集逻辑与复制逻辑解耦：收集只跑一次，复制可被多个可执行目标重用
+#   - 使用目标属性避免全局变量污染，便于后续扩展
+#   - 保持幂等：重复调用 configure 函数会覆盖为最新收集结果
+#
+# 使用示例：
+#   corona_configure_runtime_deps(CoronaEngine)  # 在定义 CoronaEngine 后调用一次
+#   corona_install_runtime_deps(MyExampleExe)    # 对每个需要独立运行的可执行目标调用
+# ==============================================================================
+
 include_guard(GLOBAL)
 
-# 功能概述：
-# 1. 在配置阶段：通过 corona_configure_runtime_deps() 收集 Python 相关的 DLL / PDB 文件并写入目标属性
-# INTERFACE_CORONA_RUNTIME_DEPS（设置在核心库 CoronaEngine 上）。
-# 2. 在构建后：通过 corona_install_runtime_deps(<target>) 自定义命令把上述文件复制到指定目标生成目录，
-# 以便示例或可执行程序直接运行无需手工拷贝依赖。
-# 设计要点：
-# - 收集逻辑与复制逻辑解耦：收集只跑一次，复制可被多个可执行目标重用。
-# - 使用目标属性避免全局变量污染，便于后续扩展（比如添加更多依赖类型）。
-# - 保持幂等：重复调用 configure 函数会覆盖为最新收集结果；复制命令仅在构建目标后执行。
-# 使用示例：
-# corona_configure_runtime_deps(CoronaEngine)  # 在定义 CoronaEngine 并找到相关依赖路径后调用一次
-# corona_install_runtime_deps(MyExampleExe)    # 对每个需要独立运行的可执行目标调用
+# ------------------------------------------------------------------------------
+# 函数：安装运行时依赖到目标目录
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+# 函数：安装运行时依赖到目标目录
+# ------------------------------------------------------------------------------
 function(corona_install_runtime_deps target_name)
-    # 从核心库读取之前收集的依赖文件列表（可能为空）
+    # 从核心库读取之前收集的依赖文件列表
     get_target_property(_CORONA_DEPS CoronaEngine INTERFACE_CORONA_RUNTIME_DEPS)
 
     if(NOT _CORONA_DEPS)
@@ -25,7 +38,7 @@ function(corona_install_runtime_deps target_name)
 
     set(_CORONA_DESTINATION_DIR "$<TARGET_FILE_DIR:${target_name}>")
 
-    # 使用 Python 脚本执行"若不同才复制"，以统一复制行为和日志
+    # 使用 Python 脚本执行智能复制（若不同才复制）
     set(_CORONA_PY_COPY "${PROJECT_SOURCE_DIR}/misc/pytools/copy_files.py")
 
     if(EXISTS "${_CORONA_PY_COPY}")
@@ -65,13 +78,16 @@ function(corona_install_runtime_deps target_name)
     endif()
 endfunction()
 
+# ------------------------------------------------------------------------------
+# 函数：配置阶段收集运行时依赖
+# ------------------------------------------------------------------------------
 function(corona_configure_runtime_deps target_name)
     if(NOT TARGET ${target_name})
         message(WARNING "[Corona:RuntimeDeps] Target ${target_name} does not exist; cannot configure runtime dependencies.")
         return()
     endif()
 
-    # -------- 收集 Python 运行库 (若已定位其运行时目录) --------
+    # 收集 Python 运行库 (DLL/PDB)
     if(DEFINED Python3_RUNTIME_LIBRARY_DIRS)
         file(GLOB _CORONA_PY_DLLS "${Python3_RUNTIME_LIBRARY_DIRS}/*.dll")
         file(GLOB _CORONA_PY_PDBS "${Python3_RUNTIME_LIBRARY_DIRS}/*.pdb")
