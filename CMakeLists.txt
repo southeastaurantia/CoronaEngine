@@ -68,3 +68,5 @@ message(STATUS "Check Python deps     : ${CORONA_CHECK_PY_DEPS}")
 message(STATUS "Auto install deps     : ${CORONA_AUTO_INSTALL_PY_DEPS}")
 message(STATUS "================================================================================")
 message(STATUS "")
+
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR})
