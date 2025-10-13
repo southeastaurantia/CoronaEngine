@@ -1,62 +1,37 @@
-# 先构建 utility 模块
+include_guard(GLOBAL)
+
+set(_CORONA_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_subdirectory(utils)
 add_subdirectory(utility)
+add_subdirectory(thread)
+add_subdirectory(resource)
+add_subdirectory(systems)
+add_subdirectory(core)
+add_subdirectory(script)
 
-set(CORONA_ENGINE_BASE_DEPENDENCIES
-        assimp
-        Helicon
-        EnTT::EnTT
-        CabbageHardware
-        CoronaLogger
-        CoronaResources
-        python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}
-)
+add_library(CoronaEngine STATIC)
+add_library(corona::engine ALIAS CoronaEngine)
 
-set(CORONA_ENGINE_SYSTEM_DEPENDENCIES ${CORONA_ENGINE_BASE_DEPENDENCIES})
+set_property(TARGET CoronaEngine PROPERTY OUTPUT_NAME "CoronaEngine")
 
-# 收集所有 C/C++ 源与头文件，CONFIGURE_DEPENDS 确保新增文件被自动发现
-file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS
-        "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/*.c"
-)
-set(_CORONA_SYSTEM_REGEX "[\\/]core[\\/]engine[\\/]systems[\\/].*\\.(c|cc|cxx|cpp|h|hpp)$")
-list(FILTER SOURCE_FILES EXCLUDE REGEX "${_CORONA_SYSTEM_REGEX}")
+# Link all discovered module targets (public to propagate includes/compile features)
 
-add_subdirectory(core/engine/systems)
-
-if(NOT SOURCE_FILES)
-        message(WARNING "[src] 未在 ${CMAKE_CURRENT_SOURCE_DIR} 中找到任何源文件，请确认路径或文件扩展名。")
-endif()
-
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES})
-
-# 主引擎以静态库形式提供，示例应用直接链接
-add_library(CoronaEngine STATIC ${SOURCE_FILES})
+foreach(_module_target IN ITEMS
+        CoronaCore
+        CoronaResource
+        CoronaScriptPython
+        CoronaSystemAnimation
+        CoronaSystemAudio
+        CoronaSystemDisplay
+        CoronaSystemRendering
+        CoronaThread
+        CoronaUtilityLogger
+        CoronaUtilityResource
+        CoronaUtils)
+    if(TARGET ${_module_target})
+        target_link_libraries(CoronaEngine PUBLIC ${_module_target})
+    endif()
+endforeach()
 
 target_compile_features(CoronaEngine PUBLIC cxx_std_20)
-
-target_include_directories(CoronaEngine PUBLIC
-        "${CMAKE_CURRENT_SOURCE_DIR}" # 允许头按相对路径引用
-        "${CMAKE_CURRENT_SOURCE_DIR}/include" # 公共 API 头文件目录
-        "${CMAKE_CURRENT_SOURCE_DIR}/common/include" # 全局头文件目录
-        "${stb_SOURCE_DIR}" # stb 单头库
-        ${Python3_INCLUDE_DIRS}
-)
-
-target_link_directories(CoronaEngine PUBLIC
-        ${Python3_LIBRARY_DIRS}
-)
-
-target_link_libraries(CoronaEngine PUBLIC
-        ${CORONA_ENGINE_BASE_DEPENDENCIES}
-        CoronaSystemsAll
-)
-
-# 将运行时依赖写入目标属性，供示例和应用复制
-corona_configure_runtime_deps(CoronaEngine)
-
-if(BUILD_CORONA_EDITOR)
-        message(STATUS "[Editor] Configure resources for CoronaEngine")
-        corona_configure_corona_editor(CoronaEngine)
-endif()

@@ -1,34 +1,29 @@
-corona_add_utility(
-    NAME CoronaResourceManager
-    TYPE STATIC
-    DESCRIPTION "Corona Engine resource management system with Corona concurrent integration"
-    SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/ResourceManager.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/ResourceTypes.cpp
-    PUBLIC_HEADERS
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ResourceManager.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ResourceTypes.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/IResource.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/IResourceLoader.h
-)
+include_guard(GLOBAL)
 
-# 条件性链接 Logger（如果可用）
-if(TARGET Corona::Logger)
-    target_link_libraries(CoronaResourceManager PUBLIC Corona::Logger)
-    message(STATUS "  - Linked with Corona::Logger")
-else()
-    message(STATUS "  - Corona::Logger not available, proceeding without logging")
+set(_CORONA_UTILITY_RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
+corona_collect_module(UtilityResource ${_CORONA_UTILITY_RESOURCE_DIR})
+
+add_library(CoronaUtilityResource STATIC)
+add_library(corona::utility::resource ALIAS CoronaUtilityResource)
+
+if(CORONA_UTILITYRESOURCE_PRIVATE_SOURCES)
+    target_sources(CoronaUtilityResource PRIVATE ${CORONA_UTILITYRESOURCE_PRIVATE_SOURCES})
 endif()
 
-target_link_libraries(CoronaResourceManager
-    PUBLIC cabbage::concurrent
-)
+if(CORONA_UTILITYRESOURCE_PUBLIC_HEADERS)
+    target_sources(CoronaUtilityResource PUBLIC ${CORONA_UTILITYRESOURCE_PUBLIC_HEADERS})
+endif()
 
-# 特殊配置：添加spdlog包含目录
-target_include_directories(CoronaResourceManager
+target_compile_features(CoronaUtilityResource PUBLIC cxx_std_20)
+
+target_include_directories(CoronaUtilityResource
     PUBLIC
-    "${PROJECT_SOURCE_DIR}/third_party/spdlog-1.15.3/include"
+    ${_CORONA_UTILITY_RESOURCE_DIR}/public
 )
 
-# 更正别名（因为目标名与原来不同）
-add_library(CoronaResources ALIAS CoronaResourceManager)
+target_link_libraries(CoronaUtilityResource
+    PUBLIC
+    corona::utility::logger
+    cabbage::concurrent
+)

@@ -1,5 +1,5 @@
-#include "core/engine/Engine.h"
-#include <Log.h>
+#include "Engine.h"
+#include <corona_logger.h>
 
 #include <atomic>
 #include <chrono>

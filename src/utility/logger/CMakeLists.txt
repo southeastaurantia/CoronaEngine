@@ -1,15 +1,24 @@
-corona_add_utility(
-    NAME CoronaLogger
-    TYPE STATIC
-    DESCRIPTION "Corona Engine logging system with spdlog integration"
-    SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/Log.cpp
-    PUBLIC_HEADERS
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/Log.h
-)
+include_guard(GLOBAL)
 
-# 特殊配置：添加spdlog包含目录
-target_include_directories(CoronaLogger
+set(_CORONA_UTILITY_LOGGER_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
+corona_collect_module(UtilityLogger ${_CORONA_UTILITY_LOGGER_DIR})
+
+add_library(CoronaUtilityLogger STATIC)
+add_library(corona::utility::logger ALIAS CoronaUtilityLogger)
+
+if(CORONA_UTILITYLOGGER_PRIVATE_SOURCES)
+    target_sources(CoronaUtilityLogger PRIVATE ${CORONA_UTILITYLOGGER_PRIVATE_SOURCES})
+endif()
+
+if(CORONA_UTILITYLOGGER_PUBLIC_HEADERS)
+    target_sources(CoronaUtilityLogger PUBLIC ${CORONA_UTILITYLOGGER_PUBLIC_HEADERS})
+endif()
+
+target_compile_features(CoronaUtilityLogger PUBLIC cxx_std_20)
+
+target_include_directories(CoronaUtilityLogger
     PUBLIC
-    "${PROJECT_SOURCE_DIR}/third_party/spdlog-1.15.3/include"
+    ${_CORONA_UTILITY_LOGGER_DIR}/public
+    ${PROJECT_SOURCE_DIR}/third_party/spdlog-1.15.3/include
 )

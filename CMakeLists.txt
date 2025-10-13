@@ -7,6 +7,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 project(CoronaEngine VERSION 0.5.0 HOMEPAGE_URL "https://github.com/CoronaEngine/CoronaEngine" LANGUAGES C CXX)
 
 # 模块化拆分：保持根脚本专注于 orchestrate
+include(corona_collect_module)
 include(corona_options) # 全局开关
 include(corona_python) # Python 探测与依赖校验
 include(corona_runtime_deps) # 运行时 DLL/PDB 收集
