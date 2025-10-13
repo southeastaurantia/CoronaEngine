@@ -265,11 +265,11 @@ void AnimationSystem::update_animation_state(AnimationState& state, float dt) {
     // 从根开始递归计算
     calculateBoneTransform(state, anim, anim.m_RootNode, identity, state.bones);
 
-    if (!state.model->bonesMatrixBuffer) {
-        state.model->bonesMatrixBuffer = HardwareBuffer(state.bones, BufferUsage::StorageBuffer);
-    } else {
-        state.model->bonesMatrixBuffer.copyFromData(state.bones.data(), state.bones.size() * sizeof(ktm::fmat4x4));
-    }
+    // if (!state.model->bonesMatrixBuffer) {
+    //     state.model->bonesMatrixBuffer = HardwareBuffer(state.bones, BufferUsage::StorageBuffer);
+    // } else {
+    //     state.model->bonesMatrixBuffer.copyFromData(state.bones.data(), state.bones.size() * sizeof(ktm::fmat4x4));
+    // }
 }
 
 void AnimationSystem::update_physics(Model& m) {

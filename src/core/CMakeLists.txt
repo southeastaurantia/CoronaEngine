@@ -24,7 +24,6 @@ target_include_directories(CoronaCore
 
 target_link_libraries(CoronaCore
     PUBLIC
-    corona::resource
     corona::script::python
     corona::system::animation
     corona::system::rendering
@@ -32,6 +31,7 @@ target_link_libraries(CoronaCore
     corona::system::audio
     corona::thread
     corona::utils
-    
+
     ktm
+    VisionScene::Resource
 )

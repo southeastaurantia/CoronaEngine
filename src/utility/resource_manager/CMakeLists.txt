@@ -26,4 +26,5 @@ target_link_libraries(CoronaUtilityResource
     PUBLIC
     corona::utility::logger
     cabbage::concurrent
+    VisionScene::Resource
 )

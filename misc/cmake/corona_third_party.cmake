@@ -63,11 +63,19 @@ FetchContent_Declare(
     EXCLUDE_FROM_ALL
 )
 
+FetchContent_Declare(
+    CoronaResource
+    GIT_REPOSITORY https://github.com/CoronaEngine/CoronaResource.git
+    GIT_TAG main
+    GIT_SHALLOW TRUE
+    EXCLUDE_FROM_ALL
+)
+
 # ------------------------------------------------------------------------------
 # 拉取并添加核心依赖
 # ------------------------------------------------------------------------------
-FetchContent_MakeAvailable(assimp stb entt CabbageHardware CabbageConcurrent)
-message(STATUS "[3rdparty] Core dependencies: assimp, stb, entt, CabbageHardware, CabbageConcurrent")
+FetchContent_MakeAvailable(assimp stb entt CabbageHardware CabbageConcurrent CoronaResource)
+message(STATUS "[3rdparty] Core dependencies: assimp, stb, entt, CabbageHardware, CabbageConcurrent, CoronaResource")
 
 # ------------------------------------------------------------------------------
 # 示例程序依赖（按需启用）

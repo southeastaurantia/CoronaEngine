@@ -17,7 +17,6 @@ set(_CORONA_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 add_subdirectory(utils)      # 通用工具类
 add_subdirectory(utility)    # 实用工具模块（logger/resource_manager）
 add_subdirectory(thread)     # 线程与并发原语
-add_subdirectory(resource)   # 资源加载与管理
 add_subdirectory(systems)    # 引擎系统（animation/audio/display/rendering）
 add_subdirectory(core)       # 核心引擎逻辑（Engine 类）
 add_subdirectory(script)     # 脚本系统（Python 集成）

@@ -25,6 +25,7 @@ target_include_directories(CoronaSystemAnimation
 target_link_libraries(CoronaSystemAnimation
     PUBLIC
     corona::system::interface
-    corona::resource
     corona::core
+
+    VisionScene::Resource
 )

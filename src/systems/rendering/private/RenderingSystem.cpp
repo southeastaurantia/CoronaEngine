@@ -61,7 +61,7 @@ void RenderingSystem::init_shader(std::shared_ptr<Shader> shader)
 
 void RenderingSystem::set_display_surface(std::shared_ptr<Scene> scene)
 {
-    scene->displayer.setSurface(scene->displaySurface);
+    // scene->displayer.setSurface(scene->displaySurface);
     //scene->displayer = finalOutputImage;
 }
 
@@ -77,7 +77,7 @@ void RenderingSystem::update_engine()
             gbuffer_pipeline(scene);
             composite_pipeline();
 
-            scene->displayer = finalOutputImage;
+            // scene->displayer = finalOutputImage;
         });
     }
 }
@@ -101,9 +101,9 @@ void RenderingSystem::gbuffer_pipeline(std::shared_ptr<Scene> scene)
         ktm::fmat4x4 actorMatrix = model->modelMatrix;
         rasterizerPipeline["pushConsts.modelMatrix"] = actorMatrix;
 
-        HardwareBuffer bonesMatrixBuffer = model->bonesMatrixBuffer;
+        // HardwareBuffer bonesMatrixBuffer = model->bonesMatrixBuffer;
         rasterizerPipeline["pushConsts.uniformBufferIndex"] = gbufferUniformBuffer.storeDescriptor();
-        rasterizerPipeline["pushConsts.boneIndex"] = bonesMatrixBuffer.storeDescriptor();
+        // rasterizerPipeline["pushConsts.boneIndex"] = bonesMatrixBuffer.storeDescriptor();
 
         rasterizerPipeline["gbufferPostion"] = gbufferPostionImage;
         rasterizerPipeline["gbufferBaseColor"] = gbufferBaseColorImage;
@@ -112,16 +112,16 @@ void RenderingSystem::gbuffer_pipeline(std::shared_ptr<Scene> scene)
 
          for (auto &m : model->meshes)
          {
-             rasterizerPipeline["inPosition"] = m.meshDevice->pointsBuffer;
-             rasterizerPipeline["inNormal"] = m.meshDevice->normalsBuffer;
-             rasterizerPipeline["inTexCoord"] = m.meshDevice->texCoordsBuffer;
-             rasterizerPipeline["boneIndexes"] = m.meshDevice->boneIndexesBuffer;
-             rasterizerPipeline["jointWeights"] = m.meshDevice->boneWeightsBuffer;
-             rasterizerPipeline["pushConsts.textureIndex"] = m.meshDevice->textureIndex;
+            //  rasterizerPipeline["inPosition"] = m.meshDevice->pointsBuffer;
+            //  rasterizerPipeline["inNormal"] = m.meshDevice->normalsBuffer;
+            //  rasterizerPipeline["inTexCoord"] = m.meshDevice->texCoordsBuffer;
+            //  rasterizerPipeline["boneIndexes"] = m.meshDevice->boneIndexesBuffer;
+            //  rasterizerPipeline["jointWeights"] = m.meshDevice->boneWeightsBuffer;
+            //  rasterizerPipeline["pushConsts.textureIndex"] = m.meshDevice->textureIndex;
         
-             executor(HardwareExecutor::ExecutorType::Graphics)
-                 << rasterizerPipeline(gbufferSize.x, gbufferSize.y) << rasterizerPipeline.record(m.meshDevice->indexBuffer)
-                 << executor.commit();
+            //  executor(HardwareExecutor::ExecutorType::Graphics)
+            //      << rasterizerPipeline(gbufferSize.x, gbufferSize.y) << rasterizerPipeline.record(m.meshDevice->indexBuffer)
+            //      << executor.commit();
          }
     });
 }
