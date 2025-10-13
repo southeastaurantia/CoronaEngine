@@ -4,15 +4,15 @@
 # 功能：Corona 编辑器资源收集与安装（镜像 corona_runtime_deps 模式）
 #
 # 概述：
-#   1. corona_configure_corona_editor(<core_target>) 收集现有的 backend/frontend
-#      目录并将它们存储为 INTERFACE 属性 (INTERFACE_CORONA_EDITOR_DIRS)
-#   2. corona_install_corona_editor(<executable_target>) 在构建时通过 POST_BUILD
-#      自定义命令将这些目录复制到可执行文件旁边
+# 1. corona_configure_corona_editor(<core_target>) 收集现有的 backend/frontend
+# 目录并将它们存储为 INTERFACE 属性 (INTERFACE_CORONA_EDITOR_DIRS)
+# 2. corona_install_corona_editor(<executable_target>) 在构建时通过 POST_BUILD
+# 自定义命令将这些目录复制到可执行文件旁边
 #
 # 设计要点：
-#   - 收集与安装分离，便于多个可执行文件重用
-#   - 使用目标属性而非全局变量，易于后续扩展
-#   - 幂等：重新配置会覆盖属性；安装仅对调用的目标运行
+# - 收集与安装分离，便于多个可执行文件重用
+# - 使用目标属性而非全局变量，易于后续扩展
+# - 幂等：重新配置会覆盖属性；安装仅对调用的目标运行
 # ==============================================================================
 
 include_guard(GLOBAL)
@@ -68,38 +68,80 @@ function(corona_install_corona_editor target_name core_target)
         return()
     endif()
 
-    set(_CORONA_DEST_ROOT "$<TARGET_FILE_DIR:${target_name}>/CabbageEditor")
-    set(_CORONA_COMMANDS)
-    list(APPEND _CORONA_COMMANDS COMMAND ${CMAKE_COMMAND} -E echo "[Corona:Editor] Install resources -> ${_CORONA_DEST_ROOT}")
-    list(APPEND _CORONA_COMMANDS COMMAND ${CMAKE_COMMAND} -E make_directory "${_CORONA_DEST_ROOT}")
-
     # 使用 Python 脚本完成目录复制并执行 npm 构建
     set(_CORONA_PY_SCRIPT "${PROJECT_SOURCE_DIR}/misc/pytools/editor_copy_and_build.py")
     set(_CORONA_NODE_DIR "${PROJECT_SOURCE_DIR}/editor/CabbageEditor/Env/node-v22.19.0-win-x64")
-    set(_CORONA_FRONTEND_DIR "$<TARGET_FILE_DIR:${target_name}>/CabbageEditor/Frontend")
 
-    # 组装 --src-dir 参数列表
-    set(_CORONA_EDITOR_COPY_ARGS)
-
-    foreach(_CORONA_DIR IN LISTS _CORONA_EDITOR_DIRS)
-        list(APPEND _CORONA_EDITOR_COPY_ARGS --src-dir "${_CORONA_DIR}")
-    endforeach()
-
-    if(EXISTS "${_CORONA_PY_SCRIPT}")
-        if(DEFINED Python3_EXECUTABLE)
-            list(APPEND _CORONA_COMMANDS COMMAND ${CMAKE_COMMAND} -E echo "[Corona:Editor] Sync and npm build -> ${_CORONA_DEST_ROOT}")
-            list(APPEND _CORONA_COMMANDS COMMAND "${Python3_EXECUTABLE}" "${_CORONA_PY_SCRIPT}" --dest-root "${_CORONA_DEST_ROOT}" ${_CORONA_EDITOR_COPY_ARGS} --frontend-dir "${_CORONA_FRONTEND_DIR}" --node-dir "${_CORONA_NODE_DIR}")
-        else()
-            message(STATUS "[Corona:Editor] Python3 executable is not available; skipping editor copy/build step.")
-        endif()
-    else()
+    if(NOT EXISTS "${_CORONA_PY_SCRIPT}")
         message(STATUS "[Corona:Editor] Script not found: ${_CORONA_PY_SCRIPT}; skipping editor copy/build.")
+        return()
     endif()
 
-    add_custom_command(
-        TARGET ${target_name} POST_BUILD
-        ${_CORONA_COMMANDS}
-        COMMENT "[Corona:Editor] Copy editor resource directories"
-        VERBATIM
-    )
+    if(NOT DEFINED Python3_EXECUTABLE)
+        message(STATUS "[Corona:Editor] Python3 executable is not available; skipping editor copy/build step.")
+        return()
+    endif()
+
+    # 组装 --src-dir 参数
+    set(_CORONA_SRC_DIR_ARGS)
+
+    foreach(_CORONA_DIR IN LISTS _CORONA_EDITOR_DIRS)
+        list(APPEND _CORONA_SRC_DIR_ARGS "--src-dir" "${_CORONA_DIR}")
+    endforeach()
+
+    # 直接使用 add_custom_command，但通过包装脚本避免命令行长度问题
+    # 创建一个简单的批处理/shell 包装脚本
+    if(WIN32)
+        set(_CORONA_WRAPPER_SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/corona_editor_install_${target_name}.bat")
+        set(_SCRIPT_CONTENT "@echo off\nsetlocal\n")
+        string(APPEND _SCRIPT_CONTENT "set DEST_ROOT=%~1\n")
+        string(APPEND _SCRIPT_CONTENT "set FRONTEND_DIR=%~2\n")
+        string(APPEND _SCRIPT_CONTENT "echo [Corona:Editor] Installing editor resources to %DEST_ROOT%\n")
+        string(APPEND _SCRIPT_CONTENT "\"${Python3_EXECUTABLE}\" \"${_CORONA_PY_SCRIPT}\" --dest-root \"%DEST_ROOT%\"")
+
+        foreach(_CORONA_DIR IN LISTS _CORONA_EDITOR_DIRS)
+            string(APPEND _SCRIPT_CONTENT " --src-dir \"${_CORONA_DIR}\"")
+        endforeach()
+
+        string(APPEND _SCRIPT_CONTENT " --frontend-dir \"%FRONTEND_DIR%\" --node-dir \"${_CORONA_NODE_DIR}\"\n")
+        string(APPEND _SCRIPT_CONTENT "if errorlevel 1 (\n")
+        string(APPEND _SCRIPT_CONTENT "    echo [Corona:Editor] Failed to install editor resources\n")
+        string(APPEND _SCRIPT_CONTENT "    exit /b 1\n")
+        string(APPEND _SCRIPT_CONTENT ")\n")
+        string(APPEND _SCRIPT_CONTENT "echo [Corona:Editor] Successfully installed editor resources\n")
+        file(WRITE "${_CORONA_WRAPPER_SCRIPT}" "${_SCRIPT_CONTENT}")
+
+        add_custom_command(
+            TARGET ${target_name} POST_BUILD
+            COMMAND cmd /c "${_CORONA_WRAPPER_SCRIPT}" "$<TARGET_FILE_DIR:${target_name}>/CabbageEditor" "$<TARGET_FILE_DIR:${target_name}>/CabbageEditor/Frontend"
+            COMMENT "[Corona:Editor] Installing editor resources..."
+            VERBATIM
+        )
+    else()
+        set(_CORONA_WRAPPER_SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/corona_editor_install_${target_name}.sh")
+        set(_SCRIPT_CONTENT "#!/bin/bash\n")
+        string(APPEND _SCRIPT_CONTENT "DEST_ROOT=\"$1\"\n")
+        string(APPEND _SCRIPT_CONTENT "FRONTEND_DIR=\"$2\"\n")
+        string(APPEND _SCRIPT_CONTENT "echo \"[Corona:Editor] Installing editor resources to $DEST_ROOT\"\n")
+        string(APPEND _SCRIPT_CONTENT "\"${Python3_EXECUTABLE}\" \"${_CORONA_PY_SCRIPT}\" --dest-root \"$DEST_ROOT\"")
+
+        foreach(_CORONA_DIR IN LISTS _CORONA_EDITOR_DIRS)
+            string(APPEND _SCRIPT_CONTENT " --src-dir \"${_CORONA_DIR}\"")
+        endforeach()
+
+        string(APPEND _SCRIPT_CONTENT " --frontend-dir \"$FRONTEND_DIR\" --node-dir \"${_CORONA_NODE_DIR}\"\n")
+        string(APPEND _SCRIPT_CONTENT "if [ $? -ne 0 ]; then\n")
+        string(APPEND _SCRIPT_CONTENT "    echo \"[Corona:Editor] Failed to install editor resources\"\n")
+        string(APPEND _SCRIPT_CONTENT "    exit 1\n")
+        string(APPEND _SCRIPT_CONTENT "fi\n")
+        string(APPEND _SCRIPT_CONTENT "echo \"[Corona:Editor] Successfully installed editor resources\"\n")
+        file(WRITE "${_CORONA_WRAPPER_SCRIPT}" "${_SCRIPT_CONTENT}")
+
+        add_custom_command(
+            TARGET ${target_name} POST_BUILD
+            COMMAND bash "${_CORONA_WRAPPER_SCRIPT}" "$<TARGET_FILE_DIR:${target_name}>/CabbageEditor" "$<TARGET_FILE_DIR:${target_name}>/CabbageEditor/Frontend"
+            COMMENT "[Corona:Editor] Installing editor resources..."
+            VERBATIM
+        )
+    endif()
 endfunction()

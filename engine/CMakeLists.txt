@@ -48,8 +48,8 @@ endif()
 # 拷贝 assets 资源文件到运行时目录
 add_custom_command(TARGET ${CORONA_ENGINE_RUNTIME_TARGET} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E echo "[Corona_runtime] Copy assets to $<TARGET_FILE_DIR:${CORONA_ENGINE_RUNTIME_TARGET}>/assets"
-    COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:${CORONA_ENGINE_RUNTIME_TARGET}>/assets
-    COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/assets" $<TARGET_FILE_DIR:${CORONA_ENGINE_RUNTIME_TARGET}>/assets
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${CORONA_ENGINE_RUNTIME_TARGET}>/assets"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/assets" "$<TARGET_FILE_DIR:${CORONA_ENGINE_RUNTIME_TARGET}>/assets"
     COMMENT "[Corona_runtime] Installing assets directory"
     VERBATIM
 )

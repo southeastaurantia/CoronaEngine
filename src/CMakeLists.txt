@@ -52,3 +52,7 @@ endforeach()
 
 # 要求 C++20 标准
 target_compile_features(CoronaEngine PUBLIC cxx_std_20)
+
+if(BUILD_CORONA_EDITOR)
+    corona_configure_corona_editor(CoronaEngine)
+endif()
