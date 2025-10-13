@@ -4,7 +4,7 @@
 # 功能：标准化收集单个模块（public/private 分层）的源文件和头文件
 #
 # 规则：
-#   - 仅在模块根目录下非递归收集
+#   - 递归搜索 public 和 private 目录下的所有文件
 #   - public 目录：收集 *.h *.hpp (导出头文件)
 #   - private 目录：收集 *.c *.cc *.cxx *.cpp (实现文件)
 #
@@ -47,12 +47,12 @@ function(corona_collect_module MODULE_NAME MODULE_DIR)
     set(PUBLIC_DIR "${MODULE_DIR}/public")
     set(PRIVATE_DIR "${MODULE_DIR}/private")
 
-    # 仅非递归收集
+    # 递归收集所有文件
     unset(_public_headers)
     unset(_private_sources)
 
     if(IS_DIRECTORY "${PUBLIC_DIR}")
-        file(GLOB _public_headers CONFIGURE_DEPENDS
+        file(GLOB_RECURSE _public_headers CONFIGURE_DEPENDS
             RELATIVE "${MODULE_DIR}"
             "${PUBLIC_DIR}/*.h"
             "${PUBLIC_DIR}/*.hpp"
@@ -60,7 +60,7 @@ function(corona_collect_module MODULE_NAME MODULE_DIR)
     endif()
 
     if(IS_DIRECTORY "${PRIVATE_DIR}")
-        file(GLOB _private_sources CONFIGURE_DEPENDS
+        file(GLOB_RECURSE _private_sources CONFIGURE_DEPENDS
             RELATIVE "${MODULE_DIR}"
             "${PRIVATE_DIR}/*.c"
             "${PRIVATE_DIR}/*.cc"
