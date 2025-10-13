@@ -12,6 +12,7 @@ set(CORONA_ENGINE_RUNTIME_TARGET Corona_runtime)
 # 创建可执行目标
 # ------------------------------------------------------------------------------
 add_executable(${CORONA_ENGINE_RUNTIME_TARGET}
+    RuntimeLoop.cpp
     main.cpp
 )
 
