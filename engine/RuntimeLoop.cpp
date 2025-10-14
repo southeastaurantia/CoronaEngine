@@ -44,13 +44,14 @@ void RuntimeLoop::initialize() {
 }
 
 void RuntimeLoop::run(std::atomic<bool>& running_flag) {
+    std::uint64_t frame_counter_ = 0;
     CE_LOG_INFO("Entering main loop (press Ctrl+C to exit)...");
     while (running_flag.load(std::memory_order_relaxed)) {
         const auto frame_start = clock_type::now();
 
         on_tick();
 
-        // ++frame_counter_;
+        ++frame_counter_;
 
         // toggle_cycle<CoronaEngineAPI::RenderTag>(600, 300, "RenderTag");
         // toggle_cycle<CoronaEngineAPI::AnimationTag>(720, 360, "AnimationTag");
@@ -67,6 +68,15 @@ void RuntimeLoop::run(std::atomic<bool>& running_flag) {
             update_system(has_animation_entities, animation_running_, *animation_system_);
             update_system(has_audio_entities, audio_running_, *audio_system_);
             update_system(has_display_entities, display_running_, *display_system_);
+
+            if(frame_counter_ % 600 == 0) {
+                CE_LOG_INFO("Frame {}: Systems status - Animation: {}, Rendering: {}, Audio: {}, Display: {}",
+                            frame_counter_,
+                            animation_running_ ? "Running" : "Paused",
+                            rendering_running_ ? "Running" : "Paused",
+                            audio_running_ ? "Running" : "Paused",
+                            display_running_ ? "Running" : "Paused");
+            }
         }
 
         const auto frame_elapsed = clock_type::now() - frame_start;
