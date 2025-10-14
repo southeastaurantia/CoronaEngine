@@ -23,6 +23,11 @@ class RuntimeLoop {
     void run(std::atomic<bool>& running_flag);
     void shutdown();
 
+   protected:
+    virtual void on_initialize() = 0;
+    virtual void on_shutdown() = 0;
+    virtual void on_tick() = 0;
+
    private:
     template <typename Tag>
     void toggle_cycle(int cycle_frames, int add_offset, const char* label);

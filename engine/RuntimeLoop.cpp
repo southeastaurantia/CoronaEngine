@@ -33,6 +33,8 @@ void RuntimeLoop::initialize() {
     audio_system_ = &engine_.get_system<Corona::AudioSystem>();
     display_system_ = &engine_.get_system<Corona::DisplaySystem>();
 
+    on_initialize();
+
     engine_.start_systems();
 
     animation_running_ = true;
@@ -46,22 +48,26 @@ void RuntimeLoop::run(std::atomic<bool>& running_flag) {
     while (running_flag.load(std::memory_order_relaxed)) {
         const auto frame_start = clock_type::now();
 
-        ++frame_counter_;
+        on_tick();
 
-        toggle_cycle<CoronaEngineAPI::RenderTag>(600, 300, "RenderTag");
-        toggle_cycle<CoronaEngineAPI::AnimationTag>(720, 360, "AnimationTag");
-        toggle_cycle<CoronaEngineAPI::AudioTag>(840, 420, "AudioTag");
-        toggle_cycle<CoronaEngineAPI::DisplayTag>(960, 480, "DisplayTag");
+        // ++frame_counter_;
 
-        const bool has_render_entities = !registry_.storage<CoronaEngineAPI::RenderTag>().empty();
-        const bool has_animation_entities = !registry_.storage<CoronaEngineAPI::AnimationTag>().empty();
-        const bool has_audio_entities = !registry_.storage<CoronaEngineAPI::AudioTag>().empty();
-        const bool has_display_entities = !registry_.storage<CoronaEngineAPI::DisplayTag>().empty();
+        // toggle_cycle<CoronaEngineAPI::RenderTag>(600, 300, "RenderTag");
+        // toggle_cycle<CoronaEngineAPI::AnimationTag>(720, 360, "AnimationTag");
+        // toggle_cycle<CoronaEngineAPI::AudioTag>(840, 420, "AudioTag");
+        // toggle_cycle<CoronaEngineAPI::DisplayTag>(960, 480, "DisplayTag");
 
-        update_system(has_render_entities, rendering_running_, *rendering_system_);
-        update_system(has_animation_entities, animation_running_, *animation_system_);
-        update_system(has_audio_entities, audio_running_, *audio_system_);
-        update_system(has_display_entities, display_running_, *display_system_);
+        {
+            const bool has_render_entities = !registry_.storage<CoronaEngineAPI::RenderTag>().empty();
+            const bool has_animation_entities = !registry_.storage<CoronaEngineAPI::AnimationTag>().empty();
+            const bool has_audio_entities = !registry_.storage<CoronaEngineAPI::AudioTag>().empty();
+            const bool has_display_entities = !registry_.storage<CoronaEngineAPI::DisplayTag>().empty();
+
+            update_system(has_render_entities, rendering_running_, *rendering_system_);
+            update_system(has_animation_entities, animation_running_, *animation_system_);
+            update_system(has_audio_entities, audio_running_, *audio_system_);
+            update_system(has_display_entities, display_running_, *display_system_);
+        }
 
         const auto frame_elapsed = clock_type::now() - frame_start;
         if (frame_elapsed < kFrameDuration) {
@@ -72,6 +78,7 @@ void RuntimeLoop::run(std::atomic<bool>& running_flag) {
 }
 
 void RuntimeLoop::shutdown() {
+    on_shutdown();
     engine_.stop_systems();
     CE_LOG_INFO("All systems stopped");
 }
