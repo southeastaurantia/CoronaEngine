@@ -53,6 +53,11 @@ endforeach()
 # 要求 C++20 标准
 target_compile_features(CoronaEngine PUBLIC cxx_std_20)
 
+# 收集运行时依赖（Python DLL/PDB）供后续可执行目标复制
+if(COMMAND corona_configure_runtime_deps)
+    corona_configure_runtime_deps(CoronaEngine)
+endif()
+
 if(BUILD_CORONA_EDITOR)
     corona_configure_corona_editor(CoronaEngine)
 endif()
