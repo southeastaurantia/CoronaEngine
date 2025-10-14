@@ -1,20 +1,22 @@
+#include <CoronaEngineAPI.h>
 #include <Engine.h>
 #include <corona_logger.h>
+#include <engine/RuntimeLoop.h>
 
 #include <atomic>
 #include <csignal>
 
-#include <CoronaEngineAPI.h>
-#include <engine/RuntimeLoop.h>
 #include "CustomLoop.h"
+
 
 namespace {
 std::atomic<bool> g_running{true};
 void handle_signal(int) noexcept { g_running.store(false, std::memory_order_relaxed); }
-} // namespace
+}  // namespace
 
 int main(int argc, char** argv) {
-    (void)argc; (void)argv;
+    (void)argc;
+    (void)argv;
 
     std::signal(SIGINT, handle_signal);
 

@@ -6,7 +6,6 @@
 
 #include "RuntimeLoop.h"
 
-
 namespace {
 std::atomic<bool> g_running{true};
 

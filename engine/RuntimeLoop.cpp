@@ -96,3 +96,7 @@ void RuntimeLoop::build_base_entities() {
         registry_.emplace<CoronaEngineAPI::DisplayTag>(entity);
     }
 }
+
+void RuntimeLoop::on_initialize() {}
+void RuntimeLoop::on_shutdown() {}
+void RuntimeLoop::on_tick() {}

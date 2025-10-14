@@ -6,7 +6,6 @@
 #include <entt/entt.hpp>
 #include <vector>
 
-
 namespace Corona {
 class Engine;
 class AnimationSystem;
@@ -24,9 +23,9 @@ class RuntimeLoop {
     void shutdown();
 
    protected:
-    virtual void on_initialize() = 0;
-    virtual void on_shutdown() = 0;
-    virtual void on_tick() = 0;
+    virtual void on_initialize();
+    virtual void on_shutdown();
+    virtual void on_tick();
 
    private:
     template <typename Tag>
