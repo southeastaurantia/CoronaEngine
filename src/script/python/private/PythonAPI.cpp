@@ -22,8 +22,6 @@ static inline void APISafeDecRef(PyObject* obj, const char* tag) {
     Py_DECREF(obj);
 }
 
-// Remove compile-time toggle; use runtime member 'leakSafeMainReload_'
-
 namespace CE::Python::Internal {
     struct PyObjPtr {
         PyObject* p = nullptr;
@@ -153,14 +151,22 @@ bool PythonAPI::isLeakSafeReload() const { return leakSafeMainReload_; }
 PythonAPI::~PythonAPI()
 {
     if (Py_IsInitialized()) {
-        GILGuard guard;
-        if (!leakSafeMainReload_) {
-            Py_XDECREF(messageFunc);
-            Py_XDECREF(pFunc);
-            Py_XDECREF(pModule);
-        } else {
-            std::cout << "[Hotfix][API] leak-safe: skip DECREF in destructor" << std::endl;
+        // 清理 PyObject 引用需在持有 GIL 的短作用域内完成
+        {
+            GILGuard guard;
+            if (!leakSafeMainReload_) {
+                Py_XDECREF(messageFunc);
+                Py_XDECREF(pFunc);
+                Py_XDECREF(pModule);
+            } else {
+                std::cout << "[Hotfix][API] leak-safe: skip DECREF in destructor" << std::endl;
+            }
+            // 防止悬垂
+            messageFunc = nullptr;
+            pFunc = nullptr;
+            pModule = nullptr;
         }
+        // 释放 GIL 之后再 Finalize，避免在 finalizing 状态下释放 GIL 触发致命错误
         Py_FinalizeEx();
     }
     PyConfig_Clear(&config);
@@ -227,7 +233,6 @@ bool PythonAPI::performHotReload() {
     bool reloadedDeps = true;
     if (leakSafeMainReload_) {
         std::cout << "[Hotfix][API] leak-safe: skip ReloadPythonFile (submodules), will reload 'main' only" << std::endl;
-        // Clear pending set so we don't spin on it
         hotfixManger.packageSet.clear();
         hotfixManger.dependencyGraph.clear();
         hotfixManger.dependencyVec.clear();

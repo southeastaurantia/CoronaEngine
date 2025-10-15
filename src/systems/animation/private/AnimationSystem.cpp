@@ -6,6 +6,7 @@
 #include "Bone.h"
 #include "Engine.h"
 #include "Model.h"
+#include "PythonBridge.h"
 
 namespace {
 using namespace Corona;
@@ -172,7 +173,6 @@ using namespace Corona;
 
 AnimationSystem::AnimationSystem()
     : ThreadedSystem("AnimationSystem") {
-    // 为本系统注册命令队列
     Engine::instance().add_queue(name(), std::make_unique<SafeCommandQueue>());
 }
 
@@ -187,6 +187,12 @@ void AnimationSystem::onTick() {
             continue;
         }
         ++spun;
+    }
+
+    frame_count_++;
+    if (frame_count_ >= 60) {
+        frame_count_ = 0;
+        send_collision_event();
     }
 
     // 遍历关注的 AnimationState 并推进
@@ -270,6 +276,16 @@ void AnimationSystem::update_animation_state(AnimationState& state, float dt) {
     // } else {
     //     state.model->bonesMatrixBuffer.copyFromData(state.bones.data(), state.bones.size() * sizeof(ktm::fmat4x4));
     // }
+}
+
+void AnimationSystem::send_collision_event() {
+    CE_LOG_INFO("Sending collision event");
+    auto& main_queue = Engine::instance().get_queue("MainThread");
+    // 示例负载：可根据需要携带实体/模型信息
+    std::string payload = "type:collision,src:animation,frame:60";
+    main_queue.enqueue([payload] {
+        Corona::PythonBridge::send(payload);
+    });
 }
 
 void AnimationSystem::update_physics(Model& m) {

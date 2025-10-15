@@ -18,7 +18,7 @@ struct PythonAPI
     void runPythonScript();
     static void checkPythonScriptChange();
     void checkReleaseScriptChange();
-
+    void sendMessage(const std::string &message) const;
     // Leak-safe hot-reload toggle (runtime). When enabled, we skip DECREF on reused
     // objects to avoid crashes at the cost of small leaks during development.
     void setLeakSafeReload(bool enabled);
@@ -49,7 +49,6 @@ struct PythonAPI
     bool ensureInitialized();
     bool performHotReload();
     void invokeEntry(bool isReload) const;
-    void sendMessage(const std::string &message) const;
     static int64_t nowMsec();
     static std::wstring str2wstr(const std::string &str);
     static void copyModifiedFiles(const std::filesystem::path& sourceDir,
