@@ -8,7 +8,6 @@
 
 #include "CustomLoop.h"
 
-
 namespace {
 std::atomic<bool> g_running{true};
 void handle_signal(int) noexcept { g_running.store(false, std::memory_order_relaxed); }

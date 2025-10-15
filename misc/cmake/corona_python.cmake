@@ -38,29 +38,65 @@ set(CORONA_EMBEDDED_PY_DIR "${PROJECT_SOURCE_DIR}/third_party/Python-3.13.7"
 # ------------------------------------------------------------------------------
 # Python 探测
 # ------------------------------------------------------------------------------
-# 优先使用用户指定的 Python 根目录
-if(DEFINED Python3_ROOT_DIR AND EXISTS "${Python3_ROOT_DIR}")
-    message(STATUS "[Python] Using user-specified Python root: ${Python3_ROOT_DIR}")
-    find_package(Python3 ${CORONA_PYTHON_MIN_VERSION} COMPONENTS Interpreter Development)
-else()
-    find_package(Python3 ${CORONA_PYTHON_MIN_VERSION} COMPONENTS Interpreter Development)
+# 直接使用项目内置的 Python（不再检测系统 Python）
+set(Python3_ROOT_DIR "${CORONA_EMBEDDED_PY_DIR}" CACHE FILEPATH "Embedded Python root directory" FORCE)
+message(STATUS "[Python] Using embedded Python: ${Python3_ROOT_DIR}")
 
-    if(NOT Python3_FOUND)
-        if(CORONA_PYTHON_USE_EMBEDDED_FALLBACK)
-            set(Python3_ROOT_DIR "${CORONA_EMBEDDED_PY_DIR}" CACHE FILEPATH "Embedded Python executable" FORCE)
-            message(STATUS "[Python] System Python (>=${CORONA_PYTHON_MIN_VERSION}) not found, using embedded fallback: ${Python3_ROOT_DIR}")
-            find_package(Python3 ${CORONA_PYTHON_MIN_VERSION} COMPONENTS Interpreter Development)
-        else()
-            message(FATAL_ERROR "[Python] System Python (>=${CORONA_PYTHON_MIN_VERSION}) not found and fallback disabled (CORONA_PYTHON_USE_EMBEDDED_FALLBACK=OFF)")
-        endif()
-    endif()
-endif()
+find_package(Python3 ${CORONA_PYTHON_MIN_VERSION} COMPONENTS Interpreter Development REQUIRED)
 
 if(NOT Python3_FOUND)
-    message(FATAL_ERROR "[Python] Interpreter not found; cannot continue")
+    message(FATAL_ERROR "[Python] Embedded Python interpreter not found at ${CORONA_EMBEDDED_PY_DIR}; cannot continue")
 endif()
 
 message(STATUS "[Python] Final chosen interpreter: ${Python3_EXECUTABLE}")
+
+if(DEFINED Python3_STDLIB)
+    message(STATUS "[Python] STDLIB (sysconfig stdlib): ${Python3_STDLIB}")
+else()
+    message(STATUS "[Python] STDLIB (sysconfig stdlib): <undefined>")
+endif()
+
+if(DEFINED Python3_STDARCH)
+    message(STATUS "[Python] STDARCH (sysconfig platstdlib): ${Python3_STDARCH}")
+else()
+    message(STATUS "[Python] STDARCH (sysconfig platstdlib): <undefined>")
+endif()
+
+if(DEFINED Python3_SITELIB)
+    message(STATUS "[Python] SITELIB (sysconfig purelib): ${Python3_SITELIB}")
+else()
+    message(STATUS "[Python] SITELIB (sysconfig purelib): <undefined>")
+endif()
+
+if(DEFINED Python3_SITEARCH)
+    message(STATUS "[Python] SITEARCH (sysconfig platlib): ${Python3_SITEARCH}")
+else()
+    message(STATUS "[Python] SITEARCH (sysconfig platlib): <undefined>")
+endif()
+
+if(DEFINED Python3_SABI_LIBRARY_DIRS)
+    message(STATUS "[Python] SABI_LIBRARY_DIRS (sysconfig platlib): ${Python3_SABI_LIBRARY_DIRS}")
+else()
+    message(STATUS "[Python] SABI_LIBRARY_DIRS (sysconfig platlib): <undefined>")
+endif()
+
+if(DEFINED Python3_RUNTIME_SABI_LIBRARY_DIRS)
+    message(STATUS "[Python] RUNTIME_SABI_LIBRARY_DIRS (sysconfig platlib): ${Python3_RUNTIME_SABI_LIBRARY_DIRS}")
+else()
+    message(STATUS "[Python] RUNTIME_SABI_LIBRARY_DIRS (sysconfig platlib): <undefined>")
+endif()
+
+if(DEFINED Python3_DEFINITIONS)
+    message(STATUS "[Python] C Definitions: ${Python3_DEFINITIONS}")
+else()
+    message(STATUS "[Python] C Definitions: <undefined>")
+endif()
+
+if(DEFINED Python3_EXECUTABLE_DEBUG)
+    message(STATUS "[Python] Debug Executable: ${Python3_EXECUTABLE_DEBUG}")
+else()
+    message(STATUS "[Python] Debug Executable: <undefined>")
+endif()
 
 # ------------------------------------------------------------------------------
 # Python 依赖校验配置
