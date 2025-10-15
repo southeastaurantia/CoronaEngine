@@ -1,11 +1,11 @@
 # ==============================================================================
 # CoronaEngine - 示例程序构建配置
-# ==============================================================================
-# 说明：
-#   - 为每个示例子目录提供独立开关（BUILD_CORONA_EXAMPLE_<NAME>）
-#   - 定义 corona_add_example() 函数统一配置示例程序
-#   - 自动发现并添加示例子目录
-#   - 设置 VS 启动项目为第一个示例
+#
+# 功能:
+#   - 为每个示例子目录提供独立开关 (`BUILD_CORONA_EXAMPLE_<NAME>`)。
+#   - 定义 `corona_add_example()` 函数统一配置示例程序。
+#   - 自动发现并添加示例子目录。
+#   - 设置 VS 启动项目为第一个启用的示例。
 # ==============================================================================
 
 include(CMakeParseArguments)
@@ -15,36 +15,41 @@ include(CMakeParseArguments)
 # ------------------------------------------------------------------------------
 define_property(GLOBAL PROPERTY _CORONA_EXAMPLE_TARGETS
     BRIEF_DOCS "Corona example targets"
-    FULL_DOCS "List of Corona example targets created via corona_add_example")
+    FULL_DOCS  "List of Corona example targets created via corona_add_example"
+)
 define_property(GLOBAL PROPERTY _CORONA_EXAMPLE_REGISTRY
     BRIEF_DOCS "Corona example registry"
-    FULL_DOCS "Pairs of <folder>|<target> captured when corona_add_example is invoked")
+    FULL_DOCS  "Pairs of <folder>|<target> captured when corona_add_example is invoked"
+)
 set_property(GLOBAL PROPERTY _CORONA_EXAMPLE_TARGETS "")
 set_property(GLOBAL PROPERTY _CORONA_EXAMPLE_REGISTRY "")
 
 # ------------------------------------------------------------------------------
 # 工具函数：拷贝 assets 资源到示例目录
 # ------------------------------------------------------------------------------
-
 function(corona_examples_copy_assets target_name)
-    add_custom_command(TARGET ${target_name} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E echo "[${target_name}] Copy assets to $<TARGET_FILE_DIR:${target_name}>/assets"
-        COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:${target_name}>/assets
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/assets" $<TARGET_FILE_DIR:${target_name}>/assets
-        VERBATIM)
+    add_custom_command(
+        TARGET      ${target_name}
+        POST_BUILD
+        COMMAND     ${CMAKE_COMMAND} -E echo "[${target_name}] Copy assets to $<TARGET_FILE_DIR:${target_name}>/assets"
+        COMMAND     ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:${target_name}>/assets
+        COMMAND     ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/assets" $<TARGET_FILE_DIR:${target_name}>/assets
+        VERBATIM
+    )
 endfunction()
 
 # ------------------------------------------------------------------------------
 # 工具函数：添加示例程序
-# ------------------------------------------------------------------------------
-# 参数：
-#   NAME <name>           - 示例程序名称（必需）
-#   SOURCES <files...>    - 源文件列表（必需）
-#   COPY_ASSETS          - 是否拷贝 assets 资源（可选标志）
-# 功能：
-#   - 创建可执行目标并链接 CoronaEngine
-#   - 自动安装运行时依赖（Helicon/Python/Editor）
-#   - 可选拷贝 assets 资源
+#
+# 参数:
+#   NAME <name>           - 示例程序名称 (必需)
+#   SOURCES <files...>    - 源文件列表 (必需)
+#   COPY_ASSETS           - 是否拷贝 assets 资源 (可选标志)
+#
+# 功能:
+#   - 创建可执行目标并链接 CoronaEngine。
+#   - 自动安装运行时依赖 (Helicon/Python/Editor)。
+#   - 可选拷贝 assets 资源。
 # ------------------------------------------------------------------------------
 function(corona_add_example)
     set(options COPY_ASSETS)
@@ -85,7 +90,8 @@ function(corona_add_example)
 
     if(DEFINED CORONA_CURRENT_EXAMPLE_FOLDER)
         set_property(GLOBAL APPEND PROPERTY _CORONA_EXAMPLE_REGISTRY
-            "${CORONA_CURRENT_EXAMPLE_FOLDER}|${CORONA_EX_NAME}")
+            "${CORONA_CURRENT_EXAMPLE_FOLDER}|${CORONA_EX_NAME}"
+        )
     endif()
 
     message(STATUS "[Corona:Example] ${CORONA_EX_NAME} configured")
@@ -94,17 +100,16 @@ endfunction()
 # ------------------------------------------------------------------------------
 # 自动发现并添加示例子目录
 # ------------------------------------------------------------------------------
-file(GLOB _corona_example_dirs RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*)
+file(GLOB _corona_example_dirs RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "${CMAKE_CURRENT_SOURCE_DIR}/*")
 list(SORT _corona_example_dirs)
 set(_corona_enabled_examples)
 
 foreach(_corona_folder IN LISTS _corona_example_dirs)
-    # 跳过非目录项
     if(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${_corona_folder}")
         continue()
     endif()
 
-    # 跳过 assets 目录（已移至根目录）
+    # 跳过非示例目录
     if(_corona_folder STREQUAL "assets")
         continue()
     endif()

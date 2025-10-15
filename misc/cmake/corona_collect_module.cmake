@@ -1,27 +1,28 @@
 # ==============================================================================
 # corona_collect_module.cmake
-# ==============================================================================
-# 功能：标准化收集单个模块（public/private 分层）的源文件和头文件
 #
-# 规则：
-#   - 递归搜索 public 和 private 目录下的所有文件
-#   - public 目录：收集 *.h *.hpp (导出头文件)
-#   - private 目录：收集 *.c *.cc *.cxx *.cpp (实现文件)
+# 功能:
+#   标准化收集单个模块 (public/private 分层) 的源文件和头文件。
 #
-# 生成变量（全部大写）：
-#   CORONA_<MODULE>_PUBLIC_HEADERS  - 公共头文件列表
-#   CORONA_<MODULE>_PRIVATE_SOURCES - 私有源文件列表
-#   CORONA_<MODULE>_ALL_FILES       - 所有文件聚合列表
+# 规则:
+#   - 递归搜索 `public` 和 `private` 目录下的所有文件。
+#   - `public` 目录: 收集 `*.h`, `*.hpp` (导出头文件)。
+#   - `private` 目录: 收集 `*.c`, `*.cc`, `*.cxx`, `*.cpp` (实现文件)。
 #
-# 使用示例：
+# 生成变量 (全部大写):
+#   - `CORONA_<MODULE>_PUBLIC_HEADERS`: 公共头文件列表。
+#   - `CORONA_<MODULE>_PRIVATE_SOURCES`: 私有源文件列表。
+#   - `CORONA_<MODULE>_ALL_FILES`: 所有文件聚合列表。
+#
+# 使用示例:
 #   corona_collect_module(Core "${CMAKE_CURRENT_SOURCE_DIR}/src/core")
-#   add_library(CoronaCore STATIC 
-#       ${CORONA_CORE_PRIVATE_SOURCES} 
+#   add_library(CoronaCore STATIC
+#       ${CORONA_CORE_PRIVATE_SOURCES}
 #       ${CORONA_CORE_PUBLIC_HEADERS}
 #   )
 #
-# 可选参数：
-#   QUIET - 关闭收集结果输出
+# 可选参数:
+#   - `QUIET`: 关闭收集结果输出。
 # ==============================================================================
 
 function(corona_collect_module MODULE_NAME MODULE_DIR)
@@ -53,7 +54,7 @@ function(corona_collect_module MODULE_NAME MODULE_DIR)
 
     if(IS_DIRECTORY "${PUBLIC_DIR}")
         file(GLOB_RECURSE _public_headers CONFIGURE_DEPENDS
-            RELATIVE "${MODULE_DIR}"
+            RELATIVE    "${MODULE_DIR}"
             "${PUBLIC_DIR}/*.h"
             "${PUBLIC_DIR}/*.hpp"
         )
@@ -61,7 +62,7 @@ function(corona_collect_module MODULE_NAME MODULE_DIR)
 
     if(IS_DIRECTORY "${PRIVATE_DIR}")
         file(GLOB_RECURSE _private_sources CONFIGURE_DEPENDS
-            RELATIVE "${MODULE_DIR}"
+            RELATIVE    "${MODULE_DIR}"
             "${PRIVATE_DIR}/*.c"
             "${PRIVATE_DIR}/*.cc"
             "${PRIVATE_DIR}/*.cxx"
@@ -81,11 +82,11 @@ function(corona_collect_module MODULE_NAME MODULE_DIR)
     endforeach()
 
     # 导出变量
-    set(CORONA_${MODULE_NAME_UPPER}_PUBLIC_HEADERS ${_public_headers_full} PARENT_SCOPE)
-    set(CORONA_${MODULE_NAME_UPPER}_PRIVATE_SOURCES ${_private_sources_full} PARENT_SCOPE)
+    set(CORONA_${MODULE_NAME_UPPER}_PUBLIC_HEADERS  "${_public_headers_full}"  PARENT_SCOPE)
+    set(CORONA_${MODULE_NAME_UPPER}_PRIVATE_SOURCES "${_private_sources_full}" PARENT_SCOPE)
 
     set(_all ${_public_headers_full} ${_private_sources_full})
-    set(CORONA_${MODULE_NAME_UPPER}_ALL_FILES ${_all} PARENT_SCOPE)
+    set(CORONA_${MODULE_NAME_UPPER}_ALL_FILES "${_all}" PARENT_SCOPE)
 
     if(NOT COLLECT_QUIET)
         list(LENGTH _public_headers_full _ph_count)

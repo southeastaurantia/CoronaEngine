@@ -1,20 +1,21 @@
 # ==============================================================================
 # corona_runtime_deps.cmake
-# ==============================================================================
-# 功能：运行时依赖（动态库/调试符号）收集与复制模块
 #
-# 概述：
-#   1. 配置阶段：corona_configure_runtime_deps() 收集 Python 相关的 DLL/PDB 文件
-#      并写入目标属性 INTERFACE_CORONA_RUNTIME_DEPS（设置在 CoronaEngine 上）
-#   2. 构建后：corona_install_runtime_deps(<target>) 通过自定义命令把上述文件
-#      复制到指定目标生成目录，以便示例或可执行程序直接运行
+# 功能:
+#   运行时依赖 (动态库/调试符号) 收集与复制模块。
 #
-# 设计要点：
-#   - 收集逻辑与复制逻辑解耦：收集只跑一次，复制可被多个可执行目标重用
-#   - 使用目标属性避免全局变量污染，便于后续扩展
-#   - 保持幂等：重复调用 configure 函数会覆盖为最新收集结果
+# 概述:
+#   1. 配置阶段: `corona_configure_runtime_deps()` 收集 Python 相关的 DLL/PDB 文件，
+#      并写入目标属性 `INTERFACE_CORONA_RUNTIME_DEPS` (设置在 `CoronaEngine` 上)。
+#   2. 构建后: `corona_install_runtime_deps(<target>)` 通过自定义命令把上述文件
+#      复制到指定目标生成目录，以便示例或可执行程序直接运行。
 #
-# 使用示例：
+# 设计要点:
+#   - 收集逻辑与复制逻辑解耦：收集只跑一次，复制可被多个可执行目标重用。
+#   - 使用目标属性避免全局变量污染，便于后续扩展。
+#   - 保持幂等：重复调用 configure 函数会覆盖为最新收集结果。
+#
+# 使用示例:
 #   corona_configure_runtime_deps(CoronaEngine)  # 在定义 CoronaEngine 后调用一次
 #   corona_install_runtime_deps(MyExampleExe)    # 对每个需要独立运行的可执行目标调用
 # ==============================================================================
@@ -35,41 +36,39 @@ function(corona_install_runtime_deps target_name)
 
     set(_CORONA_DESTINATION_DIR "$<TARGET_FILE_DIR:${target_name}>")
 
-    # 使用 Python 脚本执行智能复制（若不同才复制）
+    # 使用 Python 脚本执行智能复制 (若不同才复制)
     set(_CORONA_PY_COPY "${PROJECT_SOURCE_DIR}/misc/pytools/copy_files.py")
 
-    if(EXISTS "${_CORONA_PY_COPY}")
-        if(DEFINED Python3_EXECUTABLE)
-            set(_CORONA_DEPS_DIR "${CMAKE_BINARY_DIR}/runtime_deps")
-            file(MAKE_DIRECTORY "${_CORONA_DEPS_DIR}")
-            string(MD5 _corona_target_hash "${target_name}")
-            set(_CORONA_DEPS_LIST "${_CORONA_DEPS_DIR}/${_corona_target_hash}.txt")
-            file(WRITE "${_CORONA_DEPS_LIST}" "")
+    if(EXISTS "${_CORONA_PY_COPY}" AND DEFINED Python3_EXECUTABLE)
+        set(_CORONA_DEPS_DIR "${CMAKE_BINARY_DIR}/runtime_deps")
+        file(MAKE_DIRECTORY "${_CORONA_DEPS_DIR}")
+        string(MD5 _corona_target_hash "${target_name}")
+        set(_CORONA_DEPS_LIST "${_CORONA_DEPS_DIR}/${_corona_target_hash}.txt")
+        file(WRITE "${_CORONA_DEPS_LIST}" "")
 
-            foreach(_corona_dep_file IN LISTS _CORONA_DEPS)
-                file(APPEND "${_CORONA_DEPS_LIST}" "${_corona_dep_file}\n")
-            endforeach()
+        foreach(_corona_dep_file IN LISTS _CORONA_DEPS)
+            file(APPEND "${_CORONA_DEPS_LIST}" "${_corona_dep_file}\n")
+        endforeach()
 
-            add_custom_command(
-                TARGET ${target_name} POST_BUILD
-                COMMAND "${Python3_EXECUTABLE}" "${_CORONA_PY_COPY}" --dest "${_CORONA_DESTINATION_DIR}" --list "${_CORONA_DEPS_LIST}"
-                COMMENT "[Corona:RuntimeDeps] Copy Corona runtime dependencies to target directory -> ${target_name}"
-                VERBATIM
-            )
+        add_custom_command(
+            TARGET      ${target_name}
+            POST_BUILD
+            COMMAND     "${Python3_EXECUTABLE}" "${_CORONA_PY_COPY}" --dest "${_CORONA_DESTINATION_DIR}" --list "${_CORONA_DEPS_LIST}"
+            COMMENT     "[Corona:RuntimeDeps] Copy Corona runtime dependencies to target directory -> ${target_name}"
+            VERBATIM
+        )
+    else()
+        if(NOT EXISTS "${_CORONA_PY_COPY}")
+            message(STATUS "[Corona:RuntimeDeps] Python copy script not found; fallback to copy_if_different")
         else()
             message(STATUS "[Corona:RuntimeDeps] Python3 not available; fallback to copy_if_different")
-            add_custom_command(
-                TARGET ${target_name} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_CORONA_DEPS} "${_CORONA_DESTINATION_DIR}"
-                COMMENT "[Corona:RuntimeDeps] Copy runtime deps (fallback) -> ${target_name}"
-                VERBATIM
-            )
         endif()
-    else()
+
         add_custom_command(
-            TARGET ${target_name} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_CORONA_DEPS} "${_CORONA_DESTINATION_DIR}"
-            COMMENT "[Corona:RuntimeDeps] Copy runtime deps (no python) -> ${target_name}"
+            TARGET      ${target_name}
+            POST_BUILD
+            COMMAND     ${CMAKE_COMMAND} -E copy_if_different ${_CORONA_DEPS} "${_CORONA_DESTINATION_DIR}"
+            COMMENT     "[Corona:RuntimeDeps] Copy runtime deps (fallback) -> ${target_name}"
             VERBATIM
         )
     endif()
@@ -85,20 +84,16 @@ function(corona_configure_runtime_deps target_name)
     endif()
 
     # 收集 Python 运行库 (DLL/PDB)
+    set(_CORONA_ALL_DEPS)
     if(DEFINED Python3_RUNTIME_LIBRARY_DIRS)
         file(GLOB _CORONA_PY_DLLS "${Python3_RUNTIME_LIBRARY_DIRS}/*.dll")
         file(GLOB _CORONA_PY_PDBS "${Python3_RUNTIME_LIBRARY_DIRS}/*.pdb")
-    endif()
-
-    # 汇总所有候选文件到 _CORONA_ALL_DEPS 列表
-    set(_CORONA_ALL_DEPS)
-
-    if(_CORONA_PY_DLLS)
-        list(APPEND _CORONA_ALL_DEPS ${_CORONA_PY_DLLS})
-    endif()
-
-    if(_CORONA_PY_PDBS)
-        list(APPEND _CORONA_ALL_DEPS ${_CORONA_PY_PDBS})
+        if(_CORONA_PY_DLLS)
+            list(APPEND _CORONA_ALL_DEPS ${_CORONA_PY_DLLS})
+        endif()
+        if(_CORONA_PY_PDBS)
+            list(APPEND _CORONA_ALL_DEPS ${_CORONA_PY_PDBS})
+        endif()
     endif()
 
     if(NOT _CORONA_ALL_DEPS)
