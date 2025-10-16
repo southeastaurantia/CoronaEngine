@@ -76,9 +76,6 @@ add_compile_definitions(
     # EnTT 配置：启用内部原子操作路径 (多线程安全)
     ENTT_USE_ATOMIC
 
-    # fmt 库：强制使用 header-only 模式
-    FMT_HEADER_ONLY=1
-
     # Python 路径宏 (用于运行时初始化)
     CORONA_PYTHON_EXE=\"${_CORONA_PY_EXE_ESC}\"
     CORONA_PYTHON_HOME_DIR=\"${_CORONA_PY_HOME_ESC}\"

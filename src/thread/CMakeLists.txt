@@ -24,6 +24,6 @@ target_include_directories(CoronaThread
 
 target_link_libraries(CoronaThread
     INTERFACE
-    corona::utility::logger
+    Corona::Logger
     cabbage::concurrent
 )

@@ -40,7 +40,7 @@ set(_corona_modules
     CoronaSystemDisplay
     CoronaSystemRendering
     CoronaThread
-    CoronaUtilityLogger
+    CoronaLogger
     CoronaUtilityResource
     CoronaUtils
 )

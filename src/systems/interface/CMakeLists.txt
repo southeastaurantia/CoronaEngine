@@ -22,5 +22,5 @@ target_include_directories(CoronaSystemInterface
 
 target_link_libraries(CoronaSystemInterface
     INTERFACE
-    corona::utility::logger
+    Corona::Logger
 )

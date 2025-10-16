@@ -24,7 +24,7 @@ target_include_directories(CoronaUtilityResource
 
 target_link_libraries(CoronaUtilityResource
     PUBLIC
-    corona::utility::logger
+    Corona::Logger
     cabbage::concurrent
     CoronaResource::Resource
 )

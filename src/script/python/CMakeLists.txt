@@ -31,7 +31,7 @@ target_link_directories(CoronaScriptPython
 target_link_libraries(CoronaScriptPython
     PUBLIC
     corona::core
-    corona::utility::logger
+    Corona::Logger
 
     python313
 )
