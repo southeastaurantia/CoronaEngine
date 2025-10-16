@@ -27,5 +27,5 @@ target_link_libraries(CoronaSystemAnimation
     corona::system::interface
     corona::core
 
-    VisionScene::Resource
+    CoronaResource::Resource
 )

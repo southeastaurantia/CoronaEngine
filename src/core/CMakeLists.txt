@@ -33,5 +33,5 @@ target_link_libraries(CoronaCore
     corona::utils
 
     ktm
-    VisionScene::Resource
+    CoronaResource::Resource
 )

@@ -28,6 +28,6 @@ target_link_libraries(CoronaSystemRendering
     corona::core
     corona::utility::resource
 
-    VisionScene::Resource
+    CoronaResource::Resource
     CabbageHardware
 )

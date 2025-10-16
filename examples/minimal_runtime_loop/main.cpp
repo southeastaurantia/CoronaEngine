@@ -2,9 +2,11 @@
 #include <Engine.h>
 #include <corona_logger.h>
 #include <engine/RuntimeLoop.h>
-
 #include <atomic>
 #include <csignal>
+#include <filesystem>
+#include <Shader.h>
+#include <RenderingSystem.h>
 
 #include "CustomLoop.h"
 
@@ -25,6 +27,7 @@ int main(int argc, char** argv) {
     log_cfg.enable_file_ = false;
     // 使用 Debug 级别，便于看到各系统的 start/stop 调试日志
     log_cfg.level_ = Corona::LogLevel::kDebug;
+
     Corona::Logger::init(log_cfg);
 
     CE_LOG_INFO("[example] CoronaEngine minimal_runtime_loop starting...");
@@ -39,6 +42,13 @@ int main(int argc, char** argv) {
     loop.initialize();
 
     CE_LOG_INFO("[example] Systems initialized and running. Entering run loop.");
+
+    auto shaderId = Corona::ResourceId::from("shader", (std::filesystem::current_path() / "assets").string());
+    auto shader = Corona::Engine::instance().resources().load_typed<Corona::Shader>(shaderId);
+
+    auto& render_system = Corona::Engine::instance().get_system<Corona::RenderingSystem>();
+    auto& render_queue = Corona::Engine::instance().get_queue(render_system.name());
+    render_queue.enqueue(&render_system, &Corona::RenderingSystem::init_shader, shader);
 
     loop.run(g_running);
     loop.shutdown();

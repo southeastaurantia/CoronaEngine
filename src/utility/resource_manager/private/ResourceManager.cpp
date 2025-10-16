@@ -1,7 +1,5 @@
-#include "ResourceManager.h"
-
-#include "ResourceManager.h"
-#include "corona_logger.h"
+#include <ResourceManager.h>
+#include <corona_logger.h>
 
 #include <algorithm>
 #include <exception>
