@@ -11,139 +11,101 @@
 #include "Engine.h"
 #include "Model.h"
 #include "RenderingSystem.h"
-#include "Scene.h"
+#include "components/SceneComponents.h"
+#include "SceneEvents.h"
+#include "EventBus.h"
+#include "components/ActorComponents.h"
+#include "events/ActorEvents.h"
 
-CoronaEngineAPI::Scene::Scene(void* surface, bool lightField)
-    : sceneID(Corona::DataId::next()) {
-    auto scene = std::make_shared<Corona::Scene>();
-    auto& scene_cache = Corona::Engine::instance().cache<Corona::Scene>();
-    scene_cache.insert(sceneID, scene);
+// 定义静态 ECS 注册表
+entt::registry CoronaEngineAPI::registry_;
+
+CoronaEngineAPI::Scene::Scene(void* surface, bool /*lightField*/)
+    : sceneID(registry_.create()) {
+    registry_.emplace<RenderTag>(sceneID);
     if (surface) {
-        scene_cache.modify(sceneID, [surface](const std::shared_ptr<Corona::Scene>& scene) {
-            scene->displaySurface = surface;
-        });
-        auto& rendering_system = Corona::Engine::instance().get_system<Corona::RenderingSystem>();
-        auto& render_queue = Corona::Engine::instance().get_queue(rendering_system.name());
-        render_queue.enqueue(&rendering_system, &Corona::RenderingSystem::watch_scene, sceneID);
-        render_queue.enqueue(&rendering_system, &Corona::RenderingSystem::set_display_surface, scene);
+        registry_.emplace_or_replace<Corona::Components::DisplaySurface>(sceneID, Corona::Components::DisplaySurface{surface});
+        // 事件广播：通知渲染系统显示表面更新（副本传递）
+        const std::uint64_t sid = static_cast<std::uint64_t>(static_cast<std::uint32_t>(sceneID));
+        Corona::Engine::instance().events<Corona::SceneEvents::DisplaySurfaceUpdated>()
+            .publish("scene.surface", Corona::SceneEvents::DisplaySurfaceUpdated{ sid, surface });
     }
 }
 
 CoronaEngineAPI::Scene::~Scene() {
-    auto& scene_cache = Corona::Engine::instance().cache<Corona::Scene>();
-    auto& rendering_system = Corona::Engine::instance().get_system<Corona::RenderingSystem>();
-    auto& render_queue = Corona::Engine::instance().get_queue(rendering_system.name());
-    render_queue.enqueue(&rendering_system, &Corona::RenderingSystem::unwatch_scene, sceneID);
-    scene_cache.erase(sceneID);
+    // 事件广播：通知渲染系统该场景移除，渲染系统可清理本地快照
+    const std::uint64_t sid = static_cast<std::uint64_t>(static_cast<std::uint32_t>(sceneID));
+    Corona::Engine::instance().events<Corona::SceneEvents::Removed>()
+        .publish("scene.removed", Corona::SceneEvents::Removed{ sid });
+
+    registry_.destroy(sceneID);
 }
 
 void CoronaEngineAPI::Scene::setCamera(const ktm::fvec3& position, const ktm::fvec3& forward, const ktm::fvec3& worldUp, float fov) const {
-    auto& scene_cache = Corona::Engine::instance().cache<Corona::Scene>();
-    scene_cache.modify(sceneID, [position, forward, worldUp, fov](const std::shared_ptr<Corona::Scene>& scene) {
-        scene->camera.pos = position;
-        scene->camera.forward = forward;
-        scene->camera.worldUp = worldUp;
-        scene->camera.fov = fov;
-    });
+    registry_.emplace_or_replace<Corona::Components::Camera>(sceneID, Corona::Components::Camera{ fov, position, forward, worldUp });
+
+    // 事件广播：摄像机参数副本
+    const std::uint64_t sid = static_cast<std::uint64_t>(static_cast<std::uint32_t>(sceneID));
+    Corona::Engine::instance().events<Corona::SceneEvents::CameraUpdated>()
+        .publish("scene.camera", Corona::SceneEvents::CameraUpdated{ sid, fov, position, forward, worldUp });
 }
 
 void CoronaEngineAPI::Scene::setSunDirection(ktm::fvec3 direction) const {
-    auto& scene_cache = Corona::Engine::instance().cache<Corona::Scene>();
-    scene_cache.modify(sceneID, [direction](const std::shared_ptr<Corona::Scene>& scene) {
-        scene->sunDirection = direction;
-    });
+    registry_.emplace_or_replace<Corona::Components::SunDirection>(sceneID, Corona::Components::SunDirection{ direction });
+
+    // 事件广播：太阳光方向副本
+    const std::uint64_t sid = static_cast<std::uint64_t>(static_cast<std::uint32_t>(sceneID));
+    Corona::Engine::instance().events<Corona::SceneEvents::SunUpdated>()
+        .publish("scene.sun", Corona::SceneEvents::SunUpdated{ sid, direction });
 }
 
 void CoronaEngineAPI::Scene::setDisplaySurface(void* surface) {
-    auto& scene_cache = Corona::Engine::instance().cache<Corona::Scene>();
-    auto& rendering_system = Corona::Engine::instance().get_system<Corona::RenderingSystem>();
-    auto& render_queue = Corona::Engine::instance().get_queue(rendering_system.name());
-    scene_cache.modify(sceneID, [surface, &rendering_system, &render_queue](const std::shared_ptr<Corona::Scene>& scene) {
-        scene->displaySurface = surface;
-        render_queue.enqueue(&rendering_system, &Corona::RenderingSystem::set_display_surface, scene);
-    });
-    render_queue.enqueue(&rendering_system, &Corona::RenderingSystem::watch_scene, sceneID);
+    registry_.emplace_or_replace<Corona::Components::DisplaySurface>(sceneID, Corona::Components::DisplaySurface{ surface });
+
+    // 事件广播：显示表面更新副本
+    const std::uint64_t sid = static_cast<std::uint64_t>(static_cast<std::uint32_t>(sceneID));
+    Corona::Engine::instance().events<Corona::SceneEvents::DisplaySurfaceUpdated>()
+        .publish("scene.surface", Corona::SceneEvents::DisplaySurfaceUpdated{ sid, surface });
 }
 
 CoronaEngineAPI::Actor::Actor(const std::string& path)
-    : actorID(Corona::DataId::next()),
-      animationID(0) {
-    const auto res = Corona::Engine::instance().resources().load({"model", path});
-    auto model = std::dynamic_pointer_cast<Corona::Model>(res);
-    if (!model) {
-        CE_LOG_WARN("Failed to load model: %s", path.c_str());
-        return;
-    }
-    auto& model_cache = Corona::Engine::instance().cache<Corona::Model>();
-    model_cache.insert(actorID, model);
+    : actorID(registry_.create()) {
+    // 标签（可选）
+    registry_.emplace<RenderTag>(actorID);
+    // 仅存资源ID/路径为组件
+    registry_.emplace_or_replace<Corona::Components::ModelResource>(actorID, Corona::Components::ModelResource{path});
 
-    if (!model->skeletalAnimations.empty()) {
-        auto animState = std::make_shared<Corona::AnimationState>();
-        animState->model = model;
-        animState->animationIndex = 0;
-
-        animationID = Corona::DataId::next();
-
-        auto& anim_state_cache = Corona::Engine::instance().cache<Corona::AnimationState>();
-        auto& animation_system = Corona::Engine::instance().get_system<Corona::AnimationSystem>();
-        auto& anim_queue = Corona::Engine::instance().get_queue(animation_system.name());
-
-        anim_state_cache.insert(animationID, animState);
-        anim_queue.enqueue(&animation_system, &Corona::AnimationSystem::watch_state, animationID);
-
-        auto& rendering_system = Corona::Engine::instance().get_system<Corona::RenderingSystem>();
-        auto& render_queue = Corona::Engine::instance().get_queue(rendering_system.name());
-        render_queue.enqueue(&rendering_system, &Corona::RenderingSystem::watch_model, actorID);
-        return;
-    }
-
-    auto& animationSystem = Corona::Engine::instance().get_system<Corona::AnimationSystem>();
-    auto& anim_queue = Corona::Engine::instance().get_queue(animationSystem.name());
-    anim_queue.enqueue(&animationSystem, &Corona::AnimationSystem::watch_model, actorID);
-
-    auto& renderingSystem = Corona::Engine::instance().get_system<Corona::RenderingSystem>();
-    auto& render_queue = Corona::Engine::instance().get_queue(renderingSystem.name());
-    render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::watch_model, actorID);
+    // 广播：Actor 生成（携带资源路径），由系统（如 RenderingSystem）订阅后自行加载
+    const std::uint64_t aid = static_cast<std::uint64_t>(static_cast<std::uint32_t>(actorID));
+    Corona::Engine::instance().events<Corona::ActorEvents::Spawned>()
+        .publish("actor.spawn", Corona::ActorEvents::Spawned{ aid, path });
 }
 
 CoronaEngineAPI::Actor::~Actor() {
-    if (animationID != 0) {
-        auto& anim_state_cache = Corona::Engine::instance().cache<Corona::AnimationState>();
-        auto& animation_system = Corona::Engine::instance().get_system<Corona::AnimationSystem>();
-        auto& anim_queue = Corona::Engine::instance().get_queue(animation_system.name());
-        anim_queue.enqueue(&animation_system, &Corona::AnimationSystem::unwatch_state, animationID);
-        anim_state_cache.erase(animationID);
-    }
-    auto& model_cache = Corona::Engine::instance().cache<Corona::Model>();
-    if (model_cache.get(actorID) != nullptr) {
-        auto& animationSystem = Corona::Engine::instance().get_system<Corona::AnimationSystem>();
-        auto& anim_queue = Corona::Engine::instance().get_queue(animationSystem.name());
-        anim_queue.enqueue(&animationSystem, &Corona::AnimationSystem::unwatch_model, actorID);
+    const std::uint64_t aid = static_cast<std::uint64_t>(static_cast<std::uint32_t>(actorID));
 
-        auto& renderingSystem = Corona::Engine::instance().get_system<Corona::RenderingSystem>();
-        auto& render_queue = Corona::Engine::instance().get_queue(renderingSystem.name());
-        render_queue.enqueue(&renderingSystem, &Corona::RenderingSystem::unwatch_model, actorID);
-        model_cache.erase(actorID);
-    }
+    // 广播：Actor 移除
+    Corona::Engine::instance().events<Corona::ActorEvents::Removed>()
+        .publish("actor.removed", Corona::ActorEvents::Removed{ aid });
+
+    // 可选：移除标签/组件
+    // registry_.remove_if_exists<RenderTag>(actorID);
 }
 
 void CoronaEngineAPI::Actor::move(ktm::fvec3 pos) const {
-    auto& model_cache = Corona::Engine::instance().cache<Corona::Model>();
-    model_cache.modify(actorID, [pos](const std::shared_ptr<Corona::Model>& model) {
-        model->positon = pos;
-    });
+    const std::uint64_t aid = static_cast<std::uint64_t>(static_cast<std::uint32_t>(actorID));
+    Corona::Engine::instance().events<Corona::ActorEvents::TransformUpdated>()
+        .publish("actor.transform", Corona::ActorEvents::TransformUpdated{ aid, pos, {}, {} });
 }
 
 void CoronaEngineAPI::Actor::rotate(ktm::fvec3 euler) const {
-    auto& model_cache = Corona::Engine::instance().cache<Corona::Model>();
-    model_cache.modify(actorID, [euler](const std::shared_ptr<Corona::Model>& model) {
-        model->rotation = euler;
-    });
+    const std::uint64_t aid = static_cast<std::uint64_t>(static_cast<std::uint32_t>(actorID));
+    Corona::Engine::instance().events<Corona::ActorEvents::TransformUpdated>()
+        .publish("actor.transform", Corona::ActorEvents::TransformUpdated{ aid, {}, euler, {} });
 }
 
 void CoronaEngineAPI::Actor::scale(ktm::fvec3 size) const {
-    auto& model_cache = Corona::Engine::instance().cache<Corona::Model>();
-    model_cache.modify(actorID, [size](const std::shared_ptr<Corona::Model>& model) {
-        model->scale = size;
-    });
+    const std::uint64_t aid = static_cast<std::uint64_t>(static_cast<std::uint32_t>(actorID));
+    Corona::Engine::instance().events<Corona::ActorEvents::TransformUpdated>()
+        .publish("actor.transform", Corona::ActorEvents::TransformUpdated{ aid, {}, {}, size });
 }

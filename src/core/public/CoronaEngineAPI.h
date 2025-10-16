@@ -2,6 +2,8 @@
 
 #include <ktm/ktm.h>
 
+#include "../../../build/_deps/entt-src/src/entt/entity/registry.hpp"
+
 struct CoronaEngineAPI {
     CoronaEngineAPI() = delete;
     ~CoronaEngineAPI() = delete;
@@ -21,8 +23,7 @@ struct CoronaEngineAPI {
         void scale(ktm::fvec3 size) const;
 
        private:
-        uint64_t actorID;
-        uint64_t animationID;
+        entt::entity actorID;
     };
 
     struct Scene {
@@ -35,6 +36,9 @@ struct CoronaEngineAPI {
         void setDisplaySurface(void* surface);
 
        private:
-        uint64_t sceneID;
+        entt::entity sceneID;
     };
+
+private:
+    static entt::registry registry_;
 };

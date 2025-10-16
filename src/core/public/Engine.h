@@ -15,6 +15,7 @@
 #include "ISystem.h"
 #include "SafeCommandQueue.h"
 #include "SafeDataCache.h"
+#include "EventBus.h"
 
 
 namespace Corona {
@@ -59,6 +60,37 @@ class DataCacheHub {
 
    private:
     std::unordered_map<std::type_index, std::unique_ptr<IHolder>> caches_{};
+    std::shared_mutex mutex_{};
+};
+
+// 类型擦除的事件总线中心，按负载类型提供 EventBusT<T>
+class EventBusHub {
+   public:
+    struct IHolder { virtual ~IHolder() = default; };
+    template <typename T>
+    struct Holder : IHolder { EventBusT<T> bus; };
+
+    template <typename T>
+    EventBusT<T>& get() {
+        const std::type_index key{typeid(T)};
+        {
+            std::shared_lock lock(mutex_);
+            if (auto it = buses_.find(key); it != buses_.end()) {
+                return static_cast<Holder<T>&>(*it->second).bus;
+            }
+        }
+        std::unique_lock lock(mutex_);
+        if (auto it = buses_.find(key); it != buses_.end()) {
+            return static_cast<Holder<T>&>(*it->second).bus;
+        }
+        auto ptr = std::make_unique<Holder<T>>();
+        auto raw = ptr.get();
+        buses_.emplace(key, std::move(ptr));
+        return raw->bus;
+    }
+
+   private:
+    std::unordered_map<std::type_index, std::unique_ptr<IHolder>> buses_{};
     std::shared_mutex mutex_{};
 };
 
@@ -108,6 +140,12 @@ class Engine {
         return data_hub_.get<T>();
     }
 
+    // 全局事件总线中心
+    template <typename T>
+    EventBusT<T>& events() {
+        return event_hub_.get<T>();
+    }
+
    private:
     Engine() = default;
     ~Engine() = default;
@@ -122,5 +160,6 @@ class Engine {
     std::unordered_map<std::type_index, std::shared_ptr<ISystem>> systems_{};
     std::unordered_map<std::string, std::unique_ptr<SafeCommandQueue>> queues_{};
     DataCacheHub data_hub_{};
+    EventBusHub event_hub_{};
 };
 }  // namespace Corona
