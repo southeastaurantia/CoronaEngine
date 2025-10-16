@@ -189,11 +189,11 @@ void AnimationSystem::onTick() {
         ++spun;
     }
 
-    frame_count_++;
-    if (frame_count_ >= 60) {
-        frame_count_ = 0;
-        send_collision_event();
-    }
+    // frame_count_++;
+    // if (frame_count_ >= 60) {
+    //     frame_count_ = 0;
+    //     send_collision_event();
+    // }
 
     // 遍历关注的 AnimationState 并推进
     auto& anim_cache = Engine::instance().cache<AnimationState>();

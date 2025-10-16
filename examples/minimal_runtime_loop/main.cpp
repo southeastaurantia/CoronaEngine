@@ -5,8 +5,10 @@
 #include <atomic>
 #include <csignal>
 #include <filesystem>
-#include <Shader.h>
 #include <RenderingSystem.h>
+#include <AnimationSystem.h>
+#include <AudioSystem.h>
+#include <DisplaySystem.h>
 
 #include "CustomLoop.h"
 
@@ -43,12 +45,15 @@ int main(int argc, char** argv) {
 
     CE_LOG_INFO("[example] Systems initialized and running. Entering run loop.");
 
-    auto shaderId = Corona::ResourceId::from("shader", (std::filesystem::current_path() / "assets").string());
-    auto shader = Corona::Engine::instance().resources().load_typed<Corona::Shader>(shaderId);
-
+    auto& display_system = Corona::Engine::instance().get_system<Corona::DisplaySystem>();
+    auto& animation_system = Corona::Engine::instance().get_system<Corona::AnimationSystem>();
+    auto& audio_system = Corona::Engine::instance().get_system<Corona::AudioSystem>();
     auto& render_system = Corona::Engine::instance().get_system<Corona::RenderingSystem>();
+
     auto& render_queue = Corona::Engine::instance().get_queue(render_system.name());
-    render_queue.enqueue(&render_system, &Corona::RenderingSystem::init_shader, shader);
+    auto& animation_queue = Corona::Engine::instance().get_queue(animation_system.name());
+    auto& audio_queue = Corona::Engine::instance().get_queue(audio_system.name());
+    auto& display_queue = Corona::Engine::instance().get_queue(display_system.name());
 
     loop.run(g_running);
     loop.shutdown();
