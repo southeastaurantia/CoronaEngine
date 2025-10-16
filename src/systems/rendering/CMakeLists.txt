@@ -26,7 +26,6 @@ target_link_libraries(CoronaSystemRendering
     PUBLIC
     corona::system::interface
     corona::core
-    corona::utility::resource
 
     CoronaResource::Resource
     CabbageHardware

@@ -13,7 +13,6 @@ include_guard(GLOBAL)
 # 添加各功能模块子目录
 # ------------------------------------------------------------------------------
 add_subdirectory(utils)          # 通用工具类
-add_subdirectory(utility)        # 实用工具模块 (logger/resource_manager)
 add_subdirectory(thread)         # 线程与并发原语
 add_subdirectory(systems)        # 引擎系统 (animation/audio/display/rendering)
 add_subdirectory(core)           # 核心引擎逻辑 (Engine 类)
