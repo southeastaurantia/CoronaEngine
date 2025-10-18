@@ -16,7 +16,7 @@
 ## 阶段二：内核/服务重构
 - ☑ 创建新的 `EngineKernel` 与 `ServiceLocator` 实现，引入 `SystemContext` 结构。
 - ☑ 抽取资源、日志、并发等核心服务到独立组件 (`IResourceService`、`ILogger`、`ICommandScheduler`)。
-- ☐ 拆分 `Engine` 为对外兼容的 `EngineFacade`（旧 API）+ 内部 `EngineKernel`。
+- ☑ 拆分 `Engine` 为对外兼容的 `EngineFacade`（旧 API）+ 内部 `EngineKernel`。
 - ☐ 更新 CMake：`EngineKernel` 仅链接 `corona::interfaces` 与服务层，删除对系统静态库的循环依赖。
 - ☐ 为测试构建简单 mock 服务，验证系统在无全局单例的情况下可启动。
 

@@ -13,12 +13,20 @@
 #include <unordered_map>
 
 #include <corona/interfaces/ISystem.h>
+#include <corona/interfaces/Services.h>
+#include "EngineKernel.h"
 #include "SafeCommandQueue.h"
 #include "SafeDataCache.h"
 #include "EventBus.h"
 
 
 namespace Corona {
+namespace Core {
+class CommandSchedulerService;
+class LoggerService;
+class ResourceServiceAdapter;
+} // namespace Core
+
 // 全局数据ID生成器
 struct DataId {
     using id_type = uint64_t;
@@ -94,9 +102,9 @@ class EventBusHub {
     std::shared_mutex mutex_{};
 };
 
-class Engine {
+class EngineFacade {
    public:
-    static Engine& instance();
+    static EngineFacade& instance();
 
     // 初始化/收尾：配置日志并注册默认资源加载器
     void init(const LogConfig& cfg);
@@ -109,22 +117,14 @@ class Engine {
     template <typename T>
         requires std::is_base_of_v<ISystem, T>
     void register_system() {
-        const std::type_index key{typeid(T)};
-        if (systems_.contains(key)) {
-            return;
-        }
-        systems_.emplace(key, std::make_shared<T>());
-        CE_LOG_DEBUG("Registered system {}", key.name());
+        kernel().add_system<T>();
+        CE_LOG_DEBUG("Registered system {}", typeid(T).name());
     }
 
     template <typename T>
         requires std::is_base_of_v<ISystem, T>
     T& get_system() const {
-        const std::type_index key{typeid(T)};
-        if (auto iter = systems_.find(key); iter != systems_.end()) {
-            return *std::static_pointer_cast<T>(iter->second);
-        }
-        throw std::runtime_error(std::string("System not registered: ") + key.name());
+        return kernel().get_system<T>();
     }
 
     void start_systems();
@@ -133,6 +133,12 @@ class Engine {
     // 命令队列（跨线程命令分发）
     SafeCommandQueue& get_queue(const std::string& name) const;
     void add_queue(const std::string& name, std::unique_ptr<SafeCommandQueue> queue);
+
+    EngineKernel& kernel();
+    const EngineKernel& kernel() const;
+
+    Interfaces::ServiceLocator& services();
+    const Interfaces::ServiceLocator& services() const;
 
     // 全局数据缓存中心
     template <typename T>
@@ -147,19 +153,23 @@ class Engine {
     }
 
    private:
-    Engine() = default;
-    ~Engine() = default;
-    Engine(const Engine&) = delete;
-    Engine& operator=(const Engine&) = delete;
+    EngineFacade();
+    ~EngineFacade() = default;
+    EngineFacade(const EngineFacade&) = delete;
+    EngineFacade& operator=(const EngineFacade&) = delete;
+
+    void register_core_services();
 
    private:
     bool initialized_ = false;
-    std::unique_ptr<ResourceManager> resource_manager_{};
-
-    // 新增：系统、队列、数据缓存
-    std::unordered_map<std::type_index, std::shared_ptr<ISystem>> systems_{};
-    std::unordered_map<std::string, std::unique_ptr<SafeCommandQueue>> queues_{};
+    std::shared_ptr<Interfaces::ServiceLocator> services_{};
+    std::unique_ptr<EngineKernel> kernel_{};
+    std::shared_ptr<ResourceManager> resource_manager_{};
+    std::shared_ptr<Core::ResourceServiceAdapter> resource_service_{};
+    std::shared_ptr<Core::LoggerService> logger_service_{};
+    std::shared_ptr<Core::CommandSchedulerService> command_scheduler_{};
     DataCacheHub data_hub_{};
     EventBusHub event_hub_{};
 };
+using Engine = EngineFacade;
 }  // namespace Corona

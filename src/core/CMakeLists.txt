@@ -11,6 +11,13 @@ if(CORONA_CORE_PRIVATE_SOURCES)
     target_sources(CoronaCore PRIVATE ${CORONA_CORE_PRIVATE_SOURCES})
 endif()
 
+target_sources(CoronaCore
+    PRIVATE
+        ${_CORONA_CORE_MODULE_DIR}/private/services/LoggerService.cpp
+        ${_CORONA_CORE_MODULE_DIR}/private/services/ResourceServiceAdapter.cpp
+        ${_CORONA_CORE_MODULE_DIR}/private/services/CommandSchedulerService.cpp
+)
+
 if(CORONA_CORE_PUBLIC_HEADERS)
     target_sources(CoronaCore PUBLIC ${CORONA_CORE_PUBLIC_HEADERS})
 endif()
