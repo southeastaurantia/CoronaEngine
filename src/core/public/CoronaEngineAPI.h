@@ -2,7 +2,7 @@
 
 #include <ktm/ktm.h>
 
-#include "../../../build/_deps/entt-src/src/entt/entity/registry.hpp"
+#include <entt/entt.hpp>
 
 struct CoronaEngineAPI {
     CoronaEngineAPI() = delete;

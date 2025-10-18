@@ -1,6 +1,8 @@
 #pragma once
 
-#include "ThreadedSystem.h"
+#include <corona/interfaces/ThreadedSystem.h>
+
+#include <cstdint>
 
 namespace Corona
 {
@@ -15,6 +17,6 @@ namespace Corona
         void onStop() override;
 
       private:
-  void process_audio(uint64_t id);
+    void process_audio(std::uint64_t id);
     };
 } // namespace Corona

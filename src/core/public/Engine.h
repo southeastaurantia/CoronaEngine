@@ -12,7 +12,7 @@
 #include <typeindex>
 #include <unordered_map>
 
-#include "ISystem.h"
+#include <corona/interfaces/ISystem.h>
 #include "SafeCommandQueue.h"
 #include "SafeDataCache.h"
 #include "EventBus.h"

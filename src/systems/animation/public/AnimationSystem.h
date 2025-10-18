@@ -1,7 +1,9 @@
 #pragma once
 
-#include "ThreadedSystem.h"
+#include <corona/interfaces/ThreadedSystem.h>
 #include "AnimationState.h"
+
+#include <cstdint>
 
 #include <set>
 #include <unordered_map>

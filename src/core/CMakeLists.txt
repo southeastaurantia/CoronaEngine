@@ -29,9 +29,11 @@ target_link_libraries(CoronaCore
     corona::system::rendering
     corona::system::display
     corona::system::audio
+    corona::interfaces
     corona::thread
     corona::utils
 
     ktm
+    EnTT::EnTT
     CoronaResource::Resource
 )

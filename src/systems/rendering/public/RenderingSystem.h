@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ThreadedSystem.h"
+#include <corona/interfaces/ThreadedSystem.h>
 
 #include <CabbageDisplayer.h>
 #include <Pipeline/ComputePipeline.h>

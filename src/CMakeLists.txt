@@ -12,6 +12,7 @@ include_guard(GLOBAL)
 # ------------------------------------------------------------------------------
 # 添加各功能模块子目录
 # ------------------------------------------------------------------------------
+add_subdirectory(interfaces)     # 公共接口与对外头文件
 add_subdirectory(utils)          # 通用工具类
 add_subdirectory(thread)         # 线程与并发原语
 add_subdirectory(systems)        # 引擎系统 (animation/audio/display/rendering)

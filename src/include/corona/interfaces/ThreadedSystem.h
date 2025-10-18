@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ISystem.h"
+#include <corona/interfaces/ISystem.h>
 #include <corona_logger.h>
 
 #include <atomic>
