@@ -6,11 +6,7 @@
 
 #include <memory>
 
-#include "AnimationState.h"
-#include "AnimationSystem.h"
 #include "Engine.h"
-#include "Model.h"
-#include "RenderingSystem.h"
 #include "components/SceneComponents.h"
 #include "SceneEvents.h"
 #include "EventBus.h"

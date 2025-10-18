@@ -24,8 +24,9 @@ target_include_directories(CoronaSystemAnimation
 
 target_link_libraries(CoronaSystemAnimation
     PUBLIC
-    corona::system::interface
-    corona::core
-
-    CoronaResource::Resource
+        corona::system::interface
+        corona::core
+        CoronaResource::Resource
+    PRIVATE
+        corona::script::python
 )
