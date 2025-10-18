@@ -5,7 +5,7 @@
 | 模块 | 当前公开头目录 | 目标 include 路径 | 备注 |
 | --- | --- | --- | --- |
 | `core` | `src/core/public/` | `src/include/corona/core/` | `Engine.h` 已改为引用接口库；新增 `EngineKernel.h` 作为过渡抽象，后续迁移 API 与组件定义 |
-| `systems/interface` | `src/include/corona/interfaces/` | `src/include/corona/interfaces/` | `ISystem.h`、`ThreadedSystem.h` 已迁移，新增 `Concurrency.h`、`ServiceLocator.h`、`SystemContext.h` |
+| `systems/interface` | `src/include/corona/interfaces/` | `src/include/corona/interfaces/` | `ISystem.h`、`ThreadedSystem.h` 已迁移，新增 `Concurrency.h`、`ServiceLocator.h`、`SystemContext.h`、`Services.h` |
 | `systems/animation` | `src/systems/animation/public/` | `src/include/corona/systems/animation/` | 依赖 `ThreadedSystem` 和 `AnimationState`，待合并至接口层 |
 | `systems/audio` | `src/systems/audio/public/` | `src/include/corona/systems/audio/` | 头文件引用已指向接口库 |
 | `systems/display` | `src/systems/display/public/` | `src/include/corona/systems/display/` | 同上 |

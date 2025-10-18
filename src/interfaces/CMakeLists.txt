@@ -8,6 +8,7 @@ set(_CORONA_INTERFACE_HEADERS
     ${_CORONA_INTERFACE_ROOT}/corona/interfaces/Concurrency.h
     ${_CORONA_INTERFACE_ROOT}/corona/interfaces/ServiceLocator.h
     ${_CORONA_INTERFACE_ROOT}/corona/interfaces/SystemContext.h
+    ${_CORONA_INTERFACE_ROOT}/corona/interfaces/Services.h
 )
 
 add_library(CoronaInterfaces INTERFACE)
