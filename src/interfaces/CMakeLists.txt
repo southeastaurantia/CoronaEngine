@@ -1,14 +1,12 @@
 include_guard(GLOBAL)
 
-set(_CORONA_INTERFACE_ROOT ${PROJECT_SOURCE_DIR}/include)
-
 set(_CORONA_INTERFACE_HEADERS
-    ${_CORONA_INTERFACE_ROOT}/corona/interfaces/ISystem.h
-    ${_CORONA_INTERFACE_ROOT}/corona/interfaces/ThreadedSystem.h
-    ${_CORONA_INTERFACE_ROOT}/corona/interfaces/Concurrency.h
-    ${_CORONA_INTERFACE_ROOT}/corona/interfaces/ServiceLocator.h
-    ${_CORONA_INTERFACE_ROOT}/corona/interfaces/SystemContext.h
-    ${_CORONA_INTERFACE_ROOT}/corona/interfaces/Services.h
+    ${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}/corona/interfaces/ISystem.h
+    ${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}/corona/interfaces/ThreadedSystem.h
+    ${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}/corona/interfaces/Concurrency.h
+    ${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}/corona/interfaces/ServiceLocator.h
+    ${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}/corona/interfaces/SystemContext.h
+    ${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}/corona/interfaces/Services.h
 )
 
 add_library(CoronaInterfaces INTERFACE)
@@ -19,7 +17,4 @@ target_sources(CoronaInterfaces
         ${_CORONA_INTERFACE_HEADERS}
 )
 
-target_include_directories(CoronaInterfaces
-    INTERFACE
-        $<BUILD_INTERFACE:${_CORONA_INTERFACE_ROOT}>
-)
+corona_target_use_public_includes(CoronaInterfaces SCOPE INTERFACE)

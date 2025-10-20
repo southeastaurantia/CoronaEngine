@@ -109,3 +109,35 @@ function(corona_collect_module MODULE_NAME MODULE_DIR)
         message(STATUS "[Corona:Collect] ${MODULE_NAME} -> public: ${_ph_count}, private: ${_ps_count}")
     endif()
 endfunction()
+
+# ------------------------------------------------------------------------------
+# Helper: apply shared public include directory to a target
+# ------------------------------------------------------------------------------
+if(NOT DEFINED CORONA_ENGINE_PUBLIC_INCLUDE_ROOT)
+    set(CORONA_ENGINE_PUBLIC_INCLUDE_ROOT "${PROJECT_SOURCE_DIR}/include")
+endif()
+
+function(corona_target_use_public_includes TARGET)
+    if(NOT TARGET ${TARGET})
+        message(FATAL_ERROR "corona_target_use_public_includes: target '${TARGET}' does not exist")
+    endif()
+
+    cmake_parse_arguments(_CORONA_INCLUDES "" "SCOPE" "" ${ARGN})
+
+    set(_scope "${_CORONA_INCLUDES_SCOPE}")
+    if(NOT _scope)
+        set(_scope "PUBLIC")
+    endif()
+
+    string(TOUPPER "${_scope}" _scope_upper)
+    set(_valid_scopes PUBLIC INTERFACE PRIVATE)
+    list(FIND _valid_scopes "${_scope_upper}" _scope_index)
+    if(_scope_index EQUAL -1)
+        message(FATAL_ERROR "corona_target_use_public_includes: invalid scope '${_scope}' for target ${TARGET}")
+    endif()
+
+    target_include_directories(${TARGET}
+        ${_scope_upper}
+            $<BUILD_INTERFACE:${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}>
+    )
+endfunction()

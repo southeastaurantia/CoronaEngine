@@ -11,7 +11,7 @@ corona_add_example(
 # Use project root so <engine/RuntimeLoop.h> resolves
 target_include_directories(minimal_runtime_loop PRIVATE
     ${PROJECT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}/include
+    ${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}
 )
 
 # Pull in the RuntimeLoop implementation and required dependencies

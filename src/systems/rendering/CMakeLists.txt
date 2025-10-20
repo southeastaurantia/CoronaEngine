@@ -13,16 +13,13 @@ endif()
 
 target_sources(CoronaSystemRendering
     PUBLIC
-        ${PROJECT_SOURCE_DIR}/include/corona/systems/RenderingSystem.h
-        ${PROJECT_SOURCE_DIR}/include/corona/systems/rendering/SceneEvents.h
+    ${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}/corona/systems/RenderingSystem.h
+    ${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}/corona/systems/rendering/SceneEvents.h
 )
 
 target_compile_features(CoronaSystemRendering PUBLIC cxx_std_20)
 
-target_include_directories(CoronaSystemRendering
-    PUBLIC
-        ${PROJECT_SOURCE_DIR}/include
-)
+corona_target_use_public_includes(CoronaSystemRendering)
 
 target_link_libraries(CoronaSystemRendering
     PUBLIC

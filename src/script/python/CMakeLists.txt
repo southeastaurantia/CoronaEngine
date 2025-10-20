@@ -17,17 +17,18 @@ endif()
 
 target_sources(CoronaScriptPython
     PUBLIC
-        ${PROJECT_SOURCE_DIR}/include/corona/script/EngineScripts.h
-        ${PROJECT_SOURCE_DIR}/include/corona/script/PythonAPI.h
-        ${PROJECT_SOURCE_DIR}/include/corona/script/PythonBridge.h
-        ${PROJECT_SOURCE_DIR}/include/corona/script/PythonHotfix.h
+        ${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}/corona/script/EngineScripts.h
+        ${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}/corona/script/PythonAPI.h
+        ${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}/corona/script/PythonBridge.h
+        ${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}/corona/script/PythonHotfix.h
 )
 
 target_compile_features(CoronaScriptPython PUBLIC cxx_std_20)
 
+corona_target_use_public_includes(CoronaScriptPython)
+
 target_include_directories(CoronaScriptPython
     PUBLIC
-        ${PROJECT_SOURCE_DIR}/include
         ${Python3_INCLUDE_DIRS}
 )
 

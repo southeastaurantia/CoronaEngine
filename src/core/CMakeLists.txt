@@ -1,7 +1,6 @@
 include_guard(GLOBAL)
 
 set(_CORONA_CORE_MODULE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(_CORONA_CORE_INCLUDE_ROOT ${PROJECT_SOURCE_DIR}/include)
 
 corona_collect_module(Core ${_CORONA_CORE_MODULE_DIR})
 
@@ -22,10 +21,7 @@ add_library(corona::core::kernel ALIAS CoronaCoreKernel)
 
 target_compile_features(CoronaCoreKernel PUBLIC cxx_std_20)
 
-target_include_directories(CoronaCoreKernel
-    PUBLIC
-        ${_CORONA_CORE_INCLUDE_ROOT}
-)
+corona_target_use_public_includes(CoronaCoreKernel)
 
 if(DEFINED ktm_SOURCE_DIR)
     target_include_directories(CoronaCoreKernel
@@ -44,10 +40,7 @@ add_library(corona::core::services ALIAS CoronaCoreServices)
 
 target_compile_features(CoronaCoreServices PUBLIC cxx_std_20)
 
-target_include_directories(CoronaCoreServices
-    PUBLIC
-        ${_CORONA_CORE_INCLUDE_ROOT}
-)
+corona_target_use_public_includes(CoronaCoreServices)
 
 target_link_libraries(CoronaCoreServices
     PUBLIC
@@ -70,10 +63,7 @@ endif()
 
 target_compile_features(CoronaCore PUBLIC cxx_std_20)
 
-target_include_directories(CoronaCore
-    PUBLIC
-        ${_CORONA_CORE_INCLUDE_ROOT}
-)
+corona_target_use_public_includes(CoronaCore)
 
 if(DEFINED ktm_SOURCE_DIR)
     target_include_directories(CoronaCore

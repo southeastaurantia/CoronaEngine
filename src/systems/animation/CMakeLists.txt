@@ -13,15 +13,12 @@ endif()
 
 target_sources(CoronaSystemAnimation
     PUBLIC
-        ${PROJECT_SOURCE_DIR}/include/corona/systems/AnimationSystem.h
+    ${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}/corona/systems/AnimationSystem.h
 )
 
 target_compile_features(CoronaSystemAnimation PUBLIC cxx_std_20)
 
-target_include_directories(CoronaSystemAnimation
-    PUBLIC
-        ${PROJECT_SOURCE_DIR}/include
-)
+corona_target_use_public_includes(CoronaSystemAnimation)
 
 target_link_libraries(CoronaSystemAnimation
     PUBLIC

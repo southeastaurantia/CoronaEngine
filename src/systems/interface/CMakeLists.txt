@@ -8,3 +8,5 @@ target_link_libraries(CoronaSystemInterface
         corona::interfaces
         Corona::Logger
 )
+
+corona_target_use_public_includes(CoronaSystemInterface SCOPE INTERFACE)
