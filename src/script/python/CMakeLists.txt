@@ -35,6 +35,7 @@ target_include_directories(CoronaScriptPython
 # Add nanobind include directory if available
 if(DEFINED nanobind_SOURCE_DIR)
     target_include_directories(CoronaScriptPython PUBLIC ${nanobind_SOURCE_DIR}/include)
+    message(STATUS "TEST NANOBIND-----------------------------")
 endif()
 
 # Ensure Python::Module/Interpreter targets exist for nanobind

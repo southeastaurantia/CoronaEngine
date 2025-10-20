@@ -73,6 +73,7 @@ int main(int argc, char** argv) {
     const std::vector<std::string> requested_systems{
         "AnimationSystem",
         Example::DiagnosticsSystem::kName,
+        "AudioSystem",
         "RenderingSystem",
         "DisplaySystem"};
     request_systems(requested_systems);
