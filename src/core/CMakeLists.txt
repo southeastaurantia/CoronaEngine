@@ -5,13 +5,13 @@ set(_CORONA_CORE_INCLUDE_ROOT ${PROJECT_SOURCE_DIR}/include)
 
 corona_collect_module(Core ${_CORONA_CORE_MODULE_DIR})
 
-set(_CORONA_CORE_KERNEL_SOURCE ${_CORONA_CORE_MODULE_DIR}/private/EngineKernel.cpp)
+set(_CORONA_CORE_KERNEL_SOURCE ${_CORONA_CORE_MODULE_DIR}/src/EngineKernel.cpp)
 list(REMOVE_ITEM CORONA_CORE_PRIVATE_SOURCES ${_CORONA_CORE_KERNEL_SOURCE})
 
 set(_CORONA_CORE_SERVICE_SOURCES
-    ${_CORONA_CORE_MODULE_DIR}/private/services/LoggerService.cpp
-    ${_CORONA_CORE_MODULE_DIR}/private/services/ResourceServiceAdapter.cpp
-    ${_CORONA_CORE_MODULE_DIR}/private/services/CommandSchedulerService.cpp
+    ${_CORONA_CORE_MODULE_DIR}/src/services/LoggerService.cpp
+    ${_CORONA_CORE_MODULE_DIR}/src/services/ResourceServiceAdapter.cpp
+    ${_CORONA_CORE_MODULE_DIR}/src/services/CommandSchedulerService.cpp
 )
 foreach(_svc_src IN LISTS _CORONA_CORE_SERVICE_SOURCES)
     list(REMOVE_ITEM CORONA_CORE_PRIVATE_SOURCES ${_svc_src})

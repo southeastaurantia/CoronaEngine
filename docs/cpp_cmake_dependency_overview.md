@@ -12,7 +12,7 @@
 | --- | --- | --- | --- | --- |
 | `CoronaUtils` (`corona::utils`) | INTERFACE | `include/corona/utils` | 无 | 提供跨平台编译器/平台探测宏等基础设施。
 | `CoronaThread` (`corona::thread`) | INTERFACE | `include/corona/threading` | `Corona::Logger`, `cabbage::concurrent` | 暴露线程安全容器、队列与事件总线；依赖日志与 CabbageConcurrent 队列实现。
-| `CoronaSystemInterface` (`corona::system::interface`) | INTERFACE | `src/systems/interface/public` | `Corona::Logger` | 声明系统基类 `ISystem` 与线程化调度骨架 `ThreadedSystem`。
+| `CoronaSystemInterface` (`corona::system::interface`) | INTERFACE | `include/corona/interfaces` | `Corona::Logger` | 声明系统基类 `ISystem` 与线程化调度骨架 `ThreadedSystem`。
 | `CoronaSystemAnimation` (`corona::system::animation`) | STATIC | `include/corona/systems` | `corona::system::interface`, `corona::core`, `CoronaResource::Resource` | 动画线程系统，编译期依赖核心与资源模块；产生与核心的双向耦合。
 | `CoronaSystemAudio` (`corona::system::audio`) | STATIC | `include/corona/systems` | `corona::system::interface`, `corona::core` | 音频线程系统，目前示例级实现。
 | `CoronaSystemDisplay` (`corona::system::display`) | STATIC | `include/corona/systems` | `corona::system::interface`, `corona::core` | 显示线程系统，结构与 Audio 相同。
@@ -23,7 +23,7 @@
 | `Corona_runtime` | EXECUTABLE | `engine/` | `CoronaEngine`, `EnTT::EnTT` | 主程序，负责初始化日志、引擎及默认 `RuntimeLoop`。
 
 ### 其他 CMake 脚本要点
-- `corona_collect_module.cmake`：按模块自动收集 `public`/`private` 源，生成标准变量供 `add_library` 使用。
+- `corona_collect_module.cmake`：按模块自动收集 `include`/`public` 头与 `src`/`private` 源，生成标准变量供 `add_library` 使用。
 - `corona_options.cmake`：集中声明 `BUILD_CORONA_RUNTIME`、`CORONA_BUILD_EXAMPLES`、`BUILD_CORONA_EDITOR` 等开关。
 - `corona_python.cmake`：强制使用内置 Python 3.13.7，配置依赖校验 `check_python_deps`。
 - `corona_third_party.cmake`：通过 `FetchContent` 拉取 Assimp、stb、EnTT、CoronaLogger、CabbageHardware、CabbageConcurrent、CoronaResource 等外部仓库。

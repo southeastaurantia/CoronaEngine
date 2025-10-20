@@ -8,7 +8,7 @@
 | `src/systems/audio/src/AudioSystem.cpp` | 4 | 命令队列注册、异步资源加载、命令队列轮询 |
 | `src/systems/display/src/DisplaySystem.cpp` | 4 | 同音频系统，用于队列注册与轮询 |
 | `src/systems/rendering/src/RenderingSystem.cpp` | 25 | 队列注册、事件订阅/退订、资源加载、模型缓存访问、系统互访 |
-| `src/core/private/CoronaEngineAPI.cpp` | 10 | 通过 API 对外暴露事件发布接口 |
+| `src/core/src/CoronaEngineAPI.cpp` | 10 | 通过 API 对外暴露事件发布接口 |
 | `examples/minimal_runtime_loop/*.cpp|h` | 11 | 示例程序中获取系统、队列和引擎实例 |
 | `engine/main.cpp` | 1 | 引擎初始化 |
 

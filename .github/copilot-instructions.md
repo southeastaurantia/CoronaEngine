@@ -2,7 +2,7 @@
 ## Architecture & Modules
 - Engine singleton in include/corona/core/Engine.h orchestrates system registration, SafeCommandQueue hubs, DataCacheHub, and EventBusHub; prefer Engine::instance() as the single access point.
 - Runtime entrypoints in engine/main.cpp and engine/RuntimeLoop.cpp register the default Animation/Rendering/Audio/Display systems and gate them based on entt tags; follow examples/minimal_runtime_loop for custom loops.
-- Systems reside under src/systems/<module>; each derives from src/systems/interface/public/ThreadedSystem.h to run on a dedicated worker thread at a configurable FPS, while their public headers live under include/corona/systems.
+- Systems reside under src/systems/<module>; each derives from include/corona/interfaces/ThreadedSystem.h to run on a dedicated worker thread at a configurable FPS, while their public headers live under include/corona/systems.
 - External clients talk through include/corona/api/CoronaEngineAPI.h which wraps a static entt::registry, exposes Actor/Scene handles, and mirrors state into engine events.
 - Shared engine-wide utilities live in include/corona/threading (SafeCommandQueue/EventBusT/SafeDataCache) and include/corona/utils/compiler_features.h (cross-platform macros).
 ## Runtime Data Flow
