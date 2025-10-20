@@ -14,6 +14,9 @@
 
 namespace Corona {
 
+class EventBusHub;
+class DataCacheHub;
+
 class EngineKernel {
   public:
     explicit EngineKernel(std::shared_ptr<Interfaces::ServiceLocator> services = nullptr);
@@ -42,12 +45,22 @@ class EngineKernel {
         throw std::runtime_error("System not registered");
     }
 
+    template <typename TSystem>
+    [[nodiscard]] bool has_system() const {
+        const std::type_index key{typeid(TSystem)};
+        return systems_.contains(key);
+    }
+
     void start_all();
     void stop_all();
 
     [[nodiscard]] std::size_t system_count() const { return systems_.size(); }
 
-    Interfaces::SystemContext make_context(Interfaces::ICommandQueue* queue = nullptr);
+    Interfaces::SystemContext make_context(Interfaces::ICommandQueue* queue = nullptr,
+                                           EventBusHub* events = nullptr,
+                                           DataCacheHub* caches = nullptr);
+
+    bool add_system_instance(std::shared_ptr<ISystem> system);
 
   private:
     std::shared_ptr<Interfaces::ServiceLocator> services_;

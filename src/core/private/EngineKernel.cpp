@@ -33,8 +33,24 @@ void EngineKernel::stop_all() {
     }
 }
 
-Interfaces::SystemContext EngineKernel::make_context(Interfaces::ICommandQueue* queue) {
-    return Interfaces::SystemContext{*services_, queue};
+Interfaces::SystemContext EngineKernel::make_context(Interfaces::ICommandQueue* queue,
+                                                     EventBusHub* events,
+                                                     DataCacheHub* caches) {
+    return Interfaces::SystemContext{*services_, queue, events, caches};
+}
+
+bool EngineKernel::add_system_instance(std::shared_ptr<ISystem> system) {
+    if (!system) {
+        return false;
+    }
+    const auto& system_ref = *system;
+    const std::type_index key{typeid(system_ref)};
+    if (systems_.contains(key)) {
+        return false;
+    }
+    system_order_.push_back(system);
+    systems_.emplace(key, std::move(system));
+    return true;
 }
 
 } // namespace Corona

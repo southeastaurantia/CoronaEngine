@@ -1,5 +1,7 @@
 #pragma once
 
+#include <corona/interfaces/SystemContext.h>
+
 namespace Corona
 {
 
@@ -12,8 +14,13 @@ namespace Corona
       public:
         virtual const char *name() = 0; // name用于日志输出
 
-        virtual void start() = 0;
-        virtual void stop() = 0;
+    virtual void start() = 0;
+    virtual void stop() = 0;
+
+    virtual void configure(const Interfaces::SystemContext &context)
+    {
+      (void)context;
+    }
 
       protected:
         virtual void tick() = 0;

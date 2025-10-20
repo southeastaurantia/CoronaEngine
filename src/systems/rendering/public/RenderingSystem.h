@@ -1,5 +1,6 @@
 #pragma once
 
+#include <corona/interfaces/Services.h>
 #include <corona/interfaces/ThreadedSystem.h>
 
 #include <CabbageDisplayer.h>
@@ -16,6 +17,11 @@
 #include "SceneEvents.h"
 #include "events/ActorEvents.h"
 
+namespace Corona {
+    class EventBusHub;
+    class DataCacheHub;
+}
+
 namespace Corona
 {
     class Shader;
@@ -25,6 +31,7 @@ namespace Corona
     {
       public:
         RenderingSystem();
+    void configure(const Interfaces::SystemContext &context) override;
 
         // 保持与现有 API 兼容的模型观测接口
         void watch_model(uint64_t id);
@@ -112,5 +119,10 @@ namespace Corona
 
         std::unordered_map<uint64_t, TRS> pending_trs_{};
         std::unordered_set<uint64_t> removed_actors_{};
+        std::shared_ptr<Interfaces::IResourceService> resource_service_{};
+        std::shared_ptr<Interfaces::ICommandScheduler> scheduler_{};
+        Interfaces::ICommandScheduler::QueueHandle system_queue_handle_{};
+        EventBusHub *event_hub_ptr_ = nullptr;
+        DataCacheHub *data_cache_hub_ = nullptr;
     };
 } // namespace Corona

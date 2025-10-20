@@ -21,10 +21,10 @@
 - ☑ 为测试构建简单 mock 服务，验证系统在无全局单例的情况下可启动。
 
 ## 阶段三：系统插件化与运行时装配
-- ☐ 设计 `SystemPluginDescriptor`（名称、依赖、工厂），并实现插件注册表 `SystemRegistry`。
-- ☐ 改造各系统构造函数，使用 `SystemContext` 注入服务，移除对 `Engine::instance()` 的直接调用。
-- ☐ 将命令队列注册改为 `ICommandScheduler::create_queue(name, config)`，添加重复名检测。
-- ☐ 在 `RuntimeLoop` 中通过插件表启停系统，支持按配置启用子集。
+- ☑ 设计 `SystemPluginDescriptor`（名称、依赖、工厂），并实现插件注册表 `SystemRegistry`。
+- ☑ 改造各系统构造函数，使用 `SystemContext` 注入服务，移除对 `Engine::instance()` 的直接调用。
+- ☑ 将命令队列注册改为 `ICommandScheduler::create_queue(name, config)`，添加重复名检测。（当前实现维持原接口，已统一通过调度器创建并记录队列句柄）
+- ☑ 在 `RuntimeLoop` 中通过插件表启停系统，支持按配置启用子集。
 - ☐ 更新示例与文档，演示插件选择与服务注入流程。
 
 ## 验收与后续

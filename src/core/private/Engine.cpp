@@ -7,6 +7,7 @@
 #include "services/ResourceServiceAdapter.h"
 
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 namespace Corona {
@@ -86,6 +87,8 @@ void EngineFacade::shutdown() {
     if (command_scheduler_) {
         command_scheduler_->clear();
     }
+
+    system_queue_handles_.clear();
 
     if (resource_manager_) {
         resource_manager_->wait();
@@ -175,6 +178,62 @@ const Interfaces::ServiceLocator& EngineFacade::services() const {
         throw std::runtime_error("Service locator not initialized");
     }
     return *services_;
+}
+
+bool EngineFacade::adopt_system(std::shared_ptr<ISystem> system) {
+    if (!system) {
+        CE_LOG_WARN("Cannot adopt null system instance");
+        return false;
+    }
+
+    auto* raw = system.get();
+    if (!kernel().add_system_instance(std::move(system))) {
+        CE_LOG_WARN("System '{}' is already registered", raw ? raw->name() : "<unnamed>");
+        return false;
+    }
+
+    auto* queue_ptr = ensure_system_queue(raw ? raw->name() : "");
+    configure_system(*raw, queue_ptr);
+    CE_LOG_DEBUG("Adopted system {}", raw ? raw->name() : "<unnamed>");
+    return true;
+}
+
+Interfaces::ICommandQueue* EngineFacade::ensure_system_queue(const char* name) {
+    if (!name || *name == '\0') {
+        return nullptr;
+    }
+
+    auto scheduler = services().try_get<Interfaces::ICommandScheduler>();
+    if (!scheduler) {
+        CE_LOG_WARN("Command scheduler service unavailable while configuring system '{}'", name);
+        return nullptr;
+    }
+
+    std::string key{name};
+    auto handle_it = system_queue_handles_.find(key);
+    if (handle_it == system_queue_handles_.end() || !(handle_it->second)) {
+        Interfaces::ICommandScheduler::QueueHandle handle;
+        if (scheduler->contains(key)) {
+            handle = scheduler->get_queue(key);
+            if (!handle) {
+                CE_LOG_ERROR("Existing command queue '{}' could not be retrieved", key);
+                return nullptr;
+            }
+        } else {
+            handle = scheduler->create_queue(key);
+            if (!handle) {
+                CE_LOG_ERROR("Failed to create command queue '{}'", key);
+                return nullptr;
+            }
+        }
+        handle_it = system_queue_handles_.emplace(key, std::move(handle)).first;
+    }
+    return handle_it->second ? handle_it->second.get() : nullptr;
+}
+
+void EngineFacade::configure_system(ISystem& system, Interfaces::ICommandQueue* queue_ptr) {
+    auto context = kernel().make_context(queue_ptr, &event_hub_, &data_hub_);
+    system.configure(context);
 }
 
 } // namespace Corona

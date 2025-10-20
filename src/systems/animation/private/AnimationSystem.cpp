@@ -5,9 +5,11 @@
 
 #include "Animation.h"
 #include "Bone.h"
-#include "Engine.h"
 #include "Model.h"
 #include "PythonBridge.h"
+#include "SystemHubs.h"
+
+#include <ResourceTypes.h>
 
 namespace {
 using namespace Corona;
@@ -173,36 +175,61 @@ bool checkCollision(const std::vector<ktm::fvec3>& vertices1, const std::vector<
 using namespace Corona;
 
 AnimationSystem::AnimationSystem()
-    : ThreadedSystem("AnimationSystem") {
-    Engine::instance().add_queue(name(), std::make_unique<SafeCommandQueue>());
+    : ThreadedSystem("AnimationSystem") {}
+
+void AnimationSystem::configure(const Interfaces::SystemContext &context) {
+    ThreadedSystem::configure(context);
+    resource_service_ = services().try_get<Interfaces::IResourceService>();
+    scheduler_ = services().try_get<Interfaces::ICommandScheduler>();
+    if (scheduler_) {
+        system_queue_handle_ = scheduler_->get_queue(name());
+        if (!system_queue_handle_) {
+            system_queue_handle_ = scheduler_->create_queue(name());
+        }
+    } else {
+        system_queue_handle_.reset();
+    }
 }
 
 void AnimationSystem::onStart() {
-    // 测试样例：系统内部使用资源管理器异步加载 shader，并把结果回投到本系统队列
+    // 测试样例：系统内部使用资源服务异步加载 shader，并把结果回投到本系统队列
+    if (!resource_service_) {
+        CE_LOG_WARN("[AnimationSystem] 资源服务未注册，跳过示例加载");
+        return;
+    }
+    if (!system_queue_handle_) {
+        CE_LOG_WARN("[AnimationSystem] 命令队列句柄缺失，跳过示例加载");
+        return;
+    }
+
     const auto assets_root = (std::filesystem::current_path() / "assets").string();
     auto shaderId = ResourceId::from("shader", assets_root);
-    auto sys_name = std::string{name()};
-    Engine::instance().resources().load_once_async(
+    auto queue_handle = system_queue_handle_;
+    resource_service_->load_once_async(
         shaderId,
-        [sys_name](const ResourceId&, std::shared_ptr<IResource> r) {
-            auto& engine = Engine::instance();
-            auto& q = engine.get_queue(sys_name);
-            if (!r) {
-                q.enqueue([] { CE_LOG_WARN("[AnimationSystem] 异步加载 shader 失败"); });
+        [queue_handle](const ResourceId&, std::shared_ptr<IResource> r) {
+            if (!queue_handle) {
                 return;
             }
-            q.enqueue([] { CE_LOG_INFO("[AnimationSystem] 异步加载 shader 成功（测试样例）"); });
+            queue_handle->enqueue([success = static_cast<bool>(r)] {
+                if (!success) {
+                    CE_LOG_WARN("[AnimationSystem] 异步加载 shader 失败");
+                    return;
+                }
+                CE_LOG_INFO("[AnimationSystem] 异步加载 shader 成功（测试样例）");
+            });
         });
 }
 
 void AnimationSystem::onTick() {
-    auto& rq = Engine::instance().get_queue(name());
-    int spun = 0;
-    while (spun < 100 && !rq.empty()) {
-        if (!rq.try_execute()) {
-            continue;
+    if (auto* queue = command_queue()) {
+        int spun = 0;
+        while (spun < 100 && !queue->empty()) {
+            if (!queue->try_execute()) {
+                continue;
+            }
+            ++spun;
         }
-        ++spun;
     }
 
     // frame_count_++;
@@ -212,22 +239,25 @@ void AnimationSystem::onTick() {
     // }
 
     // 遍历关注的 AnimationState 并推进
-    auto& anim_cache = Engine::instance().cache<AnimationState>();
-    anim_cache.safe_loop_foreach(state_cache_keys_, [&](std::shared_ptr<AnimationState> st) {
-        if (!st || !st->model)
-            return;
-        update_animation_state(*st, 1.0f / 120.0f);  // 与系统线程目标帧率一致
-    });
+    if (auto* caches = data_caches()) {
+        auto& anim_cache = caches->get<AnimationState>();
+        anim_cache.safe_loop_foreach(state_cache_keys_, [&](std::shared_ptr<AnimationState> st) {
+            if (!st || !st->model) {
+                return;
+            }
+            update_animation_state(*st, 1.0f / 120.0f); // 与系统线程目标帧率一致
+        });
 
-    auto& model_cache = Engine::instance().cache<Model>();
-    model_cache.safe_loop_foreach(model_cache_keys_, [&](uint64_t id, std::shared_ptr<Model> m) {
-        if (!m) {
-            return;
-        }
-        other_model_cache_keys_.erase(id);
-        update_physics(*m);
-        other_model_cache_keys_.insert(id);
-    });
+        auto& model_cache = caches->get<Model>();
+        model_cache.safe_loop_foreach(model_cache_keys_, [&](uint64_t id, std::shared_ptr<Model> m) {
+            if (!m) {
+                return;
+            }
+            other_model_cache_keys_.erase(id);
+            update_physics(*m);
+            other_model_cache_keys_.insert(id);
+        });
+    }
 }
 
 void AnimationSystem::onStop() {
@@ -296,10 +326,17 @@ void AnimationSystem::update_animation_state(AnimationState& state, float dt) {
 
 void AnimationSystem::send_collision_event() {
     CE_LOG_INFO("Sending collision event");
-    auto& main_queue = Engine::instance().get_queue("MainThread");
-    // 示例负载：可根据需要携带实体/模型信息
+    if (!scheduler_) {
+        CE_LOG_WARN("[AnimationSystem] 无可用的命令调度服务，无法投递事件");
+        return;
+    }
+    auto main_queue = scheduler_->get_queue("MainThread");
+    if (!main_queue) {
+        CE_LOG_WARN("[AnimationSystem] MainThread 队列不存在");
+        return;
+    }
     std::string payload = "type:collision,src:animation,frame:60";
-    main_queue.enqueue([payload] {
+    main_queue->enqueue([payload] {
         Corona::PythonBridge::send(payload);
     });
 }
@@ -317,47 +354,49 @@ void AnimationSystem::update_physics(Model& m) {
         v = ktm::fvec4(actorMatrix * ktm::fvec4(v, 1.0f)).xyz();
     }
 
-    auto& model_cache = Engine::instance().cache<Model>();
-    model_cache.safe_loop_foreach(other_model_cache_keys_, [&](std::shared_ptr<Model> otherModel) {
-        if (!otherModel) {
-            return;
-        }
+    if (auto* caches = data_caches()) {
+        auto& model_cache = caches->get<Model>();
+        model_cache.safe_loop_foreach(other_model_cache_keys_, [&](std::shared_ptr<Model> otherModel) {
+            if (!otherModel) {
+                return;
+            }
 
-        auto otherStartMin = otherModel->minXYZ;
-        auto otherStartMax = otherModel->maxXYZ;
+            auto otherStartMin = otherModel->minXYZ;
+            auto otherStartMax = otherModel->maxXYZ;
 
-        // 计算世界坐标下的包围盒顶点
-        std::vector<ktm::fvec3> Vertices2 = calculateVertices(otherStartMin, otherStartMax);
-        ktm::fmat4x4 otherModelMatrix = otherModel->modelMatrix;
-        for (auto& v : Vertices2) {
-            v = ktm::fvec4(otherModelMatrix * ktm::fvec4(v, 1.0f)).xyz();
-        }
+            // 计算世界坐标下的包围盒顶点
+            std::vector<ktm::fvec3> Vertices2 = calculateVertices(otherStartMin, otherStartMax);
+            ktm::fmat4x4 otherModelMatrix = otherModel->modelMatrix;
+            for (auto& v : Vertices2) {
+                v = ktm::fvec4(otherModelMatrix * ktm::fvec4(v, 1.0f)).xyz();
+            }
 
-        // 碰撞检测
-        if (checkCollision(Vertices1, Vertices2)) {
-            CE_LOG_INFO("Collision detected!");
-            collisionActors_.insert(otherModel.get());
-            collisionActors_.insert(std::addressof(m));
+            // 碰撞检测
+            if (checkCollision(Vertices1, Vertices2)) {
+                CE_LOG_INFO("Collision detected!");
+                collisionActors_.insert(otherModel.get());
+                collisionActors_.insert(std::addressof(m));
 
-            // 碰撞响应
-            // 计算碰撞法线（从actor指向otherActor）
-            ktm::fvec3 center1 = (StartMin + StartMax) * 0.5f;
-            ktm::fvec3 center2 = (otherStartMin + otherStartMax) * 0.5f;
-            ktm::fvec3 normal = ktm::normalize(center2 - center1);
+                // 碰撞响应
+                // 计算碰撞法线（从actor指向otherActor）
+                ktm::fvec3 center1 = (StartMin + StartMax) * 0.5f;
+                ktm::fvec3 center2 = (otherStartMin + otherStartMax) * 0.5f;
+                ktm::fvec3 normal = ktm::normalize(center2 - center1);
 
-            // 物体分离（防止穿透）
-            const float separation = 0.02f;
-            m.positon += ktm::fvec3(-normal * separation);
-            otherModel->positon += (normal * separation);
+                // 物体分离（防止穿透）
+                const float separation = 0.02f;
+                m.positon += ktm::fvec3(-normal * separation);
+                otherModel->positon += (normal * separation);
 
-            // 直接施加反弹位移
-            const float bounceStrength = 0.1f;  // 反弹强度
-            m.positon += ktm::fvec3(-normal * bounceStrength);
-            otherModel->positon += (normal * bounceStrength);
+                // 直接施加反弹位移
+                const float bounceStrength = 0.1f; // 反弹强度
+                m.positon += ktm::fvec3(-normal * bounceStrength);
+                otherModel->positon += (normal * bounceStrength);
 
-            // 更新模型矩阵           /*变换矩阵 = 平移 * 旋转 * 缩放/     //先缩放在旋转后平移//
-            m.modelMatrix = ktm::fmat4x4(ktm::translate3d(m.positon) * ktm::translate3d(m.rotation) * ktm::translate3d(m.scale));
-            otherModel->modelMatrix = ktm::fmat4x4(ktm::translate3d(otherModel->positon) * ktm::translate3d(otherModel->rotation) * ktm::translate3d(otherModel->scale));
-        }
-    });
+                // 更新模型矩阵           /*变换矩阵 = 平移 * 旋转 * 缩放/     //先缩放在旋转后平移//
+                m.modelMatrix = ktm::fmat4x4(ktm::translate3d(m.positon) * ktm::translate3d(m.rotation) * ktm::translate3d(m.scale));
+                otherModel->modelMatrix = ktm::fmat4x4(ktm::translate3d(otherModel->positon) * ktm::translate3d(otherModel->rotation) * ktm::translate3d(otherModel->scale));
+            }
+        });
+    }
 }
