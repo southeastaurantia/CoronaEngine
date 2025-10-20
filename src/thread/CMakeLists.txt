@@ -15,12 +15,16 @@ if(CORONA_THREAD_PUBLIC_HEADERS)
     target_sources(CoronaThread INTERFACE ${CORONA_THREAD_PUBLIC_HEADERS})
 endif()
 
+target_sources(CoronaThread
+    INTERFACE
+    ${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}/corona/threading/EventBus.h
+    ${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}/corona/threading/SafeCommandQueue.h
+    ${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}/corona/threading/SafeDataCache.h
+)
+
 target_compile_features(CoronaThread INTERFACE cxx_std_20)
 
-target_include_directories(CoronaThread
-    INTERFACE
-    ${_CORONA_THREAD_DIR}/public
-)
+corona_target_use_public_includes(CoronaThread SCOPE INTERFACE)
 
 target_link_libraries(CoronaThread
     INTERFACE

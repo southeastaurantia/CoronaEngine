@@ -12,6 +12,7 @@ include_guard(GLOBAL)
 # ------------------------------------------------------------------------------
 # 添加各功能模块子目录
 # ------------------------------------------------------------------------------
+add_subdirectory(interfaces)     # 公共接口与对外头文件
 add_subdirectory(utils)          # 通用工具类
 add_subdirectory(thread)         # 线程与并发原语
 add_subdirectory(systems)        # 引擎系统 (animation/audio/display/rendering)
@@ -52,6 +53,8 @@ endforeach()
 
 # 要求 C++20 标准
 target_compile_features(CoronaEngine PUBLIC cxx_std_20)
+
+corona_target_use_public_includes(CoronaEngine)
 
 # 收集运行时依赖 (Python DLL/PDB) 供后续可执行目标复制
 if(COMMAND corona_configure_runtime_deps)

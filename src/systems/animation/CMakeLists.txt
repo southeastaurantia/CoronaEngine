@@ -11,21 +11,20 @@ if(CORONA_SYSTEMANIMATION_PRIVATE_SOURCES)
     target_sources(CoronaSystemAnimation PRIVATE ${CORONA_SYSTEMANIMATION_PRIVATE_SOURCES})
 endif()
 
-if(CORONA_SYSTEMANIMATION_PUBLIC_HEADERS)
-    target_sources(CoronaSystemAnimation PUBLIC ${CORONA_SYSTEMANIMATION_PUBLIC_HEADERS})
-endif()
+target_sources(CoronaSystemAnimation
+    PUBLIC
+    ${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}/corona/systems/AnimationSystem.h
+)
 
 target_compile_features(CoronaSystemAnimation PUBLIC cxx_std_20)
 
-target_include_directories(CoronaSystemAnimation
-    PUBLIC
-        ${_CORONA_SYSTEM_ANIMATION_DIR}/public
-)
+corona_target_use_public_includes(CoronaSystemAnimation)
 
 target_link_libraries(CoronaSystemAnimation
     PUBLIC
-    corona::system::interface
-    corona::core
-
-    CoronaResource::Resource
+        corona::system::interface
+        corona::core
+        CoronaResource::Resource
+    PRIVATE
+        corona::script::python
 )

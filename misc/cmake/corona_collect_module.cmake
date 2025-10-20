@@ -2,12 +2,11 @@
 # corona_collect_module.cmake
 #
 # 功能:
-#   标准化收集单个模块 (public/private 分层) 的源文件和头文件。
+#   标准化收集单个模块 (include/src 布局) 的源文件和头文件。
 #
 # 规则:
-#   - 递归搜索 `public` 和 `private` 目录下的所有文件。
-#   - `public` 目录: 收集 `*.h`, `*.hpp` (导出头文件)。
-#   - `private` 目录: 收集 `*.c`, `*.cc`, `*.cxx`, `*.cpp` (实现文件)。
+#   - 递归搜索模块 `include/` 目录下的所有头文件。
+#   - 递归搜索模块 `src/` 目录下的所有实现文件。
 #
 # 生成变量 (全部大写):
 #   - `CORONA_<MODULE>_PUBLIC_HEADERS`: 公共头文件列表。
@@ -45,30 +44,40 @@ function(corona_collect_module MODULE_NAME MODULE_DIR)
     # 规范化模块名: 变量使用大写
     string(TOUPPER "${MODULE_NAME}" MODULE_NAME_UPPER)
 
-    set(PUBLIC_DIR "${MODULE_DIR}/public")
-    set(PRIVATE_DIR "${MODULE_DIR}/private")
+    set(_public_dirs)
+    if(IS_DIRECTORY "${MODULE_DIR}/include")
+        list(APPEND _public_dirs "${MODULE_DIR}/include")
+    endif()
+
+    set(_private_dirs "${MODULE_DIR}")
+    if(IS_DIRECTORY "${MODULE_DIR}/src")
+        list(APPEND _private_dirs "${MODULE_DIR}/src")
+    endif()
+    list(REMOVE_DUPLICATES _private_dirs)
 
     # 递归收集所有文件
     unset(_public_headers)
     unset(_private_sources)
 
-    if(IS_DIRECTORY "${PUBLIC_DIR}")
-        file(GLOB_RECURSE _public_headers CONFIGURE_DEPENDS
+    foreach(_pub_dir IN LISTS _public_dirs)
+        file(GLOB_RECURSE _pub_headers CONFIGURE_DEPENDS
             RELATIVE    "${MODULE_DIR}"
-            "${PUBLIC_DIR}/*.h"
-            "${PUBLIC_DIR}/*.hpp"
+            "${_pub_dir}/*.h"
+            "${_pub_dir}/*.hpp"
         )
-    endif()
+        list(APPEND _public_headers ${_pub_headers})
+    endforeach()
 
-    if(IS_DIRECTORY "${PRIVATE_DIR}")
-        file(GLOB_RECURSE _private_sources CONFIGURE_DEPENDS
+    foreach(_src_dir IN LISTS _private_dirs)
+        file(GLOB_RECURSE _src_files CONFIGURE_DEPENDS
             RELATIVE    "${MODULE_DIR}"
-            "${PRIVATE_DIR}/*.c"
-            "${PRIVATE_DIR}/*.cc"
-            "${PRIVATE_DIR}/*.cxx"
-            "${PRIVATE_DIR}/*.cpp"
+            "${_src_dir}/*.c"
+            "${_src_dir}/*.cc"
+            "${_src_dir}/*.cxx"
+            "${_src_dir}/*.cpp"
         )
-    endif()
+        list(APPEND _private_sources ${_src_files})
+    endforeach()
 
     # 前面使用 RELATIVE 生成的相对路径基于 MODULE_DIR，加上前缀返回给调用者
     set(_public_headers_full)
@@ -91,6 +100,38 @@ function(corona_collect_module MODULE_NAME MODULE_DIR)
     if(NOT COLLECT_QUIET)
         list(LENGTH _public_headers_full _ph_count)
         list(LENGTH _private_sources_full _ps_count)
-        message(STATUS "[Corona:Collect] ${MODULE_NAME} -> public: ${_ph_count}, private: ${_ps_count}")
+        message(STATUS "[Corona:Collect] ${MODULE_NAME} -> headers: ${_ph_count}, sources: ${_ps_count}")
     endif()
+endfunction()
+
+# ------------------------------------------------------------------------------
+# Helper: apply shared public include directory to a target
+# ------------------------------------------------------------------------------
+if(NOT DEFINED CORONA_ENGINE_PUBLIC_INCLUDE_ROOT)
+    set(CORONA_ENGINE_PUBLIC_INCLUDE_ROOT "${PROJECT_SOURCE_DIR}/include")
+endif()
+
+function(corona_target_use_public_includes TARGET)
+    if(NOT TARGET ${TARGET})
+        message(FATAL_ERROR "corona_target_use_public_includes: target '${TARGET}' does not exist")
+    endif()
+
+    cmake_parse_arguments(_CORONA_INCLUDES "" "SCOPE" "" ${ARGN})
+
+    set(_scope "${_CORONA_INCLUDES_SCOPE}")
+    if(NOT _scope)
+        set(_scope "PUBLIC")
+    endif()
+
+    string(TOUPPER "${_scope}" _scope_upper)
+    set(_valid_scopes PUBLIC INTERFACE PRIVATE)
+    list(FIND _valid_scopes "${_scope_upper}" _scope_index)
+    if(_scope_index EQUAL -1)
+        message(FATAL_ERROR "corona_target_use_public_includes: invalid scope '${_scope}' for target ${TARGET}")
+    endif()
+
+    target_include_directories(${TARGET}
+        ${_scope_upper}
+            $<BUILD_INTERFACE:${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}>
+    )
 endfunction()
