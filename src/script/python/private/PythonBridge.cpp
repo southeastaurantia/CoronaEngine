@@ -1,4 +1,4 @@
-#include "PythonBridge.h"
+#include <corona/script/PythonBridge.h>
 
 #include <optional>
 

@@ -1,4 +1,4 @@
-#include "AnimationSystem.h"
+#include <corona/systems/AnimationSystem.h>
 
 #include <cmath>
 #include <filesystem>
@@ -6,7 +6,7 @@
 #include "Animation.h"
 #include "Bone.h"
 #include "Model.h"
-#include "PythonBridge.h"
+#include <corona/script/PythonBridge.h>
 
 #include <corona/core/detail/SystemHubs.h>
 

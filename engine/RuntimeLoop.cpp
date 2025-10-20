@@ -1,11 +1,11 @@
 #include "RuntimeLoop.h"
 
-#include <AnimationSystem.h>
-#include <AudioSystem.h>
+#include <corona/systems/AnimationSystem.h>
+#include <corona/systems/AudioSystem.h>
 #include <corona/api/CoronaEngineAPI.h>
-#include <DisplaySystem.h>
+#include <corona/systems/DisplaySystem.h>
 #include <corona/core/Engine.h>
-#include <RenderingSystem.h>
+#include <corona/systems/RenderingSystem.h>
 #include <corona/core/SystemRegistry.h>
 
 #include <chrono>

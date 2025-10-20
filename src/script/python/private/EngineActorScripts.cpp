@@ -1,4 +1,4 @@
-﻿#include"EngineScripts.h"
+﻿#include <corona/script/EngineScripts.h>
 
 PyMethodDef EngineScripts::ActorScripts::PyActor_methods[] = {
     //{"destroy", (PyCFunction)PyActor_destroy, METH_VARARGS, ""},

@@ -1,4 +1,4 @@
-#include "RenderingSystem.h"
+#include <corona/systems/RenderingSystem.h>
 
 #include "Model.h"
 #include "Shader.h"

@@ -5,9 +5,8 @@
 #include <filesystem>
 #include <string>
 
-
-#include "PythonHotfix.h"
-#include "EngineScripts.h"
+#include <corona/script/PythonHotfix.h>
+#include <corona/script/EngineScripts.h>
 
 struct PythonAPI
 {

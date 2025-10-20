@@ -1,5 +1,5 @@
 #define PY_SSIZE_T_CLEAN
-#include "PythonAPI.h"
+#include <corona/script/PythonAPI.h>
 #include <windows.h>
 #include <cstdlib>
 

@@ -1,4 +1,4 @@
-#include "PythonHotfix.h"
+#include <corona/script/PythonHotfix.h>
 
 #include <algorithm>
 #include <chrono>

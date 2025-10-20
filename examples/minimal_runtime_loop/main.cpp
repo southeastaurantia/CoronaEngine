@@ -5,10 +5,10 @@
 #include <atomic>
 #include <csignal>
 #include <filesystem>
-#include <RenderingSystem.h>
-#include <AnimationSystem.h>
-#include <AudioSystem.h>
-#include <DisplaySystem.h>
+#include <corona/systems/RenderingSystem.h>
+#include <corona/systems/AnimationSystem.h>
+#include <corona/systems/AudioSystem.h>
+#include <corona/systems/DisplaySystem.h>
 
 #include "CustomLoop.h"
 

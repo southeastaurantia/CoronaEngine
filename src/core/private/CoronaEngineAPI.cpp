@@ -11,7 +11,7 @@
 #include <corona/core/components/SceneComponents.h>
 #include <corona/core/events/ActorEvents.h>
 #include <corona/threading/EventBus.h>
-#include "SceneEvents.h"
+#include <corona/systems/rendering/SceneEvents.h>
 
 // 定义静态 ECS 注册表
 entt::registry CoronaEngineAPI::registry_;

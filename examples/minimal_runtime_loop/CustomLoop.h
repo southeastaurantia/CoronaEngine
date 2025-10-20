@@ -1,7 +1,7 @@
 #pragma once
 
-#include <PythonAPI.h>
-#include <PythonBridge.h>
+#include <corona/script/PythonAPI.h>
+#include <corona/script/PythonBridge.h>
 #include <engine/RuntimeLoop.h>
 
 // 继承 RuntimeLoop，但不改其实现；在构造时设置每帧回调

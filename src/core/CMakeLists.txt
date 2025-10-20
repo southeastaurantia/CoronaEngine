@@ -25,7 +25,6 @@ target_compile_features(CoronaCoreKernel PUBLIC cxx_std_20)
 target_include_directories(CoronaCoreKernel
     PUBLIC
         ${_CORONA_CORE_INCLUDE_ROOT}
-        ${_CORONA_CORE_MODULE_DIR}/public
 )
 
 if(DEFINED ktm_SOURCE_DIR)
@@ -48,7 +47,6 @@ target_compile_features(CoronaCoreServices PUBLIC cxx_std_20)
 target_include_directories(CoronaCoreServices
     PUBLIC
         ${_CORONA_CORE_INCLUDE_ROOT}
-        ${_CORONA_CORE_MODULE_DIR}/public
 )
 
 target_link_libraries(CoronaCoreServices
@@ -75,9 +73,6 @@ target_compile_features(CoronaCore PUBLIC cxx_std_20)
 target_include_directories(CoronaCore
     PUBLIC
         ${_CORONA_CORE_INCLUDE_ROOT}
-        ${_CORONA_CORE_MODULE_DIR}/public
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../systems/animation/public>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../systems/rendering/public>
 )
 
 if(DEFINED ktm_SOURCE_DIR)

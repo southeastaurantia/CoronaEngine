@@ -10,14 +10,14 @@
 | Module | Current Public Roots | Key Public Headers | External Consumers |
 |--------|----------------------|--------------------|--------------------|
 | `core` | `include/corona/core` (detail helpers under `include/corona/core/detail`) | `CoronaEngineAPI.h`, `Engine.h`, `detail/EngineKernel.h`, `SystemRegistry.h`, `detail/SystemHubs.h`, `components/*`, `events/*`, `testing/MockServices.h` | Runtime entry points, engine embedding, system registration, component/event definitions |
-| `systems/animation` | `src/systems/animation/public` | `AnimationSystem.h` | Runtime loop and potential external plugins |
-| `systems/audio` | `src/systems/audio/public` | `AudioSystem.h` | Runtime loop |
-| `systems/display` | `src/systems/display/public` | `DisplaySystem.h` | Runtime loop |
-| `systems/rendering` | `src/systems/rendering/public` | `RenderingSystem.h` | Runtime loop, custom render features |
+| `systems/animation` | `include/corona/systems` | `AnimationSystem.h` | Runtime loop and potential external plugins |
+| `systems/audio` | `include/corona/systems` | `AudioSystem.h` | Runtime loop |
+| `systems/display` | `include/corona/systems` | `DisplaySystem.h` | Runtime loop |
+| `systems/rendering` | `include/corona/systems` | `RenderingSystem.h`, `rendering/SceneEvents.h` | Runtime loop, custom render features |
 | `systems/interface` | (empty) | — | Placeholder, can be merged into interfaces |
 | `thread` | `include/corona/threading` | `SafeCommandQueue.h`, `SafeDataCache.h`, `EventBus.h` | Used by systems & engine |
-| `utils` | `src/utils/public` | `compiler_features.h`, helper macros | Shared |
-| `script` | `src/script/public` | `PythonAPI.h`, `PythonBridge.h` | Optional embedding |
+| `utils` | `include/corona/utils` | `compiler_features.h`, helper macros | Shared |
+| `script` | `include/corona/script` | `PythonAPI.h`, `PythonBridge.h`, `PythonHotfix.h`, `EngineScripts.h` | Optional embedding |
 | `engine` | mix of headers/sources, no dedicated public dir | `RuntimeLoop.h` | Executable entry |
 | `src/include/corona/interfaces` | standalone | `Concurrency.h`, `ISystem.h`, `ServiceLocator.h`, `Services.h`, `SystemContext.h`, `ThreadedSystem.h` | Shared abstraction layer |
 
@@ -51,7 +51,18 @@ include/
       SafeCommandQueue.h
       SafeDataCache.h
       EventBus.h
-    utils/compiler_features.h
+    systems/                           # relocated from src/systems/*/public (2025-10-20)
+      AnimationSystem.h
+      AudioSystem.h
+      DisplaySystem.h
+      RenderingSystem.h
+      rendering/SceneEvents.h
+    script/                            # relocated from src/script/python/public (2025-10-20)
+      PythonAPI.h
+      PythonBridge.h
+      PythonHotfix.h
+      EngineScripts.h
+    utils/compiler_features.h          # relocated from src/utils/public (2025-10-20)
     testing/MockServices.h               # keep in-tree for now; may move to tests later
 ```
 Additional notes:
@@ -72,7 +83,7 @@ Additional notes:
 ## Immediate TODOs
 - [x] Copy `src/include/corona/interfaces` to `include/corona/interfaces` and point existing targets to the new location.
 - [x] Draft a mapping table for `src/core/public` headers to their new home (2025-10-20: Engine + components/events/testing moved into `include/corona/core/**`, detail helpers parked under `include/corona/core/detail`).
-- [ ] Identify headers in `src/thread/public`, `src/utils/public`, and `src/script/public` that must stay public and assign future locations (2025-10-20: thread headers relocated to `include/corona/threading`; utils/script pending).
+- [x] Identify headers in `src/thread/public`, `src/utils/public`, and `src/script/public` that must stay public and assign future locations (2025-10-20: thread, systems, script, and utils headers now live under `include/corona/**`).
 - [x] Update `docs/architecture_refactor_todo.md` with progress notes after each migration step (2025-10-20: include tree + CMake include paths adjusted).
 - [ ] Run a CMake configure/build after each major batch of moves to ensure we keep track of breakages.
 

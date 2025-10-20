@@ -11,11 +11,16 @@ if(CORONA_UTILS_PUBLIC_HEADERS)
     target_sources(CoronaUtils INTERFACE ${CORONA_UTILS_PUBLIC_HEADERS})
 endif()
 
+target_sources(CoronaUtils
+    INTERFACE
+        ${PROJECT_SOURCE_DIR}/include/corona/utils/compiler_features.h
+)
+
 if(CORONA_UTILS_PRIVATE_SOURCES)
     target_sources(CoronaUtils INTERFACE ${CORONA_UTILS_PRIVATE_SOURCES})
 endif()
 
 target_include_directories(CoronaUtils
     INTERFACE
-        ${_CORONA_UTILS_DIR}/public
+    ${PROJECT_SOURCE_DIR}/include
 )

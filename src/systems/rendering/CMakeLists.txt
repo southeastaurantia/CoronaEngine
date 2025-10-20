@@ -11,15 +11,17 @@ if(CORONA_SYSTEMRENDERING_PRIVATE_SOURCES)
     target_sources(CoronaSystemRendering PRIVATE ${CORONA_SYSTEMRENDERING_PRIVATE_SOURCES})
 endif()
 
-if(CORONA_SYSTEMRENDERING_PUBLIC_HEADERS)
-    target_sources(CoronaSystemRendering PUBLIC ${CORONA_SYSTEMRENDERING_PUBLIC_HEADERS})
-endif()
+target_sources(CoronaSystemRendering
+    PUBLIC
+        ${PROJECT_SOURCE_DIR}/include/corona/systems/RenderingSystem.h
+        ${PROJECT_SOURCE_DIR}/include/corona/systems/rendering/SceneEvents.h
+)
 
 target_compile_features(CoronaSystemRendering PUBLIC cxx_std_20)
 
 target_include_directories(CoronaSystemRendering
     PUBLIC
-    ${_CORONA_SYSTEM_RENDERING_DIR}/public
+        ${PROJECT_SOURCE_DIR}/include
 )
 
 target_link_libraries(CoronaSystemRendering
