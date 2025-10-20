@@ -2,7 +2,7 @@
 
 #include <corona/interfaces/Services.h>
 
-#include "SafeCommandQueue.h"
+#include <corona/threading/SafeCommandQueue.h>
 
 #include <memory>
 #include <mutex>

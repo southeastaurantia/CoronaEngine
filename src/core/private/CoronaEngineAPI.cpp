@@ -6,12 +6,12 @@
 
 #include <memory>
 
-#include "Engine.h"
-#include "components/SceneComponents.h"
+#include <corona/core/Engine.h>
+#include <corona/core/components/ActorComponents.h>
+#include <corona/core/components/SceneComponents.h>
+#include <corona/core/events/ActorEvents.h>
+#include <corona/threading/EventBus.h>
 #include "SceneEvents.h"
-#include "EventBus.h"
-#include "components/ActorComponents.h"
-#include "events/ActorEvents.h"
 
 // 定义静态 ECS 注册表
 entt::registry CoronaEngineAPI::registry_;

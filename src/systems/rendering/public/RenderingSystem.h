@@ -13,9 +13,9 @@
 #include <cstdint>
 #include <optional>
 
-#include "EventBus.h"
+#include <corona/threading/EventBus.h>
 #include "SceneEvents.h"
-#include "events/ActorEvents.h"
+#include <corona/core/events/ActorEvents.h>
 
 namespace Corona {
     class EventBusHub;

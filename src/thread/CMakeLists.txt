@@ -19,7 +19,8 @@ target_compile_features(CoronaThread INTERFACE cxx_std_20)
 
 target_include_directories(CoronaThread
     INTERFACE
-    ${_CORONA_THREAD_DIR}/public
+        ${PROJECT_SOURCE_DIR}/include
+        ${_CORONA_THREAD_DIR}/public
 )
 
 target_link_libraries(CoronaThread

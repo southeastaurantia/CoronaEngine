@@ -2,7 +2,8 @@
 
 #include "Model.h"
 #include "Shader.h"
-#include "SystemHubs.h"
+
+#include <corona/core/detail/SystemHubs.h>
 
 #include <memory>
 #include <filesystem>

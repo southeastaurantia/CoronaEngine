@@ -30,7 +30,7 @@
 ## 阶段四：目录结构与构建脚本统一化
 - ☑ 盘点 `src/core`, `src/systems`, `src/thread`, `src/utils`, `engine`, `script` 的公开头文件，规划迁移后的 `include/` 树结构（保留最小对外 API）。详见 `docs/phase4_migration_plan.md`。
 - ☑ 将 `include/corona/**` 与 `src/core/public/CoronaEngineAPI.h` 迁移到仓库根部统一的 `include/` 目录，并调整命名空间/包含路径（已更新引用与 CMake include 路径）。
-- ☐ 逐模块将 `public/private` 目录替换为 `src/` + 新 `include/` 结构，移动源文件并更新 `#include`。
+- ☐ 逐模块将 `public/private` 目录替换为 `src/` + 新 `include/` 结构，移动源文件并更新 `#include`。（核心模块公开头已迁移至 `include/corona/core/**`，线程模块迁移至 `include/corona/threading/**`，后续处理 systems/script/utils）
 - ☐ 清理 CMake：去除安装规则、统一 target/include 目录声明，确保在新目录结构下仍可成功配置与编译。
 - ☐ 迁移过程中记录/删除冗余代码与重复接口，并在每次子步骤后更新此列表。
 

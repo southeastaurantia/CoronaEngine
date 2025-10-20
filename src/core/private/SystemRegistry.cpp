@@ -1,4 +1,4 @@
-#include "SystemRegistry.h"
+#include <corona/core/SystemRegistry.h>
 
 #include <algorithm>
 #include <cstdint>

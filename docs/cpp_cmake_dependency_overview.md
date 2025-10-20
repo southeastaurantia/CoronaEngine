@@ -11,7 +11,7 @@
 | 目标 | 类型 | 公共头文件根目录 | 直接依赖（target_link_libraries） | 说明 |
 | --- | --- | --- | --- | --- |
 | `CoronaUtils` (`corona::utils`) | INTERFACE | `src/utils/public` | 无 | 提供跨平台编译器/平台探测宏等基础设施。
-| `CoronaThread` (`corona::thread`) | INTERFACE | `src/thread/public` | `Corona::Logger`, `cabbage::concurrent` | 暴露线程安全容器、队列与事件总线；依赖日志与 CabbageConcurrent 队列实现。
+| `CoronaThread` (`corona::thread`) | INTERFACE | `include/corona/threading` | `Corona::Logger`, `cabbage::concurrent` | 暴露线程安全容器、队列与事件总线；依赖日志与 CabbageConcurrent 队列实现。
 | `CoronaSystemInterface` (`corona::system::interface`) | INTERFACE | `src/systems/interface/public` | `Corona::Logger` | 声明系统基类 `ISystem` 与线程化调度骨架 `ThreadedSystem`。
 | `CoronaSystemAnimation` (`corona::system::animation`) | STATIC | `src/systems/animation/public` | `corona::system::interface`, `corona::core`, `CoronaResource::Resource` | 动画线程系统，编译期依赖核心与资源模块；产生与核心的双向耦合。
 | `CoronaSystemAudio` (`corona::system::audio`) | STATIC | `src/systems/audio/public` | `corona::system::interface`, `corona::core` | 音频线程系统，目前示例级实现。
@@ -40,12 +40,12 @@
 
 ## 头文件 include 关系梳理
 ### 核心模块（`src/core`）
-- `Engine.h`：通过 `<ResourceManager.h>`、`<corona_logger.h>` 依赖资源与日志库，引用 `"ISystem.h"`、`"SafeCommandQueue.h"`、`"SafeDataCache.h"`、`"EventBus.h"` 将系统接口与线程工具集中到核心入口。
+- `Engine.h`：通过 `<ResourceManager.h>`、`<corona_logger.h>` 依赖资源与日志库，引用 `<corona/interfaces/ISystem.h>`、`<corona/threading/SafeCommandQueue.h>`、`<corona/threading/SafeDataCache.h>`、`<corona/threading/EventBus.h>` 将系统接口与线程工具集中到核心入口。
 - `Engine.cpp`：包含 `"AnimationSystem.h"`、`"AudioSystem.h"`、`"DisplaySystem.h"`、`"RenderingSystem.h"`，以及 `CoronaResource` 提供的 `"Model.h"`、`"Shader.h"`，在编译期形成核心与各系统、资源库的强耦合。
 - `CoronaEngineAPI.h`：依赖 `<ktm/ktm.h>` 与 EnTT registry；后者通过 `../../../build/_deps/entt-src/src/entt/entity/registry.hpp` 直接指向构建目录，需关注路径稳定性与可移植性。
-- `public/components/*.h` 与 `public/events/ActorEvents.h`：定义 ECS 组件与事件载荷，依赖 `ktm` 向量类型但未引入额外外部库。
+- `include/corona/core/components/*.h` 与 `include/corona/core/events/ActorEvents.h`：定义 ECS 组件与事件载荷，依赖 `ktm` 向量类型但未引入额外外部库。
 
-### 线程与并发模块（`src/thread`）
+### 线程与并发模块（`include/corona/threading`）
 - `SafeCommandQueue.h`：基于 `Cabbage::Concurrent::MPMCQueue` 实现命令队列，提供函数、成员函数、`shared_ptr` 等多种 `enqueue` 重载。
 - `SafeDataCache.h`：组合 `ConcurrentHashMap` 与逐项互斥锁，支持并行 `insert/erase/modify` 与循环遍历，日志输出统一使用 `corona_logger`。
 - `EventBus.h`：模板化发布/订阅总线，Topic -> 订阅者队列映射基于 `ConcurrentHashMap`，每个订阅者拥有独立的 `MPMCQueue`。
@@ -57,16 +57,16 @@
 
 #### 动画系统（`animation`）
 - `AnimationSystem.h`：包含 `"ThreadedSystem.h"` 与外部 `"AnimationState.h"`，前置声明 `Animation`、`Bone`、`Model`。
-- `AnimationSystem.cpp`：引入 `"Animation.h"`、`"Bone.h"`、`"Model.h"`（来自 `CoronaResource`）、`"Engine.h"`（核心模块）、`"PythonBridge.h"`（脚本模块）；内部频繁访问 `Engine::instance()` 的资源管理器、命令队列与缓存。
+- `AnimationSystem.cpp`：引入 `"Animation.h"`、`"Bone.h"`、`"Model.h"`（来自 `CoronaResource`）、`<corona/core/Engine.h>`（核心模块）、`"PythonBridge.h"`（脚本模块）；内部频繁访问 `Engine::instance()` 的资源管理器、命令队列与缓存。
 
 #### 渲染系统（`rendering`）
-- `RenderingSystem.h`：依赖 `"ThreadedSystem.h"`、CabbageHardware 的 `<CabbageDisplayer.h>`、`<Pipeline/ComputePipeline.h>`、`<Pipeline/RasterizerPipeline.h>`，以及线程模块的 `"EventBus.h"`、本模块的 `"SceneEvents.h"`、核心事件 `"events/ActorEvents.h"`。
+- `RenderingSystem.h`：依赖 `"ThreadedSystem.h"`、CabbageHardware 的 `<CabbageDisplayer.h>`、`<Pipeline/ComputePipeline.h>`、`<Pipeline/RasterizerPipeline.h>`，以及线程模块的 `<corona/threading/EventBus.h>`、本模块的 `"SceneEvents.h"`、核心事件 `"events/ActorEvents.h"`。
 - `SceneEvents.h`：定义摄像机更新、太阳光、显示表面、场景移除事件，使用 `ktm::fvec3`。
-- `RenderingSystem.cpp`：包含 `"Engine.h"`、`"Mesh.h"`、`"Model.h"`、`"Shader.h"` 等头，`onTick` 中消费命令队列、事件队列并访问 `SafeDataCache<Model>`。
+- `RenderingSystem.cpp`：包含 `<corona/core/Engine.h>`、`"Mesh.h"`、`"Model.h"`、`"Shader.h"` 等头，`onTick` 中消费命令队列、事件队列并访问 `SafeDataCache<Model>`。
 
 #### 音频与显示系统（`audio`、`display`）
 - 公共头均只依赖 `"ThreadedSystem.h"`。
-- 实现文件包含 `"Engine.h"` 与 `<filesystem>`，示例性地使用资源管理器异步加载 shader 并回投结果至系统队列。
+- 实现文件包含 `<corona/core/Engine.h>` 与 `<filesystem>`，示例性地使用资源管理器异步加载 shader 并回投结果至系统队列。
 
 ### 脚本与 Python 模块（`src/script/python`）
 - `EngineScripts.h`：包含 `<Python.h>` 与 `<CoronaEngineAPI.h>`，定义 Python 包装类型以暴露 `Scene`/`Actor` 方法。
@@ -75,7 +75,7 @@
 - `PythonBridge.h`/`.cpp`：只依赖标准库，提供线程安全的消息派发器，供系统线程向 Python 主线程转发事件。
 
 ### 运行时与示例
-- `engine/main.cpp`：包含 `<Engine.h>`、`<corona_logger.h>` 与 `"RuntimeLoop.h"`，负责初始化日志/引擎并驱动运行时循环。
+- `engine/main.cpp`：包含 `<corona/core/Engine.h>`、`<corona_logger.h>` 与 `"RuntimeLoop.h"`，负责初始化日志/引擎并驱动运行时循环。
 - `engine/RuntimeLoop.h|cpp`：通过 `<AnimationSystem.h>`、`<RenderingSystem.h>`、`<AudioSystem.h>`、`<DisplaySystem.h>`、`<CoronaEngineAPI.h>`、`<entt/entt.hpp>` 连接各系统；根据 `CoronaEngineAPI` tag 启停线程系统。
 - `examples/minimal_runtime_loop`：`main.cpp` 与 `CustomLoop.h` 同时包含四大系统、`PythonAPI.h`、`PythonBridge.h`，示范创建额外命令队列（`"MainThread"`）并在自定义循环中轮询。
 

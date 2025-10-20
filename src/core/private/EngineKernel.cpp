@@ -1,4 +1,4 @@
-#include "EngineKernel.h"
+#include <corona/core/detail/EngineKernel.h>
 
 namespace Corona {
 

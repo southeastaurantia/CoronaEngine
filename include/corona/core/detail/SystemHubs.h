@@ -1,7 +1,7 @@
 #pragma once
 
-#include "SafeDataCache.h"
-#include "EventBus.h"
+#include <corona/threading/EventBus.h>
+#include <corona/threading/SafeDataCache.h>
 
 #include <memory>
 #include <shared_mutex>

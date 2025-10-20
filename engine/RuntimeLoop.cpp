@@ -4,9 +4,9 @@
 #include <AudioSystem.h>
 #include <corona/api/CoronaEngineAPI.h>
 #include <DisplaySystem.h>
-#include <Engine.h>
+#include <corona/core/Engine.h>
 #include <RenderingSystem.h>
-#include <SystemRegistry.h>
+#include <corona/core/SystemRegistry.h>
 
 #include <chrono>
 #include <cstdlib>

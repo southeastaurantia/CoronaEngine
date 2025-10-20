@@ -7,7 +7,8 @@
 #include "Bone.h"
 #include "Model.h"
 #include "PythonBridge.h"
-#include "SystemHubs.h"
+
+#include <corona/core/detail/SystemHubs.h>
 
 #include <ResourceTypes.h>
 

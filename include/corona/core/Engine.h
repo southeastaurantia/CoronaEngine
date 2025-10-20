@@ -7,13 +7,14 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <type_traits>
 
 #include <corona/interfaces/ISystem.h>
 #include <corona/interfaces/Services.h>
-#include "EngineKernel.h"
-#include "SafeCommandQueue.h"
-#include "SystemHubs.h"
-#include "SystemRegistry.h"
+#include <corona/core/detail/EngineKernel.h>
+#include <corona/core/detail/SystemHubs.h>
+#include <corona/core/SystemRegistry.h>
+#include <corona/threading/SafeCommandQueue.h>
 
 
 namespace Corona {
