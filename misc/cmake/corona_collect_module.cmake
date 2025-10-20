@@ -45,30 +45,45 @@ function(corona_collect_module MODULE_NAME MODULE_DIR)
     # 规范化模块名: 变量使用大写
     string(TOUPPER "${MODULE_NAME}" MODULE_NAME_UPPER)
 
-    set(PUBLIC_DIR "${MODULE_DIR}/public")
-    set(PRIVATE_DIR "${MODULE_DIR}/private")
+    set(_public_dirs)
+    if(IS_DIRECTORY "${MODULE_DIR}/public")
+        list(APPEND _public_dirs "${MODULE_DIR}/public")
+    endif()
+    if(IS_DIRECTORY "${MODULE_DIR}/include")
+        list(APPEND _public_dirs "${MODULE_DIR}/include")
+    endif()
+
+    set(_private_dirs)
+    if(IS_DIRECTORY "${MODULE_DIR}/private")
+        list(APPEND _private_dirs "${MODULE_DIR}/private")
+    endif()
+    if(IS_DIRECTORY "${MODULE_DIR}/src")
+        list(APPEND _private_dirs "${MODULE_DIR}/src")
+    endif()
 
     # 递归收集所有文件
     unset(_public_headers)
     unset(_private_sources)
 
-    if(IS_DIRECTORY "${PUBLIC_DIR}")
-        file(GLOB_RECURSE _public_headers CONFIGURE_DEPENDS
+    foreach(_pub_dir IN LISTS _public_dirs)
+        file(GLOB_RECURSE _pub_headers CONFIGURE_DEPENDS
             RELATIVE    "${MODULE_DIR}"
-            "${PUBLIC_DIR}/*.h"
-            "${PUBLIC_DIR}/*.hpp"
+            "${_pub_dir}/*.h"
+            "${_pub_dir}/*.hpp"
         )
-    endif()
+        list(APPEND _public_headers ${_pub_headers})
+    endforeach()
 
-    if(IS_DIRECTORY "${PRIVATE_DIR}")
-        file(GLOB_RECURSE _private_sources CONFIGURE_DEPENDS
+    foreach(_src_dir IN LISTS _private_dirs)
+        file(GLOB_RECURSE _src_files CONFIGURE_DEPENDS
             RELATIVE    "${MODULE_DIR}"
-            "${PRIVATE_DIR}/*.c"
-            "${PRIVATE_DIR}/*.cc"
-            "${PRIVATE_DIR}/*.cxx"
-            "${PRIVATE_DIR}/*.cpp"
+            "${_src_dir}/*.c"
+            "${_src_dir}/*.cc"
+            "${_src_dir}/*.cxx"
+            "${_src_dir}/*.cpp"
         )
-    endif()
+        list(APPEND _private_sources ${_src_files})
+    endforeach()
 
     # 前面使用 RELATIVE 生成的相对路径基于 MODULE_DIR，加上前缀返回给调用者
     set(_public_headers_full)
