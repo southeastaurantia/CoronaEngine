@@ -1,20 +1,52 @@
-#include <CoronaEngineAPI.h>
-#include <Engine.h>
+#include <corona/api/CoronaEngineAPI.h>
+#include <corona/core/Engine.h>
+#include <corona/systems/AnimationSystem.h>
+#include <corona/systems/AudioSystem.h>
+#include <corona/systems/DisplaySystem.h>
+#include <corona/systems/RenderingSystem.h>
 #include <corona_logger.h>
 #include <engine/RuntimeLoop.h>
+
 #include <atomic>
 #include <csignal>
-#include <filesystem>
-#include <RenderingSystem.h>
-#include <AnimationSystem.h>
-#include <AudioSystem.h>
-#include <DisplaySystem.h>
+#include <cstdlib>
+#include <memory>
+#include <vector>
 
 #include "CustomLoop.h"
+#include "DiagnosticsSystem.h"
 
 namespace {
 std::atomic<bool> g_running{true};
 void handle_signal(int) noexcept { g_running.store(false, std::memory_order_relaxed); }
+
+void request_systems(const std::vector<std::string>& systems) {
+    (void)std::getenv("CORONA_RUNTIME_SYSTEMS");
+    const std::string joined = Example::JoinNames(systems);
+#if defined(_WIN32)
+    _putenv_s("CORONA_RUNTIME_SYSTEMS", joined.c_str());
+#else
+    if (joined.empty()) {
+        unsetenv("CORONA_RUNTIME_SYSTEMS");
+    } else {
+        setenv("CORONA_RUNTIME_SYSTEMS", joined.c_str(), 1);
+    }
+#endif
+}
+
+void bootstrap_diagnostics(Corona::Engine& engine, const std::vector<std::string>& requested_systems) {
+    auto config = std::make_shared<Example::DiagnosticsConfig>();
+    config->requested_systems = requested_systems;
+
+    auto service = std::make_shared<Example::DiagnosticsService>(engine);
+    service->set_requested(requested_systems);
+
+    auto& locator = engine.kernel().services();
+    locator.register_service(config);
+    locator.register_service(service);
+
+    Example::RegisterDiagnosticsPlugin(engine.system_registry());
+}
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -37,6 +69,14 @@ int main(int argc, char** argv) {
     // 拿到引擎单例并初始化
     auto& engine = Corona::Engine::instance();
     engine.init(log_cfg);
+
+    const std::vector<std::string> requested_systems{
+        "AnimationSystem",
+        Example::DiagnosticsSystem::kName,
+        "RenderingSystem",
+        "DisplaySystem"};
+    request_systems(requested_systems);
+    bootstrap_diagnostics(engine, requested_systems);
 
     // 创建并运行自定义的 RuntimeLoop（在构造中设置了每帧回调）
     CE_LOG_INFO("[example] Initializing CustomLoop and starting systems...");

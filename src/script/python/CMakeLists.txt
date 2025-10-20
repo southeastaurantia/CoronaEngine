@@ -15,12 +15,21 @@ if(CORONA_SCRIPTPYTHON_PUBLIC_HEADERS)
     target_sources(CoronaScriptPython PUBLIC ${CORONA_SCRIPTPYTHON_PUBLIC_HEADERS})
 endif()
 
+target_sources(CoronaScriptPython
+    PUBLIC
+        ${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}/corona/script/EngineScripts.h
+        ${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}/corona/script/PythonAPI.h
+        ${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}/corona/script/PythonBridge.h
+        ${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}/corona/script/PythonHotfix.h
+)
+
 target_compile_features(CoronaScriptPython PUBLIC cxx_std_20)
+
+corona_target_use_public_includes(CoronaScriptPython)
 
 target_include_directories(CoronaScriptPython
     PUBLIC
-    ${_CORONA_SCRIPT_PY_MODULE_DIR}/public
-    ${Python3_INCLUDE_DIRS}
+        ${Python3_INCLUDE_DIRS}
 )
 
 target_link_directories(CoronaScriptPython

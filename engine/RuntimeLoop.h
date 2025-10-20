@@ -1,5 +1,6 @@
 #pragma once
 
+#include <corona/core/Engine.h>
 #include <corona_logger.h>
 
 #include <atomic>
@@ -7,7 +8,6 @@
 #include <vector>
 
 namespace Corona {
-class Engine;
 class AnimationSystem;
 class RenderingSystem;
 class AudioSystem;

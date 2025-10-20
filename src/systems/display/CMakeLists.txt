@@ -11,16 +11,14 @@ if(CORONA_SYSTEMDISPLAY_PRIVATE_SOURCES)
     target_sources(CoronaSystemDisplay PRIVATE ${CORONA_SYSTEMDISPLAY_PRIVATE_SOURCES})
 endif()
 
-if(CORONA_SYSTEMDISPLAY_PUBLIC_HEADERS)
-    target_sources(CoronaSystemDisplay PUBLIC ${CORONA_SYSTEMDISPLAY_PUBLIC_HEADERS})
-endif()
+target_sources(CoronaSystemDisplay
+    PUBLIC
+    ${CORONA_ENGINE_PUBLIC_INCLUDE_ROOT}/corona/systems/DisplaySystem.h
+)
 
 target_compile_features(CoronaSystemDisplay PUBLIC cxx_std_20)
 
-target_include_directories(CoronaSystemDisplay
-    PUBLIC
-        ${_CORONA_SYSTEM_DISPLAY_DIR}/public
-)
+corona_target_use_public_includes(CoronaSystemDisplay)
 
 target_link_libraries(CoronaSystemDisplay
     PUBLIC

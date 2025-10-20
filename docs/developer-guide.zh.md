@@ -20,6 +20,12 @@
 4. 在 `examples/` 下新增示例验证功能或演示 API。
 5. 遵循《代码风格》(code-style.zh.md)，必要时手动运行 clang-format 与 clang-tidy。
 
+## 系统插件与服务注入
+- 在调用 `RuntimeLoop::initialize()` 之前，可通过 `Engine::kernel().services()` 注册额外服务，为系统提供配置或诊断能力。
+- 通过 `SystemRegistry::register_plugin` 扩展系统插件表，并在工厂函数中使用 `SystemContext` 获取注入的服务。
+- `examples/minimal_runtime_loop` 示例现演示 `DiagnosticsSystem` 插件：注入 `DiagnosticsService`/`DiagnosticsConfig`，并利用 `CORONA_RUNTIME_SYSTEMS` 环境变量选择要启动的系统子集。
+- 复用该模式可以为工具链或无渲染运行时按需选择系统，并统一管理依赖注入。
+
 ## 调试建议
 - 利用 `CE_LOG_*` 宏开启详细日志，定位子系统问题。
 - `Debug` 配置包含更多断言与日志；性能分析时可使用 `RelWithDebInfo`。

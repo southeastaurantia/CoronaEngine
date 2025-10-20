@@ -20,6 +20,12 @@
 4. Prototype gameplay or systems inside a dedicated example under `examples/`.
 5. Keep code style aligned with [Code Style](code-style.md) and run clang-tidy if your IDE does not do it automatically.
 
+## System Plugins & Service Injection
+- Register additional services through `Engine::kernel().services()` before launching the runtime loop; services can expose configuration or telemetry harvesters.
+- Extend the system registry with custom plugins by calling `SystemRegistry::register_plugin` and binding a factory that consumes the injected `SystemContext`.
+- The `examples/minimal_runtime_loop` sample now registers a `DiagnosticsSystem` plugin, injects `DiagnosticsService`/`DiagnosticsConfig`, and narrows the active systems via the `CORONA_RUNTIME_SYSTEMS` environment flag.
+- Use the pattern shown in the example to request subsets of systems when bootstrapping bespoke tooling or server-side builds.
+
 ## Debugging Tips
 - Enable verbose logging through `CE_LOG_*` macros for engine subsystems.
 - Use the `Debug` configuration for assert and log-heavy builds; `RelWithDebInfo` is a good compromise when profiling.

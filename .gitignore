@@ -1,1 +1,26 @@
-*
+# Build outputs
+/build/
+/install/
+/out/
+
+# CMake intermediate files
+CMakeCache.txt
+CMakeFiles/
+cmake-build-*/
+*.ninja
+Makefile
+*.vcxproj*
+*.sln
+
+# Local IDE settings
+.vscode/
+.idea/
+
+# Tool caches
+.cache/
+
+# third-party libraries (manually added)
+/third_party/
+
+# Log files
+*.log
