@@ -2,7 +2,7 @@
 
 #include <AnimationSystem.h>
 #include <AudioSystem.h>
-#include <CoronaEngineAPI.h>
+#include <corona/api/CoronaEngineAPI.h>
 #include <DisplaySystem.h>
 #include <Engine.h>
 #include <RenderingSystem.h>

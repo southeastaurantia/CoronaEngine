@@ -9,7 +9,10 @@ corona_add_example(
 
 # Allow this example to include the RuntimeLoop header from the engine module
 # Use project root so <engine/RuntimeLoop.h> resolves
-target_include_directories(minimal_runtime_loop PRIVATE ${PROJECT_SOURCE_DIR})
+target_include_directories(minimal_runtime_loop PRIVATE
+    ${PROJECT_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}/include
+)
 
 # Pull in the RuntimeLoop implementation and required dependencies
 target_sources(minimal_runtime_loop PRIVATE ${PROJECT_SOURCE_DIR}/engine/RuntimeLoop.cpp)

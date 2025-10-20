@@ -1,6 +1,6 @@
 include_guard(GLOBAL)
 
-set(_CORONA_INTERFACE_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+set(_CORONA_INTERFACE_ROOT ${PROJECT_SOURCE_DIR}/include)
 
 set(_CORONA_INTERFACE_HEADERS
     ${_CORONA_INTERFACE_ROOT}/corona/interfaces/ISystem.h

@@ -19,8 +19,9 @@ target_compile_features(CoronaScriptPython PUBLIC cxx_std_20)
 
 target_include_directories(CoronaScriptPython
     PUBLIC
-    ${_CORONA_SCRIPT_PY_MODULE_DIR}/public
-    ${Python3_INCLUDE_DIRS}
+        ${PROJECT_SOURCE_DIR}/include
+        ${_CORONA_SCRIPT_PY_MODULE_DIR}/public
+        ${Python3_INCLUDE_DIRS}
 )
 
 target_link_directories(CoronaScriptPython

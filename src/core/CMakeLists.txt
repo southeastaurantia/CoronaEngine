@@ -1,6 +1,7 @@
 include_guard(GLOBAL)
 
 set(_CORONA_CORE_MODULE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(_CORONA_CORE_INCLUDE_ROOT ${PROJECT_SOURCE_DIR}/include)
 
 corona_collect_module(Core ${_CORONA_CORE_MODULE_DIR})
 
@@ -23,6 +24,7 @@ target_compile_features(CoronaCoreKernel PUBLIC cxx_std_20)
 
 target_include_directories(CoronaCoreKernel
     PUBLIC
+        ${_CORONA_CORE_INCLUDE_ROOT}
         ${_CORONA_CORE_MODULE_DIR}/public
 )
 
@@ -45,6 +47,7 @@ target_compile_features(CoronaCoreServices PUBLIC cxx_std_20)
 
 target_include_directories(CoronaCoreServices
     PUBLIC
+        ${_CORONA_CORE_INCLUDE_ROOT}
         ${_CORONA_CORE_MODULE_DIR}/public
 )
 
@@ -71,9 +74,10 @@ target_compile_features(CoronaCore PUBLIC cxx_std_20)
 
 target_include_directories(CoronaCore
     PUBLIC
-    ${_CORONA_CORE_MODULE_DIR}/public
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../systems/animation/public>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../systems/rendering/public>
+        ${_CORONA_CORE_INCLUDE_ROOT}
+        ${_CORONA_CORE_MODULE_DIR}/public
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../systems/animation/public>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../systems/rendering/public>
 )
 
 if(DEFINED ktm_SOURCE_DIR)
