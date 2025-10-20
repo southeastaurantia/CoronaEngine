@@ -2,12 +2,11 @@
 # corona_collect_module.cmake
 #
 # 功能:
-#   标准化收集单个模块 (public/private 分层) 的源文件和头文件。
+#   标准化收集单个模块 (include/src 布局) 的源文件和头文件。
 #
 # 规则:
-#   - 递归搜索 `public` 和 `private` 目录下的所有文件。
-#   - `public` 目录: 收集 `*.h`, `*.hpp` (导出头文件)。
-#   - `private` 目录: 收集 `*.c`, `*.cc`, `*.cxx`, `*.cpp` (实现文件)。
+#   - 递归搜索模块 `include/` 目录下的所有头文件。
+#   - 递归搜索模块 `src/` 目录下的所有实现文件。
 #
 # 生成变量 (全部大写):
 #   - `CORONA_<MODULE>_PUBLIC_HEADERS`: 公共头文件列表。
@@ -46,20 +45,15 @@ function(corona_collect_module MODULE_NAME MODULE_DIR)
     string(TOUPPER "${MODULE_NAME}" MODULE_NAME_UPPER)
 
     set(_public_dirs)
-    if(IS_DIRECTORY "${MODULE_DIR}/public")
-        list(APPEND _public_dirs "${MODULE_DIR}/public")
-    endif()
     if(IS_DIRECTORY "${MODULE_DIR}/include")
         list(APPEND _public_dirs "${MODULE_DIR}/include")
     endif()
 
-    set(_private_dirs)
-    if(IS_DIRECTORY "${MODULE_DIR}/private")
-        list(APPEND _private_dirs "${MODULE_DIR}/private")
-    endif()
+    set(_private_dirs "${MODULE_DIR}")
     if(IS_DIRECTORY "${MODULE_DIR}/src")
         list(APPEND _private_dirs "${MODULE_DIR}/src")
     endif()
+    list(REMOVE_DUPLICATES _private_dirs)
 
     # 递归收集所有文件
     unset(_public_headers)
@@ -106,7 +100,7 @@ function(corona_collect_module MODULE_NAME MODULE_DIR)
     if(NOT COLLECT_QUIET)
         list(LENGTH _public_headers_full _ph_count)
         list(LENGTH _private_sources_full _ps_count)
-        message(STATUS "[Corona:Collect] ${MODULE_NAME} -> public: ${_ph_count}, private: ${_ps_count}")
+        message(STATUS "[Corona:Collect] ${MODULE_NAME} -> headers: ${_ph_count}, sources: ${_ps_count}")
     endif()
 endfunction()
 

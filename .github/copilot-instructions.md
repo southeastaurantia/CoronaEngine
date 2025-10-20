@@ -7,8 +7,8 @@
 - Shared engine-wide utilities live in include/corona/threading (SafeCommandQueue/EventBusT/SafeDataCache) and include/corona/utils/compiler_features.h (cross-platform macros).
 ## Runtime Data Flow
 - CoronaEngineAPI::Scene/Actor mutate the static registry and immediately publish strongly typed events via Engine::events<T>().publish(topic, payload).
-- RenderingSystem (src/systems/rendering/src/RenderingSystem.cpp) subscribes to scene/actor topics, snapshots per-scene state, and drives RasterizerPipeline/ComputePipeline; mirror its queue draining and subscription teardown in new render features.
-- AnimationSystem (src/systems/animation/src/AnimationSystem.cpp) iterates SafeDataCache entries for AnimationState and Model IDs captured via watch_state/watch_model; keep those id sets in sync with cache mutations.
+- RenderingSystem (src/systems/rendering/RenderingSystem.cpp) subscribes to scene/actor topics, snapshots per-scene state, and drives RasterizerPipeline/ComputePipeline; mirror its queue draining and subscription teardown in new render features.
+- AnimationSystem (src/systems/animation/AnimationSystem.cpp) iterates SafeDataCache entries for AnimationState and Model IDs captured via watch_state/watch_model; keep those id sets in sync with cache mutations.
 - TransformUpdated events treat zero vectors as “no change”; when intentionally resetting transforms send explicit epsilon values or add dedicated flags.
 - Asynchronous resource callbacks must re-dispatch onto the owning system queue (engine.get_queue(name()).enqueue(...)) before touching local state.
 ## Concurrency & Resources

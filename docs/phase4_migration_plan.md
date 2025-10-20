@@ -74,10 +74,10 @@ Additional notes:
 1. **Create root `include/` tree:** copy/move `src/include/corona` to `include/corona/interfaces` and update include paths.
 2. **Core module cleanup:**
    - Move required public headers (`CoronaEngineAPI.h`, component/event definitions) into the new `include/corona` hierarchy.
-  - Relocate internal-only headers (`EngineKernel.h`, `SystemHubs.h`, etc.) into `src/core/` and adjust includes（2025-10-20：核心实现统一至 `src/core/src`，`include/corona/core/detail` 继续承载过渡期 detail 头）。
-3. **Systems modules:** move each system's `public` headers into `include/corona/systems/` and flatten their source directories (merge `private` into `src`)（2025-10-20：`animation`/`audio`/`display`/`rendering` 实现均迁入 `src/<module>/src`）。
-4. **Shared utilities (`thread`, `utils`, `script`):** migrate their public headers into `include/corona/threading`, `include/corona/utils`, and optionally `include/corona/script`（2025-10-20：`script/python` 实现迁至 `src/script/python/src`，`thread`/`utils` 现作为 header-only 库仅暴露 `include/corona/**`）。
-5. **CMake harmonisation:** simplify each target's include directories to point to `include/` and its own `src/` tree; remove install-related logic while keeping dependency declarations intact.
+  - Relocate internal-only headers (`EngineKernel.h`, `SystemHubs.h`, etc.) into `src/core/` and adjust includes（2025-10-20：核心实现统一至 `src/core/`，`include/corona/core/detail` 继续承载过渡期 detail 头）。
+3. **Systems modules:** move each system's `public` headers into `include/corona/systems/` and flatten their source directories（2025-10-20：`animation`/`audio`/`display`/`rendering` 实现统一置于 `src/<module>/`）。
+4. **Shared utilities (`thread`, `utils`, `script`):** migrate their public headers into `include/corona/threading`, `include/corona/utils`, and optionally `include/corona/script`（2025-10-20：`script/python` 实现迁至 `src/script/python/`，`thread`/`utils` 现作为 header-only 库仅暴露 `include/corona/**`）。
+5. **CMake harmonisation:** simplify each target's include directories to point to `include/` and its own module sources; remove install-related logic while keeping dependency declarations intact.
 6. **Prune dead/duplicate headers:** after the moves, audit for obsolete includes or files that can be eliminated.
 
 ## Immediate TODOs
