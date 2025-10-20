@@ -1,7 +1,6 @@
 #pragma once
 
 #include <corona/interfaces/Services.h>
-
 #include <corona/threading/SafeCommandQueue.h>
 
 #include <memory>
@@ -13,7 +12,7 @@
 namespace Corona::Core {
 
 class CommandSchedulerService final : public Interfaces::ICommandScheduler {
-  public:
+   public:
     CommandSchedulerService() = default;
     ~CommandSchedulerService() override = default;
 
@@ -26,7 +25,7 @@ class CommandSchedulerService final : public Interfaces::ICommandScheduler {
     SafeCommandQueue& require_queue(std::string_view name);
     void clear();
 
-  private:
+   private:
     struct QueueRecord {
         std::shared_ptr<SafeCommandQueue> queue;
         std::weak_ptr<Interfaces::ICommandQueue> adapter;
@@ -44,4 +43,4 @@ class CommandSchedulerService final : public Interfaces::ICommandScheduler {
     std::unordered_map<std::string, QueueRecord> queues_;
 };
 
-} // namespace Corona::Core
+}  // namespace Corona::Core

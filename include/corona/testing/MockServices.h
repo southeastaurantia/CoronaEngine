@@ -1,8 +1,7 @@
 #pragma once
 
-#include <corona/interfaces/Services.h>
-
 #include <ResourceManager.h>
+#include <corona/interfaces/Services.h>
 
 #include <functional>
 #include <limits>
@@ -16,7 +15,7 @@
 namespace Corona::Testing {
 
 class MockLogger final : public Interfaces::ILogger {
-  public:
+   public:
     struct Entry {
         Level level;
         std::string message;
@@ -30,12 +29,12 @@ class MockLogger final : public Interfaces::ILogger {
 
     void clear() { records_.clear(); }
 
-  private:
+   private:
     std::vector<Entry> records_{};
 };
 
 class MockResourceService final : public Interfaces::IResourceService {
-  public:
+   public:
     ResourcePtr load(const Corona::ResourceId& id) override { return fetch(id); }
 
     ResourcePtr load_once(const Corona::ResourceId& id) override { return fetch(id); }
@@ -68,7 +67,7 @@ class MockResourceService final : public Interfaces::IResourceService {
         return resources_.erase(id) > 0;
     }
 
-  private:
+   private:
     ResourcePtr fetch(const Corona::ResourceId& id) {
         if (auto it = resources_.find(id); it != resources_.end()) {
             return it->second;
@@ -80,7 +79,7 @@ class MockResourceService final : public Interfaces::IResourceService {
 };
 
 class MockCommandQueue final : public Interfaces::ICommandQueue {
-  public:
+   public:
     void enqueue(std::function<void()> command) override {
         if (command) {
             queue_.push(std::move(command));
@@ -109,12 +108,12 @@ class MockCommandQueue final : public Interfaces::ICommandQueue {
         return executed;
     }
 
-  private:
+   private:
     std::queue<std::function<void()>> queue_{};
 };
 
 class MockCommandScheduler final : public Interfaces::ICommandScheduler {
-  public:
+   public:
     QueueHandle create_queue(std::string_view name) override {
         const std::string key{name};
         if (auto it = queues_.find(key); it != queues_.end()) {
@@ -158,8 +157,8 @@ class MockCommandScheduler final : public Interfaces::ICommandScheduler {
 
     void clear() { queues_.clear(); }
 
-  private:
+   private:
     std::unordered_map<std::string, std::shared_ptr<MockCommandQueue>> queues_{};
 };
 
-} // namespace Corona::Testing
+}  // namespace Corona::Testing

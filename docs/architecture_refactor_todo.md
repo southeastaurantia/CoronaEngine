@@ -25,7 +25,7 @@
 - ☑ 改造各系统构造函数，使用 `SystemContext` 注入服务，移除对 `Engine::instance()` 的直接调用。
 - ☑ 将命令队列注册改为 `ICommandScheduler::create_queue(name, config)`，添加重复名检测。（当前实现维持原接口，已统一通过调度器创建并记录队列句柄）
 - ☑ 在 `RuntimeLoop` 中通过插件表启停系统，支持按配置启用子集。
-- ☐ 更新示例与文档，演示插件选择与服务注入流程。
+- ☑ 更新示例与文档，演示插件选择与服务注入流程。（2025-10-20：`examples/minimal_runtime_loop` 新增 `DiagnosticsSystem` 插件示例，并在开发者指南中说明服务注入与系统筛选）
 
 ## 阶段四：目录结构与构建脚本统一化
 - ☑ 盘点 `src/core`, `src/systems`, `src/thread`, `src/utils`, `engine`, `script` 的公开头文件，规划迁移后的 `include/` 树结构（保留最小对外 API）。详见 `docs/phase4_migration_plan.md`。

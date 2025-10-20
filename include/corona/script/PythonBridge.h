@@ -15,5 +15,4 @@ void clear_sender();
 // Invoke the sender if present; safe to call from any thread, but preferred on main thread.
 void send(const std::string& message);
 
-} // namespace Corona::PythonBridge
-
+}  // namespace Corona::PythonBridge

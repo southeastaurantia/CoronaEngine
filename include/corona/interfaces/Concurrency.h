@@ -8,7 +8,7 @@ namespace Corona::Interfaces {
 
 // 命令队列抽象：系统线程通过它收发跨线程任务。
 class ICommandQueue {
-  public:
+   public:
     virtual ~ICommandQueue() = default;
 
     virtual void enqueue(std::function<void()> command) = 0;
@@ -18,7 +18,7 @@ class ICommandQueue {
 
 // 数据缓存抽象：按 id 管理共享状态。
 class IDataCache {
-  public:
+   public:
     using id_type = std::uint64_t;
 
     virtual ~IDataCache() = default;
@@ -30,8 +30,8 @@ class IDataCache {
 
 // 事件通道抽象：发布订阅消息。
 class IEventChannel {
-  public:
+   public:
     virtual ~IEventChannel() = default;
 };
 
-} // namespace Corona::Interfaces
+}  // namespace Corona::Interfaces

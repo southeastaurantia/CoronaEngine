@@ -7,7 +7,7 @@ namespace Corona::Core {
 
 namespace {
 class SafeCommandQueueAdapter final : public Interfaces::ICommandQueue {
-  public:
+   public:
     explicit SafeCommandQueueAdapter(std::shared_ptr<SafeCommandQueue> queue)
         : queue_(std::move(queue)) {}
 
@@ -26,10 +26,10 @@ class SafeCommandQueueAdapter final : public Interfaces::ICommandQueue {
         return queue_ ? queue_->empty() : true;
     }
 
-  private:
+   private:
     std::shared_ptr<SafeCommandQueue> queue_;
 };
-} // namespace
+}  // namespace
 
 Interfaces::ICommandScheduler::QueueHandle CommandSchedulerService::create_queue(std::string_view name) {
     std::lock_guard lock(mutex_);
@@ -117,4 +117,4 @@ std::shared_ptr<SafeCommandQueue> CommandSchedulerService::ensure_queue_ptr(Queu
     return record.queue;
 }
 
-} // namespace Corona::Core
+}  // namespace Corona::Core

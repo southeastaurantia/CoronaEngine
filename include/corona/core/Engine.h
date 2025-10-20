@@ -1,28 +1,26 @@
 #pragma once
 
 #include <ResourceManager.h>
+#include <corona/core/SystemRegistry.h>
+#include <corona/core/detail/EngineKernel.h>
+#include <corona/core/detail/SystemHubs.h>
+#include <corona/interfaces/ISystem.h>
+#include <corona/interfaces/Services.h>
+#include <corona/threading/SafeCommandQueue.h>
 #include <corona_logger.h>
 
 #include <atomic>
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <type_traits>
-
-#include <corona/interfaces/ISystem.h>
-#include <corona/interfaces/Services.h>
-#include <corona/core/detail/EngineKernel.h>
-#include <corona/core/detail/SystemHubs.h>
-#include <corona/core/SystemRegistry.h>
-#include <corona/threading/SafeCommandQueue.h>
-
+#include <unordered_map>
 
 namespace Corona {
 namespace Core {
 class CommandSchedulerService;
 class LoggerService;
 class ResourceServiceAdapter;
-} // namespace Core
+}  // namespace Core
 
 // 全局数据ID生成器
 struct DataId {

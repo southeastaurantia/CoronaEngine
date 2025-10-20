@@ -39,6 +39,6 @@ struct CoronaEngineAPI {
         entt::entity sceneID;
     };
 
-private:
+   private:
     static entt::registry registry_;
 };

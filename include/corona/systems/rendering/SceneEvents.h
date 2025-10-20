@@ -1,7 +1,8 @@
 #pragma once
 
-#include <cstdint>
 #include <ktm/type_vec.h>
+
+#include <cstdint>
 
 namespace Corona::SceneEvents {
 
@@ -27,5 +28,4 @@ struct Removed {
     std::uint64_t sceneId;
 };
 
-} // namespace Corona::SceneEvents
-
+}  // namespace Corona::SceneEvents

@@ -1,14 +1,14 @@
 ﻿#include <corona/core/Engine.h>
 
+#include <stdexcept>
+#include <string>
+#include <utility>
+
 #include "Model.h"
 #include "Shader.h"
 #include "services/CommandSchedulerService.h"
 #include "services/LoggerService.h"
 #include "services/ResourceServiceAdapter.h"
-
-#include <stdexcept>
-#include <string>
-#include <utility>
 
 namespace Corona {
 
@@ -236,4 +236,4 @@ void EngineFacade::configure_system(ISystem& system, Interfaces::ICommandQueue* 
     system.configure(context);
 }
 
-} // namespace Corona
+}  // namespace Corona

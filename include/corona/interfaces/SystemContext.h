@@ -6,7 +6,7 @@
 namespace Corona {
 class EventBusHub;
 class DataCacheHub;
-} // namespace Corona
+}  // namespace Corona
 
 namespace Corona::Interfaces {
 
@@ -17,4 +17,4 @@ struct SystemContext {
     Corona::DataCacheHub* caches = nullptr;
 };
 
-} // namespace Corona::Interfaces
+}  // namespace Corona::Interfaces

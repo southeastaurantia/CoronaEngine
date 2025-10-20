@@ -47,4 +47,4 @@ void ResourceServiceAdapter::set_manager(std::shared_ptr<ResourceManager> manage
     manager_ = std::move(manager);
 }
 
-} // namespace Corona::Core
+}  // namespace Corona::Core

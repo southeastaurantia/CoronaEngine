@@ -8,5 +8,4 @@ struct ModelResource {
     std::string path;
 };
 
-} // namespace Corona::Components
-
+}  // namespace Corona::Components

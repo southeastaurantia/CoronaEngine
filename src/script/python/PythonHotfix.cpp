@@ -6,18 +6,19 @@
 #include <fstream>
 #include <iostream>
 #include <queue>
+#include <ranges>
 #include <regex>
 #include <set>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include <ranges>
 
 // 静态工具函数实现
 int64_t PythonHotfix::GetCurrentTimeMsec() {
     return std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::system_clock::now().time_since_epoch()).count();
+               std::chrono::system_clock::now().time_since_epoch())
+        .count();
 }
 
 bool PythonHotfix::EndsWith(const std::string& str, const std::string& suffix) {
@@ -35,7 +36,10 @@ void PythonHotfix::NormalizeModuleName(std::string& path_like) {
         path_like = match[1].str();
     } else {
         size_t lastDot = path_like.find_last_of('.');
-        if (lastDot != std::string::npos) path_like = path_like.substr(lastDot + 1); else path_like.clear();
+        if (lastDot != std::string::npos)
+            path_like = path_like.substr(lastDot + 1);
+        else
+            path_like.clear();
     }
 }
 
@@ -45,7 +49,7 @@ void PythonHotfix::TraverseDirectory(const std::filesystem::path& directory,
     std::unordered_set<std::string> local_set;
     if (!std::filesystem::exists(directory)) return;
 
-    auto ensure_init = [](const std::filesystem::path& dir){
+    auto ensure_init = [](const std::filesystem::path& dir) {
         auto initp = dir / "__init__.py";
         if (!std::filesystem::exists(initp)) {
             std::ofstream f(initp.string(), std::ios::app);
@@ -57,13 +61,16 @@ void PythonHotfix::TraverseDirectory(const std::filesystem::path& directory,
 
     for (const auto& entry : std::filesystem::recursive_directory_iterator(directory)) {
         const auto& p = entry.path();
-        if (entry.is_directory()) { ensure_init(p); continue; }
+        if (entry.is_directory()) {
+            ensure_init(p);
+            continue;
+        }
         if (!entry.is_regular_file()) continue;
 
         const std::string file_name = p.filename().string();
         if (!EndsWith(file_name, ".py")) continue;
 
-        if (std::ranges::any_of(kSkip, [&](const std::string& s){ return EndsWith(file_name, s); })) continue;
+        if (std::ranges::any_of(kSkip, [&](const std::string& s) { return EndsWith(file_name, s); })) continue;
 
         std::error_code ec;
         auto ftime = std::filesystem::last_write_time(p, ec);
@@ -83,8 +90,12 @@ void PythonHotfix::TraverseDirectory(const std::filesystem::path& directory,
 void PythonHotfix::CheckPythonFileDependence() {
     if (packageSet.empty()) return;
     PyObject* sys_modules = PyImport_GetModuleDict();
-    if (!sys_modules) { PyErr_Clear(); return; }
-    PyObject *key = nullptr, *val = nullptr; Py_ssize_t pos = 0;
+    if (!sys_modules) {
+        PyErr_Clear();
+        return;
+    }
+    PyObject *key = nullptr, *val = nullptr;
+    Py_ssize_t pos = 0;
 
     while (PyDict_Next(sys_modules, &pos, &key, &val)) {
         if (!PyModule_Check(val)) continue;
@@ -92,7 +103,8 @@ void PythonHotfix::CheckPythonFileDependence() {
         if (!mod_name) continue;
         PyObject* mod_dict = PyModule_GetDict(val);
         if (!mod_dict) continue;
-        PyObject *ik = nullptr, *iv = nullptr; Py_ssize_t ipos = 0;
+        PyObject *ik = nullptr, *iv = nullptr;
+        Py_ssize_t ipos = 0;
         while (PyDict_Next(mod_dict, &ipos, &ik, &iv)) {
             if (PyModule_Check(iv)) {
                 if (const char* imported = PyModule_GetName(iv)) dependencyGraph[imported].insert(mod_name);
@@ -112,7 +124,8 @@ void PythonHotfix::CheckPythonFileDependence() {
         }
     }
     while (!bfs.empty()) {
-        auto cur = bfs.front(); bfs.pop();
+        auto cur = bfs.front();
+        bfs.pop();
         auto it = dependencyGraph.find(cur);
         if (it == dependencyGraph.end()) continue;
         for (const auto& dep : it->second) {
@@ -149,11 +162,11 @@ bool PythonHotfix::ReloadPythonFile() {
 
         // Use sys.modules directly to avoid allocating temporary Unicode objects
         PyObject* sys_modules = PyImport_GetModuleDict();
-        PyObject* old_mod = sys_modules ? PyDict_GetItemString(sys_modules, name.c_str()) : nullptr; // borrowed
+        PyObject* old_mod = sys_modules ? PyDict_GetItemString(sys_modules, name.c_str()) : nullptr;  // borrowed
         bool owned_old = false;
         if (!old_mod) {
             // As a fallback, import the module to get a handle (owned)
-            old_mod = PyImport_ImportModule(name.c_str()); // new ref
+            old_mod = PyImport_ImportModule(name.c_str());  // new ref
             if (!old_mod) {
                 std::cout << "[Hotfix][Reload] skip (module not found and import failed): " << name << std::endl;
                 if (PyErr_Occurred()) PyErr_Clear();
@@ -165,13 +178,14 @@ bool PythonHotfix::ReloadPythonFile() {
         // Sanity
         if (!PyModule_Check(old_mod)) {
             std::cout << "[Hotfix][Reload] skip (not a module): " << name << " ptr=" << old_mod << std::endl;
-            if (owned_old) { /* leak-safe: skip DECREF */ }
+            if (owned_old) { /* leak-safe: skip DECREF */
+            }
             continue;
         }
 
         // Cross-check pointer in sys.modules
         if (sys_modules) {
-            PyObject* smod = PyDict_GetItemString(sys_modules, name.c_str()); // borrowed
+            PyObject* smod = PyDict_GetItemString(sys_modules, name.c_str());  // borrowed
             std::cout << "[Hotfix][Reload] sys.modules['" << name << "']=" << smod
                       << (smod == old_mod ? " (same)" : " (different)") << std::endl;
         }
@@ -181,7 +195,7 @@ bool PythonHotfix::ReloadPythonFile() {
             std::cout << "[Hotfix][Reload] reload failed: " << name << std::endl;
             if (PyErr_Occurred()) PyErr_Print();
             // leak-safe: if we owned 'old_mod', skip DECREF on failure to avoid risky paths
-            continue; // keep trying other modules
+            continue;  // keep trying other modules
         }
 
         std::cout << "[Hotfix][Reload] reload ok: name=" << name
@@ -190,7 +204,7 @@ bool PythonHotfix::ReloadPythonFile() {
 
         // Log current sys.modules pointer for this name after reload
         if (sys_modules) {
-            PyObject* smod2 = PyDict_GetItemString(sys_modules, name.c_str()); // borrowed
+            PyObject* smod2 = PyDict_GetItemString(sys_modules, name.c_str());  // borrowed
             std::cout << "[Hotfix][Reload] post sys.modules['" << name << "']=" << smod2
                       << (smod2 == new_mod ? " (matches new_mod)" : (smod2 == old_mod ? " (matches old_mod)" : " (different)"))
                       << std::endl;

@@ -1,12 +1,12 @@
 #include "RuntimeLoop.h"
 
+#include <corona/api/CoronaEngineAPI.h>
+#include <corona/core/Engine.h>
+#include <corona/core/SystemRegistry.h>
 #include <corona/systems/AnimationSystem.h>
 #include <corona/systems/AudioSystem.h>
-#include <corona/api/CoronaEngineAPI.h>
 #include <corona/systems/DisplaySystem.h>
-#include <corona/core/Engine.h>
 #include <corona/systems/RenderingSystem.h>
-#include <corona/core/SystemRegistry.h>
 
 #include <chrono>
 #include <cstdlib>
@@ -42,51 +42,43 @@ std::vector<std::string> parse_requested_systems() {
     }
     return requested;
 }
-} // namespace
+}  // namespace
 
 void RuntimeLoop::initialize() {
     build_base_entities();
 
     auto& registry = engine_.system_registry();
     if (!registry.contains("AnimationSystem")) {
-        registry.register_plugin({
-            .name = "AnimationSystem",
-            .dependencies = {},
-            .factory = [](const Corona::Interfaces::SystemContext&) {
-                return std::make_shared<Corona::AnimationSystem>();
-            },
-            .description = "Animates skeletal models"
-        });
+        registry.register_plugin({.name = "AnimationSystem",
+                                  .dependencies = {},
+                                  .factory = [](const Corona::Interfaces::SystemContext&) {
+                                      return std::make_shared<Corona::AnimationSystem>();
+                                  },
+                                  .description = "Animates skeletal models"});
     }
     if (!registry.contains("RenderingSystem")) {
-        registry.register_plugin({
-            .name = "RenderingSystem",
-            .dependencies = {"AnimationSystem"},
-            .factory = [](const Corona::Interfaces::SystemContext&) {
-                return std::make_shared<Corona::RenderingSystem>();
-            },
-            .description = "Renders scenes using raster and compute pipelines"
-        });
+        registry.register_plugin({.name = "RenderingSystem",
+                                  .dependencies = {"AnimationSystem"},
+                                  .factory = [](const Corona::Interfaces::SystemContext&) {
+                                      return std::make_shared<Corona::RenderingSystem>();
+                                  },
+                                  .description = "Renders scenes using raster and compute pipelines"});
     }
     if (!registry.contains("AudioSystem")) {
-        registry.register_plugin({
-            .name = "AudioSystem",
-            .dependencies = {},
-            .factory = [](const Corona::Interfaces::SystemContext&) {
-                return std::make_shared<Corona::AudioSystem>();
-            },
-            .description = "Handles audio playback"
-        });
+        registry.register_plugin({.name = "AudioSystem",
+                                  .dependencies = {},
+                                  .factory = [](const Corona::Interfaces::SystemContext&) {
+                                      return std::make_shared<Corona::AudioSystem>();
+                                  },
+                                  .description = "Handles audio playback"});
     }
     if (!registry.contains("DisplaySystem")) {
-        registry.register_plugin({
-            .name = "DisplaySystem",
-            .dependencies = {"RenderingSystem"},
-            .factory = [](const Corona::Interfaces::SystemContext&) {
-                return std::make_shared<Corona::DisplaySystem>();
-            },
-            .description = "Presents final frames"
-        });
+        registry.register_plugin({.name = "DisplaySystem",
+                                  .dependencies = {"RenderingSystem"},
+                                  .factory = [](const Corona::Interfaces::SystemContext&) {
+                                      return std::make_shared<Corona::DisplaySystem>();
+                                  },
+                                  .description = "Presents final frames"});
     }
 
     auto requested = parse_requested_systems();
@@ -168,7 +160,7 @@ void RuntimeLoop::run(std::atomic<bool>& running_flag) {
                 update_system(has_display_entities, display_running_, *display_system_);
             }
 
-            if(frame_counter_ % 600 == 0) {
+            if (frame_counter_ % 600 == 0) {
                 CE_LOG_INFO("Frame {}: Systems status - Animation: {}, Rendering: {}, Audio: {}, Display: {}",
                             frame_counter_,
                             animation_running_ ? "Running" : "Paused",

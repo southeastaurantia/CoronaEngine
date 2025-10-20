@@ -18,7 +18,7 @@ class EventBusHub;
 class DataCacheHub;
 
 class EngineKernel {
-  public:
+   public:
     explicit EngineKernel(std::shared_ptr<Interfaces::ServiceLocator> services = nullptr);
 
     Interfaces::ServiceLocator& services();
@@ -62,10 +62,10 @@ class EngineKernel {
 
     bool add_system_instance(std::shared_ptr<ISystem> system);
 
-  private:
+   private:
     std::shared_ptr<Interfaces::ServiceLocator> services_;
     std::unordered_map<std::type_index, std::shared_ptr<ISystem>> systems_;
     std::vector<std::shared_ptr<ISystem>> system_order_;
 };
 
-} // namespace Corona
+}  // namespace Corona

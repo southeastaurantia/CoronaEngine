@@ -15,14 +15,14 @@ namespace Corona {
 struct SystemPluginDescriptor {
     using Factory = std::function<std::shared_ptr<ISystem>(const Interfaces::SystemContext&)>;
 
-    std::string name;                                 // unique identifier for this system
-    std::vector<std::string> dependencies;            // other system names this system requires
-    Factory factory;                                  // factory that builds the system instance
-    std::string description;                          // optional human readable summary
+    std::string name;                       // unique identifier for this system
+    std::vector<std::string> dependencies;  // other system names this system requires
+    Factory factory;                        // factory that builds the system instance
+    std::string description;                // optional human readable summary
 };
 
 class SystemRegistry {
-  public:
+   public:
     struct Resolution {
         std::vector<const SystemPluginDescriptor*> order;
         std::vector<std::string> missing;
@@ -44,10 +44,10 @@ class SystemRegistry {
     [[nodiscard]] std::vector<std::shared_ptr<ISystem>> instantiate(const Resolution& resolution,
                                                                     const Interfaces::SystemContext& context) const;
 
-  private:
+   private:
     Resolution resolve_internal(const std::vector<std::string>& requested) const;
 
     std::unordered_map<std::string, SystemPluginDescriptor> descriptors_;
 };
 
-} // namespace Corona
+}  // namespace Corona

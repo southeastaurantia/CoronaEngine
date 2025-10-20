@@ -1,3 +1,6 @@
+#include <ResourceTypes.h>
+#include <corona/core/detail/SystemHubs.h>
+#include <corona/script/PythonBridge.h>
 #include <corona/systems/AnimationSystem.h>
 
 #include <cmath>
@@ -6,11 +9,6 @@
 #include "Animation.h"
 #include "Bone.h"
 #include "Model.h"
-#include <corona/script/PythonBridge.h>
-
-#include <corona/core/detail/SystemHubs.h>
-
-#include <ResourceTypes.h>
 
 namespace {
 using namespace Corona;
@@ -178,7 +176,7 @@ using namespace Corona;
 AnimationSystem::AnimationSystem()
     : ThreadedSystem("AnimationSystem") {}
 
-void AnimationSystem::configure(const Interfaces::SystemContext &context) {
+void AnimationSystem::configure(const Interfaces::SystemContext& context) {
     ThreadedSystem::configure(context);
     resource_service_ = services().try_get<Interfaces::IResourceService>();
     scheduler_ = services().try_get<Interfaces::ICommandScheduler>();
@@ -246,7 +244,7 @@ void AnimationSystem::onTick() {
             if (!st || !st->model) {
                 return;
             }
-            update_animation_state(*st, 1.0f / 120.0f); // 与系统线程目标帧率一致
+            update_animation_state(*st, 1.0f / 120.0f);  // 与系统线程目标帧率一致
         });
 
         auto& model_cache = caches->get<Model>();
@@ -390,7 +388,7 @@ void AnimationSystem::update_physics(Model& m) {
                 otherModel->positon += (normal * separation);
 
                 // 直接施加反弹位移
-                const float bounceStrength = 0.1f; // 反弹强度
+                const float bounceStrength = 0.1f;  // 反弹强度
                 m.positon += ktm::fvec3(-normal * bounceStrength);
                 otherModel->positon += (normal * bounceStrength);
 

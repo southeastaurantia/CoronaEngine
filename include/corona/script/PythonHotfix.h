@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Python.h>
+
 #include <filesystem>
 #include <queue>
 #include <string>
@@ -7,12 +9,10 @@
 #include <unordered_set>
 #include <vector>
 
-#include <Python.h>
-
 // PythonHotfix: 负责扫描 Python 脚本改动、计算依赖并执行重载
 // 时间统一：毫秒（ms）
 struct PythonHotfix {
-    static constexpr int64_t kFileRecentWindowMs = 1000; // 最近 1s 内修改视为变更
+    static constexpr int64_t kFileRecentWindowMs = 1000;  // 最近 1s 内修改视为变更
 
     // 统计信息（可扩展）
     int pyFileCount = 0;

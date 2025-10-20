@@ -53,4 +53,4 @@ bool EngineKernel::add_system_instance(std::shared_ptr<ISystem> system) {
     return true;
 }
 
-} // namespace Corona
+}  // namespace Corona

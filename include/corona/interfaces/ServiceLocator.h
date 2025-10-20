@@ -10,7 +10,7 @@
 namespace Corona::Interfaces {
 
 class ServiceLocator {
-  public:
+   public:
     ServiceLocator() = default;
     ~ServiceLocator() = default;
 
@@ -57,9 +57,9 @@ class ServiceLocator {
         return services_.contains(key);
     }
 
-  private:
+   private:
     mutable std::shared_mutex mutex_{};
     std::unordered_map<std::type_index, std::shared_ptr<void>> services_{};
 };
 
-} // namespace Corona::Interfaces
+}  // namespace Corona::Interfaces

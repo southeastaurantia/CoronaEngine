@@ -4,9 +4,9 @@
 
 namespace Corona::PythonBridge {
 namespace {
-    std::function<void(const std::string&)> g_sender;
-    std::mutex g_mtx;
-}
+std::function<void(const std::string&)> g_sender;
+std::mutex g_mtx;
+}  // namespace
 
 void set_sender(std::function<void(const std::string&)> sender) {
     std::lock_guard lk(g_mtx);
@@ -29,5 +29,4 @@ void send(const std::string& message) {
     }
 }
 
-} // namespace Corona::PythonBridge
-
+}  // namespace Corona::PythonBridge

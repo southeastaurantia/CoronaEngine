@@ -10,13 +10,13 @@
 namespace Corona {
 class IResource;
 struct ResourceId;
-} // namespace Corona
+}  // namespace Corona
 
 namespace Corona::Interfaces {
 
 // 日志服务，用于桥接现有 corona_logger 输出。
 class ILogger {
-  public:
+   public:
     enum class Level {
         Trace,
         Debug,
@@ -40,7 +40,7 @@ class ILogger {
 
 // 资源加载服务，抽象 ResourceManager 提供的关键能力。
 class IResourceService {
-  public:
+   public:
     using ResourcePtr = std::shared_ptr<Corona::IResource>;
     using LoadCallback = std::function<void(const Corona::ResourceId&, ResourcePtr)>;
 
@@ -56,7 +56,7 @@ class IResourceService {
 
 // 命令队列调度服务，用于统一创建与查询队列。
 class ICommandScheduler {
-  public:
+   public:
     using QueueHandle = std::shared_ptr<ICommandQueue>;
 
     virtual ~ICommandScheduler() = default;
@@ -67,4 +67,4 @@ class ICommandScheduler {
     virtual bool contains(std::string_view name) const = 0;
 };
 
-} // namespace Corona::Interfaces
+}  // namespace Corona::Interfaces

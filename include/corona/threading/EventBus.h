@@ -1,7 +1,7 @@
 #pragma once
 
-#include <cabbage_concurrent/container/mpmc_queue.h>
 #include <cabbage_concurrent/container/concurrent_hash_map.h>
+#include <cabbage_concurrent/container/mpmc_queue.h>
 
 #include <atomic>
 #include <cstdint>
@@ -34,6 +34,7 @@ class EventBusT {
         void push(const value_type& v) { q_.enqueue(v); }
         void push(value_type&& v) { q_.enqueue(std::move(v)); }
         bool empty() const { return q_.empty(); }
+
        private:
         Cabbage::Concurrent::MPMCQueue<value_type> q_;
     };
@@ -41,14 +42,14 @@ class EventBusT {
     struct Subscription {
         Topic topic;
         SubscriberId id = 0;
-        std::shared_ptr<Queue> queue; // poll this in your system thread
+        std::shared_ptr<Queue> queue;  // poll this in your system thread
     };
 
     // Subscribe to a topic; returns a Subscription with a queue to poll.
     Subscription subscribe(const Topic& topic) {
         auto subs = get_or_create_topic(topic);
         auto q = std::make_shared<Queue>();
-        const auto id = next_id_.fetch_add(1, std::memory_order_relaxed) + 1; // start from 1
+        const auto id = next_id_.fetch_add(1, std::memory_order_relaxed) + 1;  // start from 1
         {
             std::lock_guard lk(subs->mtx);
             subs->subscribers.emplace(id, q);
@@ -97,7 +98,7 @@ class EventBusT {
             }
         }
         for (auto& q : queues) {
-            if (q) q->push(payload); // copy per-subscriber; preserves move-origin content for later reuse
+            if (q) q->push(payload);  // copy per-subscriber; preserves move-origin content for later reuse
         }
     }
 
@@ -131,5 +132,4 @@ class EventBusT {
     std::atomic<SubscriberId> next_id_{0};
 };
 
-} // namespace Corona
-
+}  // namespace Corona

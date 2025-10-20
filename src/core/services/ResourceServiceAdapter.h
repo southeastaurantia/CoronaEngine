@@ -1,15 +1,14 @@
 #pragma once
 
-#include <corona/interfaces/Services.h>
-
 #include <ResourceManager.h>
+#include <corona/interfaces/Services.h>
 
 #include <memory>
 
 namespace Corona::Core {
 
 class ResourceServiceAdapter final : public Interfaces::IResourceService {
-  public:
+   public:
     explicit ResourceServiceAdapter(std::shared_ptr<ResourceManager> manager);
     ~ResourceServiceAdapter() override = default;
 
@@ -22,8 +21,8 @@ class ResourceServiceAdapter final : public Interfaces::IResourceService {
 
     void set_manager(std::shared_ptr<ResourceManager> manager);
 
-  private:
+   private:
     std::shared_ptr<ResourceManager> manager_;
 };
 
-} // namespace Corona::Core
+}  // namespace Corona::Core

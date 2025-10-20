@@ -6,13 +6,13 @@
 namespace Corona {
 
 namespace {
-    template <typename T>
-    void append_unique(std::vector<T>& target, const T& value) {
-        if (std::find(target.begin(), target.end(), value) == target.end()) {
-            target.push_back(value);
-        }
+template <typename T>
+void append_unique(std::vector<T>& target, const T& value) {
+    if (std::find(target.begin(), target.end(), value) == target.end()) {
+        target.push_back(value);
     }
 }
+}  // namespace
 
 bool SystemRegistry::register_plugin(SystemPluginDescriptor descriptor) {
     if (descriptor.name.empty() || !descriptor.factory) {
@@ -58,7 +58,9 @@ SystemRegistry::Resolution SystemRegistry::resolve_internal(const std::vector<st
         return resolution;
     }
 
-    enum class State : std::uint8_t { None, Visiting, Visited };
+    enum class State : std::uint8_t { None,
+                                      Visiting,
+                                      Visited };
 
     std::unordered_map<std::string, State> visit_state;
     visit_state.reserve(descriptors_.size());
@@ -136,4 +138,4 @@ std::vector<std::shared_ptr<ISystem>> SystemRegistry::instantiate(const Resoluti
     return instances;
 }
 
-} // namespace Corona
+}  // namespace Corona

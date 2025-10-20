@@ -21,10 +21,10 @@ Corona::LogLevel to_log_level(Interfaces::ILogger::Level level) {
     }
     return Corona::LogLevel::kInfo;
 }
-} // namespace
+}  // namespace
 
 void LoggerService::log(Level level, std::string_view message) {
     Corona::Logger::log(to_log_level(level), message);
 }
 
-} // namespace Corona::Core
+}  // namespace Corona::Core

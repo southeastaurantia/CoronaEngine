@@ -3,7 +3,10 @@
 # Use the helper to define the example target
 corona_add_example(
     NAME minimal_runtime_loop
-    SOURCES main.cpp
+    SOURCES
+        main.cpp
+        CustomLoop.h
+        DiagnosticsSystem.h
     COPY_ASSETS
 )
 
