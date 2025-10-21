@@ -36,8 +36,14 @@ include(corona_runtime_deps)        # Runtime dependency collection and copy hel
 include(corona_editor)              # Editor asset packaging helpers
 
 # ------------------------------------------------------------------------------
+# Testing Support
+# ------------------------------------------------------------------------------
+include(CTest)
+
+# ------------------------------------------------------------------------------
 # Subdirectories
 # ------------------------------------------------------------------------------
+add_subdirectory(arch_impl)         # Experimental architecture framework library
 add_subdirectory(src)               # Core engine static library
 
 if(BUILD_CORONA_RUNTIME)
