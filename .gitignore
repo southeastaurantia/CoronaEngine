@@ -24,3 +24,6 @@ Makefile
 
 # Log files
 *.log
+
+# Temporary documentation files
+docs/temp/
