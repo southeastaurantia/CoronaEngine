@@ -10,6 +10,9 @@
 #include <set>
 #include <unordered_map>
 
+// 声明由 nanobind NB_MODULE(CoronaEngine, m) 生成的初始化函数
+extern "C" PyObject* PyInit_CoronaEngine();
+
 // Unified path configuration
 namespace PathCfg {
 inline std::string Normalize(std::string s) {
@@ -57,60 +60,17 @@ inline std::string SitePackagesDir() {
 
 const std::string PythonAPI::codePath = PathCfg::EngineRoot();
 
-PyObject* PyInit_CoronaEngineEmbedded() {
-    PyMethodDef CoronaEngineMethods[] = {{nullptr, nullptr, 0, nullptr}};
-
-    if (PyType_Ready(&EngineScripts::ActorScripts::PyActorType) < 0) {
-        return nullptr;
-    }
-    if (PyType_Ready(&EngineScripts::SceneScripts::PySceneType) < 0) {
-        return nullptr;
-    }
-
-    static PyModuleDef module{};
-    module.m_base = PyModuleDef_HEAD_INIT;
-    module.m_name = "CoronaEngine";
-    module.m_methods = CoronaEngineMethods;
-    module.m_size = -1;
-
-    auto m = PyModule_Create(&module);
-    if (!m) {
-        return nullptr;
-    }
-
-    Py_INCREF(&EngineScripts::ActorScripts::PyActorType);
-    if (PyModule_AddObject(m, "Actor", reinterpret_cast<PyObject*>(&EngineScripts::ActorScripts::PyActorType)) < 0) {
-        Py_DECREF(&EngineScripts::ActorScripts::PyActorType);
-        Py_DECREF(m);
-        return nullptr;
-    }
-
-    Py_INCREF(&EngineScripts::SceneScripts::PySceneType);
-    if (PyModule_AddObject(m, "Scene", reinterpret_cast<PyObject*>(&EngineScripts::SceneScripts::PySceneType)) < 0) {
-        Py_DECREF(&EngineScripts::SceneScripts::PySceneType);
-        Py_DECREF(m);
-        return nullptr;
-    }
-
-    return m;
-}
-
 PythonAPI::PythonAPI() {
-    // Removed leak-safe mode and environment configuration.
 }
-
-// Removed setLeakSafeReload and isLeakSafeReload methods.
 
 PythonAPI::~PythonAPI() {
     if (Py_IsInitialized()) {
-        // 清理对象需在持有 GIL 的短作用域内完成
         {
             nanobind::gil_scoped_acquire guard;
             pModule.reset();
             pFunc.reset();
             messageFunc.reset();
         }
-        // 释放 GIL 之后再 Finalize
         Py_FinalizeEx();
     }
     PyConfig_Clear(&config);
@@ -127,7 +87,8 @@ bool PythonAPI::ensureInitialized() {
         return true;
     }
 
-    PyImport_AppendInittab("CoronaEngine", &PyInit_CoronaEngineEmbedded);
+    // 注册 nanobind 导出的 CoronaEngine 模块
+    PyImport_AppendInittab("CoronaEngine", &PyInit_CoronaEngine);
 
     PyConfig_InitPythonConfig(&config);
     PyConfig_SetBytesString(&config, &config.home, CORONA_PYTHON_HOME_DIR);
@@ -167,7 +128,9 @@ bool PythonAPI::ensureInitialized() {
             pFunc = std::move(run_attr);
             messageFunc = std::move(putq_attr);
         } catch (const std::exception&) {
-            if (PyErr_Occurred()) { PyErr_Print(); }
+            if (PyErr_Occurred()) {
+                PyErr_Print();
+            }
             pModule.reset();
             pFunc.reset();
             messageFunc.reset();
@@ -200,7 +163,7 @@ bool PythonAPI::performHotReload() {
         nanobind::object reload_func = nanobind::getattr(importlib, "reload");
 
         nanobind::module_ mod = nanobind::module_::import_("main");
-        (void) reload_func(mod);
+        (void)reload_func(mod);
 
         nanobind::object newFunc = nanobind::getattr(mod, "run");
         if (!nanobind::callable::check_(newFunc)) {
@@ -224,27 +187,33 @@ bool PythonAPI::performHotReload() {
     return true;
 }
 
-void PythonAPI::invokeEntry(bool isReload) const
-{
-    if (!pFunc.is_valid()) { return; }
+void PythonAPI::invokeEntry(bool isReload) const {
+    if (!pFunc.is_valid()) {
+        return;
+    }
     nanobind::gil_scoped_acquire gil;
 
     try {
-        (void) pFunc(isReload ? 1 : 0);
+        (void)pFunc(isReload ? 1 : 0);
     } catch (const std::exception&) {
-        if (PyErr_Occurred()) { PyErr_Print(); }
+        if (PyErr_Occurred()) {
+            PyErr_Print();
+        }
     }
 }
 
-void PythonAPI::sendMessage(const std::string &message) const
-{
-    if (!messageFunc.is_valid()) { return; }
+void PythonAPI::sendMessage(const std::string& message) const {
+    if (!messageFunc.is_valid()) {
+        return;
+    }
     nanobind::gil_scoped_acquire gil;
 
     try {
-        (void) messageFunc(message.c_str());
+        (void)messageFunc(message.c_str());
     } catch (const std::exception&) {
-        if (PyErr_Occurred()) { PyErr_Print(); }
+        if (PyErr_Occurred()) {
+            PyErr_Print();
+        }
     }
 }
 
@@ -406,4 +375,3 @@ void PythonAPI::copyModifiedFiles(const std::filesystem::path& sourceDir,
         }
     }
 }
-

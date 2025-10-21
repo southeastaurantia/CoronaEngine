@@ -1,19 +1,16 @@
 #pragma once
 
+#include <Python.h>
 #include <corona/script/EngineScripts.h>
 #include <corona/script/PythonHotfix.h>
+#include <nanobind/nanobind.h>
 
 #include <chrono>
 #include <filesystem>
 #include <shared_mutex>
 #include <string>
 
-#include <nanobind/nanobind.h>
-#include "PythonHotfix.h"
-#include "EngineScripts.h"
-
-struct PythonAPI
-{
+struct PythonAPI {
     PythonAPI();
 
     ~PythonAPI();
@@ -21,7 +18,7 @@ struct PythonAPI
     void runPythonScript();
     static void checkPythonScriptChange();
     void checkReleaseScriptChange();
-    void sendMessage(const std::string &message) const;
+    void sendMessage(const std::string& message) const;
 
    private:
     static const std::string codePath;
@@ -32,9 +29,9 @@ struct PythonAPI
     int64_t lastHotReloadTime = 0;  // ms
     bool hasHotReload = false;
 
-    nanobind::object pModule;       // module 'main'
-    nanobind::object pFunc;         // callable 'run'
-    nanobind::object messageFunc;   // callable 'put_queue'
+    nanobind::object pModule;      // module 'main'
+    nanobind::object pFunc;        // callable 'run'
+    nanobind::object messageFunc;  // callable 'put_queue'
 
     std::vector<std::string> moduleList;
     std::vector<std::string> callableList;
