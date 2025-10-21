@@ -76,7 +76,11 @@ add_compile_definitions(
 # ------------------------------------------------------------------------------
 # MSVC runtime strategy
 # ------------------------------------------------------------------------------
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+if(MSVC OR CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    set(CMAKE_MSVC_RUNTIME_LIBRARY
+        $<$<CONFIG:Debug>:MultiThreadedDLLDebug>$<$<NOT:$<CONFIG:Debug>>:MultiThreadedDLL>
+    )
+endif()
 
 # ------------------------------------------------------------------------------
 # MSVC charset configuration
