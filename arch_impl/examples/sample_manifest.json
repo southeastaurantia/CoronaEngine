@@ -1,0 +1,21 @@
+{
+  "name": "arch_sample",
+  "version": "1.0.0",
+  "dependencies": ["core"],
+  "systems": [
+    {
+      "id": "beta.system",
+      "factory": "beta.factory",
+      "dependencies": [],
+      "tags": ["core"],
+      "tick_ms": 4
+    },
+    {
+      "id": "alpha.system",
+      "factory": "alpha.factory",
+      "dependencies": ["beta.system"],
+      "tags": ["demo"],
+      "tick_ms": 8
+    }
+  ]
+}

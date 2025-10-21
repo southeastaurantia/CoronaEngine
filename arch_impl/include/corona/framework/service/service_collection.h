@@ -19,6 +19,8 @@ class service_collection {
 
     service_collection(const service_collection&) = delete;
     service_collection& operator=(const service_collection&) = delete;
+    service_collection(service_collection&&) noexcept = default;
+    service_collection& operator=(service_collection&&) noexcept = default;
 
     template <typename TService, typename TImplementation>
     void add_singleton();

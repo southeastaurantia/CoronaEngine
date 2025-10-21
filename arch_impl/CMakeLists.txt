@@ -4,6 +4,10 @@ add_library(arch_framework STATIC
     src/service_descriptor.cpp
     src/service_provider.cpp
     src/service_collection.cpp
+    src/system_descriptor.cpp
+    src/thread_orchestrator.cpp
+    src/runtime_coordinator.cpp
+    src/plugin_manifest.cpp
 )
 
 set_target_properties(arch_framework PROPERTIES

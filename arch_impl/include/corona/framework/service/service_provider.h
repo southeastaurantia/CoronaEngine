@@ -18,6 +18,11 @@ class service_provider {
                      std::shared_ptr<service_scope> scope,
                      std::shared_ptr<std::unordered_map<std::type_index, std::shared_ptr<void>>> singletons);
 
+    service_provider(service_provider&& other) noexcept;
+    service_provider& operator=(service_provider&& other) noexcept;
+    service_provider(const service_provider&) = delete;
+    service_provider& operator=(const service_provider&) = delete;
+
     template <typename T>
     [[nodiscard]] std::shared_ptr<T> get_service();
 

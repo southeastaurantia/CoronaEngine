@@ -1,7 +1,7 @@
 #include "corona/framework/service/service_provider.h"
 
-#include <algorithm>
 #include <memory>
+#include <mutex>
 #include <stdexcept>
 #include <typeindex>
 #include <unordered_map>
@@ -45,6 +45,21 @@ service_provider::service_provider(std::shared_ptr<const std::vector<service_des
     if (!singletons_) {
         singletons_ = std::make_shared<std::unordered_map<std::type_index, std::shared_ptr<void>>>();
     }
+}
+
+service_provider::service_provider(service_provider&& other) noexcept
+    : descriptors_(std::move(other.descriptors_)),
+      scope_(std::move(other.scope_)),
+      singletons_(std::move(other.singletons_)) {}
+
+service_provider& service_provider::operator=(service_provider&& other) noexcept {
+    if (this != &other) {
+        std::scoped_lock lock(resolve_mutex_, other.resolve_mutex_);
+        descriptors_ = std::move(other.descriptors_);
+        scope_ = std::move(other.scope_);
+        singletons_ = std::move(other.singletons_);
+    }
+    return *this;
 }
 
 service_provider service_provider::create_scope() {
