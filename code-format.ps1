@@ -3,17 +3,45 @@
     -----------------
     Formats modified CoronaEngine C++ sources using clang-format and the repo's .clang-format rules.
     Usage examples:
-        ./code-format.ps1        # Format all changed C++ files (staged + unstaged)
-        ./code-format.ps1 -Check # Verify formatting without modifying files
+        ./code-format.ps1             # Format all changed C++ files (staged + unstaged)
+        ./code-format.ps1 -Check      # Verify formatting without modifying files
         ./code-format.ps1 -Targets src systems # Limit formatting to specific folders
+        ./code-format.ps1 -All        # Format every C++ source under engine/, examples/, include/, src/
 #>
 Param(
     [switch]$Check,
+    [switch]$All,
     [string[]]$Targets,
     [string[]]$Extensions
 )
 
 $ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+
+function Get-NormalizedExistingPath {
+    param([string]$Path)
+
+    if (-not $Path) { return $null }
+    if (-not (Test-Path $Path)) { return $null }
+
+    return (Get-Item $Path).FullName.TrimEnd([System.IO.Path]::DirectorySeparatorChar)
+}
+
+function Test-WithinRoots {
+    param(
+        [string]$Candidate,
+        [string[]]$Roots,
+        [System.StringComparison]$Comparison
+    )
+
+    foreach ($root in $Roots) {
+        if ($Candidate.StartsWith($root, $Comparison)) {
+            return $true
+        }
+    }
+
+    return $false
+}
 
 $startTimestamp = Get-Date
 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
@@ -31,6 +59,20 @@ try {
         throw "Unable to determine git repository root."
     }
 
+    $defaultRoots = @('engine', 'examples', 'include', 'src')
+    $stringComparison = [System.StringComparison]::OrdinalIgnoreCase
+    $allowedRoots = @()
+    foreach ($root in $defaultRoots) {
+        $candidate = Join-Path $gitRoot $root
+        $normalized = Get-NormalizedExistingPath -Path $candidate
+        if ($normalized) {
+            $allowedRoots += $normalized
+        }
+    }
+    if (-not $allowedRoots -or $allowedRoots.Count -eq 0) {
+        throw "No formatting roots found under the repository. Expected one of: engine, examples, include, src."
+    }
+
     $logPath = Join-Path $gitRoot 'code-format.log'
     $logEntries = [System.Collections.Generic.List[string]]::new()
     $logEntries.Add("=== code-format.ps1 run ===")
@@ -45,6 +87,11 @@ try {
     if ($Targets -and $Targets.Count -gt 0) { $targetLabel = $Targets -join ', ' }
     $logEntries.Add("Targets: $targetLabel")
 
+    $scopeLabel = 'changed-files'
+    if ($All) { $scopeLabel = 'full-tree' }
+    $logEntries.Add("Scope: $scopeLabel")
+    $logEntries.Add("AllowedRoots: " + (($allowedRoots | ForEach-Object { $_.Substring($gitRoot.Length).TrimStart([System.IO.Path]::DirectorySeparatorChar) }) -join ', '))
+
     $extensionLabel = '*.c, *.cpp, *.cc, *.cxx, *.h, *.hpp'
     if ($Extensions -and $Extensions.Count -gt 0) { $extensionLabel = $Extensions -join ', ' }
     $logEntries.Add("Extensions: $extensionLabel")
@@ -56,13 +103,20 @@ try {
     $clangFormatExe = 'clang-format'
 
     $statusLines = (& git -C $gitRoot status --porcelain --untracked=all)
+    if ($statusLines) {
+        $statusLines = @($statusLines)
+    }
+    else {
+        $statusLines = @()
+    }
+
     $statusCount = 0
     if ($statusLines) { $statusCount = $statusLines.Count }
     $logEntries.Add("GitStatusLines: $statusCount")
 
     $shouldProcess = $true
 
-    if (-not $statusLines -or $statusLines.Count -eq 0) {
+    if (-not $All -and (-not $statusLines -or $statusLines.Count -eq 0)) {
         Write-Host "No modified files detected by git."
         $logEntries.Add("Result: No modified files detected by git.")
         $shouldProcess = $false
@@ -89,54 +143,69 @@ try {
             foreach ($target in $Targets) {
                 if (-not $target) { continue }
                 $targetPath = if ([System.IO.Path]::IsPathRooted($target)) { $target } else { Join-Path $gitRoot $target }
-                if (Test-Path $targetPath) {
-                    $normalizedTargets += ((Get-Item $targetPath).FullName.TrimEnd([System.IO.Path]::DirectorySeparatorChar))
+                $normalizedCandidate = Get-NormalizedExistingPath -Path $targetPath
+                if (-not $normalizedCandidate) { continue }
+
+                if (Test-WithinRoots -Candidate $normalizedCandidate -Roots $allowedRoots -Comparison $stringComparison) {
+                    $normalizedTargets += $normalizedCandidate
+                }
+                else {
+                    $logEntries.Add("SkippedTargetOutsideScope: $normalizedCandidate")
                 }
             }
         }
 
-        $changedPaths = @()
-        foreach ($line in $statusLines) {
-            if ([string]::IsNullOrWhiteSpace($line)) { continue }
-            if ($line.Length -lt 4) { continue }
-            $pathPart = $line.Substring(3).Trim()
-            if ($pathPart -like "* -> *") {
-                $pathPart = $pathPart.Split('->')[-1].Trim()
+        if ($All) {
+            $directories = if ($normalizedTargets.Count -gt 0) {
+                $normalizedTargets
             }
-            if ($pathPart) {
-                $changedPaths += $pathPart
+            else {
+                $allowedRoots
             }
-        }
 
-        foreach ($relativePath in $changedPaths | Sort-Object -Unique) {
-            $fullPath = Join-Path $gitRoot $relativePath
-            if (-not (Test-Path $fullPath)) { continue }
-
-            $extension = [System.IO.Path]::GetExtension($fullPath).ToLowerInvariant()
-            if ($normalizedExtensions -notcontains $extension) { continue }
-
-            if ($normalizedTargets.Count -gt 0) {
-                $withinTarget = $false
-                foreach ($targetRoot in $normalizedTargets) {
-                    if ($fullPath.StartsWith($targetRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
-                        $withinTarget = $true
-                        break
-                    }
+            foreach ($dir in $directories | Sort-Object -Unique) {
+                $files += Get-ChildItem -Path $dir -Recurse -File | Where-Object {
+                    $normalizedExtensions -contains ([System.IO.Path]::GetExtension($_.FullName).ToLowerInvariant())
                 }
-                if (-not $withinTarget) { continue }
+            }
+        }
+        else {
+            $changedPaths = @()
+            foreach ($line in $statusLines) {
+                if ([string]::IsNullOrWhiteSpace($line)) { continue }
+                if ($line.Length -lt 4) { continue }
+                $pathPart = $line.Substring(3).Trim()
+                if ($pathPart -like "* -> *") {
+                    $pathPart = $pathPart.Split('->')[-1].Trim()
+                }
+                if ($pathPart) {
+                    $changedPaths += $pathPart
+                }
             }
 
-            $files += (Get-Item $fullPath)
+            foreach ($relativePath in $changedPaths | Sort-Object -Unique) {
+                $fullPath = Join-Path $gitRoot $relativePath
+                if (-not (Test-Path $fullPath)) { continue }
+
+                $extension = [System.IO.Path]::GetExtension($fullPath).ToLowerInvariant()
+                if ($normalizedExtensions -notcontains $extension) { continue }
+
+                if ($normalizedTargets.Count -gt 0 -and -not (Test-WithinRoots -Candidate $fullPath -Roots $normalizedTargets -Comparison $stringComparison)) { continue }
+
+                if (-not (Test-WithinRoots -Candidate $fullPath -Roots $allowedRoots -Comparison $stringComparison)) { continue }
+
+                $files += (Get-Item $fullPath)
+            }
         }
 
-    $files = $files | Sort-Object -Property FullName -Unique
-    $filteredCount = 0
-    if ($files) { $filteredCount = $files.Count }
-    $logEntries.Add("FilteredFiles: $filteredCount")
+    $files = @( $files | Sort-Object -Property FullName -Unique )
+        $filteredCount = 0
+        if ($files) { $filteredCount = $files.Count }
+        $logEntries.Add("FilteredFiles: $filteredCount")
 
         if (-not $files -or $files.Count -eq 0) {
-            Write-Host "No modified C++ source files matched the current selection."
-            $logEntries.Add("Result: No modified C++ source files matched the current selection.")
+            Write-Host "No C++ source files matched the current selection."
+            $logEntries.Add("Result: No C++ source files matched the current selection.")
             $shouldProcess = $false
         }
     }
