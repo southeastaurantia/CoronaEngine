@@ -1,13 +1,14 @@
 # ==============================================================================
 # corona_options.cmake
 #
-# 功能:
-# 项目级选项与高层功能开关集中定义。
+# Purpose:
+# Centralize project-level options and high-level feature toggles.
 #
-# 说明:
-# - 将所有可在命令行 `-D` 传入的布尔型/路径型/版本型控制项集中放置。
-# - 便于统一管理与文档化。
-# - 未来有更多特性开关 (如启用测试/启用安装/启用特定第三方库) 也在此追加。
+# Notes:
+# - Consolidates boolean/path/version switches that may be provided via `-D`.
+# - Provides a single place to document and extend build configuration knobs.
+# - Future feature switches (tests, installers, additional third parties) should
+# also be added here.
 # ==============================================================================
 
 include_guard(GLOBAL)
@@ -16,29 +17,19 @@ if(POLICY CMP0077)
     cmake_policy(SET CMP0077 NEW)
 endif()
 
-# ------------------------------------------------------------------------------
-# 构建选项
-# ------------------------------------------------------------------------------
-# 是否构建为共享库
+option(CORONA_CHECK_PY_DEPS "Check Python dependencies (requirements) during configure" ON)
+option(CORONA_AUTO_INSTALL_PY_DEPS "Auto-install missing Python packages during configure" ON)
+option(CORONA_PYTHON_USE_EMBEDDED_FALLBACK "Use embedded fallback if required version not found system-wide" ON)
 option(BUILD_SHARED_LIBS "Build as shared libraries (default OFF for static)" OFF)
-
-# 是否编译 Corona 编辑器
 option(BUILD_CORONA_EDITOR "Build Corona editor" OFF)
-
-# 是否编译 Corona 运行时主程序
 option(BUILD_CORONA_RUNTIME "Build Corona runtime" ON)
-
-# 是否编译 Corona Vision 功能模块
 option(CORONA_BUILD_VISION "Build Corona Vision features" OFF)
-
-# 是否编译示例工程
 option(CORONA_BUILD_EXAMPLES "Build example programs" ${PROJECT_IS_TOP_LEVEL})
-
-# ------------------------------------------------------------------------------
-# 配置摘要
-# ------------------------------------------------------------------------------
-message(STATUS "[Options] BUILD_SHARED_LIBS     = ${BUILD_SHARED_LIBS}")
-message(STATUS "[Options] BUILD_CORONA_EDITOR   = ${BUILD_CORONA_EDITOR}")
-message(STATUS "[Options] BUILD_CORONA_RUNTIME  = ${BUILD_CORONA_RUNTIME}")
-message(STATUS "[Options] CORONA_BUILD_VISION   = ${CORONA_BUILD_VISION}")
-message(STATUS "[Options] CORONA_BUILD_EXAMPLES = ${CORONA_BUILD_EXAMPLES}")
+message(STATUS "[Options] CORONA_CHECK_PY_DEPS                    = ${CORONA_CHECK_PY_DEPS}")
+message(STATUS "[Options] CORONA_AUTO_INSTALL_PY_DEPS             = ${CORONA_AUTO_INSTALL_PY_DEPS}")
+message(STATUS "[Options] CORONA_PYTHON_USE_EMBEDDED_FALLBACK     = ${CORONA_PYTHON_USE_EMBEDDED_FALLBACK}")
+message(STATUS "[Options] BUILD_SHARED_LIBS                       = ${BUILD_SHARED_LIBS}")
+message(STATUS "[Options] BUILD_CORONA_EDITOR                     = ${BUILD_CORONA_EDITOR}")
+message(STATUS "[Options] BUILD_CORONA_RUNTIME                    = ${BUILD_CORONA_RUNTIME}")
+message(STATUS "[Options] CORONA_BUILD_VISION                     = ${CORONA_BUILD_VISION}")
+message(STATUS "[Options] CORONA_BUILD_EXAMPLES                   = ${CORONA_BUILD_EXAMPLES}")

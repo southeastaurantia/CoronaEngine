@@ -1,28 +1,29 @@
-# ==============================================================================
+# ============================================================================== 
 # corona_collect_module.cmake
 #
-# 功能:
-#   标准化收集单个模块 (include/src 布局) 的源文件和头文件。
+# Purpose:
+#   Standardize how a module (with include/src layout) collects sources and
+#   public headers.
 #
-# 规则:
-#   - 递归搜索模块 `include/` 目录下的所有头文件。
-#   - 递归搜索模块 `src/` 目录下的所有实现文件。
+# Behavior:
+#   - Recursively search the module `include/` directory for headers.
+#   - Recursively search the module `src/` directory (or root) for sources.
 #
-# 生成变量 (全部大写):
-#   - `CORONA_<MODULE>_PUBLIC_HEADERS`: 公共头文件列表。
-#   - `CORONA_<MODULE>_PRIVATE_SOURCES`: 私有源文件列表。
-#   - `CORONA_<MODULE>_ALL_FILES`: 所有文件聚合列表。
+# Outputs (uppercase variables):
+#   - `CORONA_<MODULE>_PUBLIC_HEADERS`: collected public headers.
+#   - `CORONA_<MODULE>_PRIVATE_SOURCES`: collected implementation sources.
+#   - `CORONA_<MODULE>_ALL_FILES`: combined list of all collected files.
 #
-# 使用示例:
+# Usage example:
 #   corona_collect_module(Core "${CMAKE_CURRENT_SOURCE_DIR}/src/core")
 #   add_library(CoronaCore STATIC
 #       ${CORONA_CORE_PRIVATE_SOURCES}
 #       ${CORONA_CORE_PUBLIC_HEADERS}
 #   )
 #
-# 可选参数:
-#   - `QUIET`: 关闭收集结果输出。
-# ==============================================================================
+# Optional arguments:
+#   - `QUIET`: suppress status output.
+# ============================================================================== 
 
 function(corona_collect_module MODULE_NAME MODULE_DIR)
     set(options QUIET)
@@ -31,17 +32,17 @@ function(corona_collect_module MODULE_NAME MODULE_DIR)
     cmake_parse_arguments(COLLECT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     if(NOT MODULE_NAME)
-        message(FATAL_ERROR "corona_collect_module: MODULE_NAME 不能为空")
+        message(FATAL_ERROR "corona_collect_module: MODULE_NAME cannot be empty")
     endif()
     if(NOT MODULE_DIR)
-        message(FATAL_ERROR "corona_collect_module: MODULE_DIR 不能为空")
+        message(FATAL_ERROR "corona_collect_module: MODULE_DIR cannot be empty")
     endif()
 
     if(NOT IS_DIRECTORY "${MODULE_DIR}")
-        message(FATAL_ERROR "corona_collect_module: 模块目录不存在: ${MODULE_DIR}")
+        message(FATAL_ERROR "corona_collect_module: Module directory does not exist: ${MODULE_DIR}")
     endif()
 
-    # 规范化模块名: 变量使用大写
+    # Normalize the module name so derived variables use uppercase
     string(TOUPPER "${MODULE_NAME}" MODULE_NAME_UPPER)
 
     set(_public_dirs)
@@ -55,7 +56,6 @@ function(corona_collect_module MODULE_NAME MODULE_DIR)
     endif()
     list(REMOVE_DUPLICATES _private_dirs)
 
-    # 递归收集所有文件
     unset(_public_headers)
     unset(_private_sources)
 
@@ -79,7 +79,7 @@ function(corona_collect_module MODULE_NAME MODULE_DIR)
         list(APPEND _private_sources ${_src_files})
     endforeach()
 
-    # 前面使用 RELATIVE 生成的相对路径基于 MODULE_DIR，加上前缀返回给调用者
+    # Convert collected relative paths back into absolute paths for the caller
     set(_public_headers_full)
     foreach(_h IN LISTS _public_headers)
         list(APPEND _public_headers_full "${MODULE_DIR}/${_h}")
@@ -90,7 +90,6 @@ function(corona_collect_module MODULE_NAME MODULE_DIR)
         list(APPEND _private_sources_full "${MODULE_DIR}/${_s}")
     endforeach()
 
-    # 导出变量
     set(CORONA_${MODULE_NAME_UPPER}_PUBLIC_HEADERS  "${_public_headers_full}"  PARENT_SCOPE)
     set(CORONA_${MODULE_NAME_UPPER}_PRIVATE_SOURCES "${_private_sources_full}" PARENT_SCOPE)
 

@@ -1,27 +1,24 @@
-# ==============================================================================
+# ============================================================================== 
 # corona_third_party.cmake
 #
-# 功能:
-# 外部第三方依赖声明与获取 (基于 `FetchContent`)。
+# Purpose:
+#   Declare and fetch external dependencies using `FetchContent`.
 #
-# 说明:
-# - 集中列出引擎/示例需要的源码级依赖。
-# - 使用 CMake 内置 `FetchContent` 在配置阶段按需拉取。
+# Notes:
+#   - Centralizes source-level dependencies required by the engine and examples.
+#   - Uses parallel capable FetchContent at configure time.
 #
-# 优势:
-# - 避免手工预下载，并行发起拉取。
-# - 统一管理版本，支持后续切换为本地 override。
-#
-# 提示:
-# - 若需锁定稳定性，可将 `GIT_TAG` 从 `main`/`master` 改为特定提交哈希或发布版本号。
-# ==============================================================================
+# Tips:
+#   - Pin `GIT_TAG` values to specific commits or release versions to lock
+#     dependency versions where stability is preferred.
+# ============================================================================== 
 
 include_guard(GLOBAL)
 
 include(FetchContent)
 
 # ------------------------------------------------------------------------------
-# 核心依赖声明
+# Core dependency declarations
 # ------------------------------------------------------------------------------
 FetchContent_Declare(CabbageHardware
     GIT_REPOSITORY https://github.com/CoronaEngine/CabbageHardware.git
@@ -87,7 +84,7 @@ FetchContent_Declare(glfw
 )
 
 # ------------------------------------------------------------------------------
-# 拉取并添加核心依赖
+# Fetch and enable dependencies
 # ------------------------------------------------------------------------------
 FetchContent_MakeAvailable(assimp)
 message(STATUS "[3rdparty] assimp module enabled")

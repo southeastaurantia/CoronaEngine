@@ -1,40 +1,35 @@
-# ==============================================================================
+# ============================================================================== 
 # corona_python.cmake
 #
-# 功能:
-#   Python 解释器发现与依赖校验功能模块。
+# Purpose:
+#   Provide embedded Python discovery and dependency validation.
 #
-# 概述:
-#   1. 首选系统已安装的 Python (满足最小版本要求)。
-#      若找不到且允许回退，则尝试使用内置/嵌入式目录。
-#   2. 暴露选项控制:
-#      - `CORONA_PYTHON_MIN_VERSION`: 期望的最低 Python 版本 (主.次)。
-#      - `CORONA_PYTHON_USE_EMBEDDED_FALLBACK`: 启用嵌入式 Python 回退。
-#   3. 依赖检查:
-#      读取 `misc/pytools/requirements.txt`，通过 `check_pip_modules.py` 校验，
-#      并可按需自动安装缺失包。
-#   4. 生成辅助自定义目标 `check_python_deps` 方便用户手动触发再次校验。
+# Overview:
+#   1. Force the build to use the bundled Python toolchain (minimum version
+#      enforced) located under `third_party/Python-3.13.7`.
+#   2. Expose configuration knobs:
+#        - `CORONA_PYTHON_MIN_VERSION`: expected minimum Python version
+#          (major.minor).
+#        - `CORONA_PYTHON_USE_EMBEDDED_FALLBACK`: retain compatibility with
+#          future system detection logic.
+#   3. Validate requirements listed in `misc/pytools/requirements.txt` via
+#      `check_pip_modules.py`, optionally installing missing packages.
+#   4. Create the `check_python_deps` custom target for manual re-validation.
 #
-# 设计原则:
-#   - 配置阶段给出尽可能清晰的问题诊断。
-#   - 避免在未启用自动安装时静默失败，必须明确 `FATAL_ERROR` 终止提示。
-# ==============================================================================
+# Design Goals:
+#   - Provide clear error reporting during configuration.
+#   - Fail explicitly when dependencies are missing and auto-install is disabled.
+# ============================================================================== 
 
 include_guard(GLOBAL)
 
-# ------------------------------------------------------------------------------
-# Python 配置选项
-# ------------------------------------------------------------------------------
 set(CORONA_PYTHON_MIN_VERSION 3.13 CACHE STRING "Minimum required Python3 version (major.minor)")
-
-option(CORONA_PYTHON_USE_EMBEDDED_FALLBACK "Use embedded fallback if required version not found system-wide" ON)
 
 set(CORONA_EMBEDDED_PY_DIR "${PROJECT_SOURCE_DIR}/third_party/Python-3.13.7" CACHE PATH "Embedded (bundled) Python directory path")
 
 # ------------------------------------------------------------------------------
-# Python 探测
+# Python Discovery
 # ------------------------------------------------------------------------------
-# 直接使用项目内置的 Python (不再检测系统 Python)
 set(Python3_ROOT_DIR "${CORONA_EMBEDDED_PY_DIR}" CACHE FILEPATH "Embedded Python root directory" FORCE)
 message(STATUS "[Python] Using embedded Python: ${Python3_ROOT_DIR}")
 
@@ -46,18 +41,11 @@ endif()
 
 message(STATUS "[Python] Final chosen interpreter: ${Python3_EXECUTABLE}")
 
-# ------------------------------------------------------------------------------
-# Python 依赖校验配置
-# ------------------------------------------------------------------------------
-option(CORONA_CHECK_PY_DEPS "Check Python dependencies (requirements) during configure" ON)
-
-option(CORONA_AUTO_INSTALL_PY_DEPS "Auto-install missing Python packages during configure" ON)
-
 set(CORONA_PY_REQUIREMENTS_FILE "${PROJECT_SOURCE_DIR}/misc/pytools/requirements.txt")
 set(CORONA_PY_CHECK_SCRIPT "${PROJECT_SOURCE_DIR}/misc/pytools/check_pip_modules.py")
 
 # ------------------------------------------------------------------------------
-# 工具函数：运行 Python 脚本
+# Helper: run a Python script
 # ------------------------------------------------------------------------------
 function(corona_run_python OUT_RESULT)
     set(options)
@@ -90,7 +78,7 @@ function(corona_run_python OUT_RESULT)
 endfunction()
 
 # ------------------------------------------------------------------------------
-# 工具函数：运行 Python 依赖检查
+# Helper: validate Python requirements
 # ------------------------------------------------------------------------------
 function(corona_run_python_requirements_check)
     if(NOT EXISTS "${CORONA_PY_CHECK_SCRIPT}")

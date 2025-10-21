@@ -1,42 +1,40 @@
-# ==============================================================================
+# ============================================================================== 
 # corona_runtime_deps.cmake
 #
-# 功能:
-#   运行时依赖 (动态库/调试符号) 收集与复制模块。
+# Purpose:
+#   Collect and install runtime dependencies (DLLs/PDBs) for executables.
 #
-# 概述:
-#   1. 配置阶段: `corona_configure_runtime_deps()` 收集 Python 相关的 DLL/PDB 文件，
-#      并写入目标属性 `INTERFACE_CORONA_RUNTIME_DEPS` (设置在 `CoronaEngine` 上)。
-#   2. 构建后: `corona_install_runtime_deps(<target>)` 通过自定义命令把上述文件
-#      复制到指定目标生成目录，以便示例或可执行程序直接运行。
+# Overview:
+#   1. Configure-time (`corona_configure_runtime_deps`): gather Python-related
+#      runtime files and store them on the `CoronaEngine` target via the
+#      `INTERFACE_CORONA_RUNTIME_DEPS` property.
+#   2. Build-time (`corona_install_runtime_deps`): copy the collected files next
+#      to any executable target that opts in, preserving the ability to reuse the
+#      same dependency list for multiple consumers.
 #
-# 设计要点:
-#   - 收集逻辑与复制逻辑解耦：收集只跑一次，复制可被多个可执行目标重用。
-#   - 使用目标属性避免全局变量污染，便于后续扩展。
-#   - 保持幂等：重复调用 configure 函数会覆盖为最新收集结果。
-#
-# 使用示例:
-#   corona_configure_runtime_deps(CoronaEngine)  # 在定义 CoronaEngine 后调用一次
-#   corona_install_runtime_deps(MyExampleExe)    # 对每个需要独立运行的可执行目标调用
-# ==============================================================================
+# Design highlights:
+#   - Decouple collection from installation so the list can be reused.
+#   - Store data on target properties instead of globals for easier extension.
+#   - Keep the calls idempotent so repeated configuration updates overwrite with
+#     the latest data.
+# ============================================================================== 
 
 include_guard(GLOBAL)
 
 # ------------------------------------------------------------------------------
-# 函数：安装运行时依赖到目标目录
+# Function: install runtime dependencies to a target directory
 # ------------------------------------------------------------------------------
 function(corona_install_runtime_deps target_name)
-    # 从核心库读取之前收集的依赖文件列表
+    # Retrieve the collected dependency list stored on the core library
     get_target_property(_CORONA_DEPS CoronaEngine INTERFACE_CORONA_RUNTIME_DEPS)
 
     if(NOT _CORONA_DEPS)
-        message(STATUS "[Corona:RuntimeDeps] No INTERFACE_CORONA_RUNTIME_DEPS; skip copy")
+        message(STATUS "[Corona:RuntimeDeps] No INTERFACE_CORONA_RUNTIME_DEPS; skipping copy")
         return()
     endif()
 
     set(_CORONA_DESTINATION_DIR "$<TARGET_FILE_DIR:${target_name}>")
 
-    # 使用 Python 脚本执行智能复制 (若不同才复制)
     set(_CORONA_PY_COPY "${PROJECT_SOURCE_DIR}/misc/pytools/copy_files.py")
 
     if(EXISTS "${_CORONA_PY_COPY}" AND DEFINED Python3_EXECUTABLE)
@@ -59,9 +57,9 @@ function(corona_install_runtime_deps target_name)
         )
     else()
         if(NOT EXISTS "${_CORONA_PY_COPY}")
-            message(STATUS "[Corona:RuntimeDeps] Python copy script not found; fallback to copy_if_different")
+            message(STATUS "[Corona:RuntimeDeps] Python copy script not found; falling back to copy_if_different")
         else()
-            message(STATUS "[Corona:RuntimeDeps] Python3 not available; fallback to copy_if_different")
+            message(STATUS "[Corona:RuntimeDeps] Python3 not available; falling back to copy_if_different")
         endif()
 
         add_custom_command(
@@ -75,7 +73,7 @@ function(corona_install_runtime_deps target_name)
 endfunction()
 
 # ------------------------------------------------------------------------------
-# 函数：配置阶段收集运行时依赖
+# Function: collect runtime dependencies during configuration
 # ------------------------------------------------------------------------------
 function(corona_configure_runtime_deps target_name)
     if(NOT TARGET ${target_name})
@@ -83,7 +81,6 @@ function(corona_configure_runtime_deps target_name)
         return()
     endif()
 
-    # 收集 Python 运行库 (DLL/PDB)
     set(_CORONA_ALL_DEPS)
     if(DEFINED Python3_RUNTIME_LIBRARY_DIRS)
         file(GLOB _CORONA_PY_DLLS "${Python3_RUNTIME_LIBRARY_DIRS}/*.dll")
@@ -101,7 +98,6 @@ function(corona_configure_runtime_deps target_name)
         return()
     endif()
 
-    # 去重，写入目标属性供后续复制使用
     list(REMOVE_DUPLICATES _CORONA_ALL_DEPS)
     set_target_properties(${target_name} PROPERTIES INTERFACE_CORONA_RUNTIME_DEPS "${_CORONA_ALL_DEPS}")
     message(STATUS "[Corona:RuntimeDeps] Collected ${target_name} files: ${_CORONA_ALL_DEPS}")

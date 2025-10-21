@@ -1,17 +1,17 @@
-# ==============================================================================
-# CoronaEngine - 示例程序构建配置
+# ============================================================================== 
+# CoronaEngine - Examples Build Configuration
 #
-# 功能:
-#   - 为每个示例子目录提供独立开关 (`BUILD_CORONA_EXAMPLE_<NAME>`)。
-#   - 定义 `corona_add_example()` 函数统一配置示例程序。
-#   - 自动发现并添加示例子目录。
-#   - 设置 VS 启动项目为第一个启用的示例。
-# ==============================================================================
+# Responsibilities:
+#   - Provide per-example build toggles (`BUILD_CORONA_EXAMPLE_<NAME>`).
+#   - Define `corona_add_example()` for consistent example setup.
+#   - Discover and add example subdirectories automatically.
+#   - Assign the first enabled example as the Visual Studio startup project.
+# ============================================================================== 
 
 include(CMakeParseArguments)
 
 # ------------------------------------------------------------------------------
-# 定义全局属性用于跟踪示例目标
+# Global properties used to track example targets
 # ------------------------------------------------------------------------------
 define_property(GLOBAL PROPERTY _CORONA_EXAMPLE_TARGETS
     BRIEF_DOCS "Corona example targets"
@@ -25,7 +25,7 @@ set_property(GLOBAL PROPERTY _CORONA_EXAMPLE_TARGETS "")
 set_property(GLOBAL PROPERTY _CORONA_EXAMPLE_REGISTRY "")
 
 # ------------------------------------------------------------------------------
-# 工具函数：拷贝 assets 资源到示例目录
+# Helper: copy assets into an example output directory
 # ------------------------------------------------------------------------------
 function(corona_examples_copy_assets target_name)
     add_custom_command(
@@ -39,17 +39,17 @@ function(corona_examples_copy_assets target_name)
 endfunction()
 
 # ------------------------------------------------------------------------------
-# 工具函数：添加示例程序
+# Helper: define an example executable
 #
-# 参数:
-#   NAME <name>           - 示例程序名称 (必需)
-#   SOURCES <files...>    - 源文件列表 (必需)
-#   COPY_ASSETS           - 是否拷贝 assets 资源 (可选标志)
+# Arguments:
+#   NAME <name>           - example target name (required)
+#   SOURCES <files...>    - source file list (required)
+#   COPY_ASSETS           - optional flag to copy the shared assets directory
 #
-# 功能:
-#   - 创建可执行目标并链接 CoronaEngine。
-#   - 自动安装运行时依赖 (Helicon/Python/Editor)。
-#   - 可选拷贝 assets 资源。
+# Behavior:
+#   - Create an executable target linked against CoronaEngine and dependencies.
+#   - Install runtime dependencies (Helicon/Python/editor) when available.
+#   - Optionally copy shared assets next to the built executable.
 # ------------------------------------------------------------------------------
 function(corona_add_example)
     set(options COPY_ASSETS)
@@ -73,7 +73,7 @@ function(corona_add_example)
     if(COMMAND helicon_install_runtime_deps)
         helicon_install_runtime_deps(${CORONA_EX_NAME})
     else()
-        message(STATUS "[Corona:Example:${CORONA_EX_NAME}] helicon_install_runtime_deps not available; skip")
+        message(STATUS "[Corona:Example:${CORONA_EX_NAME}] helicon_install_runtime_deps not available; skipping Helicon runtime dependencies")
     endif()
 
     corona_install_runtime_deps(${CORONA_EX_NAME})
@@ -98,7 +98,7 @@ function(corona_add_example)
 endfunction()
 
 # ------------------------------------------------------------------------------
-# 自动发现并添加示例子目录
+# Discover and add example subdirectories
 # ------------------------------------------------------------------------------
 file(GLOB _corona_example_dirs RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "${CMAKE_CURRENT_SOURCE_DIR}/*")
 list(SORT _corona_example_dirs)
@@ -109,7 +109,6 @@ foreach(_corona_folder IN LISTS _corona_example_dirs)
         continue()
     endif()
 
-    # 跳过非示例目录
     if(_corona_folder STREQUAL "assets")
         continue()
     endif()
@@ -147,7 +146,7 @@ if(_corona_example_targets)
 endif()
 
 # ------------------------------------------------------------------------------
-# 输出示例配置摘要
+# Output configuration summary
 # ------------------------------------------------------------------------------
 message(STATUS "")
 message(STATUS "================================================================================")
