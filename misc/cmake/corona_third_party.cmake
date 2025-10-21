@@ -48,6 +48,13 @@ FetchContent_Declare(entt
     EXCLUDE_FROM_ALL
 )
 
+FetchContent_Declare(nanobind
+    GIT_REPOSITORY https://github.com/wjakob/nanobind.git
+    GIT_TAG v2.9.2
+    GIT_SHALLOW TRUE
+    EXCLUDE_FROM_ALL
+)
+
 FetchContent_Declare(CoronaLogger
     GIT_REPOSITORY https://github.com/CoronaEngine/CoronaLogger.git
     GIT_TAG main
@@ -94,6 +101,9 @@ message(STATUS "[3rdparty] stb module enabled")
 
 FetchContent_MakeAvailable(entt)
 message(STATUS "[3rdparty] entt module enabled")
+
+FetchContent_MakeAvailable(nanobind)
+message(STATUS "[3rdparty] nanobind module enabled")
 
 FetchContent_MakeAvailable(CoronaLogger)
 message(STATUS "[3rdparty] CoronaLogger module enabled")

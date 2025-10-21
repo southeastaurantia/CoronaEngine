@@ -1,4 +1,6 @@
 #include <corona/script/PythonHotfix.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 
 #include <algorithm>
 #include <chrono>
@@ -89,25 +91,75 @@ void PythonHotfix::TraverseDirectory(const std::filesystem::path& directory,
 
 void PythonHotfix::CheckPythonFileDependence() {
     if (packageSet.empty()) return;
-    PyObject* sys_modules = PyImport_GetModuleDict();
-    if (!sys_modules) {
-        PyErr_Clear();
-        return;
-    }
-    PyObject *key = nullptr, *val = nullptr;
-    Py_ssize_t pos = 0;
 
-    while (PyDict_Next(sys_modules, &pos, &key, &val)) {
-        if (!PyModule_Check(val)) continue;
-        const char* mod_name = PyModule_GetName(val);
-        if (!mod_name) continue;
-        PyObject* mod_dict = PyModule_GetDict(val);
-        if (!mod_dict) continue;
-        PyObject *ik = nullptr, *iv = nullptr;
-        Py_ssize_t ipos = 0;
-        while (PyDict_Next(mod_dict, &ipos, &ik, &iv)) {
-            if (PyModule_Check(iv)) {
-                if (const char* imported = PyModule_GetName(iv)) dependencyGraph[imported].insert(mod_name);
+    nanobind::gil_scoped_acquire gil;
+
+    nanobind::module_ sys = nanobind::module_::import_("sys");
+    nanobind::object modules_obj = nanobind::getattr(sys, "modules");
+
+    nanobind::module_ types = nanobind::module_::import_("types");
+    nanobind::object ModuleType = nanobind::getattr(types, "ModuleType");
+    nanobind::module_ builtins = nanobind::module_::import_("builtins");
+    nanobind::object isinstance_fn = nanobind::getattr(builtins, "isinstance");
+
+    // 遍历 sys.modules.items() -> 强制快照，避免迭代期间 dict 发生变化
+    nanobind::object items_obj = nanobind::getattr(modules_obj, "items")();
+    nanobind::object list_fn = nanobind::getattr(builtins, "list");
+    nanobind::object items_list = list_fn(items_obj);
+
+    dependencyGraph.clear();
+
+    // 使用快照进行迭代，避免 RuntimeError: dictionary changed size during iteration
+    for (nanobind::handle h : items_list) {
+        nanobind::tuple kv;
+        try {
+            kv = nanobind::cast<nanobind::tuple>(h);
+        } catch (...) {
+            continue;
+        }
+        if (kv.size() != 2) continue;
+        nanobind::object key = kv[0];
+        nanobind::object val = kv[1];
+
+        bool is_mod = false;
+        try {
+            is_mod = nanobind::cast<bool>(isinstance_fn(val, ModuleType));
+        } catch (...) {
+            is_mod = false;
+        }
+        if (!is_mod) continue;
+
+        std::string mod_name;
+        try {
+            mod_name = nanobind::cast<std::string>(nanobind::getattr(val, "__name__"));
+        } catch (...) {
+            continue;
+        }
+
+        nanobind::object dict_obj;
+        try {
+            dict_obj = nanobind::getattr(val, "__dict__");
+        } catch (...) {
+            continue;
+        }
+
+        // 遍历 module.__dict__.values() -> 同样转为 list 快照
+        nanobind::object values_obj = nanobind::getattr(dict_obj, "values")();
+        nanobind::object values_list = list_fn(values_obj);
+        for (nanobind::handle vh : values_list) {
+            nanobind::object vv = nanobind::steal<nanobind::object>(vh.inc_ref());
+            bool is_sub_mod = false;
+            try {
+                is_sub_mod = nanobind::cast<bool>(isinstance_fn(vv, ModuleType));
+            } catch (...) {
+                is_sub_mod = false;
+            }
+            if (!is_sub_mod) continue;
+            try {
+                std::string imported = nanobind::cast<std::string>(nanobind::getattr(vv, "__name__"));
+                dependencyGraph[imported].insert(mod_name);
+            } catch (...) {
+                // ignore
             }
         }
     }
@@ -115,8 +167,8 @@ void PythonHotfix::CheckPythonFileDependence() {
     std::unordered_set<std::string> visited;
     std::queue<std::string> bfs;
     dependencyVec.clear();
-    for (const auto& kv : packageSet) {
-        const std::string& mod = kv.first;
+    for (const auto& kvp : packageSet) {
+        const std::string& mod = kvp.first;
         if (visited.find(mod) == visited.end()) {
             visited.insert(mod);
             bfs.push(mod);
@@ -136,16 +188,14 @@ void PythonHotfix::CheckPythonFileDependence() {
             }
         }
     }
-    PyErr_Clear();
 }
 
 bool PythonHotfix::ReloadPythonFile() {
-    PyGILState_STATE gstate = PyGILState_Ensure();
+    nanobind::gil_scoped_acquire gil;
 
     CheckPythonFileDependence();
     bool reload = !packageSet.empty();
 
-    // Log dependency reload order for visibility
     if (reload) {
         std::cout << "[Hotfix][Reload] dependency order (before reverse): ";
         for (size_t i = 0; i < dependencyVec.size(); ++i) {
@@ -155,69 +205,65 @@ bool PythonHotfix::ReloadPythonFile() {
         std::cout << std::endl;
     }
 
+    nanobind::module_ sys = nanobind::module_::import_("sys");
+    nanobind::object modules_obj = nanobind::getattr(sys, "modules");
+
+    nanobind::module_ importlib = nanobind::module_::import_("importlib");
+    nanobind::object reload_fn = nanobind::getattr(importlib, "reload");
+    nanobind::module_ types = nanobind::module_::import_("types");
+    nanobind::object ModuleType = nanobind::getattr(types, "ModuleType");
+    nanobind::module_ builtins = nanobind::module_::import_("builtins");
+    nanobind::object isinstance_fn = nanobind::getattr(builtins, "isinstance");
+
     for (int i = static_cast<int>(dependencyVec.size()) - 1; i >= 0; --i) {
         const std::string& name = dependencyVec[i];
         std::cout << "[Hotfix][Reload] begin reload idx=" << (dependencyVec.size() - 1 - i)
                   << "/" << dependencyVec.size() << ": " << name << std::endl;
 
-        // Use sys.modules directly to avoid allocating temporary Unicode objects
-        PyObject* sys_modules = PyImport_GetModuleDict();
-        PyObject* old_mod = sys_modules ? PyDict_GetItemString(sys_modules, name.c_str()) : nullptr;  // borrowed
-        bool owned_old = false;
-        if (!old_mod) {
-            // As a fallback, import the module to get a handle (owned)
-            old_mod = PyImport_ImportModule(name.c_str());  // new ref
-            if (!old_mod) {
-                std::cout << "[Hotfix][Reload] skip (module not found and import failed): " << name << std::endl;
-                if (PyErr_Occurred()) PyErr_Clear();
-                continue;
-            }
-            owned_old = true;
+        nanobind::object old_mod;
+        try {
+            old_mod = nanobind::getattr(modules_obj, "get")(name.c_str());
+        } catch (...) {
+            old_mod = nanobind::none();
         }
 
-        // Sanity
-        if (!PyModule_Check(old_mod)) {
-            std::cout << "[Hotfix][Reload] skip (not a module): " << name << " ptr=" << old_mod << std::endl;
-            if (owned_old) { /* leak-safe: skip DECREF */
+        if (old_mod.is_none()) {
+            try {
+                nanobind::object import_module = nanobind::getattr(importlib, "import_module");
+                old_mod = import_module(name.c_str());
+            } catch (...) {
+                std::cout << "[Hotfix][Reload] skip (module not found and import failed): " << name << std::endl;
+                continue;
             }
+        }
+
+        bool is_mod = false;
+        try {
+            is_mod = nanobind::cast<bool>(isinstance_fn(old_mod, ModuleType));
+        } catch (...) {
+            is_mod = false;
+        }
+        if (!is_mod) {
+            std::cout << "[Hotfix][Reload] skip (not a module): " << name << "\n";
             continue;
         }
 
-        // Cross-check pointer in sys.modules
-        if (sys_modules) {
-            PyObject* smod = PyDict_GetItemString(sys_modules, name.c_str());  // borrowed
-            std::cout << "[Hotfix][Reload] sys.modules['" << name << "']=" << smod
-                      << (smod == old_mod ? " (same)" : " (different)") << std::endl;
+        try {
+            nanobind::object new_mod = reload_fn(old_mod);
+            std::cout << "[Hotfix][Reload] reload ok: name=" << name << std::endl;
+            // 可选：验证 sys.modules[name] 指向新对象
+        } catch (const std::exception& e) {
+            std::cout << "[Hotfix][Reload] reload failed: " << name << " err=" << e.what() << std::endl;
+            continue;
+        } catch (...) {
+            std::cout << "[Hotfix][Reload] reload failed: " << name << " (unknown error)" << std::endl;
+            continue;
         }
-
-        PyObject* new_mod = PyImport_ReloadModule(old_mod);
-        if (!new_mod) {
-            std::cout << "[Hotfix][Reload] reload failed: " << name << std::endl;
-            if (PyErr_Occurred()) PyErr_Print();
-            // leak-safe: if we owned 'old_mod', skip DECREF on failure to avoid risky paths
-            continue;  // keep trying other modules
-        }
-
-        std::cout << "[Hotfix][Reload] reload ok: name=" << name
-                  << " new_mod=" << new_mod
-                  << (new_mod == old_mod ? " (same ptr)" : " (new ptr)") << std::endl;
-
-        // Log current sys.modules pointer for this name after reload
-        if (sys_modules) {
-            PyObject* smod2 = PyDict_GetItemString(sys_modules, name.c_str());  // borrowed
-            std::cout << "[Hotfix][Reload] post sys.modules['" << name << "']=" << smod2
-                      << (smod2 == new_mod ? " (matches new_mod)" : (smod2 == old_mod ? " (matches old_mod)" : " (different)"))
-                      << std::endl;
-        }
-
-        // leak-safe: skip DECREF(new_mod) and any owned_old DECREF to avoid potential DECREF crash paths
-        // if (owned_old) { Py_DECREF(old_mod); }
-        // Py_DECREF(new_mod);
     }
+
     packageSet.clear();
     dependencyGraph.clear();
     dependencyVec.clear();
 
-    PyGILState_Release(gstate);
     return reload;
 }

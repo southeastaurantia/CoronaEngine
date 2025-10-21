@@ -32,10 +32,37 @@ target_include_directories(CoronaScriptPython
         ${Python3_INCLUDE_DIRS}
 )
 
+# Add nanobind include directory if available
+if(DEFINED nanobind_SOURCE_DIR)
+    target_include_directories(CoronaScriptPython PUBLIC ${nanobind_SOURCE_DIR}/include)
+    message(STATUS "TEST NANOBIND-----------------------------")
+endif()
+
+# Ensure Python::Module/Interpreter targets exist for nanobind
+if (NOT TARGET Python::Module OR NOT TARGET Python::Interpreter)
+    set(Python_FIND_FRAMEWORK LAST)
+    if (CMAKE_VERSION VERSION_LESS 4.0)
+        set(_NB_DEV_MODULE Development)
+    else()
+        set(_NB_DEV_MODULE Development.Module)
+    endif()
+    find_package(Python 3.13 REQUIRED COMPONENTS Interpreter ${_NB_DEV_MODULE})
+endif()
+
+# Build/link nanobind core static library if helper is available
+if (COMMAND nanobind_build_library)
+    nanobind_build_library(nanobind-static AS_SYSINCLUDE)
+    target_link_libraries(CoronaScriptPython PUBLIC nanobind-static)
+endif()
+
+# Python lib dirs
+
 target_link_directories(CoronaScriptPython
     PUBLIC
     ${Python3_LIBRARY_DIRS}
 )
+
+# Link to engine, logger, and Python
 
 target_link_libraries(CoronaScriptPython
     PUBLIC

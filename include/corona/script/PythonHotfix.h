@@ -1,7 +1,5 @@
 #pragma once
 
-#include <Python.h>
-
 #include <filesystem>
 #include <queue>
 #include <string>

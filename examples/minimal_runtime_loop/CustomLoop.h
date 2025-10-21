@@ -17,6 +17,13 @@ class CustomLoop : public RuntimeLoop {
         Corona::Engine::instance().add_queue("MainThread", std::make_unique<Corona::SafeCommandQueue>());
         // 注册主线程 sender，用于把消息转发到 Python
         Corona::PythonBridge::set_sender([this](const std::string& msg) { this->send_message(msg); });
+        std::thread([&]() {
+            while (true) {
+                // python_api_.checkPythonScriptChange();
+                python_api_.checkReleaseScriptChange();
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            }
+        }).detach();
     }
 
     void on_tick() override {

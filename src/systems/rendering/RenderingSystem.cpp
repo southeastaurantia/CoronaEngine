@@ -343,9 +343,9 @@ void RenderingSystem::composite_pipeline(ktm::fvec3 sunDir) {
     uniformBuffer.copyFromData(&uniformBufferObjects, sizeof(uniformBufferObjects));
     computePipeline["pushConsts.uniformBufferIndex"] = uniformBuffer.storeDescriptor();
 
-    executor(HardwareExecutor::ExecutorType::Graphics)
-        << computePipeline(1920 / 8, 1080 / 8, 1)
-        << executor.commit();
+    // executor(HardwareExecutor::ExecutorType::Graphics)
+    //     << computePipeline(1920 / 8, 1080 / 8, 1)
+    //     << executor.commit();
 }
 
 void RenderingSystem::watch_model(uint64_t id) {
