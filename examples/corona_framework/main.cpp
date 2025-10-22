@@ -1,22 +1,25 @@
-#include "corona/framework/messaging/event_stream.h"
-#include "corona/framework/messaging/messaging_hub.h"
-#include "corona/framework/plugin/plugin_manifest.h"
-#include "corona/framework/runtime/runtime_coordinator.h"
-#include "corona/framework/runtime/system.h"
-#include "corona/framework/service/service_collection.h"
-#include "corona/framework/service/service_provider.h"
-
 #include <atomic>
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <system_error>
 #include <thread>
 
+#include "corona/framework/messaging/event_stream.h"
+#include "corona/framework/messaging/messaging_hub.h"
+#include "corona/framework/runtime/runtime_coordinator.h"
+#include "corona/framework/runtime/system.h"
+#include "corona/framework/service/service_collection.h"
+#include "corona/framework/service/service_provider.h"
+#include "corona/framework/services/logging/console_logger.h"
+#include "corona/framework/services/logging/logger.h"
+
 namespace cfw = corona::framework;
+namespace logging = corona::framework::services::logging;
 
 struct metrics_state {
     std::atomic<int> published{0};
@@ -31,10 +34,13 @@ class beta_system final : public cfw::runtime::system {
     void configure(const cfw::runtime::system_context& context) override {
         metrics_ = context.services.get_service<metrics_state>();
         stream_ = context.messaging.acquire_event_stream<int>("demo.counter");
+        logger_ = context.services.get_service<logging::logger>();
     }
 
     void start() override {
-        std::cout << "[beta.system] ready on thread " << std::this_thread::get_id() << std::endl;
+        if (logger_) {
+            logger_->info("[beta.system] ready");
+        }
     }
 
     void execute(cfw::runtime::worker_control& control) override {
@@ -45,10 +51,17 @@ class beta_system final : public cfw::runtime::system {
 
         auto current = ++metrics_->published;
         stream_->publish(static_cast<int>(current));
-        std::cout << "[beta.system] published " << current << " on thread " << std::this_thread::get_id() << std::endl;
+        if (logger_) {
+            std::ostringstream oss;
+            oss << "[beta.system] published " << current;
+            auto message = oss.str();
+            logger_->info(message);
+        }
 
         if (current >= target_count_) {
-            std::cout << "[beta.system] reached target" << std::endl;
+            if (logger_) {
+                logger_->info("[beta.system] reached target");
+            }
             control.request_stop();
         }
 
@@ -56,7 +69,9 @@ class beta_system final : public cfw::runtime::system {
     }
 
     void stop() override {
-        std::cout << "[beta.system] stopped" << std::endl;
+        if (logger_) {
+            logger_->info("[beta.system] stopped");
+        }
     }
 
    private:
@@ -64,6 +79,7 @@ class beta_system final : public cfw::runtime::system {
 
     std::shared_ptr<metrics_state> metrics_;
     std::shared_ptr<cfw::messaging::event_stream<int>> stream_;
+    std::shared_ptr<logging::logger> logger_;
 };
 
 class alpha_system final : public cfw::runtime::system {
@@ -75,13 +91,15 @@ class alpha_system final : public cfw::runtime::system {
     void configure(const cfw::runtime::system_context& context) override {
         metrics_ = context.services.get_service<metrics_state>();
         stream_ = context.messaging.acquire_event_stream<int>("demo.counter");
+        logger_ = context.services.get_service<logging::logger>();
     }
 
     void start() override {
         if (stream_) {
             subscription_ = stream_->subscribe();
-            std::cout << "[alpha.system] subscribed to demo.counter on thread " << std::this_thread::get_id()
-                      << std::endl;
+            if (logger_) {
+                logger_->info("[alpha.system] subscribed to demo.counter");
+            }
         }
     }
 
@@ -96,9 +114,16 @@ class alpha_system final : public cfw::runtime::system {
             return;
         }
 
-    std::cout << "[alpha.system] observed " << value << " on thread " << std::this_thread::get_id() << std::endl;
+        if (logger_) {
+            std::ostringstream oss;
+            oss << "[alpha.system] observed " << value;
+            auto message = oss.str();
+            logger_->info(message);
+        }
         if (value >= stop_threshold_) {
-            std::cout << "[alpha.system] threshold met; shutting down" << std::endl;
+            if (logger_) {
+                logger_->info("[alpha.system] threshold met; shutting down");
+            }
             control.request_stop();
         }
     }
@@ -106,9 +131,16 @@ class alpha_system final : public cfw::runtime::system {
     void stop() override {
         subscription_.close();
         if (auto metrics = metrics_) {
-            std::cout << "[alpha.system] total messages observed: " << metrics->published.load() << std::endl;
+            if (logger_) {
+                std::ostringstream oss;
+                oss << "[alpha.system] total messages observed: " << metrics->published.load();
+                auto message = oss.str();
+                logger_->info(message);
+            }
         }
-        std::cout << "[alpha.system] stopped" << std::endl;
+        if (logger_) {
+            logger_->info("[alpha.system] stopped");
+        }
     }
 
    private:
@@ -117,6 +149,7 @@ class alpha_system final : public cfw::runtime::system {
     std::shared_ptr<metrics_state> metrics_;
     std::shared_ptr<cfw::messaging::event_stream<int>> stream_;
     cfw::messaging::event_subscription<int> subscription_;
+    std::shared_ptr<logging::logger> logger_;
 };
 
 int main(int argc, char** argv) {
@@ -152,6 +185,7 @@ int main(int argc, char** argv) {
         cfw::runtime::runtime_coordinator coordinator;
 
         cfw::service::service_collection services;
+        auto example_logger = logging::register_console_logger(services, logging::log_level::info);
         services.add_singleton<metrics_state>(metrics);
         coordinator.configure_services(std::move(services));
 
@@ -168,7 +202,12 @@ int main(int argc, char** argv) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
         coordinator.stop();
 
-        std::cout << "Example completed; total events published: " << metrics->published.load() << std::endl;
+        if (example_logger) {
+            std::ostringstream oss;
+            oss << "[example] completed; total events published: " << metrics->published.load();
+            auto message = oss.str();
+            example_logger->info(message);
+        }
         return EXIT_SUCCESS;
     } catch (const std::exception& ex) {
         std::cerr << "corona_framework_example failed: " << ex.what() << std::endl;

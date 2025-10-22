@@ -59,7 +59,7 @@ try {
         throw "Unable to determine git repository root."
     }
 
-    $defaultRoots = @('engine', 'examples', 'include', 'src')
+    $defaultRoots = @('engine', 'examples', 'include', 'src', 'tests')
     $stringComparison = [System.StringComparison]::OrdinalIgnoreCase
     $allowedRoots = @()
     foreach ($root in $defaultRoots) {

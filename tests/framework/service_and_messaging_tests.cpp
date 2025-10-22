@@ -1,13 +1,3 @@
-#include "corona/framework/messaging/command_channel.h"
-#include "corona/framework/messaging/data_projection.h"
-#include "corona/framework/messaging/event_stream.h"
-#include "corona/framework/messaging/messaging_hub.h"
-#include "corona/framework/plugin/plugin_manifest.h"
-#include "corona/framework/runtime/runtime_coordinator.h"
-#include "corona/framework/runtime/system.h"
-#include "corona/framework/service/service_collection.h"
-#include "corona/framework/service/service_provider.h"
-
 #include <atomic>
 #include <cassert>
 #include <chrono>
@@ -22,7 +12,20 @@
 #include <utility>
 #include <vector>
 
+#include "corona/framework/messaging/command_channel.h"
+#include "corona/framework/messaging/data_projection.h"
+#include "corona/framework/messaging/event_stream.h"
+#include "corona/framework/messaging/messaging_hub.h"
+#include "corona/framework/plugin/plugin_manifest.h"
+#include "corona/framework/runtime/runtime_coordinator.h"
+#include "corona/framework/runtime/system.h"
+#include "corona/framework/service/service_collection.h"
+#include "corona/framework/service/service_provider.h"
+#include "corona/framework/services/logging/console_logger.h"
+
 namespace {
+
+namespace logging = corona::framework::services::logging;
 
 struct base_service {
     virtual ~base_service() = default;
@@ -77,6 +80,23 @@ void service_container_tests() {
     auto transient_b = provider.get_service<std::string>();
     assert(transient_a != transient_b);
     assert(*transient_a == "transient");
+}
+
+void logging_service_tests() {
+    corona::framework::service::service_collection collection;
+    auto registered = logging::register_console_logger(collection, logging::log_level::trace);
+    assert(registered);
+
+    auto provider = collection.build_service_provider();
+    auto logger = provider.get_service<logging::logger>();
+    assert(logger);
+
+    assert(logger == registered);
+
+    logger->info("logging smoke");
+
+    auto logger_again = provider.get_service<logging::logger>();
+    assert(logger == logger_again);
 }
 
 void event_stream_tests() {
@@ -371,6 +391,7 @@ void runtime_dependency_tests() {
 
 int main() {
     service_container_tests();
+    logging_service_tests();
     event_stream_tests();
     command_channel_tests();
     data_projection_tests();

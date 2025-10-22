@@ -3,6 +3,7 @@ add_library(CoronaFramework STATIC
     runtime/runtime_coordinator.cpp
     runtime/system_descriptor.cpp
     runtime/thread_orchestrator.cpp
+    services/logging/console_logger.cpp
     service/service_collection.cpp
     service/service_descriptor.cpp
     service/service_provider.cpp

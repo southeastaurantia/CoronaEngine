@@ -31,14 +31,14 @@ Execute the sample from the build tree (path may vary per preset):
 Expected output (trimmed):
 
 ```
-[beta.system] ready on thread 11660
-[alpha.system] subscribed to demo.counter on thread 16972
-[beta.system] published 1 on thread 11660
-[alpha.system] observed 1 on thread 16972
+2025-08-05T08:07:06.123 [INFO] [tid=11660] [beta.system] ready
+2025-08-05T08:07:06.124 [INFO] [tid=16972] [alpha.system] subscribed to demo.counter
+2025-08-05T08:07:06.174 [INFO] [tid=11660] [beta.system] published 1
+2025-08-05T08:07:06.174 [INFO] [tid=16972] [alpha.system] observed 1
 ...
-[alpha.system] threshold met; shutting down
-[beta.system] reached target
-Example completed; total events published: 5
+2025-08-05T08:07:07.022 [INFO] [tid=16972] [alpha.system] threshold met; shutting down
+2025-08-05T08:07:07.023 [INFO] [tid=11660] [beta.system] reached target
+2025-08-05T08:07:07.124 [INFO] [tid=11660] [example] completed; total events published: 5
 ```
 
-The log demonstrates how `beta.system` publishes events through the hub while `alpha.system` listens on its own worker thread, enforcing dependency order from the manifest and highlighting the runtime's multi-threaded execution.
+The log demonstrates how `beta.system` publishes events through the hub while `alpha.system` listens on its own worker thread. Each log line includes the worker thread identifier, highlighting the runtime's multi-threaded execution and the shared logging service.

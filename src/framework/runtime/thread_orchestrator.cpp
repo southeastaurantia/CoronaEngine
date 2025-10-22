@@ -39,7 +39,7 @@ void worker_control::request_stop() {
 }
 
 thread_orchestrator::worker_handle::worker_handle(thread_orchestrator* owner,
-                                                   std::shared_ptr<detail::worker_record> record)
+                                                  std::shared_ptr<detail::worker_record> record)
     : owner_(owner), record_(std::move(record)) {}
 
 thread_orchestrator::worker_handle::worker_handle(worker_handle&& other) noexcept

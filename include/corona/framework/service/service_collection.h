@@ -1,14 +1,14 @@
 #pragma once
 
-#include "service_descriptor.h"
-#include "service_lifetime.h"
-#include "service_provider.h"
-
 #include <functional>
 #include <memory>
 #include <typeindex>
 #include <utility>
 #include <vector>
+
+#include "service_descriptor.h"
+#include "service_lifetime.h"
+#include "service_provider.h"
 
 namespace corona::framework::service {
 

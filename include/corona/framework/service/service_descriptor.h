@@ -1,10 +1,10 @@
 #pragma once
 
-#include "service_lifetime.h"
-
 #include <functional>
 #include <memory>
 #include <typeindex>
+
+#include "service_lifetime.h"
 
 namespace corona::framework::service {
 

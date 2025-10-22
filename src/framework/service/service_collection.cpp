@@ -1,12 +1,12 @@
 #include "corona/framework/service/service_collection.h"
 
-#include "corona/framework/service/service_descriptor.h"
-#include "corona/framework/service/service_provider.h"
-
 #include <memory>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+#include "corona/framework/service/service_descriptor.h"
+#include "corona/framework/service/service_provider.h"
 
 namespace corona::framework::service {
 

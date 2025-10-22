@@ -1,15 +1,15 @@
 #pragma once
 
-#include "corona/framework/messaging/command_channel.h"
-#include "corona/framework/messaging/data_projection.h"
-#include "corona/framework/messaging/event_stream.h"
-
 #include <memory>
 #include <mutex>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <unordered_map>
+
+#include "corona/framework/messaging/command_channel.h"
+#include "corona/framework/messaging/data_projection.h"
+#include "corona/framework/messaging/event_stream.h"
 
 namespace corona::framework::messaging {
 

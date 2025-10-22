@@ -1,12 +1,12 @@
 #pragma once
 
-#include "service_descriptor.h"
-
 #include <memory>
 #include <mutex>
 #include <typeindex>
 #include <unordered_map>
 #include <vector>
+
+#include "service_descriptor.h"
 
 namespace corona::framework::service {
 

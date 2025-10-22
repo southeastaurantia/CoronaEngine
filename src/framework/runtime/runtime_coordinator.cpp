@@ -151,7 +151,9 @@ void runtime_coordinator::hydrate_manifests() {
 }
 
 void runtime_coordinator::resolve_dependency_order() {
-    enum class visit_state { none, visiting, done };
+    enum class visit_state { none,
+                             visiting,
+                             done };
     std::unordered_map<std::string, visit_state> states;
     std::vector<std::string> order;
     order.reserve(descriptors_.size());

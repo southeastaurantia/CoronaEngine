@@ -1,8 +1,9 @@
 #include "corona/framework/service/service_descriptor.h"
-#include "corona/framework/service/service_provider.h"
 
 #include <stdexcept>
 #include <utility>
+
+#include "corona/framework/service/service_provider.h"
 
 namespace corona::framework::service {
 
