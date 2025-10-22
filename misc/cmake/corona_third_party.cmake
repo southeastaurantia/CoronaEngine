@@ -90,6 +90,13 @@ FetchContent_Declare(glfw
     EXCLUDE_FROM_ALL
 )
 
+FetchContent_Declare(fast_io
+    GIT_REPOSITORY https://github.com/cppfastio/fast_io.git
+    GIT_TAG master
+    GIT_SHALLOW TRUE
+    EXCLUDE_FROM_ALL
+)
+
 # ------------------------------------------------------------------------------
 # Fetch and enable dependencies
 # ------------------------------------------------------------------------------
@@ -116,6 +123,9 @@ message(STATUS "[3rdparty] CabbageConcurrent module enabled")
 
 FetchContent_MakeAvailable(CoronaResource)
 message(STATUS "[3rdparty] CoronaResource module enabled")
+
+FetchContent_MakeAvailable(fast_io)
+message(STATUS "[3rdparty] fast_io module enabled")
 
 if(CORONA_BUILD_VISION)
     FetchContent_MakeAvailable(Vision)

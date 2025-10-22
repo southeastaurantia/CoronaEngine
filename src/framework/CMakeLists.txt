@@ -16,4 +16,8 @@ add_library(corona::framework ALIAS CoronaFramework)
 
 target_compile_features(CoronaFramework PUBLIC cxx_std_20)
 
+target_include_directories(CoronaFramework PRIVATE
+    ${fast_io_SOURCE_DIR}/include
+)
+
 corona_target_use_public_includes(CoronaFramework SCOPE PRIVATE)
