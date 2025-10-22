@@ -12,6 +12,7 @@ include_guard(GLOBAL)
 # ------------------------------------------------------------------------------
 # Module Subdirectories
 # ------------------------------------------------------------------------------
+add_subdirectory(framework)   # Framework services/runtime/messaging
 add_subdirectory(interfaces)     # Public interfaces and headers exposed externally
 add_subdirectory(utils)          # Shared utilities
 add_subdirectory(thread)         # Threading primitives and concurrency helpers

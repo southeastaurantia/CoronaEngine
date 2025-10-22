@@ -303,10 +303,10 @@ void plugin_manifest_failure_tests() {
 
 void plugin_manifest_file_example() {
     namespace fs = std::filesystem;
-    auto sample_path = fs::path(__FILE__).parent_path() / ".." / "examples" / "sample_manifest.json";
+    auto sample_path = fs::path(__FILE__).parent_path().parent_path() / "examples" / "corona_framework" / "sample_manifest.json";
     sample_path = fs::weakly_canonical(sample_path);
     auto manifest = corona::framework::plugin::load_manifest(sample_path);
-    assert(manifest.name == "arch_sample");
+    assert(manifest.name == "corona_framework_demo");
     assert(manifest.systems.size() == 2);
     assert(manifest.systems[1].dependencies.size() == 1);
 }

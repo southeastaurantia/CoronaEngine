@@ -43,8 +43,11 @@ include(CTest)
 # ------------------------------------------------------------------------------
 # Subdirectories
 # ------------------------------------------------------------------------------
-add_subdirectory(arch_impl)         # Experimental architecture framework library
 add_subdirectory(src)               # Core engine static library
+
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
 
 if(BUILD_CORONA_RUNTIME)
     add_subdirectory(engine)        # Engine runtime executable
