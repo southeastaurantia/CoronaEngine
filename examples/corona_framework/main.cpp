@@ -15,8 +15,8 @@
 #include "corona/framework/runtime/system.h"
 #include "corona/framework/service/service_collection.h"
 #include "corona/framework/service/service_provider.h"
-#include "corona/framework/services/logging/console_logger.h"
 #include "corona/framework/services/logging/logger.h"
+#include "corona/framework/services/logging/logging_setup.h"
 
 namespace cfw = corona::framework;
 namespace logging = corona::framework::services::logging;
@@ -185,7 +185,13 @@ int main(int argc, char** argv) {
         cfw::runtime::runtime_coordinator coordinator;
 
         cfw::service::service_collection services;
-        auto example_logger = logging::register_console_logger(services, logging::log_level::info);
+        logging::logging_config logging_cfg;
+        logging_cfg.enable_console = true;
+        logging_cfg.console_level = logging::log_level::info;
+        logging_cfg.enable_file = true;
+        logging_cfg.file_path = fs::current_path() / "corona_framework_example.log";
+        logging_cfg.file_level = logging::log_level::info;
+        auto example_logger = logging::register_logging_services(services, logging_cfg);
         services.add_singleton<metrics_state>(metrics);
         coordinator.configure_services(std::move(services));
 

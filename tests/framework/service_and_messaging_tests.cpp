@@ -2,12 +2,14 @@
 #include <cassert>
 #include <chrono>
 #include <filesystem>
+#include <fstream>
 #include <future>
 #include <iostream>
 #include <memory>
 #include <mutex>
 #include <stdexcept>
 #include <string>
+#include <system_error>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -21,7 +23,7 @@
 #include "corona/framework/runtime/system.h"
 #include "corona/framework/service/service_collection.h"
 #include "corona/framework/service/service_provider.h"
-#include "corona/framework/services/logging/console_logger.h"
+#include "corona/framework/services/logging/logging_setup.h"
 
 namespace {
 
@@ -84,7 +86,19 @@ void service_container_tests() {
 
 void logging_service_tests() {
     corona::framework::service::service_collection collection;
-    auto registered = logging::register_console_logger(collection, logging::log_level::trace);
+    auto temp_log = std::filesystem::temp_directory_path() / "corona_framework_logging_test.log";
+    std::error_code remove_ec;
+    std::filesystem::remove(temp_log, remove_ec);
+
+    logging::logging_config config;
+    config.enable_console = true;
+    config.console_level = logging::log_level::trace;
+    config.enable_file = true;
+    config.file_path = temp_log;
+    config.file_level = logging::log_level::trace;
+    config.file_append = false;
+
+    auto registered = logging::register_logging_services(collection, config);
     assert(registered);
 
     auto provider = collection.build_service_provider();
@@ -94,6 +108,22 @@ void logging_service_tests() {
     assert(logger == registered);
 
     logger->info("logging smoke");
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+    assert(std::filesystem::exists(temp_log));
+    std::ifstream in(temp_log);
+    bool found = false;
+    std::string line;
+    while (std::getline(in, line)) {
+        if (line.find("logging smoke") != std::string::npos) {
+            found = true;
+            break;
+        }
+    }
+    assert(found);
+
+    std::filesystem::remove(temp_log, remove_ec);
 
     auto logger_again = provider.get_service<logging::logger>();
     assert(logger == logger_again);

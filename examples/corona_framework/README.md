@@ -28,6 +28,8 @@ Execute the sample from the build tree (path may vary per preset):
 ./build/msvc-debug/examples/corona_framework/corona_framework_example.exe
 ```
 
+The example initialises the logging service with both console and file sinks. Log lines will appear in the terminal and in `corona_framework_example.log` under the current working directory. Adjust this behaviour by editing the `logging::logging_config` passed to `register_logging_services` in `main.cpp`.
+
 Expected output (trimmed):
 
 ```
