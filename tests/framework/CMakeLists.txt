@@ -1,5 +1,20 @@
 add_executable(CoronaFrameworkTest
     service_and_messaging_tests.cpp
+    service_container_tests.cpp
+    logging_service_tests.cpp
+    logging_performance_tests.cpp
+    logging_multithread_performance_tests.cpp
+    time_service_tests.cpp
+    event_stream_tests.cpp
+    command_channel_tests.cpp
+    data_projection_tests.cpp
+    messaging_hub_tests.cpp
+    thread_orchestrator_tests.cpp
+    plugin_manifest_tests.cpp
+    plugin_manifest_failure_tests.cpp
+    plugin_manifest_file_example.cpp
+    runtime_coordinator_tests.cpp
+    runtime_dependency_tests.cpp
 )
 
 target_compile_features(CoronaFrameworkTest PRIVATE cxx_std_20)
