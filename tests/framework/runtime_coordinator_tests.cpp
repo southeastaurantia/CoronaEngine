@@ -1,6 +1,3 @@
-#include "test_registry.h"
-#include "test_support.h"
-
 #include <atomic>
 #include <cassert>
 #include <chrono>
@@ -12,18 +9,22 @@
 #include "corona/framework/runtime/runtime_coordinator.h"
 #include "corona/framework/runtime/system.h"
 #include "corona/framework/service/service_collection.h"
+#include "corona/framework/services/time/time_service.h"
+#include "test_registry.h"
+#include "test_support.h"
 
 namespace {
 
 struct sample_system final : corona::framework::runtime::system {
     static std::atomic<int> tick_count;
+    static const corona::framework::services::time::time_service* observed_time;
 
     std::string_view id() const noexcept override {
         return "sample.system";
     }
 
     void configure(const corona::framework::runtime::system_context& context) override {
-        (void)context;
+        observed_time = &context.time;
     }
 
     void start() override {}
@@ -40,6 +41,7 @@ struct sample_system final : corona::framework::runtime::system {
 };
 
 std::atomic<int> sample_system::tick_count{0};
+const corona::framework::services::time::time_service* sample_system::observed_time = nullptr;
 
 }  // namespace
 
@@ -61,10 +63,15 @@ void runtime_coordinator_tests() {
     coordinator.register_manifest(std::move(manifest));
 
     sample_system::tick_count.store(0);
+    sample_system::observed_time = nullptr;
     coordinator.initialize();
     coordinator.start();
     std::this_thread::sleep_for(std::chrono::milliseconds(15));
     coordinator.stop();
 
     assert(sample_system::tick_count.load() >= 1);
+    auto coordinator_time = coordinator.time_service();
+    assert(coordinator_time);
+    assert(coordinator_time.get() == sample_system::observed_time);
+    assert(coordinator_time == coordinator.orchestrator().time_service());
 }

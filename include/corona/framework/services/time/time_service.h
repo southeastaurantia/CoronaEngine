@@ -36,5 +36,6 @@ class time_service {
 using time_service_ptr = std::shared_ptr<time_service>;
 
 [[nodiscard]] time_service_ptr register_time_service(service::service_collection& collection);
+[[nodiscard]] time_service_ptr make_time_service();
 
 }  // namespace corona::framework::services::time

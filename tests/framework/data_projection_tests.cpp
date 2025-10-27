@@ -1,10 +1,9 @@
-#include "test_registry.h"
-#include "test_support.h"
-
 #include <cassert>
 #include <vector>
 
 #include "corona/framework/messaging/data_projection.h"
+#include "test_registry.h"
+#include "test_support.h"
 
 void data_projection_tests() {
     const test_scope test_marker("data_projection_tests");

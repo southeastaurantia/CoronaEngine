@@ -1,6 +1,3 @@
-#include "test_registry.h"
-#include "test_support.h"
-
 #include <cassert>
 #include <memory>
 #include <string>
@@ -8,6 +5,8 @@
 
 #include "corona/framework/service/service_collection.h"
 #include "corona/framework/service/service_provider.h"
+#include "test_registry.h"
+#include "test_support.h"
 
 namespace {
 

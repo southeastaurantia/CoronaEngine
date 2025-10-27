@@ -14,6 +14,10 @@
 #include "corona/framework/service/service_collection.h"
 #include "corona/framework/service/service_provider.h"
 
+namespace corona::framework::services::time {
+class time_service;
+}
+
 namespace corona::framework::runtime {
 
 class runtime_coordinator {
@@ -37,6 +41,7 @@ class runtime_coordinator {
 
     [[nodiscard]] messaging::messaging_hub& messaging() noexcept { return messaging_hub_; }
     [[nodiscard]] thread_orchestrator& orchestrator() noexcept { return orchestrator_; }
+    [[nodiscard]] std::shared_ptr<corona::framework::services::time::time_service> time_service() const noexcept;
 
    private:
     void ensure_not_running() const;
@@ -52,6 +57,7 @@ class runtime_coordinator {
     std::optional<service::service_provider> root_provider_;
     messaging::messaging_hub messaging_hub_;
     thread_orchestrator orchestrator_;
+    std::shared_ptr<corona::framework::services::time::time_service> time_service_;
 
     std::unordered_map<std::string, std::shared_ptr<system_factory>> factories_;
     std::unordered_map<std::string, system_descriptor> descriptors_;

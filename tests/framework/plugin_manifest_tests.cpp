@@ -1,10 +1,9 @@
-#include "test_registry.h"
-#include "test_support.h"
-
 #include <cassert>
 #include <string>
 
 #include "corona/framework/plugin/plugin_manifest.h"
+#include "test_registry.h"
+#include "test_support.h"
 
 void plugin_manifest_tests() {
     const test_scope test_marker("plugin_manifest_tests");

@@ -2,6 +2,8 @@
 
 #include <mutex>
 
+#include "corona/framework/service/service_provider.h"
+
 namespace corona::framework::services::time {
 
 namespace {
@@ -94,8 +96,18 @@ class steady_time_service final : public time_service {
 
 }  // namespace
 
+time_service_ptr make_time_service() {
+    return std::make_shared<steady_time_service>();
+}
+
 time_service_ptr register_time_service(service::service_collection& collection) {
-    auto instance = std::make_shared<steady_time_service>();
+    if (collection.contains<time_service>()) {
+        auto provider = collection.build_service_provider();
+        if (auto resolved = provider.get_service<time_service>()) {
+            return resolved;
+        }
+    }
+    auto instance = make_time_service();
     collection.add_singleton<time_service>(instance);
     return instance;
 }

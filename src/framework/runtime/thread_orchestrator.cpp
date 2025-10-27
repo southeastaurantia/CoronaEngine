@@ -3,10 +3,13 @@
 #include <algorithm>
 #include <stdexcept>
 
+#include "corona/framework/services/time/time_service.h"
+
 namespace corona::framework::runtime {
 
-worker_control::worker_control(std::shared_ptr<detail::worker_record> record)
-    : record_(std::move(record)) {}
+worker_control::worker_control(std::shared_ptr<detail::worker_record> record,
+                               std::shared_ptr<corona::framework::services::time::time_service> time_source)
+    : record_(std::move(record)), time_source_(std::move(time_source)) {}
 
 bool worker_control::should_stop() const noexcept {
     if (auto record = record_.lock()) {
@@ -36,6 +39,10 @@ void worker_control::request_stop() {
         record->stop_requested.store(true, std::memory_order_release);
         record->sleep_condition.notify_all();
     }
+}
+
+std::shared_ptr<corona::framework::services::time::time_service> worker_control::time_source() const noexcept {
+    return time_source_.lock();
 }
 
 thread_orchestrator::worker_handle::worker_handle(thread_orchestrator* owner,
@@ -94,6 +101,9 @@ void thread_orchestrator::worker_handle::reset() {
 
 thread_orchestrator::thread_orchestrator() = default;
 
+thread_orchestrator::thread_orchestrator(std::shared_ptr<corona::framework::services::time::time_service> time_service)
+    : time_service_(std::move(time_service)) {}
+
 thread_orchestrator::~thread_orchestrator() {
     stop_all();
 }
@@ -113,6 +123,7 @@ thread_orchestrator::worker_handle thread_orchestrator::add_worker(
     record->name = std::move(name);
     record->tick_interval = options.tick_interval;
     record->task = std::move(task);
+    record->time_source = time_service_;
 
     {
         std::lock_guard<std::mutex> lock(workers_mutex_);
@@ -145,7 +156,7 @@ void thread_orchestrator::stop_all() {
 }
 
 void thread_orchestrator::worker_loop(const std::shared_ptr<detail::worker_record>& record) {
-    worker_control control(record);
+    worker_control control(record, record->time_source);
     auto next_tick = std::chrono::steady_clock::now();
     while (!control.should_stop()) {
         try {
@@ -168,6 +179,19 @@ void thread_orchestrator::release_worker(const std::shared_ptr<detail::worker_re
     if (it != workers_.end()) {
         workers_.erase(it);
     }
+}
+
+void thread_orchestrator::set_time_service(std::shared_ptr<corona::framework::services::time::time_service> time_service) noexcept {
+    std::lock_guard<std::mutex> lock(workers_mutex_);
+    time_service_ = std::move(time_service);
+    for (auto& record : workers_) {
+        record->time_source = time_service_;
+    }
+}
+
+std::shared_ptr<corona::framework::services::time::time_service> thread_orchestrator::time_service() const noexcept {
+    std::lock_guard<std::mutex> lock(workers_mutex_);
+    return time_service_;
 }
 
 }  // namespace corona::framework::runtime

@@ -1,6 +1,3 @@
-#include "test_registry.h"
-#include "test_support.h"
-
 #include <array>
 #include <cassert>
 #include <charconv>
@@ -15,6 +12,8 @@
 #include "corona/framework/service/service_collection.h"
 #include "corona/framework/service/service_provider.h"
 #include "corona/framework/services/logging/logging_setup.h"
+#include "test_registry.h"
+#include "test_support.h"
 
 namespace logging = corona::framework::services::logging;
 

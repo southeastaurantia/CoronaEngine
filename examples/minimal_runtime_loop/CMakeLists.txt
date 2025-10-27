@@ -20,4 +20,4 @@ target_include_directories(minimal_runtime_loop PRIVATE
 # Pull in the RuntimeLoop implementation and required dependencies
 target_sources(minimal_runtime_loop PRIVATE ${PROJECT_SOURCE_DIR}/engine/RuntimeLoop.cpp)
 
-target_link_libraries(minimal_runtime_loop PRIVATE EnTT::EnTT)
+target_link_libraries(minimal_runtime_loop PRIVATE EnTT::EnTT CoronaFramework)

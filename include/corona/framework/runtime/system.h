@@ -14,6 +14,10 @@ namespace corona::framework::messaging {
 class messaging_hub;
 }
 
+namespace corona::framework::services::time {
+class time_service;
+}
+
 namespace corona::framework::runtime {
 
 class thread_orchestrator;
@@ -23,6 +27,7 @@ struct system_context {
     service::service_provider& services;
     messaging::messaging_hub& messaging;
     thread_orchestrator& orchestrator;
+    corona::framework::services::time::time_service& time;
 };
 
 class system {

@@ -1,10 +1,9 @@
-#include "test_registry.h"
-#include "test_support.h"
-
 #include <cassert>
 #include <string>
 
 #include "corona/framework/messaging/messaging_hub.h"
+#include "test_registry.h"
+#include "test_support.h"
 
 void messaging_hub_tests() {
     const test_scope test_marker("messaging_hub_tests");

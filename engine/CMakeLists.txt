@@ -29,6 +29,7 @@ target_link_libraries(
     ${CORONA_ENGINE_RUNTIME_TARGET}
     PRIVATE
         CoronaEngine
+    CoronaFramework
         EnTT::EnTT
 )
 

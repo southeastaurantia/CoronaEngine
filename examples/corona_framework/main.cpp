@@ -17,6 +17,7 @@
 #include "corona/framework/service/service_provider.h"
 #include "corona/framework/services/logging/logger.h"
 #include "corona/framework/services/logging/logging_setup.h"
+#include "corona/framework/services/time/time_service.h"
 
 namespace cfw = corona::framework;
 namespace logging = corona::framework::services::logging;
@@ -35,6 +36,7 @@ class beta_system final : public cfw::runtime::system {
         metrics_ = context.services.get_service<metrics_state>();
         stream_ = context.messaging.acquire_event_stream<int>("demo.counter");
         logger_ = context.services.get_service<logging::logger>();
+        time_ = &context.time;
     }
 
     void start() override {
@@ -54,6 +56,9 @@ class beta_system final : public cfw::runtime::system {
         if (logger_) {
             std::ostringstream oss;
             oss << "[beta.system] published " << current;
+            if (time_) {
+                oss << " (frame " << time_->frame_index() << ')';
+            }
             auto message = oss.str();
             logger_->info(message);
         }
@@ -80,6 +85,7 @@ class beta_system final : public cfw::runtime::system {
     std::shared_ptr<metrics_state> metrics_;
     std::shared_ptr<cfw::messaging::event_stream<int>> stream_;
     std::shared_ptr<logging::logger> logger_;
+    const cfw::services::time::time_service* time_ = nullptr;
 };
 
 class alpha_system final : public cfw::runtime::system {
@@ -92,6 +98,7 @@ class alpha_system final : public cfw::runtime::system {
         metrics_ = context.services.get_service<metrics_state>();
         stream_ = context.messaging.acquire_event_stream<int>("demo.counter");
         logger_ = context.services.get_service<logging::logger>();
+        time_ = &context.time;
     }
 
     void start() override {
@@ -117,6 +124,9 @@ class alpha_system final : public cfw::runtime::system {
         if (logger_) {
             std::ostringstream oss;
             oss << "[alpha.system] observed " << value;
+            if (time_) {
+                oss << " (frame " << time_->frame_index() << ')';
+            }
             auto message = oss.str();
             logger_->info(message);
         }
@@ -150,6 +160,7 @@ class alpha_system final : public cfw::runtime::system {
     std::shared_ptr<cfw::messaging::event_stream<int>> stream_;
     cfw::messaging::event_subscription<int> subscription_;
     std::shared_ptr<logging::logger> logger_;
+    const cfw::services::time::time_service* time_ = nullptr;
 };
 
 int main(int argc, char** argv) {

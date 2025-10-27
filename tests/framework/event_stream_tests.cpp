@@ -1,10 +1,9 @@
-#include "test_registry.h"
-#include "test_support.h"
-
 #include <cassert>
 #include <chrono>
 
 #include "corona/framework/messaging/event_stream.h"
+#include "test_registry.h"
+#include "test_support.h"
 
 void event_stream_tests() {
     const test_scope test_marker("event_stream_tests");

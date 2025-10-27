@@ -1,10 +1,9 @@
-#include "test_registry.h"
-#include "test_support.h"
-
 #include <cassert>
 #include <future>
 
 #include "corona/framework/messaging/command_channel.h"
+#include "test_registry.h"
+#include "test_support.h"
 
 void command_channel_tests() {
     const test_scope test_marker("command_channel_tests");

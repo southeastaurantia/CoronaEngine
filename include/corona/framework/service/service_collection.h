@@ -45,6 +45,10 @@ class service_collection {
 
     [[nodiscard]] service_provider build_service_provider() const;
 
+    template <typename TService>
+    [[nodiscard]] bool contains() const;
+    [[nodiscard]] bool contains(std::type_index type) const;
+
    private:
     void register_descriptor(std::type_index type,
                              service_lifetime lifetime,
@@ -120,6 +124,20 @@ void service_collection::add_transient(std::function<std::shared_ptr<TService>(s
                             auto created = factory(provider);
                             return std::shared_ptr<void>(std::move(created));
                         });
+}
+
+template <typename TService>
+bool service_collection::contains() const {
+    return contains(std::type_index(typeid(TService)));
+}
+
+inline bool service_collection::contains(std::type_index type) const {
+    for (auto const& descriptor : descriptors_) {
+        if (descriptor.service_type() == type) {
+            return true;
+        }
+    }
+    return false;
 }
 
 }  // namespace corona::framework::service

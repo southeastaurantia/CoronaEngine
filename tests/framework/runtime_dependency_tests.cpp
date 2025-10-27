@@ -1,6 +1,3 @@
-#include "test_registry.h"
-#include "test_support.h"
-
 #include <cassert>
 #include <chrono>
 #include <memory>
@@ -13,6 +10,8 @@
 #include "corona/framework/plugin/plugin_manifest.h"
 #include "corona/framework/runtime/runtime_coordinator.h"
 #include "corona/framework/runtime/system.h"
+#include "test_registry.h"
+#include "test_support.h"
 
 namespace {
 
@@ -45,7 +44,7 @@ struct beta_system final : corona::framework::runtime::system {
     }
 
     void configure(const corona::framework::runtime::system_context& context) override {
-        (void)context;
+        (void)context.time;
     }
 
     void start() override {
@@ -65,7 +64,7 @@ struct alpha_system final : corona::framework::runtime::system {
     }
 
     void configure(const corona::framework::runtime::system_context& context) override {
-        (void)context;
+        (void)context.time;
     }
 
     void start() override {

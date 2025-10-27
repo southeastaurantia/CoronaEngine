@@ -5,7 +5,12 @@
 
 #include <atomic>
 #include <entt/entt.hpp>
+#include <memory>
 #include <vector>
+
+namespace corona::framework::services::time {
+class time_service;
+}
 
 namespace Corona {
 class AnimationSystem;
@@ -40,6 +45,8 @@ class RuntimeLoop {
     entt::registry registry_{};
     std::vector<entt::entity> base_entities_{};
     int frame_counter_ = 0;
+
+    std::shared_ptr<corona::framework::services::time::time_service> time_service_{};
 
     Corona::AnimationSystem* animation_system_ = nullptr;
     Corona::RenderingSystem* rendering_system_ = nullptr;

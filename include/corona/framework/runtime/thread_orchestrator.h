@@ -11,6 +11,10 @@
 #include <thread>
 #include <vector>
 
+namespace corona::framework::services::time {
+class time_service;
+}
+
 namespace corona::framework::runtime {
 
 class worker_control;
@@ -26,21 +30,26 @@ struct worker_record {
     std::condition_variable sleep_condition;
     std::thread thread;
     std::exception_ptr exception;
+    std::shared_ptr<corona::framework::services::time::time_service> time_source;
 };
 
 }  // namespace detail
 
 class worker_control {
    public:
-    explicit worker_control(std::shared_ptr<detail::worker_record> record);
+    worker_control(std::shared_ptr<detail::worker_record> record,
+                   std::shared_ptr<corona::framework::services::time::time_service> time_source);
 
     bool should_stop() const noexcept;
     void sleep_for(std::chrono::milliseconds duration);
     void sleep_until(std::chrono::steady_clock::time_point deadline);
     void request_stop();
 
+    [[nodiscard]] std::shared_ptr<corona::framework::services::time::time_service> time_source() const noexcept;
+
    private:
     std::weak_ptr<detail::worker_record> record_;
+    std::weak_ptr<corona::framework::services::time::time_service> time_source_;
 };
 
 class thread_orchestrator {
@@ -73,6 +82,7 @@ class thread_orchestrator {
     };
 
     thread_orchestrator();
+    explicit thread_orchestrator(std::shared_ptr<corona::framework::services::time::time_service> time_service);
     ~thread_orchestrator();
 
     worker_handle add_worker(std::string name,
@@ -81,13 +91,17 @@ class thread_orchestrator {
 
     void stop_all();
 
+    void set_time_service(std::shared_ptr<corona::framework::services::time::time_service> time_service) noexcept;
+    [[nodiscard]] std::shared_ptr<corona::framework::services::time::time_service> time_service() const noexcept;
+
    private:
     static void worker_loop(const std::shared_ptr<detail::worker_record>& record);
 
     void release_worker(const std::shared_ptr<detail::worker_record>& record);
 
-    std::mutex workers_mutex_;
+    mutable std::mutex workers_mutex_;
     std::vector<std::shared_ptr<detail::worker_record>> workers_;
+    std::shared_ptr<corona::framework::services::time::time_service> time_service_;
 };
 
 }  // namespace corona::framework::runtime

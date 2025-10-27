@@ -4,6 +4,8 @@
 #include <memory>
 #include <stdexcept>
 
+#include "corona/framework/services/time/time_service.h"
+
 namespace corona::framework::runtime {
 
 runtime_coordinator::runtime_coordinator() = default;
@@ -12,6 +14,7 @@ void runtime_coordinator::configure_services(service::service_collection collect
     ensure_not_running();
     service_collection_ = std::make_unique<service::service_collection>(std::move(collection));
     root_provider_.reset();
+    time_service_.reset();
 }
 
 void runtime_coordinator::register_descriptor(system_descriptor descriptor) {
@@ -63,9 +66,19 @@ void runtime_coordinator::initialize() {
     if (!service_collection_) {
         service_collection_ = std::make_unique<service::service_collection>();
     }
+    if (!service_collection_->contains<services::time::time_service>()) {
+        time_service_ = services::time::register_time_service(*service_collection_);
+    }
     if (!root_provider_) {
         root_provider_.emplace(service_collection_->build_service_provider());
     }
+    if (!time_service_) {
+        time_service_ = root_provider_->get_service<services::time::time_service>();
+    }
+    if (!time_service_) {
+        throw std::runtime_error("time service unavailable");
+    }
+    orchestrator_.set_time_service(time_service_);
     resolve_dependency_order();
     initialized_ = true;
 }
@@ -94,7 +107,7 @@ void runtime_coordinator::start() {
         slot.instance = std::move(instance);
         slot.provider = std::move(provider);
 
-        system_context context{*slot.provider, messaging_hub_, orchestrator_};
+        system_context context{*slot.provider, messaging_hub_, orchestrator_, *time_service_};
         slot.instance->configure(context);
         slot.instance->start();
 
@@ -107,6 +120,10 @@ void runtime_coordinator::start() {
     }
 
     running_ = true;
+}
+
+std::shared_ptr<services::time::time_service> runtime_coordinator::time_service() const noexcept {
+    return time_service_;
 }
 
 void runtime_coordinator::stop() {

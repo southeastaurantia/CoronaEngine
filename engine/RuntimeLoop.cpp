@@ -3,6 +3,8 @@
 #include <corona/api/CoronaEngineAPI.h>
 #include <corona/core/Engine.h>
 #include <corona/core/SystemRegistry.h>
+#include <corona/framework/services/time/time_service.h>
+#include <corona/interfaces/ServiceLocator.h>
 #include <corona/systems/AnimationSystem.h>
 #include <corona/systems/AudioSystem.h>
 #include <corona/systems/DisplaySystem.h>
@@ -17,7 +19,8 @@
 namespace {
 using clock_type = std::chrono::steady_clock;
 constexpr double kTargetFps = 120.0;
-constexpr std::chrono::duration<double> kFrameDuration{1.0 / kTargetFps};
+constexpr clock_type::duration kFrameDuration =
+    std::chrono::duration_cast<clock_type::duration>(std::chrono::duration<double>(1.0 / kTargetFps));
 }  // namespace
 
 RuntimeLoop::RuntimeLoop(Corona::Engine& engine) : engine_(engine) {
@@ -45,6 +48,14 @@ std::vector<std::string> parse_requested_systems() {
 }  // namespace
 
 void RuntimeLoop::initialize() {
+    if (!time_service_) {
+        time_service_ = engine_.services().try_get<corona::framework::services::time::time_service>();
+    }
+    if (!time_service_) {
+        time_service_ = corona::framework::services::time::make_time_service();
+        engine_.services().register_service<corona::framework::services::time::time_service>(time_service_);
+    }
+
     build_base_entities();
 
     auto& registry = engine_.system_registry();
@@ -127,10 +138,10 @@ void RuntimeLoop::initialize() {
 }
 
 void RuntimeLoop::run(std::atomic<bool>& running_flag) {
-    std::uint64_t frame_counter_ = 0;
+    frame_counter_ = 0;
     CE_LOG_INFO("Entering main loop (press Ctrl+C to exit)...");
     while (running_flag.load(std::memory_order_relaxed)) {
-        const auto frame_start = clock_type::now();
+        const auto loop_start = clock_type::now();
 
         on_tick();
 
@@ -170,9 +181,18 @@ void RuntimeLoop::run(std::atomic<bool>& running_flag) {
             }
         }
 
-        const auto frame_elapsed = clock_type::now() - frame_start;
+        auto frame_end = clock_type::now();
+        auto frame_elapsed = frame_end - loop_start;
         if (frame_elapsed < kFrameDuration) {
-            std::this_thread::sleep_for(kFrameDuration - frame_elapsed);
+            const auto sleep_duration = kFrameDuration - frame_elapsed;
+            std::this_thread::sleep_for(sleep_duration);
+            frame_end = loop_start + kFrameDuration;
+            frame_elapsed = kFrameDuration;
+        }
+
+        if (time_service_) {
+            time_service_->advance_frame(frame_end);
+            frame_counter_ = static_cast<int>(time_service_->frame_index());
         }
     }
     CE_LOG_INFO("Main loop exited");

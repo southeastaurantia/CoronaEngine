@@ -1,6 +1,3 @@
-#include "test_registry.h"
-#include "test_support.h"
-
 #include <cassert>
 #include <chrono>
 #include <thread>
@@ -8,6 +5,8 @@
 #include "corona/framework/service/service_collection.h"
 #include "corona/framework/service/service_provider.h"
 #include "corona/framework/services/time/time_service.h"
+#include "test_registry.h"
+#include "test_support.h"
 
 namespace timing = corona::framework::services::time;
 
@@ -21,6 +20,9 @@ void time_service_tests() {
     auto provider = collection.build_service_provider();
     auto resolved = provider.get_service<timing::time_service>();
     assert(resolved == registered);
+
+    auto duplicate = timing::register_time_service(collection);
+    assert(duplicate == registered);
 
     auto snapshot0 = resolved->snapshot();
     assert(snapshot0.frame_index == 0);
