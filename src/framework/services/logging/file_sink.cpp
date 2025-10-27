@@ -1,8 +1,22 @@
 #include "corona/framework/services/logging/file_sink.h"
 
-#include <iostream>
+#include <fast_io.h>
+#include <fast_io_device.h>
+
+#include <cstdio>
+#include <exception>
 
 namespace corona::framework::services::logging {
+
+namespace {
+
+constexpr fast_io::open_mode make_open_mode(bool append) noexcept {
+    auto mode = fast_io::open_mode::out | fast_io::open_mode::creat;
+    mode |= append ? fast_io::open_mode::app : fast_io::open_mode::trunc;
+    return mode;
+}
+
+}  // namespace
 
 file_sink::file_sink(std::filesystem::path file_path,
                      log_level min_level,
@@ -17,9 +31,12 @@ file_sink::file_sink(std::filesystem::path file_path,
 
 file_sink::~file_sink() {
     std::lock_guard<std::mutex> guard(stream_mutex_);
-    if (stream_.is_open()) {
-        stream_.flush();
-        stream_.close();
+    if (stream_) {
+        try {
+            fast_io::flush(*stream_);
+        } catch (...) {
+        }
+        stream_.reset();
     }
 }
 
@@ -32,22 +49,28 @@ void file_sink::log(const log_record& record, std::string_view formatted) {
     }
 
     std::lock_guard<std::mutex> guard(stream_mutex_);
-    if (!stream_.is_open()) {
+    if (!stream_) {
         return;
     }
-    stream_.write(formatted.data(), static_cast<std::streamsize>(formatted.size()));
+    fast_io::io::print(*stream_, formatted);
     if (formatted.empty() || formatted.back() != '\n') {
-        stream_.put('\n');
+        fast_io::io::print(*stream_, fast_io::mnp::chvw('\n'));
     }
     if (flush_on_write_) {
-        stream_.flush();
+        try {
+            fast_io::flush(*stream_);
+        } catch (...) {
+        }
     }
 }
 
 void file_sink::flush() {
     std::lock_guard<std::mutex> guard(stream_mutex_);
-    if (stream_.is_open()) {
-        stream_.flush();
+    if (stream_) {
+        try {
+            fast_io::flush(*stream_);
+        } catch (...) {
+        }
     }
 }
 
@@ -61,7 +84,7 @@ log_level file_sink::min_level() const noexcept {
 
 bool file_sink::ensure_stream() {
     std::lock_guard<std::mutex> guard(stream_mutex_);
-    if (stream_.is_open()) {
+    if (stream_) {
         return true;
     }
     try {
@@ -71,14 +94,14 @@ bool file_sink::ensure_stream() {
                 std::filesystem::create_directories(parent);
             }
         }
-        stream_.open(file_path_, append_ ? std::ios::app : std::ios::trunc);
-        ready_ = stream_.is_open();
-        if (!ready_) {
-            std::cerr << "file_sink failed to open file: " << file_path_ << std::endl;
-        }
+        stream_ = std::make_unique<fast_io::obuf_file>(file_path_, make_open_mode(append_));
+        ready_ = static_cast<bool>(stream_);
     } catch (const std::exception& ex) {
-        std::cerr << "file_sink exception opening file '" << file_path_ << "': " << ex.what() << std::endl;
         ready_ = false;
+        stream_.reset();
+        std::fputs("file_sink exception opening log file: ", stderr);
+        std::fputs(ex.what(), stderr);
+        std::fputc('\n', stderr);
     }
     return ready_;
 }

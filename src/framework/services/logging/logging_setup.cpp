@@ -1,18 +1,21 @@
 #include "corona/framework/services/logging/logging_setup.h"
 
+#include <fast_io.h>
+
 #include <algorithm>
 #include <atomic>
+#include <charconv>
 #include <chrono>
 #include <condition_variable>
 #include <cstddef>
+#include <cstring>
 #include <ctime>
 #include <deque>
-#include <iomanip>
-#include <iostream>
+#include <functional>
 #include <memory>
 #include <mutex>
-#include <sstream>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -26,8 +29,6 @@ namespace corona::framework::services::logging {
 namespace {
 
 std::string format_record(const log_record& record) {
-    std::ostringstream oss;
-
     const auto timestamp = record.timestamp;
     const auto as_time_t = std::chrono::system_clock::to_time_t(timestamp);
     std::tm tm{};
@@ -37,18 +38,38 @@ std::string format_record(const log_record& record) {
     localtime_r(&as_time_t, &tm);
 #endif
 
-    char buffer[32];
-    if (std::strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%S", &tm) == 0) {
-        buffer[0] = '\0';
+    char time_buffer[32]{};
+    if (std::strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%dT%H:%M:%S", &tm) == 0) {
+        time_buffer[0] = '\0';
     }
 
     const auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(timestamp.time_since_epoch()) % 1000;
+    const auto millis_value = static_cast<int>(millis.count());
+    char millis_buffer[4];
+    millis_buffer[0] = static_cast<char>('0' + (millis_value / 100) % 10);
+    millis_buffer[1] = static_cast<char>('0' + (millis_value / 10) % 10);
+    millis_buffer[2] = static_cast<char>('0' + millis_value % 10);
+    millis_buffer[3] = '\0';
 
-    oss << buffer << '.' << std::setw(3) << std::setfill('0') << millis.count()
-        << " [" << to_string(record.level) << "] (tid " << record.thread_id << ") "
-        << record.message;
+    char thread_buffer[32];
+    auto thread_numeric = static_cast<std::size_t>(std::hash<std::thread::id>{}(record.thread_id));
+    auto [thread_out, thread_ec] = std::to_chars(thread_buffer, thread_buffer + (sizeof(thread_buffer) - 1), thread_numeric);
+    if (thread_ec != std::errc{}) {
+        thread_buffer[0] = '?';
+        thread_out = thread_buffer + 1;
+    }
+    *thread_out = '\0';
 
-    return oss.str();
+    std::string_view thread_view{thread_buffer, static_cast<std::size_t>(thread_out - thread_buffer)};
+
+    std::string_view time_view{time_buffer, std::strlen(time_buffer)};
+    std::string_view millis_view{millis_buffer, 3};
+
+    return fast_io::concat(time_view,
+                           ".", millis_view,
+                           " [", to_string(record.level),
+                           "] (tid ", thread_view,
+                           ") ", record.message);
 }
 
 class sink_logger final : public logger {
@@ -85,8 +106,10 @@ class sink_logger final : public logger {
             if (queue_.size() >= queue_capacity_) {
                 const auto dropped = dropped_messages_.fetch_add(1, std::memory_order_relaxed);
                 if (dropped == 0) {
-                    std::cerr << "sink_logger queue overflow; dropping log messages (capacity "
-                              << queue_capacity_ << ")" << std::endl;
+                    fast_io::io::print(fast_io::err(),
+                                       "sink_logger queue overflow; dropping log messages (capacity ",
+                                       queue_capacity_,
+                                       ")\n");
                 }
                 return;
             }

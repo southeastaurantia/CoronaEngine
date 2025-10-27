@@ -1,6 +1,8 @@
 #include "corona/framework/services/logging/console_sink.h"
 
-#include <iostream>
+#include <fast_io.h>
+
+#include <cstdio>
 
 namespace corona::framework::services::logging {
 
@@ -13,16 +15,16 @@ void console_sink::log(const log_record& record, std::string_view formatted) {
     }
 
     std::lock_guard<std::mutex> guard(stream_mutex_);
-    std::clog.write(formatted.data(), static_cast<std::streamsize>(formatted.size()));
+    fast_io::io::print(fast_io::err(), formatted);
     if (formatted.empty() || formatted.back() != '\n') {
-        std::clog.put('\n');
+        fast_io::io::print(fast_io::err(), fast_io::mnp::chvw('\n'));
     }
-    std::clog.flush();
+    std::fflush(stderr);
 }
 
 void console_sink::flush() {
     std::lock_guard<std::mutex> guard(stream_mutex_);
-    std::clog.flush();
+    std::fflush(stderr);
 }
 
 void console_sink::set_min_level(log_level level) noexcept {

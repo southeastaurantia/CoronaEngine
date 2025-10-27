@@ -1,8 +1,11 @@
 #pragma once
 
+#include <fast_io.h>
+#include <fast_io_device.h>
+
 #include <atomic>
 #include <filesystem>
-#include <fstream>
+#include <memory>
 #include <mutex>
 
 #include "log_sink.h"
@@ -33,7 +36,7 @@ class file_sink final : public log_sink {
     bool flush_on_write_;
 
     std::mutex stream_mutex_;
-    std::ofstream stream_;
+    std::unique_ptr<fast_io::obuf_file> stream_;
     bool ready_ = false;
 };
 
