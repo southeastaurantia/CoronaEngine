@@ -45,7 +45,7 @@ include(CTest)
 # ------------------------------------------------------------------------------
 add_subdirectory(src)               # Core engine static library
 
-if(BUILD_TESTING)
+if(BUILD_CORONA_TESTING)
     add_subdirectory(tests)
 endif()
 
