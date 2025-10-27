@@ -6,6 +6,7 @@ add_library(CoronaFramework STATIC
     services/logging/console_sink.cpp
     services/logging/file_sink.cpp
     services/logging/logging_setup.cpp
+    services/time/time_service.cpp
     service/service_collection.cpp
     service/service_descriptor.cpp
     service/service_provider.cpp
