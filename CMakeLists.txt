@@ -45,10 +45,6 @@ include(CTest)
 # ------------------------------------------------------------------------------
 add_subdirectory(src)               # Core engine static library
 
-if(BUILD_CORONA_RUNTIME)
-    add_subdirectory(engine)        # Engine runtime executable
-endif()
-
 if(CORONA_BUILD_EXAMPLES)
     add_subdirectory(examples)      # Example applications
 endif()
