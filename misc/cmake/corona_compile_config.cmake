@@ -78,7 +78,7 @@ add_compile_definitions(
 # ------------------------------------------------------------------------------
 if(MSVC OR CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
     set(CMAKE_MSVC_RUNTIME_LIBRARY
-        $<$<CONFIG:Debug>:MultiThreadedDLLDebug>$<$<NOT:$<CONFIG:Debug>>:MultiThreadedDLL>
+        $<$<CONFIG:Debug>:MultiThreadedDebugDLL>$<$<NOT:$<CONFIG:Debug>>:MultiThreadedDLL>
     )
 endif()
 
