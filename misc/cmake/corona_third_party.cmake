@@ -69,12 +69,13 @@ FetchContent_Declare(Vision
     EXCLUDE_FROM_ALL
 )
 
-FetchContent_Declare(CoronaFramework
-    GIT_REPOSITORY https://github.com/CoronaEngine/CoronaFramework.git
-    GIT_TAG main
-    GIT_SHALLOW TRUE
-    EXCLUDE_FROM_ALL
-)
+# Note: CoronaFramework has been renamed to CoronaEngine and is no longer a separate dependency
+# FetchContent_Declare(CoronaFramework
+#     GIT_REPOSITORY https://github.com/CoronaEngine/CoronaFramework.git
+#     GIT_TAG main
+#     GIT_SHALLOW TRUE
+#     EXCLUDE_FROM_ALL
+# )
 
 
 # ------------------------------------------------------------------------------
@@ -98,8 +99,9 @@ message(STATUS "[3rdparty] CabbageHardware module enabled")
 FetchContent_MakeAvailable(CoronaResource)
 message(STATUS "[3rdparty] CoronaResource module enabled")
 
-FetchContent_MakeAvailable(CabbageFramework)
-message(STATUS "[3rdparty] CabbageFramework module enabled")
+# Note: CoronaFramework/CabbageFramework is no longer needed as a separate dependency
+# FetchContent_MakeAvailable(CabbageFramework)
+# message(STATUS "[3rdparty] CabbageFramework module enabled")
 
 if(CORONA_BUILD_VISION)
     FetchContent_MakeAvailable(Vision)
