@@ -23,23 +23,23 @@
 
 include_guard(GLOBAL)
 
-set(CORONA_PYTHON_MIN_VERSION 3.13 CACHE STRING "Minimum required Python3 version (major.minor)")
+# set(CORONA_PYTHON_MIN_VERSION 3.13 CACHE STRING "Minimum required Python version (major.minor)")
 
 set(CORONA_EMBEDDED_PY_DIR "${PROJECT_SOURCE_DIR}/third_party/Python-3.13.7" CACHE PATH "Embedded (bundled) Python directory path")
 
 # ------------------------------------------------------------------------------
 # Python Discovery
 # ------------------------------------------------------------------------------
-set(Python3_ROOT_DIR "${CORONA_EMBEDDED_PY_DIR}" CACHE FILEPATH "Embedded Python root directory" FORCE)
-message(STATUS "[Python] Using embedded Python: ${Python3_ROOT_DIR}")
+set(Python_ROOT_DIR "${CORONA_EMBEDDED_PY_DIR}" CACHE FILEPATH "Embedded Python root directory" FORCE)
+message(STATUS "[Python] Using embedded Python: ${Python_ROOT_DIR}")
 
-find_package(Python3 ${CORONA_PYTHON_MIN_VERSION} COMPONENTS Interpreter Development REQUIRED)
+find_package(Python COMPONENTS Interpreter Development Development.Module REQUIRED)
 
-if(NOT Python3_FOUND)
+if(NOT Python_FOUND)
     message(FATAL_ERROR "[Python] Embedded Python interpreter not found at ${CORONA_EMBEDDED_PY_DIR}; cannot continue")
 endif()
 
-message(STATUS "[Python] Final chosen interpreter: ${Python3_EXECUTABLE}")
+message(STATUS "[Python] Final chosen interpreter: ${Python_EXECUTABLE}")
 
 set(CORONA_PY_REQUIREMENTS_FILE "${PROJECT_SOURCE_DIR}/misc/pytools/requirements.txt")
 set(CORONA_PY_CHECK_SCRIPT "${PROJECT_SOURCE_DIR}/misc/pytools/check_pip_modules.py")
@@ -57,8 +57,8 @@ function(corona_run_python OUT_RESULT)
         message(FATAL_ERROR "corona_run_python: SCRIPT is required")
     endif()
 
-    if(NOT DEFINED Python3_EXECUTABLE)
-        message(FATAL_ERROR "corona_run_python: Python3_EXECUTABLE is not defined")
+    if(NOT DEFINED Python_EXECUTABLE)
+        message(FATAL_ERROR "corona_run_python: Python_EXECUTABLE is not defined")
     endif()
 
     if(NOT CRP_WORKING_DIRECTORY)
@@ -66,7 +66,7 @@ function(corona_run_python OUT_RESULT)
     endif()
 
     execute_process(
-        COMMAND           "${Python3_EXECUTABLE}" "${CRP_SCRIPT}" ${CRP_ARGS}
+        COMMAND           "${Python_EXECUTABLE}" "${CRP_SCRIPT}" ${CRP_ARGS}
         WORKING_DIRECTORY "${CRP_WORKING_DIRECTORY}"
         RESULT_VARIABLE   _CRP_RES
         OUTPUT_VARIABLE   _CRP_OUT
@@ -96,7 +96,7 @@ function(corona_run_python_requirements_check)
         list(APPEND _CRP_ARGS --auto-install)
     endif()
 
-    message(STATUS "[Python] Running dependency check with interpreter: ${Python3_EXECUTABLE}")
+    message(STATUS "[Python] Running dependency check with interpreter: ${Python_EXECUTABLE}")
     corona_run_python(_CORONA_PY_RES
         SCRIPT            "${CORONA_PY_CHECK_SCRIPT}"
         ARGS              ${_CRP_ARGS}
@@ -121,7 +121,7 @@ if(CORONA_CHECK_PY_DEPS)
 endif()
 
 add_custom_target(check_python_deps
-    COMMAND           "${Python3_EXECUTABLE}" "${CORONA_PY_CHECK_SCRIPT}" -r "${CORONA_PY_REQUIREMENTS_FILE}" --no-unicode
+    COMMAND           "${Python_EXECUTABLE}" "${CORONA_PY_CHECK_SCRIPT}" -r "${CORONA_PY_REQUIREMENTS_FILE}" --no-unicode
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     COMMENT           "[Python] Manually trigger dependency check"
     VERBATIM
