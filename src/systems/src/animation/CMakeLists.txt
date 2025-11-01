@@ -4,10 +4,10 @@ add_library(corona_animation_system STATIC
 
 add_library(corona::system::animation ALIAS corona_animation_system)
 
-target_include_directories(corona_animation_system PRIVATE
+target_include_directories(corona_animation_system PUBLIC
     ${PROJECT_SOURCE_DIR}/src/systems/include
 )
 
-target_link_libraries(corona_animation_system PRIVATE
+target_link_libraries(corona_animation_system PUBLIC
     corona::kernel
 )
