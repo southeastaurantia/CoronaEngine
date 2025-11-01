@@ -1,4 +1,4 @@
-add_subdirectory(systems/animation)
-add_subdirectory(systems/audio)
-add_subdirectory(systems/display)
-add_subdirectory(systems/rendering)
+add_subdirectory(systems/src/animation)
+add_subdirectory(systems/src/audio)
+add_subdirectory(systems/src/display)
+add_subdirectory(systems/src/rendering)
