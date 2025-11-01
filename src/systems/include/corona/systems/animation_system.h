@@ -56,4 +56,3 @@ class AnimationSystem : public Kernel::SystemBase {
 };
 
 }  // namespace Corona::Systems
-
