@@ -55,20 +55,6 @@ FetchContent_Declare(nanobind
     EXCLUDE_FROM_ALL
 )
 
-FetchContent_Declare(CoronaLogger
-    GIT_REPOSITORY https://github.com/CoronaEngine/CoronaLogger.git
-    GIT_TAG main
-    GIT_SHALLOW TRUE
-    EXCLUDE_FROM_ALL
-)
-
-FetchContent_Declare(CabbageConcurrent
-    GIT_REPOSITORY https://github.com/CoronaEngine/CabbageConcurrent.git
-    GIT_TAG main
-    GIT_SHALLOW TRUE
-    EXCLUDE_FROM_ALL
-)
-
 FetchContent_Declare(CoronaResource
     GIT_REPOSITORY https://github.com/CoronaEngine/CoronaResource.git
     GIT_TAG main
@@ -83,16 +69,20 @@ FetchContent_Declare(Vision
     EXCLUDE_FROM_ALL
 )
 
-FetchContent_Declare(glfw
-    GIT_REPOSITORY https://github.com/glfw/glfw.git
-    GIT_TAG master
+FetchContent_Declare(CoronaFramework
+    GIT_REPOSITORY https://github.com/CoronaEngine/CoronaFramework.git
+    GIT_TAG main
     GIT_SHALLOW TRUE
     EXCLUDE_FROM_ALL
 )
 
+
 # ------------------------------------------------------------------------------
 # Fetch and enable dependencies
 # ------------------------------------------------------------------------------
+
+set(BUILD_TESTING OFF CACHE BOOL "Disable building tests for 3rd party dependencies" FORCE)
+
 FetchContent_MakeAvailable(assimp)
 message(STATUS "[3rdparty] assimp module enabled")
 
@@ -105,24 +95,21 @@ message(STATUS "[3rdparty] entt module enabled")
 FetchContent_MakeAvailable(nanobind)
 message(STATUS "[3rdparty] nanobind module enabled")
 
-FetchContent_MakeAvailable(CoronaLogger)
-message(STATUS "[3rdparty] CoronaLogger module enabled")
-
 FetchContent_MakeAvailable(CabbageHardware)
 message(STATUS "[3rdparty] CabbageHardware module enabled")
-
-FetchContent_MakeAvailable(CabbageConcurrent)
-message(STATUS "[3rdparty] CabbageConcurrent module enabled")
 
 FetchContent_MakeAvailable(CoronaResource)
 message(STATUS "[3rdparty] CoronaResource module enabled")
 
+FetchContent_MakeAvailable(CoronaFramework)
+message(STATUS "[3rdparty] CoronaFramework module enabled")
+
+if(CORONA_BUILD_HARDWARE)
+    FetchContent_MakeAvailable(CabbageHardware)
+    message(STATUS "[3rdparty] CabbageHardware module enabled")
+endif()
+
 if(CORONA_BUILD_VISION)
     FetchContent_MakeAvailable(Vision)
     message(STATUS "[3rdparty] Vision module enabled")
-endif()
-
-if(CORONA_BUILD_EXAMPLES)
-    FetchContent_MakeAvailable(glfw)
-    message(STATUS "[3rdparty] glfw module enabled")
 endif()

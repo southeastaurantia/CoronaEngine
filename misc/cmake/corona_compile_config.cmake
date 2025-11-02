@@ -1,24 +1,24 @@
-# ============================================================================== 
+# ==============================================================================
 # corona_compile_config.cmake
 #
 # Purpose:
-#   Centralize compiler settings and shared compile-time definitions.
+# Centralize compiler settings and shared compile-time definitions.
 #
 # Highlights:
-#   - Maintain consistent definitions across modules.
-#   - Reduce scattering of preprocessor macros and toolchain tweaks.
-#   - Employ generator expressions (`$<...>`) for compiler/config-specific
-#     adjustments.
-# ============================================================================== 
+# - Maintain consistent definitions across modules.
+# - Reduce scattering of preprocessor macros and toolchain tweaks.
+# - Employ generator expressions (`$<...>`) for compiler/config-specific
+# adjustments.
+# ==============================================================================
 
 include_guard(GLOBAL)
 
-set(CMAKE_C_STANDARD              11)
-set(CMAKE_C_STANDARD_REQUIRED     ON)
-set(CMAKE_C_EXTENSIONS            ON)
-set(CMAKE_CXX_STANDARD            20)
-set(CMAKE_CXX_STANDARD_REQUIRED   ON)
-set(CMAKE_CXX_EXTENSIONS          ON)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS ON)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # ------------------------------------------------------------------------------
@@ -26,9 +26,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 #
 # `corona_to_backslash(INPUT out_var [ESCAPE_FOR_CSTRING])`
 #
-#   Replaces forward slashes with backslashes. When `ESCAPE_FOR_CSTRING` is
-#   provided, the result is escaped for use inside C string literals (each
-#   backslash becomes `\\`).
+# Replaces forward slashes with backslashes. When `ESCAPE_FOR_CSTRING` is
+# provided, the result is escaped for use inside C string literals (each
+# backslash becomes `\\`).
 # ------------------------------------------------------------------------------
 function(corona_to_backslash INPUT OUT_VAR)
     set(_val "${INPUT}")
@@ -45,10 +45,10 @@ endfunction()
 # ------------------------------------------------------------------------------
 # Python path macro definitions
 # ------------------------------------------------------------------------------
-corona_to_backslash("${Python3_EXECUTABLE}"             _CORONA_PY_EXE_ESC   ESCAPE_FOR_CSTRING)
-corona_to_backslash("${Python3_RUNTIME_LIBRARY_DIRS}"   _CORONA_PY_HOME_ESC  ESCAPE_FOR_CSTRING)
+corona_to_backslash("${Python3_EXECUTABLE}" _CORONA_PY_EXE_ESC ESCAPE_FOR_CSTRING)
+corona_to_backslash("${Python3_RUNTIME_LIBRARY_DIRS}" _CORONA_PY_HOME_ESC ESCAPE_FOR_CSTRING)
 corona_to_backslash("${Python3_RUNTIME_LIBRARY_DIRS}/DLLs" _CORONA_PY_DLLS_ESC ESCAPE_FOR_CSTRING)
-corona_to_backslash("${Python3_RUNTIME_LIBRARY_DIRS}/Lib"  _CORONA_PY_LIB_ESC   ESCAPE_FOR_CSTRING)
+corona_to_backslash("${Python3_RUNTIME_LIBRARY_DIRS}/Lib" _CORONA_PY_LIB_ESC ESCAPE_FOR_CSTRING)
 
 # ------------------------------------------------------------------------------
 # Global compile definitions
@@ -66,12 +66,15 @@ add_compile_definitions(
     CORONA_PYTHON_HOME_DIR=\"${_CORONA_PY_HOME_ESC}\"
     CORONA_PYTHON_MODULE_DLL_DIR=\"${_CORONA_PY_DLLS_ESC}\"
     CORONA_PYTHON_MODULE_LIB_DIR=\"${_CORONA_PY_LIB_ESC}\"
-
-    $<$<CONFIG:Debug>:CORONA_ENGINE_DEBUG>
-    $<$<CONFIG:RelWithDebInfo>:CORONA_ENGINE_DEBUG>
-    $<$<CONFIG:Release>:CORONA_ENGINE_RELEASE>
-    $<$<CONFIG:MinSizeRel>:CORONA_ENGINE_RELEASE>
 )
+
+if(CORONA_BUILD_HARDWARE)
+    add_compile_definitions(CORONA_ENABLE_HARDWARE)
+endif()
+
+if(CORONA_BUILD_VISION)
+    add_compile_definitions(CORONA_ENABLE_VISION)
+endif()
 
 # ------------------------------------------------------------------------------
 # MSVC runtime strategy

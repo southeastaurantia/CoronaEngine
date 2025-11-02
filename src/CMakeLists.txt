@@ -1,60 +1,41 @@
-# ============================================================================== 
-# CoronaEngine - Source Modules Aggregation
+# ==============================================================================
+# CoronaEngine - Source Library
 #
-# Responsibilities:
-#   - Add all engine module subdirectories.
-#   - Create the unified static library target `CoronaEngine`.
-#   - Propagate public include directories and compiler features to dependents.
-# ============================================================================== 
+# 构建引擎核心库和系统模块
+# ==============================================================================
 
-include_guard(GLOBAL)
+# 添加系统子目录
+add_subdirectory(systems/src/animation)
+add_subdirectory(systems/src/audio)
+add_subdirectory(systems/src/display)
+add_subdirectory(systems/src/rendering)
 
-# ------------------------------------------------------------------------------
-# Module Subdirectories
-# ------------------------------------------------------------------------------
-add_subdirectory(interfaces)     # Public interfaces and headers exposed externally
-add_subdirectory(utils)          # Shared utilities
-add_subdirectory(thread)         # Threading primitives and concurrency helpers
-add_subdirectory(systems)        # Engine systems (animation/audio/display/rendering)
-add_subdirectory(core)           # Engine core (Engine singleton and services)
-add_subdirectory(script)         # Scripting integration (Python bridge)
+# ==============================================================================
+# CoronaEngine 核心库
+# ==============================================================================
 
-# ------------------------------------------------------------------------------
-# CoronaEngine Static Library
-# ------------------------------------------------------------------------------
-add_library(CoronaEngine STATIC)
-add_library(corona::engine ALIAS CoronaEngine)
-
-set_property(TARGET CoronaEngine PROPERTY OUTPUT_NAME "CoronaEngine")
-
-set(_corona_modules
-    CoronaCore
-    CoronaResource
-    CoronaScriptPython
-    CoronaSystemAnimation
-    CoronaSystemAudio
-    CoronaSystemDisplay
-    CoronaSystemRendering
-    CoronaThread
-    CoronaLogger
-    CoronaUtilityResource
-    CoronaUtils
+add_library(CoronaEngine STATIC
+    engine.cpp
+    include/corona/engine.h
 )
 
-foreach(_module_target IN LISTS _corona_modules)
-    if(TARGET ${_module_target})
-        target_link_libraries(CoronaEngine PUBLIC ${_module_target})
-    endif()
-endforeach()
+add_library(corona::engine ALIAS CoronaEngine)
 
+# 设置包含目录
+target_include_directories(CoronaEngine PUBLIC
+    ${PROJECT_SOURCE_DIR}/src/include
+)
+
+# 链接依赖
+target_link_libraries(CoronaEngine PUBLIC
+    corona::kernel
+    corona::system::animation
+    corona::system::audio
+    corona::system::display
+    corona::system::rendering
+)
+
+# 设置 C++ 标准
 target_compile_features(CoronaEngine PUBLIC cxx_std_20)
 
-corona_target_use_public_includes(CoronaEngine)
-
-if(COMMAND corona_configure_runtime_deps)
-    corona_configure_runtime_deps(CoronaEngine)
-endif()
-
-if(BUILD_CORONA_EDITOR)
-    corona_configure_corona_editor(CoronaEngine)
-endif()
+message(STATUS "[CoronaEngine] Core engine library configured")

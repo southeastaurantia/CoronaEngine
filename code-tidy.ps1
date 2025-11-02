@@ -52,7 +52,7 @@ try {
     if ($All) { $scopeLabel = 'all' }
     $logEntries.Add("Scope: $scopeLabel")
 
-    $defaultTargets = @('engine', 'examples', 'include', 'src')
+    $defaultTargets = @('engine', 'examples', 'include', 'src', 'tests')
     $effectiveTargets = $Targets
     if (-not $effectiveTargets -or $effectiveTargets.Count -eq 0) {
         $effectiveTargets = $defaultTargets
