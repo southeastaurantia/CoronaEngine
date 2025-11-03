@@ -1,6 +1,16 @@
 # CoronaEngine - Script (Python) binding module
 # Mirrors the simple system CMake patterns (static lib + alias + includes + links)
 
+# Build nanobind static library
+# nanobind is NOT header-only, it needs to be compiled
+if(DEFINED nanobind_SOURCE_DIR)
+    # Use nanobind's build function to create the library target
+    include(${nanobind_SOURCE_DIR}/cmake/nanobind-config.cmake)
+    nanobind_build_library(nanobind-static)
+else()
+    message(FATAL_ERROR "[CMake] nanobind source directory not found; cannot continue")
+endif()
+
 # Sources
 add_library(CoronaScriptPython STATIC
     corona_engine_api.cpp
@@ -22,31 +32,21 @@ target_include_directories(CoronaScriptPython PUBLIC
 )
 
 # Python include dirs (public because PythonAPI.h includes <Python.h>)
-if(DEFINED Python_INCLUDE_DIRS)
-    target_include_directories(CoronaScriptPython PUBLIC ${Python_INCLUDE_DIRS})
-elseif(DEFINED Python3_INCLUDE_DIRS)
-    target_include_directories(CoronaScriptPython PUBLIC ${Python3_INCLUDE_DIRS})
-endif()
+target_include_directories(CoronaScriptPython PUBLIC
+    ${Python_INCLUDE_DIRS}
+    ${nanobind_SOURCE_DIR}/include
+)
 
-# nanobind headers (header-only). FetchContent sets nanobind_SOURCE_DIR.
-if(DEFINED nanobind_SOURCE_DIR)
-    target_include_directories(CoronaScriptPython PUBLIC ${nanobind_SOURCE_DIR}/include)
-endif()
-
-# Link dependencies
-# - Keep consistent with systems (link corona::kernel)
-# - Prefer imported Python target if provided by FindPython
-set(_corona_script_python_link_libs corona::kernel)
-if(TARGET Python::Python)
-    list(APPEND _corona_script_python_link_libs Python::Python)
-elseif(TARGET Python3::Python)
-    list(APPEND _corona_script_python_link_libs Python3::Python)
-endif()
+target_link_directories(CoronaScriptPython PUBLIC
+    ${Python_LIBRARY_DIRS}
+)
 
 target_link_libraries(CoronaScriptPython PUBLIC
-        ${_corona_script_python_link_libs}
-        ktm
-        EnTT::EnTT
+    ktm
+    corona::kernel
+    Python::Python
+    EnTT::EnTT
+    nanobind-static
 )
 
 # C++ standard to align with project settings
