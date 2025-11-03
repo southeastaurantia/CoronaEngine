@@ -47,4 +47,14 @@ target_link_libraries(CoronaEngine PUBLIC
 # 设置 C++ 标准
 target_compile_features(CoronaEngine PUBLIC cxx_std_20)
 
+# 配置运行时依赖（Python DLLs/PDBs 等）
+# 这会将依赖文件列表存储在 CoronaEngine 目标的 INTERFACE_CORONA_RUNTIME_DEPS 属性中
+# 供消费者（如 examples）通过 corona_install_runtime_deps() 安装
+corona_configure_runtime_deps(CoronaEngine)
+
+# 配置编辑器资源
+if(BUILD_CORONA_EDITOR)
+    corona_configure_corona_editor(CoronaEngine)
+endif()
+
 message(STATUS "[CoronaEngine] Core engine library configured")

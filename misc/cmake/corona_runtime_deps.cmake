@@ -37,7 +37,7 @@ function(corona_install_runtime_deps target_name)
 
     set(_CORONA_PY_COPY "${PROJECT_SOURCE_DIR}/misc/pytools/copy_files.py")
 
-    if(EXISTS "${_CORONA_PY_COPY}" AND DEFINED Python3_EXECUTABLE)
+    if(EXISTS "${_CORONA_PY_COPY}" AND DEFINED Python_EXECUTABLE)
         set(_CORONA_DEPS_DIR "${CMAKE_BINARY_DIR}/runtime_deps")
         file(MAKE_DIRECTORY "${_CORONA_DEPS_DIR}")
         string(MD5 _corona_target_hash "${target_name}")
@@ -51,7 +51,7 @@ function(corona_install_runtime_deps target_name)
         add_custom_command(
             TARGET      ${target_name}
             POST_BUILD
-            COMMAND     "${Python3_EXECUTABLE}" "${_CORONA_PY_COPY}" --dest "${_CORONA_DESTINATION_DIR}" --list "${_CORONA_DEPS_LIST}"
+            COMMAND     "${Python_EXECUTABLE}" "${_CORONA_PY_COPY}" --dest "${_CORONA_DESTINATION_DIR}" --list "${_CORONA_DEPS_LIST}"
             COMMENT     "[Corona:RuntimeDeps] Copy Corona runtime dependencies to target directory -> ${target_name}"
             VERBATIM
         )
@@ -59,7 +59,7 @@ function(corona_install_runtime_deps target_name)
         if(NOT EXISTS "${_CORONA_PY_COPY}")
             message(STATUS "[Corona:RuntimeDeps] Python copy script not found; falling back to copy_if_different")
         else()
-            message(STATUS "[Corona:RuntimeDeps] Python3 not available; falling back to copy_if_different")
+            message(STATUS "[Corona:RuntimeDeps] Python not available; falling back to copy_if_different")
         endif()
 
         add_custom_command(
@@ -82,9 +82,9 @@ function(corona_configure_runtime_deps target_name)
     endif()
 
     set(_CORONA_ALL_DEPS)
-    if(DEFINED Python3_RUNTIME_LIBRARY_DIRS)
-        file(GLOB _CORONA_PY_DLLS "${Python3_RUNTIME_LIBRARY_DIRS}/*.dll")
-        file(GLOB _CORONA_PY_PDBS "${Python3_RUNTIME_LIBRARY_DIRS}/*.pdb")
+    if(DEFINED Python_RUNTIME_LIBRARY_DIRS)
+        file(GLOB _CORONA_PY_DLLS "${Python_RUNTIME_LIBRARY_DIRS}/*.dll")
+        file(GLOB _CORONA_PY_PDBS "${Python_RUNTIME_LIBRARY_DIRS}/*.pdb")
         if(_CORONA_PY_DLLS)
             list(APPEND _CORONA_ALL_DEPS ${_CORONA_PY_DLLS})
         endif()
