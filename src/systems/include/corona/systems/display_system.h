@@ -60,6 +60,9 @@ class DisplaySystem : public Kernel::SystemBase {
     // 显示系统内部状态（待实现）
     std::shared_ptr<Kernel::EventStream<Events::EngineToDisplayDemoEvent>> engine_stream_;
     Kernel::EventSubscription<Events::EngineToDisplayDemoEvent> engine_sub_;
+    
+    // 系统内部事件订阅（EventBus）
+    Kernel::EventId internal_event_id_ = 0;
 };
 
 }  // namespace Corona::Systems

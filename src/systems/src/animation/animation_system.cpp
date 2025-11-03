@@ -24,6 +24,18 @@ bool AnimationSystem::initialize(Kernel::ISystemContext* ctx) {
         logger->info("AnimationSystem: EventStream subscriptions ready");
     }
 
+    // 【订阅系统内部事件】使用 EventBus
+    auto* event_bus = ctx->event_bus();
+    if (event_bus) {
+        internal_event_id_ = event_bus->subscribe<Events::AnimationSystemDemoEvent>(
+            [logger](const Events::AnimationSystemDemoEvent& event) {
+                if (logger) {
+                    logger->info("AnimationSystem: Received internal event, demo_value=" + std::to_string(event.demo_value));
+                }
+            });
+        logger->info("AnimationSystem: EventBus subscriptions ready");
+    }
+
     return true;
 }
 
@@ -61,6 +73,12 @@ void AnimationSystem::update() {
 void AnimationSystem::shutdown() {
     auto* logger = context()->logger();
     logger->info("AnimationSystem: Shutting down event demo");
+    
+    // 取消 EventBus 订阅
+    auto* event_bus = context()->event_bus();
+    if (event_bus && internal_event_id_ != 0) {
+        event_bus->unsubscribe(internal_event_id_);
+    }
     
     // 关闭 EventStream 订阅
     engine_sub_.close();

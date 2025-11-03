@@ -22,6 +22,19 @@ bool AcousticsSystem::initialize(Kernel::ISystemContext* ctx) {
         logger->info("AcousticsSystem: EventStream subscriptions ready");
     }
 
+    // 【订阅系统内部事件】使用 EventBus（系统线程内）
+    auto* event_bus = ctx->event_bus();
+    if (event_bus) {
+        internal_event_id_ = event_bus->subscribe<Events::AcousticsSystemDemoEvent>(
+            [logger](const Events::AcousticsSystemDemoEvent& event) {
+                if (logger) {
+                    logger->info("AcousticsSystem: Received internal event, demo_value=" + std::to_string(event.demo_value));
+                }
+            });
+        
+        logger->info("AcousticsSystem: EventBus subscriptions ready");
+    }
+
     return true;
 }
 
@@ -62,6 +75,12 @@ void AcousticsSystem::update() {
 void AcousticsSystem::shutdown() {
     auto* logger = context()->logger();
     logger->info("AcousticsSystem: Shutting down event demo");
+    
+    // 取消 EventBus 订阅
+    auto* event_bus = context()->event_bus();
+    if (event_bus && internal_event_id_ != 0) {
+        event_bus->unsubscribe(internal_event_id_);
+    }
     
     // 关闭 EventStream 订阅
     engine_sub_.close();

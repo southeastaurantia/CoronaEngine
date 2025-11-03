@@ -60,6 +60,9 @@ class GeometrySystem : public Kernel::SystemBase {
     // TODO: 添加几何系统私有成员
     std::shared_ptr<Kernel::EventStream<Events::EngineToGeometryDemoEvent>> engine_stream_;
     Kernel::EventSubscription<Events::EngineToGeometryDemoEvent> engine_sub_;
+    
+    // 系统内部事件订阅（EventBus）
+    Kernel::EventId internal_event_id_ = 0;
 };
 
 }  // namespace Corona::Systems
