@@ -16,7 +16,10 @@ add_subdirectory(systems/src/rendering)
 
 add_library(CoronaEngine STATIC
     engine.cpp
+    shared_data_hub.cpp
+
     include/corona/engine.h
+    include/corona/shared_data_hub.h
 )
 
 add_library(corona::engine ALIAS CoronaEngine)

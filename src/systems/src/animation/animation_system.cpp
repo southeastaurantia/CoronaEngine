@@ -1,4 +1,5 @@
 #include <corona/systems/animation_system.h>
+#include <corona/shared_data_hub.h>
 
 namespace Corona::Systems {
 
@@ -7,6 +8,9 @@ bool AnimationSystem::initialize(Kernel::ISystemContext* ctx) {
     // - 注册动画组件
     // - 初始化动画状态管理器
     // - 订阅相关事件
+
+    SharedDataHub::instance().demo_data_storage();
+
     return true;
 }
 

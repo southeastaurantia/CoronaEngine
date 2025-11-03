@@ -9,10 +9,7 @@ class SharedDataHub {
     };
 
    public:
-    static SharedDataHub& instance() {
-        static SharedDataHub instance;
-        return instance;
-    }
+    static SharedDataHub& instance();
 
     ~SharedDataHub() = default;
 
@@ -25,8 +22,8 @@ class SharedDataHub {
 
    public:
     using DemoDataStorage = Kernel::Utils::Storage<DemoData, 128>;
-    DemoDataStorage& demo_data_storage() { return demo_data_storage_; }
-    const DemoDataStorage& demo_data_storage() const { return demo_data_storage_; }
+    DemoDataStorage& demo_data_storage();
+    const DemoDataStorage& demo_data_storage() const;
 
    private:
     DemoDataStorage demo_data_storage_;
