@@ -5,10 +5,12 @@
 # ==============================================================================
 
 # 添加系统子目录
+add_subdirectory(systems/src/acoustics)
+add_subdirectory(systems/src/optics)
+add_subdirectory(systems/src/mechanics)
+add_subdirectory(systems/src/geometry)
 add_subdirectory(systems/src/animation)
-add_subdirectory(systems/src/audio)
 add_subdirectory(systems/src/display)
-add_subdirectory(systems/src/rendering)
 
 # ==============================================================================
 # CoronaEngine 核心库
@@ -32,10 +34,12 @@ target_include_directories(CoronaEngine PUBLIC
 # 链接依赖
 target_link_libraries(CoronaEngine PUBLIC
     corona::kernel
+    corona::system::acoustics
+    corona::system::optics
+    corona::system::mechanics
+    corona::system::geometry
     corona::system::animation
-    corona::system::audio
     corona::system::display
-    corona::system::rendering
 )
 
 # 设置 C++ 标准

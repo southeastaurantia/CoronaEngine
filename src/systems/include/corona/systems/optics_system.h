@@ -5,25 +5,25 @@
 namespace Corona::Systems {
 
 /**
- * @brief 渲染系统
+ * @brief 光学系统 (Optics System)
  *
- * 负责场景渲染、GPU 资源管理和渲染管线控制。
+ * 负责场景光学渲染、光线追踪、GPU 资源管理和渲染管线控制。
  * 运行在独立线程，以 60 FPS 渲染场景。
  */
-class RenderingSystem : public Kernel::SystemBase {
+class OpticsSystem : public Kernel::SystemBase {
    public:
-    RenderingSystem() {
-        set_target_fps(60);  // 渲染系统运行在 60 FPS
+    OpticsSystem() {
+        set_target_fps(60);  // 光学系统运行在 60 FPS
     }
 
-    ~RenderingSystem() override = default;
+    ~OpticsSystem() override = default;
 
     // ========================================
     // ISystem 接口实现
     // ========================================
 
     std::string_view get_name() const override {
-        return "Rendering";
+        return "Optics";
     }
 
     int get_priority() const override {
@@ -31,7 +31,7 @@ class RenderingSystem : public Kernel::SystemBase {
     }
 
     /**
-     * @brief 初始化渲染系统
+     * @brief 初始化光学系统
      * @param ctx 系统上下文
      * @return 初始化成功返回 true
      */
@@ -40,19 +40,19 @@ class RenderingSystem : public Kernel::SystemBase {
     /**
      * @brief 每帧渲染
      *
-     * 在独立线程中调用，执行场景渲染
+     * 在独立线程中调用，执行场景光学渲染
      */
     void update() override;
 
     /**
-     * @brief 关闭渲染系统
+     * @brief 关闭光学系统
      *
      * 清理所有 GPU 资源和渲染管线
      */
     void shutdown() override;
 
    private:
-    // 渲染系统内部状态（待实现）
+    // TODO: 添加光学系统私有成员
 };
 
 }  // namespace Corona::Systems

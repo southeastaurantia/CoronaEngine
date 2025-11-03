@@ -1,9 +1,11 @@
 #include "corona/engine.h"
 
+#include <corona/systems/acoustics_system.h>
 #include <corona/systems/animation_system.h>
-#include <corona/systems/audio_system.h>
 #include <corona/systems/display_system.h>
-#include <corona/systems/rendering_system.h>
+#include <corona/systems/geometry_system.h>
+#include <corona/systems/mechanics_system.h>
+#include <corona/systems/optics_system.h>
 
 #include <chrono>
 #include <memory>
@@ -213,7 +215,7 @@ bool Engine::register_systems() {
     auto* logger = kernel_.logger();
 
     // 注册核心系统（按优先级自动排序）
-    // Display(100) > Rendering(90) > Animation(80) > Audio(70)
+    // Display(100) > Optics(90) > Geometry(85) > Animation(80) > Mechanics(75) > Acoustics(70)
 
     if (logger) {
         logger->info("Registering core systems...");
@@ -225,22 +227,34 @@ bool Engine::register_systems() {
         logger->info("  - DisplaySystem registered (priority 100)");
     }
 
-    // Rendering System
-    sys_mgr->register_system(std::make_shared<Systems::RenderingSystem>());
+    // Optics System (光学系统)
+    sys_mgr->register_system(std::make_shared<Systems::OpticsSystem>());
     if (logger) {
-        logger->info("  - RenderingSystem registered (priority 90)");
+        logger->info("  - OpticsSystem registered (priority 90)");
     }
 
-    // Animation System
+    // Geometry System (几何系统)
+    sys_mgr->register_system(std::make_shared<Systems::GeometrySystem>());
+    if (logger) {
+        logger->info("  - GeometrySystem registered (priority 85)");
+    }
+
+    // Animation System (动画系统)
     sys_mgr->register_system(std::make_shared<Systems::AnimationSystem>());
     if (logger) {
         logger->info("  - AnimationSystem registered (priority 80)");
     }
 
-    // Audio System
-    sys_mgr->register_system(std::make_shared<Systems::AudioSystem>());
+    // Mechanics System (力学系统)
+    sys_mgr->register_system(std::make_shared<Systems::MechanicsSystem>());
     if (logger) {
-        logger->info("  - AudioSystem registered (priority 70)");
+        logger->info("  - MechanicsSystem registered (priority 75)");
+    }
+
+    // Acoustics System (声学系统)
+    sys_mgr->register_system(std::make_shared<Systems::AcousticsSystem>());
+    if (logger) {
+        logger->info("  - AcousticsSystem registered (priority 70)");
     }
 
     if (logger) {
