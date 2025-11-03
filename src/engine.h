@@ -1,7 +1,6 @@
 #pragma once
 
 #include <corona/kernel/core/kernel_context.h>
-#include <corona/shared_data_hub.h>
 
 #include <atomic>
 
@@ -137,12 +136,6 @@ class Engine {
      */
     Kernel::IEventBus* event_bus();
 
-    /**
-     * @brief 获取共享数据中心
-     * @return 共享数据中心引用
-     */
-    SharedDataHub& shared_data_hub();
-
    private:
     // ========================================
     // 内部方法
@@ -166,7 +159,6 @@ class Engine {
     // ========================================
 
     Kernel::KernelContext& kernel_;     ///< KernelContext 引用
-    SharedDataHub shared_data_hub_;     ///< 共享数据中心
     std::atomic<bool> initialized_;     ///< 初始化标志
     std::atomic<bool> running_;         ///< 运行标志
     std::atomic<bool> exit_requested_;  ///< 退出请求标志
