@@ -136,6 +136,12 @@ class Engine {
      */
     Kernel::IEventBus* event_bus();
 
+    /**
+     * @brief 获取事件流
+     * @return 事件流指针，未初始化返回 nullptr
+     */
+    Kernel::IEventBusStream* event_stream();
+
    private:
     // ========================================
     // 内部方法

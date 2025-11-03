@@ -1,29 +1,50 @@
-#include <corona/systems/display_system.h>
+﻿#include <corona/systems/display_system.h>
+
+#include <corona/events/display_system_events.h>
+#include <corona/events/engine_events.h>
+#include <corona/kernel/core/i_logger.h>
 
 namespace Corona::Systems {
 
 bool DisplaySystem::initialize(Kernel::ISystemContext* ctx) {
-    // TODO: 初始化显示系统
-    // - 创建主窗口
-    // - 初始化输入管理器
-    // - 设置显示模式
-    // - 注册窗口事件回调
+    auto* logger = ctx->logger();
+    logger->info("DisplaySystem: Initializing event demo");
+
+    auto* event_stream = ctx->event_stream();
+    if (event_stream) {
+        logger->info("DisplaySystem: EventStream subscriptions ready (demo)");
+    }
+
+    auto* event_bus = ctx->event_bus();
+    if (event_bus) {
+        logger->info("DisplaySystem: EventBus subscriptions ready (demo)");
+    }
+
     return true;
 }
 
 void DisplaySystem::update() {
-    // TODO: 每帧更新显示
-    // - 轮询窗口事件
-    // - 处理键盘/鼠标输入
-    // - 更新窗口状态
-    // - 发布输入事件
+    static int frame_count = 0;
+    frame_count++;
+
+    if (frame_count % 50 == 0) {
+        auto* event_stream = context()->event_stream();
+        if (event_stream) {
+            context()->logger()->info("DisplaySystem: Would send DisplayToEngineDemoEvent (demo)");
+        }
+    }
+
+    if (frame_count % 100 == 0) {
+        auto* event_bus = context()->event_bus();
+        if (event_bus) {
+            context()->logger()->info("DisplaySystem: Would publish internal event (demo)");
+        }
+    }
 }
 
 void DisplaySystem::shutdown() {
-    // TODO: 清理显示系统
-    // - 销毁窗口
-    // - 释放输入资源
-    // - 取消事件回调
+    auto* logger = context()->logger();
+    logger->info("DisplaySystem: Shutting down event demo");
 }
 
 }  // namespace Corona::Systems

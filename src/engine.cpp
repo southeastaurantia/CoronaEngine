@@ -1,5 +1,6 @@
 #include "corona/engine.h"
 
+#include <corona/events/engine_events.h>
 #include <corona/systems/acoustics_system.h>
 #include <corona/systems/animation_system.h>
 #include <corona/systems/display_system.h>
@@ -192,6 +193,10 @@ Kernel::IEventBus* Engine::event_bus() {
     return kernel_.event_bus();
 }
 
+Kernel::IEventBusStream* Engine::event_stream() {
+    return kernel_.event_stream();
+}
+
 // ============================================================================
 // 内部方法
 // ============================================================================
@@ -239,30 +244,52 @@ bool Engine::register_systems() {
 }
 
 void Engine::tick() {
-    // 1. 处理引擎级事件
+    auto* logger = kernel_.logger();
     auto* event_bus = kernel_.event_bus();
-    if (event_bus) {
-        // TODO: 处理引擎级事件队列
-        // event_bus->process_events();
+    auto* event_stream = kernel_.event_stream();
+
+    // 【DEMO】1. 广播帧开始事件（跨线程使用 EventStream）
+    static int tick_count = 0;
+    tick_count++;
+    
+    if (tick_count % 120 == 0) {
+        // Events::FrameBeginEvent frame_begin{frame_number_, last_frame_time_};
+        // event_stream->publish(frame_begin);
+        logger->info("Engine: Would broadcast FrameBeginEvent (demo)");
     }
 
-    // 2. 更新系统上下文的帧信息
+    // 【DEMO】2. 处理引擎级事件（单线程内部使用 EventBus）
+    if (tick_count % 240 == 0 && event_bus) {
+        // Events::EngineDemoEvent event{static_cast<int>(frame_number_)};
+        // event_bus->publish(event);
+        logger->info("Engine: Would publish internal EngineDemoEvent (demo)");
+    }
+
+    // 【DEMO】3. 每 300 帧向各系统发送跨线程演示事件
+    if (tick_count % 300 == 0 && event_stream) {
+        logger->info("Engine: Would send demo events to all systems (demo)");
+        // Events::EngineToAcousticsDemoEvent{100}.publish(event_stream);
+        // Events::EngineToOpticsDemoEvent{200}.publish(event_stream);
+        // Events::EngineToMechanicsDemoEvent{300}.publish(event_stream);
+        // Events::EngineToGeometryDemoEvent{400}.publish(event_stream);
+        // Events::EngineToAnimationDemoEvent{500}.publish(event_stream);
+        // Events::EngineToDisplayDemoEvent{600}.publish(event_stream);
+    }
+
+    // 4. 更新系统上下文的帧信息
     // 系统通过 SystemBase 的 delta_time() 和 frame_number() 访问帧信息
-    // 这些信息由各系统自己维护
-    // TODO: 如果需要全局同步的帧信息，可以通过事件总线广播
 
-    // 3. 同步所有系统（可选）
+    // 5. 同步所有系统（可选）
     // 系统在各自的线程中运行，主循环可以在这里进行跨系统的同步
-    // TODO: 实现系统间的同步机制
-    // - 等待关键系统完成特定阶段
-    // - 触发系统间的依赖链
 
-    // 4. 收集性能统计
-    // TODO: 收集帧时间、系统性能等统计信息
-    // - 记录帧时间历史
-    // - 计算平均 FPS
-    // - 检测性能瓶颈
-    // - 记录系统负载
+    // 6. 收集性能统计
+
+    // 【DEMO】7. 广播帧结束事件（跨线程使用 EventStream）
+    if (tick_count % 120 == 0) {
+        // Events::FrameEndEvent frame_end{frame_number_, last_frame_time_};
+        // event_stream->publish(frame_end);
+        logger->info("Engine: Would broadcast FrameEndEvent (demo)");
+    }
 }
 
 }  // namespace Corona
