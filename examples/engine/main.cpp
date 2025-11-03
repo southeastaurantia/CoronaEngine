@@ -59,6 +59,8 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
+
+
     std::cout << "[Main] Engine initialized successfully" << std::endl;
     std::cout << std::endl;
 

@@ -11,6 +11,7 @@ add_subdirectory(systems/src/mechanics)
 add_subdirectory(systems/src/geometry)
 add_subdirectory(systems/src/animation)
 add_subdirectory(systems/src/display)
+add_subdirectory(script/src)
 
 # ==============================================================================
 # CoronaEngine 核心库
@@ -40,6 +41,7 @@ target_link_libraries(CoronaEngine PUBLIC
     corona::system::geometry
     corona::system::animation
     corona::system::display
+    corona::script::python
 )
 
 # 设置 C++ 标准
