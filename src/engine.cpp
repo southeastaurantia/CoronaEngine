@@ -47,52 +47,42 @@ bool Engine::initialize() {
     }
 
     auto* logger = kernel_.logger();
-    if (logger) {
-        logger->info("====================================");
-        logger->info("CoronaEngine Initializing...");
-        logger->info("====================================");
-    }
+    logger->info("====================================");
+    logger->info("CoronaEngine Initializing...");
+    logger->info("====================================");
 
     // 2. 注册核心系统
     if (!register_systems()) {
-        if (logger) {
-            logger->error("Failed to register systems");
-        }
+        logger->error("Failed to register systems");
         return false;
     }
 
     // 3. 初始化所有系统
     auto* sys_mgr = kernel_.system_manager();
     if (!sys_mgr || !sys_mgr->initialize_all()) {
-        if (logger) {
-            logger->error("Failed to initialize systems");
-        }
+        logger->error("Failed to initialize systems");
         return false;
     }
 
     initialized_.store(true);
 
-    if (logger) {
-        logger->info("====================================");
-        logger->info("CoronaEngine Initialized Successfully");
-        logger->info("====================================");
-    }
+    logger->info("====================================");
+    logger->info("CoronaEngine Initialized Successfully");
+    logger->info("====================================");
 
     return true;
 }
 
 void Engine::run() {
     if (!initialized_.load()) {
-        if (auto* logger = kernel_.logger()) {
-            logger->error("Cannot run engine: not initialized");
-        }
+        auto* logger = kernel_.logger();
+        logger->error("Cannot run engine: not initialized");
         return;
     }
 
     if (running_.load()) {
-        if (auto* logger = kernel_.logger()) {
-            logger->warning("Engine is already running");
-        }
+        auto* logger = kernel_.logger();
+        logger->warning("Engine is already running");
         return;
     }
 
@@ -100,11 +90,9 @@ void Engine::run() {
     exit_requested_.store(false);
 
     auto* logger = kernel_.logger();
-    if (logger) {
-        logger->info("====================================");
-        logger->info("CoronaEngine Starting Main Loop");
-        logger->info("====================================");
-    }
+    logger->info("====================================");
+    logger->info("CoronaEngine Starting Main Loop");
+    logger->info("====================================");
 
     // 启动所有系统线程
     auto* sys_mgr = kernel_.system_manager();
@@ -132,11 +120,9 @@ void Engine::run() {
         std::this_thread::sleep_for(std::chrono::milliseconds(16));
     }
 
-    if (logger) {
-        logger->info("====================================");
-        logger->info("CoronaEngine Main Loop Exited");
-        logger->info("====================================");
-    }
+    logger->info("====================================");
+    logger->info("CoronaEngine Main Loop Exited");
+    logger->info("====================================");
 
     running_.store(false);
 }
@@ -144,9 +130,8 @@ void Engine::run() {
 void Engine::request_exit() {
     exit_requested_.store(true);
 
-    if (auto* logger = kernel_.logger()) {
-        logger->info("Engine exit requested");
-    }
+    auto* logger = kernel_.logger();
+    logger->info("Engine exit requested");
 }
 
 void Engine::shutdown() {
@@ -155,11 +140,9 @@ void Engine::shutdown() {
     }
 
     auto* logger = kernel_.logger();
-    if (logger) {
-        logger->info("====================================");
-        logger->info("CoronaEngine Shutting Down...");
-        logger->info("====================================");
-    }
+    logger->info("====================================");
+    logger->info("CoronaEngine Shutting Down...");
+    logger->info("====================================");
 
     // 关闭内核（SystemManager 的析构函数会自动调用 shutdown_all() 和 stop_all()）
     // 注意：kernel_.shutdown() 会重置 logger，所以之后不能再使用 logger 指针
@@ -217,49 +200,33 @@ bool Engine::register_systems() {
     // 注册核心系统（按优先级自动排序）
     // Display(100) > Optics(90) > Geometry(85) > Animation(80) > Mechanics(75) > Acoustics(70)
 
-    if (logger) {
-        logger->info("Registering core systems...");
-    }
+    logger->info("Registering core systems...");
 
     // Display System - 最高优先级
     sys_mgr->register_system(std::make_shared<Systems::DisplaySystem>());
-    if (logger) {
-        logger->info("  - DisplaySystem registered (priority 100)");
-    }
+    logger->info("  - DisplaySystem registered (priority 100)");
 
     // Optics System (光学系统)
     sys_mgr->register_system(std::make_shared<Systems::OpticsSystem>());
-    if (logger) {
-        logger->info("  - OpticsSystem registered (priority 90)");
-    }
+    logger->info("  - OpticsSystem registered (priority 90)");
 
     // Geometry System (几何系统)
     sys_mgr->register_system(std::make_shared<Systems::GeometrySystem>());
-    if (logger) {
-        logger->info("  - GeometrySystem registered (priority 85)");
-    }
+    logger->info("  - GeometrySystem registered (priority 85)");
 
     // Animation System (动画系统)
     sys_mgr->register_system(std::make_shared<Systems::AnimationSystem>());
-    if (logger) {
-        logger->info("  - AnimationSystem registered (priority 80)");
-    }
+    logger->info("  - AnimationSystem registered (priority 80)");
 
     // Mechanics System (力学系统)
     sys_mgr->register_system(std::make_shared<Systems::MechanicsSystem>());
-    if (logger) {
-        logger->info("  - MechanicsSystem registered (priority 75)");
-    }
+    logger->info("  - MechanicsSystem registered (priority 75)");
 
     // Acoustics System (声学系统)
     sys_mgr->register_system(std::make_shared<Systems::AcousticsSystem>());
-    if (logger) {
-        logger->info("  - AcousticsSystem registered (priority 70)");
-    }
+    logger->info("  - AcousticsSystem registered (priority 70)");
 
-    if (logger) {
-        logger->info("All core systems registered");
-    }
+    logger->info("All core systems registered");
 
     return true;
 }
