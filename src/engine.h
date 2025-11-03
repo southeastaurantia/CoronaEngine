@@ -1,6 +1,8 @@
 #pragma once
 
 #include <corona/kernel/core/kernel_context.h>
+#include <corona/shared_data_hub.h>
+
 #include <atomic>
 
 namespace Corona {
@@ -20,7 +22,7 @@ namespace Corona {
  * if (!engine.initialize()) {
  *     return -1;
  * }
- * 
+ *
  * engine.run();  // 主循环
  * engine.shutdown();
  * @endcode
@@ -34,7 +36,7 @@ class Engine {
 
     /**
      * @brief 析构函数
-     * 
+     *
      * 确保引擎正确关闭
      */
     ~Engine();
@@ -51,39 +53,39 @@ class Engine {
 
     /**
      * @brief 初始化引擎
-     * 
+     *
      * 初始化顺序：
      * 1. 初始化 KernelContext（日志、事件、VFS 等）
      * 2. 注册核心系统（Display -> Rendering -> Animation -> Audio）
      * 3. 初始化所有系统
-     * 
+     *
      * @return 初始化成功返回 true，失败返回 false
      */
     bool initialize();
 
     /**
      * @brief 运行主循环
-     * 
+     *
      * 启动所有系统并进入主循环。
      * 主循环负责：
      * - 更新帧时间
      * - 同步系统
      * - 处理引擎级事件
-     * 
+     *
      * 调用 request_exit() 可退出主循环
      */
     void run();
 
     /**
      * @brief 请求退出引擎
-     * 
+     *
      * 设置退出标志，主循环将在当前帧结束后退出
      */
     void request_exit();
 
     /**
      * @brief 关闭引擎
-     * 
+     *
      * 关闭顺序：
      * 1. 停止所有系统线程
      * 2. 关闭所有系统
@@ -135,6 +137,12 @@ class Engine {
      */
     Kernel::IEventBus* event_bus();
 
+    /**
+     * @brief 获取共享数据中心
+     * @return 共享数据中心引用
+     */
+    SharedDataHub& shared_data_hub();
+
    private:
     // ========================================
     // 内部方法
@@ -148,7 +156,7 @@ class Engine {
 
     /**
      * @brief 主循环的单次迭代
-     * 
+     *
      * 更新帧时间、同步系统、处理事件
      */
     void tick();
@@ -157,13 +165,14 @@ class Engine {
     // 成员变量
     // ========================================
 
-    Kernel::KernelContext& kernel_;         ///< KernelContext 引用
-    std::atomic<bool> initialized_;         ///< 初始化标志
-    std::atomic<bool> running_;             ///< 运行标志
-    std::atomic<bool> exit_requested_;      ///< 退出请求标志
+    Kernel::KernelContext& kernel_;     ///< KernelContext 引用
+    SharedDataHub shared_data_hub_;     ///< 共享数据中心
+    std::atomic<bool> initialized_;     ///< 初始化标志
+    std::atomic<bool> running_;         ///< 运行标志
+    std::atomic<bool> exit_requested_;  ///< 退出请求标志
 
-    uint64_t frame_number_;                 ///< 当前帧号
-    float last_frame_time_;                 ///< 上一帧时间（秒）
+    uint64_t frame_number_;  ///< 当前帧号
+    float last_frame_time_;  ///< 上一帧时间（秒）
 };
 
 }  // namespace Corona
