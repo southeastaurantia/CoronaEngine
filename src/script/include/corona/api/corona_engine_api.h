@@ -23,20 +23,20 @@ struct CoronaEngineAPI {
         void scale(ktm::fvec3 size) const;
 
        private:
-        entt::entity actorID;
+        entt::entity actor_id_;
     };
 
     struct Scene {
        public:
-        Scene(void* surface = nullptr, bool lightField = false);
+        Scene(void* surface = nullptr, bool light_field = false);
         ~Scene();
 
-        void setCamera(const ktm::fvec3& position, const ktm::fvec3& forward, const ktm::fvec3& worldUp, float fov) const;
-        void setSunDirection(ktm::fvec3 direction) const;
-        void setDisplaySurface(void* surface);
+        void set_camera(const ktm::fvec3& position, const ktm::fvec3& forward, const ktm::fvec3& world_up, float fov) const;
+        void set_sun_direction(ktm::fvec3 direction) const;
+        void set_display_surface(void* surface);
 
        private:
-        entt::entity sceneID;
+        entt::entity scene_id_;
     };
 
    private:
