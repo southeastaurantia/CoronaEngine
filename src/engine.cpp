@@ -74,14 +74,13 @@ bool Engine::initialize() {
 }
 
 void Engine::run() {
+    auto* logger = kernel_.logger();
     if (!initialized_.load()) {
-        auto* logger = kernel_.logger();
         logger->error("Cannot run engine: not initialized");
         return;
     }
 
     if (running_.load()) {
-        auto* logger = kernel_.logger();
         logger->warning("Engine is already running");
         return;
     }
@@ -89,7 +88,6 @@ void Engine::run() {
     running_.store(true);
     exit_requested_.store(false);
 
-    auto* logger = kernel_.logger();
     logger->info("====================================");
     logger->info("CoronaEngine Starting Main Loop");
     logger->info("====================================");
@@ -102,13 +100,15 @@ void Engine::run() {
 
     // 主循环
     auto last_time = std::chrono::high_resolution_clock::now();
+    constexpr auto target_frame_duration = std::chrono::microseconds(8333);  // 120 FPS
 
     while (!exit_requested_.load()) {
+        auto frame_start_time = std::chrono::high_resolution_clock::now();
+
         // 计算帧时间
-        auto current_time = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<float> delta_duration = current_time - last_time;
+        std::chrono::duration<float> delta_duration = frame_start_time - last_time;
         last_frame_time_ = delta_duration.count();
-        last_time = current_time;
+        last_time = frame_start_time;
 
         // 执行一帧
         tick();
@@ -116,8 +116,15 @@ void Engine::run() {
         // 帧号递增
         frame_number_++;
 
-        // 主循环帧率控制（60 FPS）
-        std::this_thread::sleep_for(std::chrono::milliseconds(16));
+        // 帧率控制（120 FPS）
+        auto frame_end_time = std::chrono::high_resolution_clock::now();
+        auto frame_elapsed = frame_end_time - frame_start_time;
+        
+        // 计算剩余时间并 sleep
+        if (frame_elapsed < target_frame_duration) {
+            auto sleep_duration = target_frame_duration - frame_elapsed;
+            std::this_thread::sleep_for(sleep_duration);
+        }
     }
 
     logger->info("====================================");
@@ -232,13 +239,30 @@ bool Engine::register_systems() {
 }
 
 void Engine::tick() {
-    // TODO: 主循环逻辑
     // 1. 处理引擎级事件
-    // 2. 更新系统上下文的帧信息
-    // 3. 同步所有系统（可选）
-    // 4. 收集性能统计
+    auto* event_bus = kernel_.event_bus();
+    if (event_bus) {
+        // TODO: 处理引擎级事件队列
+        // event_bus->process_events();
+    }
 
-    // 暂时为空，等待后续实现
+    // 2. 更新系统上下文的帧信息
+    // 系统通过 SystemBase 的 delta_time() 和 frame_number() 访问帧信息
+    // 这些信息由各系统自己维护
+    // TODO: 如果需要全局同步的帧信息，可以通过事件总线广播
+
+    // 3. 同步所有系统（可选）
+    // 系统在各自的线程中运行，主循环可以在这里进行跨系统的同步
+    // TODO: 实现系统间的同步机制
+    // - 等待关键系统完成特定阶段
+    // - 触发系统间的依赖链
+
+    // 4. 收集性能统计
+    // TODO: 收集帧时间、系统性能等统计信息
+    // - 记录帧时间历史
+    // - 计算平均 FPS
+    // - 检测性能瓶颈
+    // - 记录系统负载
 }
 
 }  // namespace Corona
