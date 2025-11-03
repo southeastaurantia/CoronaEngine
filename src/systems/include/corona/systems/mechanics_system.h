@@ -1,6 +1,11 @@
 #pragma once
 
+#include <corona/events/mechanics_system_events.h>
+#include <corona/kernel/event/i_event_bus.h>
+#include <corona/kernel/event/i_event_stream.h>
 #include <corona/kernel/system/system_base.h>
+
+#include <memory>
 
 namespace Corona::Systems {
 
@@ -53,6 +58,8 @@ class MechanicsSystem : public Kernel::SystemBase {
 
    private:
     // TODO: 添加力学系统私有成员
+    std::shared_ptr<Kernel::EventStream<Events::EngineToMechanicsDemoEvent>> engine_stream_;
+    Kernel::EventSubscription<Events::EngineToMechanicsDemoEvent> engine_sub_;
 };
 
 }  // namespace Corona::Systems

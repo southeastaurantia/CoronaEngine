@@ -1,6 +1,11 @@
 #pragma once
 
+#include <corona/events/optics_system_events.h>
+#include <corona/kernel/event/i_event_bus.h>
+#include <corona/kernel/event/i_event_stream.h>
 #include <corona/kernel/system/system_base.h>
+
+#include <memory>
 
 namespace Corona::Systems {
 
@@ -53,6 +58,8 @@ class OpticsSystem : public Kernel::SystemBase {
 
    private:
     // TODO: 添加光学系统私有成员
+    std::shared_ptr<Kernel::EventStream<Events::EngineToOpticsDemoEvent>> engine_stream_;
+    Kernel::EventSubscription<Events::EngineToOpticsDemoEvent> engine_sub_;
 };
 
 }  // namespace Corona::Systems

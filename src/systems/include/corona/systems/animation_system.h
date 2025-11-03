@@ -1,6 +1,11 @@
 #pragma once
 
+#include <corona/events/animation_system_events.h>
+#include <corona/kernel/event/i_event_bus.h>
+#include <corona/kernel/event/i_event_stream.h>
 #include <corona/kernel/system/system_base.h>
+
+#include <memory>
 
 namespace Corona::Systems {
 
@@ -53,6 +58,8 @@ class AnimationSystem : public Kernel::SystemBase {
 
    private:
     // 动画系统内部状态（待实现）
+    std::shared_ptr<Kernel::EventStream<Events::EngineToAnimationDemoEvent>> engine_stream_;
+    Kernel::EventSubscription<Events::EngineToAnimationDemoEvent> engine_sub_;
 };
 
 }  // namespace Corona::Systems
