@@ -10,8 +10,6 @@
 # 2. Expose configuration knobs:
 # - `CORONA_PYTHON_MIN_VERSION`: expected minimum Python version
 # (major.minor).
-# - `CORONA_PYTHON_USE_EMBEDDED_FALLBACK`: retain compatibility with
-# future system detection logic.
 # 3. Validate requirements listed in `misc/pytools/requirements.txt` via
 # `check_pip_modules.py`, optionally installing missing packages.
 # 4. Create the `check_python_deps` custom target for manual re-validation.

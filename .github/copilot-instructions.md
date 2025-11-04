@@ -31,7 +31,7 @@
 - **Key options** (`misc/cmake/corona_options.cmake`): Toggle with `-D` flags:
   - `BUILD_CORONA_RUNTIME=ON`: Build main executable
   - `BUILD_CORONA_EDITOR=OFF`: Editor resource staging
-  - `CORONA_BUILD_EXAMPLES=ON`: Example programs (default when top-level)
+  - `BUILD_CORONA_EXAMPLES=ON`: Example programs (default when top-level)
   - `CORONA_BUILD_VISION=OFF`: Vision module features
   - `CORONA_CHECK_PY_DEPS=ON`: Validate Python dependencies at configure time
   - `CORONA_AUTO_INSTALL_PY_DEPS=ON`: Auto-install missing Python packages

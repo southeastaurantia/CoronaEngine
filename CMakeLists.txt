@@ -45,7 +45,7 @@ include(CTest)
 # ------------------------------------------------------------------------------
 add_subdirectory(src)               # Core engine static library
 
-if(CORONA_BUILD_EXAMPLES)
+if(BUILD_CORONA_EXAMPLES)
     add_subdirectory(examples)      # Example applications
 endif()
 
@@ -63,7 +63,7 @@ if(Python_VERSION)
 endif()
 
 message(STATUS "  Build runtime         : ${BUILD_CORONA_RUNTIME}")
-message(STATUS "  Build examples        : ${CORONA_BUILD_EXAMPLES}")
+message(STATUS "  Build examples        : ${BUILD_CORONA_EXAMPLES}")
 message(STATUS "  Build editor          : ${BUILD_CORONA_EDITOR}")
 message(STATUS "  Check Python deps     : ${CORONA_CHECK_PY_DEPS}")
 message(STATUS "  Auto install deps     : ${CORONA_AUTO_INSTALL_PY_DEPS}")
