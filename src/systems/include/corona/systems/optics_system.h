@@ -58,11 +58,8 @@ class OpticsSystem : public Kernel::SystemBase {
 
    private:
     // TODO: 添加光学系统私有成员
-    std::shared_ptr<Kernel::EventStream<Events::EngineToOpticsDemoEvent>> engine_stream_;
-    Kernel::EventSubscription<Events::EngineToOpticsDemoEvent> engine_sub_;
-    
-    // 系统内部事件订阅（EventBus）
-    Kernel::EventId internal_event_id_ = 0;
+    Kernel::EventId surface_changed_sub_id_ = 0;
+    void* surface_handle_ = nullptr;
 };
 
 }  // namespace Corona::Systems

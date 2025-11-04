@@ -10,25 +10,11 @@ namespace Corona::Systems {
 
 bool DisplaySystem::initialize(Kernel::ISystemContext* ctx) {
     auto* logger = ctx->logger();
-    logger->info("DisplaySystem: Initializing event demo");
-
-    // 【订阅跨线程事件】使用 EventStream
-    auto* event_stream = ctx->event_stream();
-    if (event_stream) {
-        engine_stream_ = event_stream->get_stream<Events::EngineToDisplayDemoEvent>();
-        engine_sub_ = engine_stream_->subscribe();
-        logger->info("DisplaySystem: EventStream subscriptions ready");
-    }
+    logger->info("DisplaySystem: Initializing...");
 
     // 【订阅系统内部事件】使用 EventBus
     auto* event_bus = ctx->event_bus();
     if (event_bus) {
-        internal_event_id_ = event_bus->subscribe<Events::DisplaySystemDemoEvent>(
-            [logger](const Events::DisplaySystemDemoEvent& event) {
-                if (logger) {
-                    logger->info("DisplaySystem: Received internal event, demo_value=" + std::to_string(event.demo_value));
-                }
-            });
         logger->info("DisplaySystem: EventBus subscriptions ready");
     }
 
@@ -36,47 +22,12 @@ bool DisplaySystem::initialize(Kernel::ISystemContext* ctx) {
 }
 
 void DisplaySystem::update() {
-    // 处理来自引擎的跨线程事件
-    while (auto event = engine_sub_.try_pop()) {
-        context()->logger()->info("DisplaySystem: Received EngineToDisplayDemoEvent, delta_time=" + std::to_string(event->delta_time));
-    }
-
-    static int frame_count = 0;
-    frame_count++;
-
-    // 每 50 帧发送一次跨线程事件到引擎
-    if (frame_count % 50 == 0) {
-        auto* event_stream = context()->event_stream();
-        if (event_stream) {
-            Events::DisplayToEngineDemoEvent event{delta_time()};
-            event_stream->get_stream<Events::DisplayToEngineDemoEvent>()->publish(event);
-            context()->logger()->info("DisplaySystem: Published DisplayToEngineDemoEvent");
-        }
-    }
-
-    // 每 100 帧发送一次系统内部事件（EventBus 仅在当前系统线程使用）
-    if (frame_count % 100 == 0) {
-        auto* event_bus = context()->event_bus();
-        if (event_bus) {
-            Events::DisplaySystemDemoEvent event{100};
-            event_bus->publish(event);
-            context()->logger()->info("DisplaySystem: Published internal EventBus event");
-        }
-    }
 }
 
 void DisplaySystem::shutdown() {
     auto* logger = context()->logger();
-    logger->info("DisplaySystem: Shutting down event demo");
-    
-    // 取消 EventBus 订阅
-    auto* event_bus = context()->event_bus();
-    if (event_bus && internal_event_id_ != 0) {
-        event_bus->unsubscribe(internal_event_id_);
-    }
-    
-    // 关闭 EventStream 订阅
-    engine_sub_.close();
+    logger->info("DisplaySystem: Shutting down...");
+
 }
 
 }  // namespace Corona::Systems

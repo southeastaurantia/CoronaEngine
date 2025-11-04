@@ -57,12 +57,7 @@ class AcousticsSystem : public Kernel::SystemBase {
     void shutdown() override;
 
    private:
-    // 跨线程事件订阅（EventStream）
-    std::shared_ptr<Kernel::EventStream<Events::EngineToAcousticsDemoEvent>> engine_stream_;
-    Kernel::EventSubscription<Events::EngineToAcousticsDemoEvent> engine_sub_;
-    
-    // 系统内部事件订阅（EventBus）
-    Kernel::EventId internal_event_id_ = 0;
+    // 声学系统私有成员
 };
 
 }  // namespace Corona::Systems

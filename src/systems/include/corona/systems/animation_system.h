@@ -57,12 +57,7 @@ class AnimationSystem : public Kernel::SystemBase {
     void shutdown() override;
 
    private:
-    // 动画系统内部状态（待实现）
-    std::shared_ptr<Kernel::EventStream<Events::EngineToAnimationDemoEvent>> engine_stream_;
-    Kernel::EventSubscription<Events::EngineToAnimationDemoEvent> engine_sub_;
-    
-    // 系统内部事件订阅（EventBus）
-    Kernel::EventId internal_event_id_ = 0;
+    // 动画系统私有成员
 };
 
 }  // namespace Corona::Systems

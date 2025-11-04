@@ -23,4 +23,10 @@ struct OpticsToEngineDemoEvent {
     float delta_time;
 };
 
+/**
+ * @brief 显示表面变化事件（使用 EventBus）
+ */
+struct DisplaySurfaceChangedEvent {
+    void* surface;
+};
 }  // namespace Corona::Events
