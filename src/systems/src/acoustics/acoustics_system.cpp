@@ -1,10 +1,9 @@
-#include <corona/systems/acoustics_system.h>
-
 #include <corona/events/acoustics_system_events.h>
 #include <corona/events/engine_events.h>
 #include <corona/kernel/core/i_logger.h>
 #include <corona/kernel/event/i_event_bus.h>
 #include <corona/kernel/event/i_event_stream.h>
+#include <corona/systems/acoustics_system.h>
 
 namespace Corona::Systems {
 
@@ -18,7 +17,7 @@ bool AcousticsSystem::initialize(Kernel::ISystemContext* ctx) {
         // 订阅来自引擎的消息
         engine_stream_ = event_stream->get_stream<Events::EngineToAcousticsDemoEvent>();
         engine_sub_ = engine_stream_->subscribe();
-        
+
         logger->info("AcousticsSystem: EventStream subscriptions ready");
     }
 
@@ -31,7 +30,7 @@ bool AcousticsSystem::initialize(Kernel::ISystemContext* ctx) {
                     logger->info("AcousticsSystem: Received internal event, demo_value=" + std::to_string(event.demo_value));
                 }
             });
-        
+
         logger->info("AcousticsSystem: EventBus subscriptions ready");
     }
 
@@ -46,7 +45,7 @@ void AcousticsSystem::update() {
     if (engine_sub_.is_valid()) {
         while (auto event = engine_sub_.try_pop()) {
             std::string msg = "AcousticsSystem: Received EngineToAcousticsDemoEvent, delta_time=" +
-                            std::to_string(event->delta_time);
+                              std::to_string(event->delta_time);
             context()->logger()->info(msg);
         }
     }
@@ -75,13 +74,13 @@ void AcousticsSystem::update() {
 void AcousticsSystem::shutdown() {
     auto* logger = context()->logger();
     logger->info("AcousticsSystem: Shutting down event demo");
-    
+
     // 取消 EventBus 订阅
     auto* event_bus = context()->event_bus();
     if (event_bus && internal_event_id_ != 0) {
         event_bus->unsubscribe(internal_event_id_);
     }
-    
+
     // 关闭 EventStream 订阅
     engine_sub_.close();
 }

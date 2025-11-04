@@ -1,13 +1,13 @@
 #include "corona/engine.h"
 
 #include <corona/events/engine_events.h>
+#include <corona/python/python_api.h>
 #include <corona/systems/acoustics_system.h>
 #include <corona/systems/animation_system.h>
 #include <corona/systems/display_system.h>
 #include <corona/systems/geometry_system.h>
 #include <corona/systems/mechanics_system.h>
 #include <corona/systems/optics_system.h>
-#include <corona/python/python_api.h>
 
 #include <chrono>
 #include <memory>
@@ -123,7 +123,7 @@ void Engine::run() {
         // 帧率控制（120 FPS）
         auto frame_end_time = std::chrono::high_resolution_clock::now();
         auto frame_elapsed = frame_end_time - frame_start_time;
-        
+
         // 计算剩余时间并 sleep
         if (frame_elapsed < target_frame_duration) {
             auto sleep_duration = target_frame_duration - frame_elapsed;
@@ -254,7 +254,7 @@ void Engine::tick() {
     // 【DEMO】1. 广播帧开始事件（跨线程使用 EventStream）
     static int tick_count = 0;
     tick_count++;
-    
+
     if (tick_count % 120 == 0) {
         // Events::FrameBeginEvent frame_begin{frame_number_, last_frame_time_};
         // event_stream->publish(frame_begin);

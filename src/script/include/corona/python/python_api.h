@@ -1,8 +1,8 @@
 #pragma once
 
 #include <Python.h>
-#include <corona/python/python_hotfix.h>
 #include <corona/kernel/core/i_logger.h>
+#include <corona/python/python_hotfix.h>
 #include <nanobind/nanobind.h>
 
 #include <chrono>
@@ -20,7 +20,7 @@ struct PythonAPI {
     void checkReleaseScriptChange();
     void sendMessage(const std::string& message) const;
 
-private:
+   private:
     static const std::string codePath;
 
     PythonHotfix hotfixManger;

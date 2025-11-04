@@ -36,7 +36,9 @@ inline void log_nanobind_python_error(const nanobind::python_error& e, const cha
 
 inline void log_current_pyerr(const char* where = nullptr) {
     if (!PyErr_Occurred()) return;
-    PyObject* ptype = nullptr; PyObject* pvalue = nullptr; PyObject* ptb = nullptr;
+    PyObject* ptype = nullptr;
+    PyObject* pvalue = nullptr;
+    PyObject* ptb = nullptr;
     PyErr_Fetch(&ptype, &pvalue, &ptb);
     PyErr_NormalizeException(&ptype, &pvalue, &ptb);
     PyObject* tb = PyImport_ImportModule("traceback");
@@ -73,7 +75,7 @@ inline void log_current_pyerr(const char* where = nullptr) {
     Py_XDECREF(pvalue);
     Py_XDECREF(ptb);
 }
-} // namespace
+}  // namespace
 
 extern "C" PyObject* PyInit_CoronaEngine();
 
@@ -197,12 +199,16 @@ bool PythonAPI::ensureInitialized() {
             messageFunc = std::move(putq_attr);
         } catch (const nanobind::python_error& e) {
             log_nanobind_python_error(e, "ensureInitialized/import main");
-            pModule.reset(); pFunc.reset(); messageFunc.reset();
+            pModule.reset();
+            pFunc.reset();
+            messageFunc.reset();
             return false;
         } catch (const std::exception& e) {
             std::cerr << "[Hotfix][API] ensureInitialized std::exception: " << e.what() << std::endl;
             if (PyErr_Occurred()) log_current_pyerr("ensureInitialized");
-            pModule.reset(); pFunc.reset(); messageFunc.reset();
+            pModule.reset();
+            pFunc.reset();
+            messageFunc.reset();
             return false;
         }
     }

@@ -1,10 +1,9 @@
-﻿#include <corona/systems/display_system.h>
-
-#include <corona/events/display_system_events.h>
+﻿#include <corona/events/display_system_events.h>
 #include <corona/events/engine_events.h>
 #include <corona/kernel/core/i_logger.h>
 #include <corona/kernel/event/i_event_bus.h>
 #include <corona/kernel/event/i_event_stream.h>
+#include <corona/systems/display_system.h>
 
 namespace Corona::Systems {
 
@@ -68,13 +67,13 @@ void DisplaySystem::update() {
 void DisplaySystem::shutdown() {
     auto* logger = context()->logger();
     logger->info("DisplaySystem: Shutting down event demo");
-    
+
     // 取消 EventBus 订阅
     auto* event_bus = context()->event_bus();
     if (event_bus && internal_event_id_ != 0) {
         event_bus->unsubscribe(internal_event_id_);
     }
-    
+
     // 关闭 EventStream 订阅
     engine_sub_.close();
 }
