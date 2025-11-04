@@ -67,7 +67,7 @@ function(corona_install_corona_editor target_name core_target)
     get_target_property(_CORONA_EDITOR_DIRS ${core_target} INTERFACE_CORONA_EDITOR_DIRS)
 
     if(NOT _CORONA_EDITOR_DIRS)
-        message(STATUS "[Corona:Editor] No collected editor directories on ${core_target}; skipping copy for ${target_name}.")
+        message(WARNING "[Corona:Editor] No collected editor directories on ${core_target}; skipping copy for ${target_name}.")
         return()
     endif()
 
@@ -75,12 +75,12 @@ function(corona_install_corona_editor target_name core_target)
     set(_CORONA_NODE_DIR "${PROJECT_SOURCE_DIR}/editor/CabbageEditor/Env/node-v22.19.0-win-x64")
 
     if(NOT EXISTS "${_CORONA_PY_SCRIPT}")
-        message(STATUS "[Corona:Editor] Script not found: ${_CORONA_PY_SCRIPT}; skipping editor copy/build.")
+        message(WARNING "[Corona:Editor] Script not found: ${_CORONA_PY_SCRIPT}; skipping editor copy/build.")
         return()
     endif()
 
-    if(NOT DEFINED Python3_EXECUTABLE)
-        message(STATUS "[Corona:Editor] Python3 executable is not available; skipping editor copy/build step.")
+    if(NOT DEFINED Python_EXECUTABLE)
+        message(WARNING "[Corona:Editor] Python executable is not available; skipping editor copy/build step.")
         return()
     endif()
 
@@ -97,7 +97,7 @@ function(corona_install_corona_editor target_name core_target)
             "set DEST_ROOT=%~1\n"
             "set FRONTEND_DIR=%~2\n"
             "echo [Corona:Editor] Installing editor resources to %DEST_ROOT%\n"
-            "\"${Python3_EXECUTABLE}\" \"${_CORONA_PY_SCRIPT}\" --dest-root \"%DEST_ROOT%\""
+            "\"${Python_EXECUTABLE}\" \"${_CORONA_PY_SCRIPT}\" --dest-root \"%DEST_ROOT%\""
         )
 
         foreach(_CORONA_DIR IN LISTS _CORONA_EDITOR_DIRS)
@@ -128,7 +128,7 @@ function(corona_install_corona_editor target_name core_target)
             "DEST_ROOT=\"$1\"\n"
             "FRONTEND_DIR=\"$2\"\n"
             "echo \"[Corona:Editor] Installing editor resources to $DEST_ROOT\"\n"
-            "\"${Python3_EXECUTABLE}\" \"${_CORONA_PY_SCRIPT}\" --dest-root \"$DEST_ROOT\""
+            "\"${Python_EXECUTABLE}\" \"${_CORONA_PY_SCRIPT}\" --dest-root \"$DEST_ROOT\""
         )
 
         foreach(_CORONA_DIR IN LISTS _CORONA_EDITOR_DIRS)
