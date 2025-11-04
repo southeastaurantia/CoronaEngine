@@ -7,6 +7,7 @@
 #include <corona/systems/geometry_system.h>
 #include <corona/systems/mechanics_system.h>
 #include <corona/systems/optics_system.h>
+#include <corona/python/python_api.h>
 
 #include <chrono>
 #include <memory>
@@ -75,6 +76,7 @@ bool Engine::initialize() {
 }
 
 void Engine::run() {
+    PythonAPI python_api;
     auto* logger = kernel_.logger();
     if (!initialized_.load()) {
         logger->error("Cannot run engine: not initialized");
@@ -112,6 +114,7 @@ void Engine::run() {
         last_time = frame_start_time;
 
         // 执行一帧
+        python_api.runPythonScript();
         tick();
 
         // 帧号递增

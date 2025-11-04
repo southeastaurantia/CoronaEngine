@@ -60,8 +60,6 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    PythonAPI pythonAPI;
-
     std::cout << "[Main] Engine initialized successfully" << std::endl;
     std::cout << std::endl;
 
@@ -73,9 +71,8 @@ int main(int argc, char* argv[]) {
     std::cout << std::endl;
 
     // 在独立线程运行引擎主循环
-    std::thread engine_thread([&engine,&pythonAPI]() {
+    std::thread engine_thread([&engine]() {
         engine.run();
-        pythonAPI.runPythonScript();
     });
 
     // ========================================

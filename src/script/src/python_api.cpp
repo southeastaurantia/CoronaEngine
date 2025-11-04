@@ -2,7 +2,6 @@
 #include <corona/python/python_api.h>
 #include <windows.h>
 
-#include <cstdlib>
 #include <entt/signal/sigh.hpp>
 #include <iostream>
 #include <ranges>
@@ -10,10 +9,74 @@
 #include <set>
 #include <unordered_map>
 
-// 声明由 nanobind NB_MODULE(CoronaEngine, m) 生成的初始化函数
+namespace {
+inline void log_nanobind_python_error(const nanobind::python_error& e, const char* where = nullptr) {
+    try {
+        nanobind::gil_scoped_acquire gil;
+        nanobind::module_ traceback = nanobind::module_::import_("traceback");
+        nanobind::object format_exception = nanobind::getattr(traceback, "format_exception");
+        auto formatted = format_exception(e.type(), e.value(), e.traceback());
+        nanobind::str sep("");
+        auto joined = nanobind::getattr(sep, "join")(formatted);
+        auto out = nanobind::cast<std::string>(joined);
+        if (where && *where) {
+            std::cerr << "[Python Error][" << where << "] " << out << std::endl;
+        } else {
+            std::cerr << "[Python Error] " << out << std::endl;
+        }
+    } catch (const std::exception&) {
+        // 回退：至少打印 e.what()
+        if (where && *where) {
+            std::cerr << "[Python Error][" << where << "] " << e.what() << std::endl;
+        } else {
+            std::cerr << "[Python Error] " << e.what() << std::endl;
+        }
+    }
+}
+
+inline void log_current_pyerr(const char* where = nullptr) {
+    if (!PyErr_Occurred()) return;
+    PyObject* ptype = nullptr; PyObject* pvalue = nullptr; PyObject* ptb = nullptr;
+    PyErr_Fetch(&ptype, &pvalue, &ptb);
+    PyErr_NormalizeException(&ptype, &pvalue, &ptb);
+    PyObject* tb = PyImport_ImportModule("traceback");
+    if (tb) {
+        PyObject* fmt = PyObject_GetAttrString(tb, "format_exception");
+        if (fmt && PyCallable_Check(fmt)) {
+            PyObject* args = PyTuple_Pack(3, ptype ? ptype : Py_None, pvalue ? pvalue : Py_None, ptb ? ptb : Py_None);
+            PyObject* formatted = PyObject_CallObject(fmt, args);
+            if (formatted) {
+                PyObject* sep = PyUnicode_FromString("");
+                if (sep) {
+                    PyObject* joined = PyUnicode_Join(sep, formatted);
+                    if (joined) {
+                        const char* s = PyUnicode_AsUTF8(joined);
+                        if (s) {
+                            if (where && *where) {
+                                std::cerr << "[Python Error][" << where << "] " << s << std::endl;
+                            } else {
+                                std::cerr << "[Python Error] " << s << std::endl;
+                            }
+                        }
+                        Py_DECREF(joined);
+                    }
+                    Py_DECREF(sep);
+                }
+                Py_DECREF(formatted);
+            }
+            Py_DECREF(args);
+        }
+        Py_XDECREF(fmt);
+        Py_DECREF(tb);
+    }
+    Py_XDECREF(ptype);
+    Py_XDECREF(pvalue);
+    Py_XDECREF(ptb);
+}
+} // namespace
+
 extern "C" PyObject* PyInit_CoronaEngine();
 
-// Unified path configuration
 namespace PathCfg {
 inline std::string Normalize(std::string s) {
     std::ranges::replace(s, '\\', '/');
@@ -109,8 +172,10 @@ bool PythonAPI::ensureInitialized() {
     Py_InitializeFromConfig(&config);
 
     if (!Py_IsInitialized()) {
+        // 可能没有挂起的 PyErr，这里打印一个提示并尝试输出现有错误
+        std::cerr << "[Python Init] Py_InitializeFromConfig failed" << std::endl;
         if (PyErr_Occurred()) {
-            PyErr_Print();
+            log_current_pyerr("Py_InitializeFromConfig");
         }
         return false;
     }
@@ -130,13 +195,14 @@ bool PythonAPI::ensureInitialized() {
             pModule = std::move(main_mod);
             pFunc = std::move(run_attr);
             messageFunc = std::move(putq_attr);
-        } catch (const std::exception&) {
-            if (PyErr_Occurred()) {
-                PyErr_Print();
-            }
-            pModule.reset();
-            pFunc.reset();
-            messageFunc.reset();
+        } catch (const nanobind::python_error& e) {
+            log_nanobind_python_error(e, "ensureInitialized/import main");
+            pModule.reset(); pFunc.reset(); messageFunc.reset();
+            return false;
+        } catch (const std::exception& e) {
+            std::cerr << "[Hotfix][API] ensureInitialized std::exception: " << e.what() << std::endl;
+            if (PyErr_Occurred()) log_current_pyerr("ensureInitialized");
+            pModule.reset(); pFunc.reset(); messageFunc.reset();
             return false;
         }
     }
@@ -178,9 +244,13 @@ bool PythonAPI::performHotReload() {
         pModule = std::move(mod);
         pFunc = std::move(newFunc);
         messageFunc = std::move(newMsg);
-    } catch (const std::exception&) {
-        std::cout << "[Hotfix][API] reload(main) failed" << std::endl;
-        if (PyErr_Occurred()) PyErr_Print();
+    } catch (const nanobind::python_error& e) {
+        std::cout << "[Hotfix][API] reload(main) failed (python_error)" << std::endl;
+        log_nanobind_python_error(e, "performHotReload");
+        return false;
+    } catch (const std::exception& e) {
+        std::cout << "[Hotfix][API] reload(main) failed (std::exception): " << e.what() << std::endl;
+        if (PyErr_Occurred()) log_current_pyerr("performHotReload");
         return false;
     }
 
@@ -198,10 +268,11 @@ void PythonAPI::invokeEntry(bool isReload) const {
 
     try {
         (void)pFunc(isReload ? 1 : 0);
-    } catch (const std::exception&) {
-        if (PyErr_Occurred()) {
-            PyErr_Print();
-        }
+    } catch (const nanobind::python_error& e) {
+        log_nanobind_python_error(e, "invokeEntry");
+    } catch (const std::exception& e) {
+        std::cerr << "[Hotfix][API] invokeEntry std::exception: " << e.what() << std::endl;
+        if (PyErr_Occurred()) log_current_pyerr("invokeEntry");
     }
 }
 
@@ -213,10 +284,11 @@ void PythonAPI::sendMessage(const std::string& message) const {
 
     try {
         (void)messageFunc(message.c_str());
-    } catch (const std::exception&) {
-        if (PyErr_Occurred()) {
-            PyErr_Print();
-        }
+    } catch (const nanobind::python_error& e) {
+        log_nanobind_python_error(e, "sendMessage");
+    } catch (const std::exception& e) {
+        std::cerr << "[Hotfix][API] sendMessage std::exception: " << e.what() << std::endl;
+        if (PyErr_Occurred()) log_current_pyerr("sendMessage");
     }
 }
 
