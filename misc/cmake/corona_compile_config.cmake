@@ -45,10 +45,10 @@ endfunction()
 # ------------------------------------------------------------------------------
 # Python path macro definitions
 # ------------------------------------------------------------------------------
-corona_to_backslash("${Python3_EXECUTABLE}" _CORONA_PY_EXE_ESC ESCAPE_FOR_CSTRING)
-corona_to_backslash("${Python3_RUNTIME_LIBRARY_DIRS}" _CORONA_PY_HOME_ESC ESCAPE_FOR_CSTRING)
-corona_to_backslash("${Python3_RUNTIME_LIBRARY_DIRS}/DLLs" _CORONA_PY_DLLS_ESC ESCAPE_FOR_CSTRING)
-corona_to_backslash("${Python3_RUNTIME_LIBRARY_DIRS}/Lib" _CORONA_PY_LIB_ESC ESCAPE_FOR_CSTRING)
+corona_to_backslash("${Python_EXECUTABLE}" _CORONA_PY_EXE_ESC ESCAPE_FOR_CSTRING)
+corona_to_backslash("${Python_RUNTIME_LIBRARY_DIRS}" _CORONA_PY_HOME_ESC ESCAPE_FOR_CSTRING)
+corona_to_backslash("${Python_RUNTIME_LIBRARY_DIRS}/DLLs" _CORONA_PY_DLLS_ESC ESCAPE_FOR_CSTRING)
+corona_to_backslash("${Python_RUNTIME_LIBRARY_DIRS}/Lib" _CORONA_PY_LIB_ESC ESCAPE_FOR_CSTRING)
 
 # ------------------------------------------------------------------------------
 # Global compile definitions

@@ -56,10 +56,10 @@ message(STATUS "")
 message(STATUS "================================================================================")
 message(STATUS "  CoronaEngine Configuration Summary")
 message(STATUS "================================================================================")
-message(STATUS "  Python executable     : ${Python3_EXECUTABLE}")
+message(STATUS "  Python executable     : ${Python_EXECUTABLE}")
 
-if(Python3_VERSION)
-    message(STATUS "  Python version        : ${Python3_VERSION}")
+if(Python_VERSION)
+    message(STATUS "  Python version        : ${Python_VERSION}")
 endif()
 
 message(STATUS "  Build runtime         : ${BUILD_CORONA_RUNTIME}")
