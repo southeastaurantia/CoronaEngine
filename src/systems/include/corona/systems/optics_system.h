@@ -7,21 +7,21 @@
 
 #include <memory>
 
+// 前向声明 Hardware 结构体
+struct Hardware;
+
 namespace Corona::Systems {
 
 /**
  * @brief 光学系统 (Optics System)
  *
  * 负责场景光学渲染、光线追踪、GPU 资源管理和渲染管线控制。
- * 运行在独立线程，以 60 FPS 渲染场景。
+ * 运行在独立线程，以 120 FPS 渲染场景。
  */
 class OpticsSystem : public Kernel::SystemBase {
    public:
-    OpticsSystem() {
-        set_target_fps(60);  // 光学系统运行在 60 FPS
-    }
-
-    ~OpticsSystem() override = default;
+    OpticsSystem();
+    ~OpticsSystem() override;
 
     // ========================================
     // ISystem 接口实现
@@ -60,6 +60,9 @@ class OpticsSystem : public Kernel::SystemBase {
     // TODO: 添加光学系统私有成员
     Kernel::EventId surface_changed_sub_id_ = 0;
     void* surface_handle_ = nullptr;
+
+    // 渲染硬件资源
+    std::unique_ptr<Hardware> hardware_;
 };
 
 }  // namespace Corona::Systems

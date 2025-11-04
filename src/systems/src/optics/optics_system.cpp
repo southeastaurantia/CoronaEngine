@@ -1,26 +1,77 @@
+#include <ResourceManager.h>
 #include <corona/events/optics_system_events.h>
 #include <corona/kernel/core/i_logger.h>
 #include <corona/kernel/event/i_event_bus.h>
 #include <corona/kernel/event/i_event_stream.h>
 #include <corona/systems/optics_system.h>
 
+#include <filesystem>
+#include <ranges>
+
+#include "Shader.h"
+#include "hardware.h"
+
+namespace {
+
+std::shared_ptr<Corona::Shader> load_shader(const std::filesystem::path& shader_path) {
+    auto shaderId = Corona::ResourceId::from("shader", (shader_path).string());
+    auto source = Corona::ResourceManager::instance().load_once_async(shaderId);
+    auto shader = std::static_pointer_cast<Corona::Shader>(source.get());
+    return shader;
+}
+}
+
+
 namespace Corona::Systems {
+
+OpticsSystem::OpticsSystem() {
+    set_target_fps(120);
+}
+OpticsSystem::~OpticsSystem() = default;
 
 bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
     auto* logger = ctx->logger();
     logger->info("OpticsSystem: Initializing...");
 
+    auto& resource_manager = ResourceManager::instance();
+    resource_manager.register_loader(std::make_shared<ShaderLoader>());
+
+    hardware_ = std::make_unique<Hardware>();
+
+    hardware_->gbufferSize = {1920, 1080};
+
+    hardware_->gbufferPostionImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
+    hardware_->gbufferBaseColorImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
+    hardware_->gbufferNormalImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
+    hardware_->gbufferMotionVectorImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::RG32_FLOAT, ImageUsage::StorageImage);
+
+    hardware_->uniformBuffer = HardwareBuffer(sizeof(Hardware::UniformBufferObject), BufferUsage::UniformBuffer);
+    hardware_->gbufferUniformBuffer = HardwareBuffer(sizeof(Hardware::gbufferUniformBufferObject), BufferUsage::UniformBuffer);
+    hardware_->computeUniformBuffer = HardwareBuffer(sizeof(Hardware::ComputeUniformBufferObject), BufferUsage::UniformBuffer);
+
+    hardware_->finalOutputImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
+
+    auto shader_code = load_shader(std::filesystem::current_path() / "assets" );
+
+    hardware_->rasterizerPipeline = RasterizerPipeline(shader_code->vertCode, shader_code->fragCode);
+    hardware_->computePipeline = ComputePipeline(shader_code->computeCode);
+    hardware_->shaderHasInit = true;
+
     // 【订阅系统内部事件】使用 EventBus
-    auto* event_bus = ctx->event_bus();
-    if (event_bus) {
+    if (auto* event_bus = ctx->event_bus()) {
         surface_changed_sub_id_ = event_bus->subscribe<Events::DisplaySurfaceChangedEvent>(
             [this, logger](const Events::DisplaySurfaceChangedEvent& event) {
                 if (logger) {
                     logger->info("OpticsSystem: Received DisplaySurfaceChangedEvent, new surface: " +
                                  std::to_string(reinterpret_cast<uintptr_t>(event.surface)));
                 }
-                // 在这里可以处理 surface 变化，例如更新渲染目标等
-                this->surface_handle_ = event.surface;
+                if (event.surface) {
+                    auto surface_id = reinterpret_cast<uint64_t>(event.surface);
+                    if (!hardware_->displayers_.contains(surface_id)) {
+                        logger->info("OpticsSystem: Creating new displayer for surface " + std::to_string(surface_id));
+                        hardware_->displayers_.emplace(surface_id, HardwareDisplayer(event.surface));
+                    }
+                }
             });
         logger->info("OpticsSystem: Subscribed to DisplaySurfaceChangedEvent");
     }
@@ -29,7 +80,22 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
 }
 
 void OpticsSystem::update() {
+    if (!hardware_->shaderHasInit) {
+        return;
+    }
 
+    for (auto& displayer : hardware_->displayers_ | std::views::values) {
+        hardware_->computeUniformBufferObjects.imageID = hardware_->finalOutputImage.storeDescriptor();
+        hardware_->computeUniformBuffer.copyFromData(&hardware_->computeUniformBufferObjects, sizeof(hardware_->computeUniformBufferObjects));
+        hardware_->computePipeline["pushConsts.uniformBufferIndex"] = hardware_->computeUniformBuffer.storeDescriptor();
+
+        hardware_->executor
+            // << hardware_->rasterizerPipeline(1920, 1080)
+            << hardware_->computePipeline(1920 / 8, 1080 / 8, 1)
+            << hardware_->executor.commit();
+
+        displayer = hardware_->finalOutputImage;
+    }
 }
 
 void OpticsSystem::shutdown() {
@@ -37,13 +103,13 @@ void OpticsSystem::shutdown() {
     logger->info("OpticsSystem: Shutting down...");
 
     // 取消 EventBus 订阅
-    auto* event_bus = context()->event_bus();
-    if (event_bus) {
+    if (auto* event_bus = context()->event_bus()) {
         if (surface_changed_sub_id_ != 0) {
             event_bus->unsubscribe(surface_changed_sub_id_);
         }
     }
 
+    hardware_.reset();
 }
 
 }  // namespace Corona::Systems

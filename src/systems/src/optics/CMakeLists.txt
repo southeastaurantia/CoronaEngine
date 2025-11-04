@@ -11,4 +11,6 @@ target_include_directories(corona_optics_system PUBLIC
 
 target_link_libraries(corona_optics_system PUBLIC
     corona::kernel
+    CabbageHardware
+    CoronaResource::Resource
 )
