@@ -64,5 +64,4 @@ void CoronaEngineAPI::Actor::rotate(ktm::fvec3 /*euler*/) const {
 }
 
 void CoronaEngineAPI::Actor::scale(ktm::fvec3 /*size*/) const {
-
 }

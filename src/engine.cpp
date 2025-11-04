@@ -123,7 +123,7 @@ void Engine::run() {
         // 帧率控制（120 FPS）
         auto frame_end_time = std::chrono::high_resolution_clock::now();
         auto frame_elapsed = frame_end_time - frame_start_time;
-        
+
         // 计算剩余时间并 sleep
         if (frame_elapsed < target_frame_duration) {
             auto sleep_duration = target_frame_duration - frame_elapsed;

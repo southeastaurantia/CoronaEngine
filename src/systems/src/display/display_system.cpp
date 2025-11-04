@@ -1,10 +1,9 @@
-﻿#include <corona/systems/display_system.h>
-
-#include <corona/events/display_system_events.h>
+﻿#include <corona/events/display_system_events.h>
 #include <corona/events/engine_events.h>
 #include <corona/kernel/core/i_logger.h>
 #include <corona/kernel/event/i_event_bus.h>
 #include <corona/kernel/event/i_event_stream.h>
+#include <corona/systems/display_system.h>
 
 namespace Corona::Systems {
 
