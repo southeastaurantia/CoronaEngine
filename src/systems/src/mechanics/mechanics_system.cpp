@@ -5,6 +5,12 @@
 #include <corona/kernel/event/i_event_stream.h>
 #include <corona/systems/mechanics_system.h>
 
+namespace {
+
+
+}  // namespace
+
+
 namespace Corona::Systems {
 
 bool MechanicsSystem::initialize(Kernel::ISystemContext* ctx) {

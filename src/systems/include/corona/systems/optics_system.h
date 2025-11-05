@@ -7,6 +7,8 @@
 
 #include <memory>
 
+#include "Mesh.h"
+#include <CabbageHardware.h>
 // 前向声明 Hardware 结构体
 struct Hardware;
 
@@ -58,10 +60,11 @@ class OpticsSystem : public Kernel::SystemBase {
 
    private:
     // TODO: 添加光学系统私有成员
+    void gbuffer_pipeline();
     Kernel::EventId surface_changed_sub_id_ = 0;
+    Kernel::EventId model_upload_sub_id = 0;
     void* surface_handle_ = nullptr;
 
-    // 渲染硬件资源
     std::unique_ptr<Hardware> hardware_;
 };
 

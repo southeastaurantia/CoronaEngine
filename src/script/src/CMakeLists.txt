@@ -47,6 +47,8 @@ target_link_libraries(CoronaScriptPython PUBLIC
     Python::Python
     EnTT::EnTT
     nanobind-static
+    CoronaResource::Resource
+    CabbageHardware
 )
 
 # C++ standard to align with project settings

@@ -4,6 +4,8 @@
 #include <corona/kernel/event/i_event_bus.h>
 #include <corona/kernel/event/i_event_stream.h>
 #include <corona/systems/optics_system.h>
+#include <corona/shared_data_hub.h>
+#include <Model.h>
 
 #include <filesystem>
 #include <ranges>
@@ -24,15 +26,13 @@ namespace Corona::Systems {
 
 OpticsSystem::OpticsSystem() {
     set_target_fps(120);
+
 }
 OpticsSystem::~OpticsSystem() = default;
 
 bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
     auto* logger = ctx->logger();
     logger->info("OpticsSystem: Initializing...");
-
-    auto& resource_manager = ResourceManager::instance();
-    resource_manager.register_loader(std::make_shared<ShaderLoader>());
 
     hardware_ = std::make_unique<Hardware>();
 
@@ -71,6 +71,47 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
                     }
                 }
             });
+
+        model_upload_sub_id = event_bus->subscribe<Events::ModelToGpuUploadRequestEvent>(
+            [this, logger](const Events::ModelToGpuUploadRequestEvent& event) {
+                if (logger) {
+                    logger->info("OpticsSystem: Received ModelToGpuUploadRequestEvent new model: " +
+                                 std::to_string(event.model_handle));
+                }
+                if (event.model_handle) {
+                    bool info = SharedDataHub::instance().model_storage().read(
+                        event.model_handle, [this, logger](const std::shared_ptr<Model>& model_ptr) {
+                            if (model_ptr) {
+                                logger->info("Upload model to GPU...");
+                                logger->info("devices_" + std::to_string(devices_.size()));
+                                devices_.clear();
+                                logger->info("devices_" + std::to_string(devices_.size()));
+                                for (const auto & mesh : model_ptr->meshes) {
+                                    ModelDevice model_device;
+                                    model_device.pointsBuffer = HardwareBuffer(mesh.points, BufferUsage::VertexBuffer);
+                                    model_device.normalsBuffer = HardwareBuffer(mesh.normals, BufferUsage::VertexBuffer);
+                                    model_device.texCoordsBuffer = HardwareBuffer(mesh.texCoords, BufferUsage::VertexBuffer);
+                                    model_device.boneIndexesBuffer = HardwareBuffer(mesh.boneIndices, BufferUsage::VertexBuffer);
+                                    model_device.boneWeightsBuffer = HardwareBuffer(mesh.boneWeights, BufferUsage::VertexBuffer);
+                                    model_device.indexBuffer = HardwareBuffer(mesh.Indices, BufferUsage::IndexBuffer);
+                                    model_device.meshData = const_cast<Mesh*>(&mesh);
+                                    model_device.materialIndex = 0;
+                                    model_device.textureIndex = HardwareImage(mesh.textures[0]->width, mesh.textures[0]->height, ImageFormat::RGBA8_SRGB, ImageUsage::SampledImage, 1, mesh.textures[0]->data);
+
+                                    devices_.emplace_back(model_device);
+                                }
+
+
+                            } else {
+                                logger->warning("  - Failed to read model from storage: model pointer is null.");
+                            }
+                        });
+                    if (!info) {
+                        logger->warning("  - Failed to read model from storage: invalid handle " +
+                                        std::to_string(event.model_handle));
+                    }
+                }
+            });
         logger->info("OpticsSystem: Subscribed to DisplaySurfaceChangedEvent");
     }
 
@@ -103,6 +144,36 @@ void OpticsSystem::update() {
         displayer = hardware_->finalOutputImage;
     }
 }
+
+void OpticsSystem::gbuffer_pipeline() {
+    // uniformBufferObjects.eyePosition = cam.pos;
+    // uniformBufferObjects.eyeDir = ktm::normalize(cam.forward);
+    // uniformBufferObjects.eyeViewMatrix = ktm::look_at_lh(cam.pos, ktm::normalize(cam.forward), cam.worldUp);
+    // uniformBufferObjects.eyeProjMatrix = ktm::perspective_lh(ktm::radians(cam.fov), static_cast<float>(gbufferSize.x) / static_cast<float>(gbufferSize.y), 0.1f, 100.0f);
+
+    hardware_->gbufferUniformBufferObjects.viewProjMatrix = hardware_->uniformBufferObjects.eyeProjMatrix * hardware_->uniformBufferObjects.eyeViewMatrix;
+    hardware_->gbufferUniformBuffer.copyFromData(&hardware_->gbufferUniformBufferObjects, sizeof(hardware_->gbufferUniformBufferObjects));
+
+    // model->getModelMatrix();
+    // ktm::fmat4x4 actorMatrix = model->modelMatrix;
+    // hardware_->rasterizerPipeline["pushConsts.modelMatrix"] = actorMatrix;
+
+    hardware_->rasterizerPipeline["pushConsts.uniformBufferIndex"] = hardware_->gbufferUniformBuffer.storeDescriptor();
+
+    hardware_->rasterizerPipeline["gbufferPostion"] = hardware_->gbufferPostionImage;
+    hardware_->rasterizerPipeline["gbufferBaseColor"] = hardware_->gbufferBaseColorImage;
+    hardware_->rasterizerPipeline["gbufferNormal"] = hardware_->gbufferNormalImage;
+    hardware_->rasterizerPipeline["gbufferMotionVector"] = hardware_->gbufferMotionVectorImage;
+
+    // for () {
+    //     // 录制与提交绘制命令（按需开启）
+    //     // executor(HardwareExecutor::ExecutorType::Graphics)
+    //     //     << rasterizerPipeline(gbufferSize.x, gbufferSize.y) << rasterizerPipeline.record(m.meshDevice->indexBuffer)
+    //     //     << executor.commit();
+    // }
+
+}
+
 
 void OpticsSystem::shutdown() {
     auto* logger = context()->logger();

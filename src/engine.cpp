@@ -8,6 +8,10 @@
 #include <corona/systems/geometry_system.h>
 #include <corona/systems/mechanics_system.h>
 #include <corona/systems/optics_system.h>
+#include <ResourceManager.h>
+
+#include "Shader.h"
+#include "Model.h"
 
 #include <chrono>
 #include <memory>
@@ -58,6 +62,10 @@ bool Engine::initialize() {
         logger->error("Failed to register systems");
         return false;
     }
+
+    auto& resource_manager = ResourceManager::instance();
+    resource_manager.register_loader(std::make_shared<ShaderLoader>());
+    resource_manager.register_loader(std::make_shared<ModelLoader>());
 
     // 3. 初始化所有系统
     auto* sys_mgr = kernel_.system_manager();

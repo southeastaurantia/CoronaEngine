@@ -1,11 +1,11 @@
 #pragma once
 
-#include <string>
-
 namespace Corona::Components {
 
 struct ModelResource {
-    std::string path;
+    std::uintptr_t model_handle;
+    ResourceId model_id;
+    std::uintptr_t device_handle;
 };
 
 }  // namespace Corona::Components

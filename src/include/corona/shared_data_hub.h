@@ -1,13 +1,31 @@
 #pragma once
 #include <corona/kernel/utils/storage.h>
+#include <memory>
+#include <vector>
+#include <CabbageHardware.h>
+
+// Forward declarations
+#include "Mesh.h"
 
 namespace Corona {
 
-class SharedDataHub {
-    struct DemoData {
-        int value;
-    };
+class Model;
 
+struct ModelDevice {
+    HardwareBuffer pointsBuffer;
+    HardwareBuffer normalsBuffer;
+    HardwareBuffer texCoordsBuffer;
+    HardwareBuffer indexBuffer;
+    HardwareBuffer boneIndexesBuffer;
+    HardwareBuffer boneWeightsBuffer;
+
+    uint32_t materialIndex;
+    uint32_t textureIndex;
+
+    Mesh meshData;
+};
+
+class SharedDataHub {
    public:
     static SharedDataHub& instance();
 
@@ -21,12 +39,18 @@ class SharedDataHub {
     SharedDataHub& operator=(SharedDataHub&&) = delete;
 
    public:
-    using DemoDataStorage = Kernel::Utils::Storage<DemoData, 128>;
-    DemoDataStorage& demo_data_storage();
-    const DemoDataStorage& demo_data_storage() const;
+    using ModelStorage = Kernel::Utils::Storage<std::shared_ptr<Model>>;
+    ModelStorage& model_storage();
+    const ModelStorage& model_storage() const;
+
+    using ModelDeviceStorage = Kernel::Utils::Storage<std::vector<ModelDevice>>;
+    ModelDeviceStorage& model_device_storage();
+    const ModelDeviceStorage& model_device_storage() const;
+
 
    private:
-    DemoDataStorage demo_data_storage_;
+    ModelDeviceStorage model_device_storage_;
+    ModelStorage model_storage_;
 };
 
 }  // namespace Corona

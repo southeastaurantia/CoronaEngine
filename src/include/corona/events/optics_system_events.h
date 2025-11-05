@@ -1,5 +1,11 @@
 #pragma once
 
+#include <corona/kernel/utils/storage.h>
+
+namespace Corona {
+    class Model;
+}
+
 namespace Corona::Events {
 
 /**
@@ -28,5 +34,9 @@ struct OpticsToEngineDemoEvent {
  */
 struct DisplaySurfaceChangedEvent {
     void* surface;
+};
+
+struct ModelToGpuUploadRequestEvent {
+    Kernel::Utils::Storage<std::shared_ptr<Model>>::Handle model_handle;
 };
 }  // namespace Corona::Events

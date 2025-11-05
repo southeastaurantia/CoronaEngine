@@ -9,9 +9,6 @@
 namespace Corona::Systems {
 
 bool AnimationSystem::initialize(Kernel::ISystemContext* ctx) {
-    // 初始化动画系统资源
-    SharedDataHub::instance().demo_data_storage();
-
     auto* logger = ctx->logger();
     logger->info("AnimationSystem: Initializing...");
     return true;

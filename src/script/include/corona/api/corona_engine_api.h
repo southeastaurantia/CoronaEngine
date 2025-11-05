@@ -3,6 +3,11 @@
 #include <ktm/ktm.h>
 
 #include <entt/entt.hpp>
+#include <string>
+
+namespace Corona {
+    class Model;
+}
 
 struct CoronaEngineAPI {
     CoronaEngineAPI() = delete;
@@ -24,6 +29,8 @@ struct CoronaEngineAPI {
 
        private:
         entt::entity actor_id_;
+        std::uintptr_t model_handle_;
+        std::uintptr_t device_handle_;
     };
 
     struct Scene {
