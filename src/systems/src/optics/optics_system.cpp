@@ -15,8 +15,7 @@ namespace {
 
 std::shared_ptr<Corona::Shader> load_shader(const std::filesystem::path& shader_path) {
     auto shaderId = Corona::ResourceId::from("shader", (shader_path).string());
-    auto source = Corona::ResourceManager::instance().load_once_async(shaderId);
-    auto shader = std::static_pointer_cast<Corona::Shader>(source.get());
+    auto shader = std::static_pointer_cast<Corona::Shader>(Corona::ResourceManager::instance().load_once(shaderId));
     return shader;
 }
 }
@@ -84,15 +83,18 @@ void OpticsSystem::update() {
         return;
     }
 
+    static float frame_count = 0.0f;
+    float dt = delta_time();
+    frame_count += dt;
+
     for (auto& displayer : hardware_->displayers_ | std::views::values) {
 
         hardware_->computeUniformBufferObjects.imageID = hardware_->finalOutputImage.storeDescriptor();
         hardware_->computeUniformBufferObjects.imageSize = hardware_->gbufferSize;
-        hardware_->computeUniformBufferObjects.time = 10.0;
+        hardware_->computeUniformBufferObjects.time = frame_count;
 
         hardware_->computeUniformBuffer.copyFromData(&hardware_->computeUniformBufferObjects, sizeof(hardware_->computeUniformBufferObjects));
         hardware_->computePipeline["pushConsts.uniformBufferIndex"] = hardware_->computeUniformBuffer.storeDescriptor();
-
 
         hardware_->executor
             // << hardware_->rasterizerPipeline(1920, 1080)
@@ -113,8 +115,6 @@ void OpticsSystem::shutdown() {
             event_bus->unsubscribe(surface_changed_sub_id_);
         }
     }
-
-    hardware_.reset();
 }
 
 }  // namespace Corona::Systems
