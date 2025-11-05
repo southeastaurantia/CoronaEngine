@@ -33,13 +33,13 @@ void signal_handler(int signal) {
  */
 int main(int argc, char* argv[]) {
     std::cout << std::endl;
-    std::cout << "    ╔══════════════════════════════════════════════════════════════╗" << std::endl;
-    std::cout << "    ║                                                              ║" << std::endl;
-    std::cout << "    ║                      CoronaEngine v0.5.0                     ║" << std::endl;
-    std::cout << "    ║                                                              ║" << std::endl;
-    std::cout << "    ║              A Modern Game Engine Framework                  ║" << std::endl;
-    std::cout << "    ║                                                              ║" << std::endl;
-    std::cout << "    ╚══════════════════════════════════════════════════════════════╝" << std::endl;
+    std::cout << "    +==================================================================+" << std::endl;
+    std::cout << "    |                                                                  |" << std::endl;
+    std::cout << "    |                      CoronaEngine v0.5.0                         |" << std::endl;
+    std::cout << "    |                                                                  |" << std::endl;
+    std::cout << "    |              A Modern Game Engine Framework                      |" << std::endl;
+    std::cout << "    |                                                                  |" << std::endl;
+    std::cout << "    +==================================================================+" << std::endl;
     std::cout << std::endl;
 
     // 创建引擎实例
@@ -92,9 +92,9 @@ int main(int argc, char* argv[]) {
 
     std::cout << "[Main] Engine shutdown complete" << std::endl;
     std::cout << std::endl;
-    std::cout << "╔══════════════════════════════════════════════════════════════╗" << std::endl;
-    std::cout << "║               Thank you for using CoronaEngine!              ║" << std::endl;
-    std::cout << "╚══════════════════════════════════════════════════════════════╝" << std::endl;
+    std::cout << "+==================================================================+" << std::endl;
+    std::cout << "|                Thank you for using CoronaEngine!                 |" << std::endl;
+    std::cout << "+==================================================================+" << std::endl;
 
     g_engine = nullptr;
     return 0;
