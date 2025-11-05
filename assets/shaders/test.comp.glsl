@@ -153,12 +153,9 @@ void main()
  
     O = vec4(pow(f*f * vec3(0., .05, .5)*v*o.xyz,vec3(.45))*3.5,0);
         
-        
-           O+= vec4(happy_star(uv2, anim) * vec3(0.35,0.2,0.15)*0.01, 1.0);
-             O+= vec4(happy_star(uv3, anim) * vec3(0.35,0.7,0.35)*0.005, 1.0);
-               O+= vec4(happy_star(uv4, anim) * vec3(0.35,0.07,0.05)*0.0205, 1.0);
-
-
+    O+= vec4(happy_star(uv2, anim) * vec3(0.35,0.2,0.15)*0.01, 1.0);
+    O+= vec4(happy_star(uv3, anim) * vec3(0.35,0.7,0.35)*0.005, 1.0);
+    O+= vec4(happy_star(uv4, anim) * vec3(0.35,0.07,0.05)*0.0205, 1.0);
 
     uint imageID = uniformBufferObjects[pushConsts.uniformBufferIndex].imageID;
     imageStore(inputImageRGBA16[imageID], ivec2(gl_GlobalInvocationID.xy), vec4(acesFilmicToneMapCurve(O.xyz), 1.0));
