@@ -328,7 +328,7 @@ vec3 color(vec3 ww, vec3 uu, vec3 vv, vec3 ro, vec2 p) {
   return col;
 }
 
-vec3 effect(vec2 p, vec2 q) {
+vec3 effect(vec2 p) {
   float tm= uniformBufferObjects[pushConsts.uniformBufferIndex].time*0.25;
   vec3 ro = vec3(0.0, 0.0, tm);
   vec3 dro= normalize(vec3(0.0, 0.09, 1.0));  
@@ -344,13 +344,10 @@ vec3 effect(vec2 p, vec2 q) {
 
 void main()
 {
-    vec2 q = vec2(gl_GlobalInvocationID.x, uniformBufferObjects[pushConsts.uniformBufferIndex].imageSize.y - 1 - gl_GlobalInvocationID.y) / uniformBufferObjects[pushConsts.uniformBufferIndex].imageSize;
+    vec2 q = vec2(gl_GlobalInvocationID.x, uniformBufferObjects[pushConsts.uniformBufferIndex].imageSize.y - gl_GlobalInvocationID.y) / uniformBufferObjects[pushConsts.uniformBufferIndex].imageSize;
     vec2 p = -1. + 2. * q;
-    p.x *= uniformBufferObjects[pushConsts.uniformBufferIndex].imageSize.x/uniformBufferObjects[pushConsts.uniformBufferIndex].imageSize.y;
-
-    vec3 col = effect(p, q);
-    col *= smoothstep(0.0, 8.0, uniformBufferObjects[pushConsts.uniformBufferIndex].time-abs(q.y));
+    p.x *= uniformBufferObjects[pushConsts.uniformBufferIndex].imageSize.x / uniformBufferObjects[pushConsts.uniformBufferIndex].imageSize.y;
 
     uint imageID = uniformBufferObjects[pushConsts.uniformBufferIndex].imageID;
-    imageStore(inputImageRGBA16[imageID], ivec2(gl_GlobalInvocationID.xy), vec4(acesFilmicToneMapCurve(col.xyz), 1.0));
+    imageStore(inputImageRGBA16[imageID], ivec2(gl_GlobalInvocationID.xy), vec4(acesFilmicToneMapCurve(effect(p)), 1.0));
 }
