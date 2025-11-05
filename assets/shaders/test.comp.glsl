@@ -11,7 +11,7 @@ layout(push_constant) uniform PushConsts
 
 layout(set = 0, binding = 0) uniform UniformBufferObject
 {
-    
+    float time;
     vec2 imageSize;
     uint imageID;
 }uniformBufferObjects[];
@@ -39,8 +39,6 @@ vec3 acesFilmicToneMapInverse(vec3 x)
 //  Inspired by a tweet by I wanted to create something that looked
 //  a bit like the tweet. This is the result.
 
-#define RESOLUTION    iResolution
-#define TIME          iTime
 #define PI            3.141592654
 #define TAU           (2.0*PI)
 
@@ -232,7 +230,7 @@ vec3 stars(vec2 sp, float hh) {
     vec3 scol = mix(8.0*h2, 0.25*h2*h2, s)*mix(scol0, scol1, h1*h1);
 
     vec3 ccol = col + exp(-(mix(6000.0, 2000.0, hh)/mix(2.0, 0.25, s))*max(l-0.001, 0.0))*scol;
-    ccol *= mix(0.125, 1.0, smoothstep(1.0, 0.99, sin(0.25*TIME+TAU*h.y)));
+    ccol *= mix(0.125, 1.0, smoothstep(1.0, 0.99, sin(0.25*uniformBufferObjects[pushConsts.uniformBufferIndex].time+TAU*h.y)));
     col = h3 < y ? ccol : col;
   }
   
@@ -273,7 +271,7 @@ vec3 skyColor(vec3 ro, vec3 rd) {
 
 vec3 color(vec3 ww, vec3 uu, vec3 vv, vec3 ro, vec2 p) {
   float lp = length(p);
-  vec2 np = p + 2.0/RESOLUTION.y;
+  vec2 np = p + 2.0/uniformBufferObjects[pushConsts.uniformBufferIndex].imageSize.y;
 //  float rdd = (2.0-1.0*tanh_approx(lp));  // Playing around with rdd can give interesting distortions
   float rdd = 2.0;
   vec3 rd = normalize(p.x*uu + p.y*vv + rdd*ww);
@@ -331,7 +329,7 @@ vec3 color(vec3 ww, vec3 uu, vec3 vv, vec3 ro, vec2 p) {
 }
 
 vec3 effect(vec2 p, vec2 q) {
-  float tm= TIME*0.25;
+  float tm= uniformBufferObjects[pushConsts.uniformBufferIndex].time*0.25;
   vec3 ro = vec3(0.0, 0.0, tm);
   vec3 dro= normalize(vec3(0.0, 0.09, 1.0));  
   vec3 ww = normalize(dro);
@@ -343,36 +341,16 @@ vec3 effect(vec2 p, vec2 q) {
   return col;
 }
 
-// License: Unknown, author: nmz (twitter: @stormoid), found: https://www.shadertoy.com/view/NdfyRM
-float sRGB(float t) { return mix(1.055*pow(t, 1./2.4) - 0.055, 12.92*t, step(t, 0.0031308)); }
-// License: Unknown, author: nmz (twitter: @stormoid), found: https://www.shadertoy.com/view/NdfyRM
-vec3 sRGB(in vec3 c) { return vec3 (sRGB(c.x), sRGB(c.y), sRGB(c.z)); }
-
-// License: Unknown, author: Matt Taylor (https://github.com/64), found: https://64.github.io/tonemapping/
-vec3 aces_approx(vec3 v) {
-  v = max(v, 0.0);
-  v *= 0.6f;
-  float a = 2.51f;
-  float b = 0.03f;
-  float c = 2.43f;
-  float d = 0.59f;
-  float e = 0.14f;
-  return clamp((v*(a*v+b))/(v*(c*v+d)+e), 0.0f, 1.0f);
-}
 
 void main()
 {
-    vec2 q = fragCoord/RESOLUTION.xy;
+    vec2 q = vec2(gl_GlobalInvocationID.xy)/uniformBufferObjects[pushConsts.uniformBufferIndex].imageSize;
     vec2 p = -1. + 2. * q;
-    p.x *= RESOLUTION.x/RESOLUTION.y;
-    vec3 col = vec3(0.0);
-    col = effect(p, q);
-    col *= smoothstep(0.0, 8.0, TIME-abs(q.y));
-    col = aces_approx(col);
-    col = sRGB(col);
-    fragColor = vec4(col, 1.0);
+    p.x *= uniformBufferObjects[pushConsts.uniformBufferIndex].imageSize.x/uniformBufferObjects[pushConsts.uniformBufferIndex].imageSize.y;
+
+    vec3 col = effect(p, q);
+    col *= smoothstep(0.0, 8.0, uniformBufferObjects[pushConsts.uniformBufferIndex].time-abs(q.y));
 
     uint imageID = uniformBufferObjects[pushConsts.uniformBufferIndex].imageID;
-    vec4 color = imageLoad(inputImageRGBA16[imageID], ivec2(gl_GlobalInvocationID.xy));
-    imageStore(inputImageRGBA16[imageID], ivec2(gl_GlobalInvocationID.xy), vec4(acesFilmicToneMapCurve(color.xyz), 1.0));
+    imageStore(inputImageRGBA16[imageID], ivec2(gl_GlobalInvocationID.xy), vec4(acesFilmicToneMapCurve(col.xyz), 1.0));
 }

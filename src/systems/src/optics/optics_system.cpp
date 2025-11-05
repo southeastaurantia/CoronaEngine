@@ -85,9 +85,14 @@ void OpticsSystem::update() {
     }
 
     for (auto& displayer : hardware_->displayers_ | std::views::values) {
+
         hardware_->computeUniformBufferObjects.imageID = hardware_->finalOutputImage.storeDescriptor();
+        hardware_->computeUniformBufferObjects.imageSize = hardware_->gbufferSize;
+        hardware_->computeUniformBufferObjects.time = 10.0;
+
         hardware_->computeUniformBuffer.copyFromData(&hardware_->computeUniformBufferObjects, sizeof(hardware_->computeUniformBufferObjects));
         hardware_->computePipeline["pushConsts.uniformBufferIndex"] = hardware_->computeUniformBuffer.storeDescriptor();
+
 
         hardware_->executor
             // << hardware_->rasterizerPipeline(1920, 1080)
