@@ -344,7 +344,7 @@ vec3 effect(vec2 p, vec2 q) {
 
 void main()
 {
-    vec2 q = vec2(gl_GlobalInvocationID.xy)/uniformBufferObjects[pushConsts.uniformBufferIndex].imageSize;
+    vec2 q = vec2(gl_GlobalInvocationID.x, uniformBufferObjects[pushConsts.uniformBufferIndex].imageSize.y - 1 - gl_GlobalInvocationID.y) / uniformBufferObjects[pushConsts.uniformBufferIndex].imageSize;
     vec2 p = -1. + 2. * q;
     p.x *= uniformBufferObjects[pushConsts.uniformBufferIndex].imageSize.x/uniformBufferObjects[pushConsts.uniformBufferIndex].imageSize.y;
 
