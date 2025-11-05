@@ -76,6 +76,11 @@ if(CORONA_BUILD_VISION)
     add_compile_definitions(CORONA_ENABLE_VISION)
 endif()
 
+# Enable Python API macros only when building the editor
+if(BUILD_CORONA_EDITOR)
+    add_compile_definitions(CORONA_ENABLE_PYTHON_API)
+endif()
+
 # ------------------------------------------------------------------------------
 # MSVC runtime strategy
 # ------------------------------------------------------------------------------

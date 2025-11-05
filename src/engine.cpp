@@ -114,7 +114,9 @@ void Engine::run() {
         last_time = frame_start_time;
 
         // 执行一帧
+#ifdef CORONA_ENABLE_PYTHON_API
         python_api.runPythonScript();
+#endif
         tick();
 
         // 帧号递增
