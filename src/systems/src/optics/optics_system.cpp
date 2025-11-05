@@ -114,6 +114,8 @@ void OpticsSystem::shutdown() {
             event_bus->unsubscribe(surface_changed_sub_id_);
         }
     }
+
+    hardware_.reset();
 }
 
 }  // namespace Corona::Systems
