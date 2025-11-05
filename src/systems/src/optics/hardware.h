@@ -34,8 +34,7 @@ struct Hardware {
         ktm::fmat4x4 viewProjMatrix;
     } gbufferUniformBufferObjects{};
 
-    struct ComputeUniformBufferObject
-    {
+    struct ComputeUniformBufferObject {
         float time;
         ktm::fvec2 imageSize;
         uint32_t imageID;

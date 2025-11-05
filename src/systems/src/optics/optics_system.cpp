@@ -18,8 +18,7 @@ std::shared_ptr<Corona::Shader> load_shader(const std::filesystem::path& shader_
     auto shader = std::static_pointer_cast<Corona::Shader>(Corona::ResourceManager::instance().load_once(shaderId));
     return shader;
 }
-}
-
+}  // namespace
 
 namespace Corona::Systems {
 
@@ -50,7 +49,7 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
 
     hardware_->finalOutputImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
 
-    auto shader_code = load_shader(std::filesystem::current_path() / "assets" );
+    auto shader_code = load_shader(std::filesystem::current_path() / "assets");
 
     hardware_->rasterizerPipeline = RasterizerPipeline(shader_code->vertCode, shader_code->fragCode);
     hardware_->computePipeline = ComputePipeline(shader_code->computeCode);

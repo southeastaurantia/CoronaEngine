@@ -26,7 +26,6 @@ void DisplaySystem::update() {
 void DisplaySystem::shutdown() {
     auto* logger = context()->logger();
     logger->info("DisplaySystem: Shutting down...");
-
 }
 
 }  // namespace Corona::Systems

@@ -152,6 +152,12 @@ void Engine::shutdown() {
         return;
     }
 
+    auto* sys_mgr = kernel_.system_manager();
+    if (sys_mgr) {
+        sys_mgr->stop_all();
+        sys_mgr->shutdown_all();
+    }
+
     auto* logger = kernel_.logger();
     logger->info("====================================");
     logger->info("CoronaEngine Shutting Down...");

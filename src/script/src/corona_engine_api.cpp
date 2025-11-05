@@ -6,8 +6,8 @@
 #include <corona/components/actor_components.h>
 #include <corona/components/scene_components.h>
 #include <corona/events/optics_system_events.h>
-#include <corona/kernel/event/i_event_bus.h>
 #include <corona/kernel/core/kernel_context.h>
+#include <corona/kernel/event/i_event_bus.h>
 
 // 定义静态 ECS 注册表
 entt::registry CoronaEngineAPI::registry_;
@@ -17,7 +17,7 @@ CoronaEngineAPI::Scene::Scene(void* surface, bool /*lightField*/)
     registry_.emplace<RenderTag>(scene_id_);
     if (surface) {
         registry_.emplace_or_replace<Corona::Components::DisplaySurface>(scene_id_, Corona::Components::DisplaySurface{surface});
-        auto * event_bus = Corona::Kernel::KernelContext::instance().event_bus();
+        auto* event_bus = Corona::Kernel::KernelContext::instance().event_bus();
         if (event_bus) {
             event_bus->publish<Corona::Events::DisplaySurfaceChangedEvent>({surface});
         }
