@@ -34,320 +34,132 @@ vec3 acesFilmicToneMapInverse(vec3 x)
     vec3 c = 2 * (2.43 * x - 2.51);
     return ((a - b) / c);
 }
-
-// CC0 - Neonwave sunrise
-//  Inspired by a tweet by I wanted to create something that looked
-//  a bit like the tweet. This is the result.
-
-#define PI            3.141592654
-#define TAU           (2.0*PI)
-
-
-// License: WTFPL, author: sam hocevar, found: https://stackoverflow.com/a/17897228/418488
-const vec4 hsv2rgb_K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-vec3 hsv2rgb(vec3 c) {
-  vec3 p = abs(fract(c.xxx + hsv2rgb_K.xyz) * 6.0 - hsv2rgb_K.www);
-  return c.z * mix(hsv2rgb_K.xxx, clamp(p - hsv2rgb_K.xxx, 0.0, 1.0), c.y);
+/*originals https://www.shadertoy.com/view/lXsSRN https://www.shadertoy.com/view/wdtczM*/
+float happy_star(vec2 uv, float anim)
+{
+    uv = abs(uv);
+    vec2 pos = min(uv.xy/uv.yx, anim);
+    float p = (2.0 - pos.x - pos.y);
+    return (2.0+p*(p*p-1.5)) / (uv.x+uv.y);      
 }
-// License: WTFPL, author: sam hocevar, found: https://stackoverflow.com/a/17897228/418488
-//  Macro version of above to enable compile-time constants
-#define HSV2RGB(c)  (c.z * mix(hsv2rgb_K.xxx, clamp(abs(fract(c.xxx + hsv2rgb_K.xyz) * 6.0 - hsv2rgb_K.www) - hsv2rgb_K.xxx, 0.0, 1.0), c.y))
+ 
+float hash( ivec3 p )    // this hash is not production ready, please
+{                        // replace this by something better
 
-// License: Unknown, author: Unknown, found: don't remember
-vec4 alphaBlend(vec4 back, vec4 front) {
-  float w = front.w + back.w*(1.0-front.w);
-  vec3 xyz = (front.xyz*front.w + back.xyz*back.w*(1.0-front.w))/w;
-  return w > 0.0 ? vec4(xyz, w) : vec4(0.0);
+    // 3D -> 1D
+    int n = p.x*3 + p.y*113 + p.z*311;
+
+    // 1D hash by Hugo Elias
+	n = (n << 13) ^ n;
+    n = n * (n * n * 15731 + 789221) + 1376312589;
+    return float( n & ivec3(0x0fffffff))/float(0x0fffffff);
 }
-
-// License: Unknown, author: Unknown, found: don't remember
-vec3 alphaBlend(vec3 back, vec4 front) {
-  return mix(back, front.xyz, front.w);
+vec2 rotZ( float alpha, vec2 r)
+{
+    float xComp = r.x*cos(alpha) - r.y*sin(alpha);
+    float yComp = r.x*sin(alpha) + r.y*cos(alpha);
+    return vec2( xComp, yComp );
 }
-
-// License: Unknown, author: Unknown, found: don't remember
-float tanh_approx(float x) {
-  //  Found this somewhere on the interwebs
-  //  return tanh(x);
-  float x2 = x*x;
-  return clamp(x*(27.0 + x2)/(27.0+9.0*x2), -1.0, 1.0);
-}
-
-// License: Unknown, author: Unknown, found: don't remember
-float hash(float co) {
-  return fract(sin(co*12.9898) * 13758.5453);
-}
-
-// License: Unknown, author: Unknown, found: don't remember
-float hash(vec2 p) {
-  float a = dot (p, vec2 (127.1, 311.7));
-  return fract(sin(a)*43758.5453123);
+float noise(vec3 x ,float iTime)
+{
+x.xz=rotZ(iTime, x.zx);
+    ivec3 i = ivec3(floor(x));
+    vec3 f = fract(x);
+    f = f*f*(3.0-2.0*f);
+	
+    return mix(mix(mix( hash(i+ivec3(0,0,0)), 
+                        hash(i+ivec3(1,0,0)),f.x),
+                   mix( hash(i+ivec3(0,1,0)), 
+                        hash(i+ivec3(1,1,0)),f.x),f.y),
+               mix(mix( hash(i+ivec3(0,0,1)), 
+                        hash(i+ivec3(1,0,1)),f.x),
+                   mix( hash(i+ivec3(0,1,1)), 
+                        hash(i+ivec3(1,1,1)),f.x),f.y),f.z);
 }
 
-// Value noise: https://iquilezles.org/articles/morenoise
-float vnoise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-    
-  vec2 u = f*f*(3.0-2.0*f);
-//  vec2 u = f;
-
-  float a = hash(i + vec2(0.0,0.0));
-  float b = hash(i + vec2(1.0,0.0));
-  float c = hash(i + vec2(0.0,1.0));
-  float d = hash(i + vec2(1.0,1.0));
-  
-  float m0 = mix(a, b, u.x);
-  float m1 = mix(c, d, u.x);
-  float m2 = mix(m0, m1, u.y);
-  
-  return m2;
+// https://www.shadertoy.com/view/XsGfWV
+vec3 aces_tonemap(vec3 color){	
+	mat3 m1 = mat3(
+        0.59719, 0.07600, 0.02840,
+        0.35458, 0.90834, 0.13383,
+        0.04823, 0.01566, 0.83777
+	);
+	mat3 m2 = mat3(
+        1.60475, -0.10208, -0.00327,
+        -0.53108,  1.10813, -0.07276,
+        -0.07367, -0.00605,  1.07602
+	);
+	vec3 v = m1 * color;    
+	vec3 a = v * (v + 0.0245786) - 0.000090537;
+	vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081;
+	return pow(clamp(m2 * (a / b), 0.0, 1.0), vec3(1.0 / 2.2));	
 }
 
-// License: MIT, author: Inigo Quilez, found: https://iquilezles.org/www/articles/spherefunctions/spherefunctions.htm
-vec2 raySphere(vec3 ro, vec3 rd, vec4 sph) {
-  vec3 oc = ro - sph.xyz;
-  float b = dot( oc, rd );
-  float c = dot( oc, oc ) - sph.w*sph.w;
-  float h = b*b - c;
-  if( h<0.0 ) return vec2(-1.0);
-  h = sqrt( h );
-  return vec2(-b - h, -b + h);
-}
-
-// License: MIT OR CC-BY-NC-4.0, author: mercury, found: https://mercury.sexy/hg_sdf/
-float mod1(inout float p, float size) {
-  float halfsize = size*0.5;
-  float c = floor((p + halfsize)/size);
-  p = mod(p + halfsize, size) - halfsize;
-  return c;
-}
-
-// License: MIT OR CC-BY-NC-4.0, author: mercury, found: https://mercury.sexy/hg_sdf/
-vec2 mod2(inout vec2 p, vec2 size) {
-  vec2 c = floor((p + size*0.5)/size);
-  p = mod(p + size*0.5,size) - size*0.5;
-  return c;
-}
-
-// License: Unknown, author: Unknown, found: don't remember
-vec2 hash2(vec2 p) {
-  p = vec2(dot (p, vec2 (127.1, 311.7)), dot (p, vec2 (269.5, 183.3)));
-  return fract(sin(p)*43758.5453123);
-}
-
-float hifbm(vec2 p) {
-  const float aa = 0.5;
-  const float pp = 2.0-0.;
-
-  float sum = 0.0;
-  float a   = 1.0;
-  
-  for (int i = 0; i < 5; ++i) {
-    sum += a*vnoise(p);
-    a *= aa;
-    p *= pp;
-  }
-  
-  return sum;
-}
-
-float lofbm(vec2 p) {
-  const float aa = 0.5;
-  const float pp = 2.0-0.;
-
-  float sum = 0.0;
-  float a   = 1.0;
-  
-  for (int i = 0; i < 2; ++i) {
-    sum += a*vnoise(p);
-    a *= aa;
-    p *= pp;
-  }
-  
-  return sum;
-}
-
-float hiheight(vec2 p) {
-  return hifbm(p)-1.8;
-}
-
-float loheight(vec2 p) {
-  return lofbm(p)-2.15;
-}
-
-vec4 plane(vec3 ro, vec3 rd, vec3 pp, vec3 npp, vec3 off, float n) {
-  float h = hash(n);
-  float s = mix(0.05, 0.25, h);
-
-  vec3 hn;
-  vec2 p = (pp-off*2.0*vec3(1.0, 1.0, 0.0)).xy;
-
-  const vec2 stp = vec2(0.5, 0.33); 
-  float he    = hiheight(vec2(p.x, pp.z)*stp);
-  float lohe  = loheight(vec2(p.x, pp.z)*stp);
-
-  float d = p.y-he;
-  float lod = p.y - lohe;
-
-  float aa = distance(pp, npp)*sqrt(1.0/3.0);
-  float t = smoothstep(aa, -aa, d);
-
-  float df = exp(-0.1*(distance(ro, pp)-2.));  
-  vec3 acol = hsv2rgb(vec3(mix(0.9, 0.6, df), 0.9, mix(1.0, 0.0, df)));
-  vec3 gcol = hsv2rgb(vec3(0.6, 0.5, tanh_approx(exp(-mix(2.0, 8.0, df)*lod))));
-  
-  vec3 col = vec3(0.0);
-  col += acol;
-  col += 0.5*gcol;
-  
-  return vec4(col, t);
-}
-
-vec3 stars(vec2 sp, float hh) {
-  const vec3 scol0 = HSV2RGB(vec3(0.85, 0.8, 1.0));
-  const vec3 scol1 = HSV2RGB(vec3(0.65, 0.5, 1.0));
-  vec3 col = vec3(0.0);
-  
-  const float m = 6.0;
-
-  for (float i = 0.0; i < m; ++i) {
-    vec2 pp = sp+0.5*i;
-    float s = i/(m-1.0);
-    vec2 dim  = vec2(mix(0.05, 0.003, s)*PI);
-    vec2 np = mod2(pp, dim);
-    vec2 h = hash2(np+127.0+i);
-    vec2 o = -1.0+2.0*h;
-    float y = sin(sp.x);
-    pp += o*dim*0.5;
-    pp.y *= y;
-    float l = length(pp);
-  
-    float h1 = fract(h.x*1667.0);
-    float h2 = fract(h.x*1887.0);
-    float h3 = fract(h.x*2997.0);
-
-    vec3 scol = mix(8.0*h2, 0.25*h2*h2, s)*mix(scol0, scol1, h1*h1);
-
-    vec3 ccol = col + exp(-(mix(6000.0, 2000.0, hh)/mix(2.0, 0.25, s))*max(l-0.001, 0.0))*scol;
-    ccol *= mix(0.125, 1.0, smoothstep(1.0, 0.99, sin(0.25*uniformBufferObjects[pushConsts.uniformBufferIndex].time+TAU*h.y)));
-    col = h3 < y ? ccol : col;
-  }
-  
-  return col;
-}
-
-vec3 toSpherical(vec3 p) {
-  float r   = length(p);
-  float t   = acos(p.z/r);
-  float ph  = atan(p.y, p.x);
-  return vec3(r, t, ph);
-}
-
-const vec3 lpos   = 1E6*vec3(0., -0.15, 1.0);
-const vec3 ldir   = normalize(lpos);
-
-
-vec3 skyColor(vec3 ro, vec3 rd) {
-  const vec3 acol   = HSV2RGB(vec3(0.6, 0.9, 0.075));
-  const vec3 lpos   = 1E6*vec3(0., -0.15, 1.0);
-  const vec3 lcol   = HSV2RGB(vec3(0.75, 0.8, 1.0));
-
-  vec2 sp     = toSpherical(rd.xzy).yz;
-
-  float lf    = pow(max(dot(ldir, rd), 0.0), 80.0);
-  float li    = 0.02*mix(1.0, 10.0, lf)/(abs((rd.y+0.055))+0.025);
-  float lz    = step(-0.055, rd.y);
-
-  vec4 mcol   = vec4(0.0,0.0,0.0,0.0);
-
-  vec3 col = vec3(0.0);
-  col += stars(sp, 0.25)*smoothstep(0.5, 0.0, li)*lz;  
-  col  = mix(col, mcol.xyz, mcol.w);
-  col += smoothstep(-0.4, 0.0, (sp.x-PI*0.5))*acol;
-  col += tanh(lcol*li);
-  return col;
-}
-
-vec3 color(vec3 ww, vec3 uu, vec3 vv, vec3 ro, vec2 p) {
-  float lp = length(p);
-  vec2 np = p + 2.0/uniformBufferObjects[pushConsts.uniformBufferIndex].imageSize.y;
-//  float rdd = (2.0-1.0*tanh_approx(lp));  // Playing around with rdd can give interesting distortions
-  float rdd = 2.0;
-  vec3 rd = normalize(p.x*uu + p.y*vv + rdd*ww);
-  vec3 nrd = normalize(np.x*uu + np.y*vv + rdd*ww);
-
-  const float planeDist = 1.0;
-  const int furthest = 12;
-  const int fadeFrom = max(furthest-2, 0);
-
-  const float fadeDist = planeDist*float(fadeFrom);
-  const float maxDist  = planeDist*float(furthest);
-  float nz = floor(ro.z / planeDist);
-
-  vec3 skyCol = skyColor(ro, rd);
-
-
-  vec4 acol = vec4(0.0);
-  const float cutOff = 0.95;
-  bool cutOut = false;
-
-  // Steps from nearest to furthest plane and accumulates the color 
-  for (int i = 1; i <= furthest; ++i) {
-    float pz = planeDist*nz + planeDist*float(i);
-
-    float pd = (pz - ro.z)/rd.z;
-
-    vec3 pp = ro + rd*pd;
-    
-    if (pp.y < 0. && pd > 0.0 && acol.w < cutOff) {
-      vec3 npp = ro + nrd*pd;
-
-      vec3 off = vec3(0.0);
-
-      vec4 pcol = plane(ro, rd, pp, npp, off, nz+float(i));
-
-      float nz = pp.z-ro.z;
-      float fadeIn = smoothstep(maxDist, fadeDist, pd);
-      pcol.xyz = mix(skyCol, pcol.xyz, fadeIn);
-//      pcol.w *= fadeOut;
-      pcol = clamp(pcol, 0.0, 1.0);
-
-      acol = alphaBlend(pcol, acol);
-    } else {
-      cutOut = true;
-      acol.w = acol.w > cutOff ? 1.0 : acol.w;
-      break;
-    }
-
-  }
-
-  vec3 col = alphaBlend(skyCol, acol);
-// To debug cutouts due to transparency  
-//  col += cutOut ? vec3(1.0, -1.0, 0.0) : vec3(0.0);
-  return col;
-}
-
-vec3 effect(vec2 p) {
-  float tm= uniformBufferObjects[pushConsts.uniformBufferIndex].time*0.25;
-  vec3 ro = vec3(0.0, 0.0, tm);
-  vec3 dro= normalize(vec3(0.0, 0.09, 1.0));  
-  vec3 ww = normalize(dro);
-  vec3 uu = normalize(cross(normalize(vec3(0.0,1.0,0.0)), ww));
-  vec3 vv = normalize(cross(ww, uu));
-
-  vec3 col = color(ww, uu, vv, ro, p);
-  
-  return col;
-}
+vec2 r(vec2 p, float a) { return p*mat2(cos(a), sin(a), -sin(a), cos(a)); }
 
 
 void main()
 {
-    vec2 q = vec2(gl_GlobalInvocationID.x, uniformBufferObjects[pushConsts.uniformBufferIndex].imageSize.y - gl_GlobalInvocationID.y) / uniformBufferObjects[pushConsts.uniformBufferIndex].imageSize;
-    vec2 p = -1. + 2. * q;
-    p.x *= uniformBufferObjects[pushConsts.uniformBufferIndex].imageSize.x / uniformBufferObjects[pushConsts.uniformBufferIndex].imageSize.y;
+    vec4 O=vec4(0.0);
+    float iTime = uniformBufferObjects[pushConsts.uniformBufferIndex].time * 0.05;
+    vec2 iResolution = uniformBufferObjects[pushConsts.uniformBufferIndex].imageSize;
+    vec2 R = uniformBufferObjects[pushConsts.uniformBufferIndex].imageSize;
+    vec2 I = vec2(gl_GlobalInvocationID.xy) + vec2(0.5);
+    vec2 uv = I/R;
+    vec2 p = (2.*I - R) / R.y * 1.5;
+    
+    float fp = pow(.5/length(pow(abs(r(p,.43))
+        *vec2(3.4,1),vec2(0.5))),2.5);
+       
+       
+       vec4 o=O;
+     vec2 F = I;
+
+    o-=o;
+    for(float d,t = -iTime*.01, i = 0. ; i > -1.; i -= .06 )          	
+    {   d = fract( i -3.*t );                                          	
+        vec4 c = vec4( ( F - R *.5 ) / R.y *d ,i,0 ) * 28.;  
+     c.xz=rotZ(iTime, c.zx);
+        for (int j=0 ; j++ <27; )                                      	
+            c.xzyw = abs( c / dot(c,c)                                 	
+            
+                    -vec4( 7.-.2*sin(t) , 6.3 , .7 , 1.-cos(t/.8))/7.);	
+                    
+       o -= c * c.yzww  * d--*d  / vec4(3,4,1,1);                     
+    }
+    vec2 uv2 = ( I - .5*iResolution.xy ) / iResolution.y;
+      vec2 uv3 = ( I - .5*iResolution.xy ) / iResolution.y;
+         vec2 uv4 = ( I - .5*iResolution.xy ) / iResolution.y;
+    p *= mat2(1.0,-.1,-.0,1.2);    
+    vec3 pos = normalize(vec3(r(p,-.4/length(p)),.25));
+    pos.z -= iTime*0.5;
+    uv2-=0.2;
+       uv3+=0.1;
+         uv4+=.3;
+         uv4.y-=0.72;
+    vec3 q = 2.*pos;
+     
+    float f  = 0.5000*noise( q*o.xyz ,iTime); q = q*2.;
+          f += 0.2500*noise( q*o.xyz ,iTime); q = q*2.;
+          f += 0.1250*noise( q *o.xyz,iTime); q = q*2.;
+          f += 0.0625*noise( q *o.xyz,iTime);
+    
+    vec2 n = uv*(1.-uv+o.xy)*3.; float v = pow(n.x*n.y,.8);
+    
+    float fr = .6/length(p);
+    f = smoothstep(-.4,2.,f*f) * fr*fr + fp;
+     uv *= 2.0 * ( cos(iTime * 2.0) -2.5); // scale
+    float anim = sin(iTime * 12.0) * 0.1 + 1.0;  // anim between 0.9 - 1.1 
+ 
+    O = vec4(pow(f*f * vec3(0., .05, .5)*v*o.xyz,vec3(.45))*3.5,0);
+        
+        
+           O+= vec4(happy_star(uv2, anim) * vec3(0.35,0.2,0.15)*0.01, 1.0);
+             O+= vec4(happy_star(uv3, anim) * vec3(0.35,0.7,0.35)*0.005, 1.0);
+               O+= vec4(happy_star(uv4, anim) * vec3(0.35,0.07,0.05)*0.0205, 1.0);
+
+
 
     uint imageID = uniformBufferObjects[pushConsts.uniformBufferIndex].imageID;
-    imageStore(inputImageRGBA16[imageID], ivec2(gl_GlobalInvocationID.xy), vec4(acesFilmicToneMapCurve(effect(p)), 1.0));
+    imageStore(inputImageRGBA16[imageID], ivec2(gl_GlobalInvocationID.xy), vec4(acesFilmicToneMapCurve(O.xyz), 1.0));
 }
