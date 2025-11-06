@@ -1,16 +1,10 @@
-add_library(corona_optics_system STATIC
-    optics_system.cpp
-)
+# ==============================================================================
+# Optics System
+# ==============================================================================
 
-add_library(corona::system::optics ALIAS corona_optics_system)
-
-target_include_directories(corona_optics_system PUBLIC
-    ${PROJECT_SOURCE_DIR}/src/systems/include
-    ${PROJECT_SOURCE_DIR}/src/include
-)
-
-target_link_libraries(corona_optics_system PUBLIC
-    corona::kernel
-    CabbageHardware
-    CoronaResource::Resource
+corona_add_system(optics
+    SOURCES optics_system.cpp
+    DEPENDENCIES 
+        CabbageHardware
+        CoronaResource::Resource
 )

@@ -4,13 +4,33 @@
 # 构建引擎核心库和系统模块
 # ==============================================================================
 
-# 添加系统子目录
-add_subdirectory(systems/src/acoustics)
-add_subdirectory(systems/src/optics)
-add_subdirectory(systems/src/mechanics)
-add_subdirectory(systems/src/geometry)
-add_subdirectory(systems/src/animation)
-add_subdirectory(systems/src/display)
+# ------------------------------------------------------------------------------
+# 自动发现并添加系统模块
+# ------------------------------------------------------------------------------
+message(STATUS "[CoronaEngine] Discovering system modules...")
+
+file(GLOB _CORONA_SYSTEM_DIRS LIST_DIRECTORIES true 
+     "${CMAKE_CURRENT_SOURCE_DIR}/systems/src/*")
+
+foreach(_system_dir IN LISTS _CORONA_SYSTEM_DIRS)
+    if(IS_DIRECTORY "${_system_dir}")
+        get_filename_component(_system_name "${_system_dir}" NAME)
+        
+        if(EXISTS "${_system_dir}/CMakeLists.txt")
+            add_subdirectory("systems/src/${_system_name}")
+        else()
+            message(WARNING "[CoronaEngine] System '${_system_name}' has no CMakeLists.txt, skipping")
+        endif()
+    endif()
+endforeach()
+
+unset(_CORONA_SYSTEM_DIRS)
+unset(_system_dir)
+unset(_system_name)
+
+# ------------------------------------------------------------------------------
+# 添加脚本模块
+# ------------------------------------------------------------------------------
 add_subdirectory(script/src)
 
 # ==============================================================================
