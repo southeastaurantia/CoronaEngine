@@ -1,14 +1,7 @@
-add_library(corona_geometry_system STATIC
-    geometry_system.cpp
-)
+# ==============================================================================
+# Geometry System
+# ==============================================================================
 
-add_library(corona::system::geometry ALIAS corona_geometry_system)
-
-target_include_directories(corona_geometry_system PUBLIC
-    ${PROJECT_SOURCE_DIR}/src/systems/include
-    ${PROJECT_SOURCE_DIR}/src/include
-)
-
-target_link_libraries(corona_geometry_system PUBLIC
-    corona::kernel
+corona_add_system(geometry
+    SOURCES geometry_system.cpp
 )

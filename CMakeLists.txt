@@ -32,6 +32,7 @@ include(corona_python)              # Embedded Python discovery and dependency c
 include(corona_third_party)         # FetchContent declarations for external dependencies
 include(corona_compile_config)      # Compiler settings, standards, and shared definitions
 include(corona_collect_module)      # Helpers for module source/header discovery
+include(corona_add_system)          # Helper for adding system modules
 include(corona_runtime_deps)        # Runtime dependency collection and copy helpers
 include(corona_editor)              # Editor asset packaging helpers
 
