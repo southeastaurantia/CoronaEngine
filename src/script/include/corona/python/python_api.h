@@ -45,6 +45,7 @@ struct PythonAPI {
     void invokeEntry(bool isReload) const;
     static int64_t nowMsec();
     static std::wstring str2wstr(const std::string& str);
+    static std::string wstr2str(const std::wstring& wstr);
     static void copyModifiedFiles(const std::filesystem::path& sourceDir,
                                   const std::filesystem::path& destDir,
                                   int64_t checkTimeMs);

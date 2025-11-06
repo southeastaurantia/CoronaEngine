@@ -18,12 +18,23 @@ struct CoronaEngineAPI {
     struct AudioTag {};
     struct DisplayTag {};
 
-    struct Actor {
+    struct Base {
+       protected:
+        Base() : id_(registry_.create()) {}
+        ~Base() = default;
+
        public:
-        Actor(const std::string& path = "");
+        [[nodiscard]] entt::entity get_id() const { return id_; }
+
+       protected:
+        entt::entity id_{};
+    };
+
+    struct Actor : public Base {
+       public:
+        explicit Actor(const std::string& path = "");
         ~Actor();
 
-        [[nodiscard]] entt::entity get_id() const;
         [[nodiscard]] std::uintptr_t get_handle_id() const;
 
         void move(ktm::fvec3 pos) const;
@@ -31,46 +42,43 @@ struct CoronaEngineAPI {
         void scale(ktm::fvec3 size) const;
 
        private:
-        entt::entity actor_id_;
-        std::uintptr_t model_handle_;
-        std::uintptr_t device_handle_;
+        std::uintptr_t model_handle_{};
+        std::uintptr_t device_handle_{};
     };
 
-    struct Light {
+    struct Light : public Base {
        public:
         Light();
         ~Light();
 
-        [[nodiscard]] entt::entity get_id() const;
         [[nodiscard]] std::uintptr_t get_handle_id() const;
 
        private:
-        entt::entity light_id_;
-        std::uintptr_t light_handle_;
+        std::uintptr_t handle_{};
     };
 
-    struct Camera {
+    struct Camera : public Base {
        public:
         Camera();
         Camera(const ktm::fvec3& position, const ktm::fvec3& forward, const ktm::fvec3& world_up, float fov);
         ~Camera();
 
-        [[nodiscard]] entt::entity get_id() const;
         [[nodiscard]] std::uintptr_t get_handle_id() const;
 
+        void set_surface(void* surface) const;
+
        private:
-        entt::entity camera_id_;
-        std::uintptr_t camera_handle_;
+        std::uintptr_t handle_{};
     };
 
     struct Scene {
        public:
-        Scene(void* surface = nullptr, bool light_field = false);
+        explicit Scene(bool light_field = false);
         ~Scene();
 
         // void set_camera(const ktm::fvec3& position, const ktm::fvec3& forward, const ktm::fvec3& world_up, float fov) const;
+        // void set_display_surface(void* surface) const;
         void set_sun_direction(ktm::fvec3 direction) const;
-        void set_display_surface(void* surface) const;
 
         void add_camera(const Camera& camera) const;
         void add_light(const Light& light) const;
@@ -81,8 +89,8 @@ struct CoronaEngineAPI {
         void remove_actor(const Actor& actor) const;
 
        private:
-        entt::entity scene_id_;
-        std::uintptr_t scene_handle_;
+        entt::entity scene_id_{};
+        std::uintptr_t scene_handle_{};
     };
 
 
