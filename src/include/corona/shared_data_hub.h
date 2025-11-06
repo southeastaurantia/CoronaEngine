@@ -13,7 +13,7 @@ namespace Corona {
 
 class Model;
 
-struct ModelDevice {
+struct MeshDevice {
     HardwareBuffer pointsBuffer;
     HardwareBuffer normalsBuffer;
     HardwareBuffer texCoordsBuffer;
@@ -25,6 +25,29 @@ struct ModelDevice {
     uint32_t textureIndex;
 
     Mesh meshData;
+};
+
+struct ModelDevice {
+    ktm::fmat4x4 modelMatrix;
+    std::vector<MeshDevice> devices;
+};
+
+struct CameraDevice {
+    ktm::fvec3 eyePosition;
+    ktm::fvec3 eyeDir;
+    ktm::fmat4x4 eyeViewMatrix;
+    ktm::fmat4x4 eyeProjMatrix;
+};
+
+struct LightDevice {
+
+};
+
+struct SceneDevice {
+    ktm::fvec3 sun_direction;
+    std::vector<std::uintptr_t> actors;
+    std::vector<std::uintptr_t> cameras;
+    std::vector<std::uintptr_t> lights;
 };
 
 class SharedDataHub {
@@ -45,14 +68,28 @@ class SharedDataHub {
     ModelStorage& model_storage();
     const ModelStorage& model_storage() const;
 
-    using ModelDeviceStorage = Kernel::Utils::Storage<std::vector<ModelDevice>>;
+    using ModelDeviceStorage = Kernel::Utils::Storage<ModelDevice>;
     ModelDeviceStorage& model_device_storage();
     const ModelDeviceStorage& model_device_storage() const;
 
+    using SceneStorage = Kernel::Utils::Storage<SceneDevice>;
+    SceneStorage& scene_storage();
+    const SceneStorage& scene_storage() const;
+
+    using CameraStorage = Kernel::Utils::Storage<CameraDevice>;
+    CameraStorage& camera_storage();
+    const CameraStorage& camera_storage() const;
+
+    using LightStorage = Kernel::Utils::Storage<LightDevice>;
+    LightStorage& light_storage();
+    const LightStorage& light_storage() const;
 
    private:
     ModelDeviceStorage model_device_storage_;
     ModelStorage model_storage_;
+    SceneStorage scene_storage_;
+    CameraStorage camera_storage_;
+    LightStorage light_storage_;
 };
 
 }  // namespace Corona

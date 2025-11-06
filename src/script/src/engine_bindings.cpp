@@ -28,9 +28,9 @@ void BindAll(nanobind::module_& m) {
     nanobind::class_<CoronaEngineAPI::Scene>(m, "Scene")
         .def(nanobind::init<void*, bool>(), nanobind::arg("surface") = nullptr, nanobind::arg("lightField") = false)
         .def("__init__", [](CoronaEngineAPI::Scene* self, uintptr_t surface, bool lightField) { new (self) CoronaEngineAPI::Scene(reinterpret_cast<void*>(surface), lightField); }, nanobind::arg("surface") = static_cast<uintptr_t>(0), nanobind::arg("lightField") = false)
-        .def("setCamera", [](const CoronaEngineAPI::Scene& self, const std::array<float, 3>& position, const std::array<float, 3>& forward, const std::array<float, 3>& worldUp, float fov) { self.set_camera(vec3_from(position), vec3_from(forward), vec3_from(worldUp), fov); })
+        // .def("setCamera", [](const CoronaEngineAPI::Scene& self, const std::array<float, 3>& position, const std::array<float, 3>& forward, const std::array<float, 3>& worldUp, float fov) { self.set_camera(vec3_from(position), vec3_from(forward), vec3_from(worldUp), fov); })
         .def("setSunDirection", [](const CoronaEngineAPI::Scene& self, const std::array<float, 3>& dir) { self.set_sun_direction(vec3_from(dir)); })
-        .def("setDisplaySurface", [](CoronaEngineAPI::Scene& self, void* surface) { self.set_display_surface(surface); })
+        // .def("setDisplaySurface", [](CoronaEngineAPI::Scene& self, void* surface) { self.set_display_surface(surface); })
         .def("setDisplaySurface", [](CoronaEngineAPI::Scene& self, uintptr_t surface) { self.set_display_surface(reinterpret_cast<void*>(surface)); });
 }
 
