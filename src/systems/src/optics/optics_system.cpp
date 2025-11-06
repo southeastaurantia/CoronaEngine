@@ -71,47 +71,6 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
                     }
                 }
             });
-
-        model_upload_sub_id = event_bus->subscribe<Events::ModelToGpuUploadRequestEvent>(
-            [this, logger](const Events::ModelToGpuUploadRequestEvent& event) {
-                if (logger) {
-                    logger->info("OpticsSystem: Received ModelToGpuUploadRequestEvent new model: " +
-                                 std::to_string(event.model_handle));
-                }
-                if (event.model_handle) {
-                    bool info = SharedDataHub::instance().model_storage().read(
-                        event.model_handle, [this, logger](const std::shared_ptr<Model>& model_ptr) {
-                            if (model_ptr) {
-                                logger->info("Upload model to GPU...");
-                                logger->info("devices_" + std::to_string(devices_.size()));
-                                devices_.clear();
-                                logger->info("devices_" + std::to_string(devices_.size()));
-                                for (const auto & mesh : model_ptr->meshes) {
-                                    ModelDevice model_device;
-                                    model_device.pointsBuffer = HardwareBuffer(mesh.points, BufferUsage::VertexBuffer);
-                                    model_device.normalsBuffer = HardwareBuffer(mesh.normals, BufferUsage::VertexBuffer);
-                                    model_device.texCoordsBuffer = HardwareBuffer(mesh.texCoords, BufferUsage::VertexBuffer);
-                                    model_device.boneIndexesBuffer = HardwareBuffer(mesh.boneIndices, BufferUsage::VertexBuffer);
-                                    model_device.boneWeightsBuffer = HardwareBuffer(mesh.boneWeights, BufferUsage::VertexBuffer);
-                                    model_device.indexBuffer = HardwareBuffer(mesh.Indices, BufferUsage::IndexBuffer);
-                                    model_device.meshData = const_cast<Mesh*>(&mesh);
-                                    model_device.materialIndex = 0;
-                                    model_device.textureIndex = HardwareImage(mesh.textures[0]->width, mesh.textures[0]->height, ImageFormat::RGBA8_SRGB, ImageUsage::SampledImage, 1, mesh.textures[0]->data);
-
-                                    devices_.emplace_back(model_device);
-                                }
-
-
-                            } else {
-                                logger->warning("  - Failed to read model from storage: model pointer is null.");
-                            }
-                        });
-                    if (!info) {
-                        logger->warning("  - Failed to read model from storage: invalid handle " +
-                                        std::to_string(event.model_handle));
-                    }
-                }
-            });
         logger->info("OpticsSystem: Subscribed to DisplaySurfaceChangedEvent");
     }
 

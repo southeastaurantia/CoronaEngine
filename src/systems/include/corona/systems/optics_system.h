@@ -62,7 +62,6 @@ class OpticsSystem : public Kernel::SystemBase {
     // TODO: 添加光学系统私有成员
     void gbuffer_pipeline();
     Kernel::EventId surface_changed_sub_id_ = 0;
-    Kernel::EventId model_upload_sub_id = 0;
     void* surface_handle_ = nullptr;
 
     std::unique_ptr<Hardware> hardware_;

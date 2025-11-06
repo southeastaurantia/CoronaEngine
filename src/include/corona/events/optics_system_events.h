@@ -36,7 +36,4 @@ struct DisplaySurfaceChangedEvent {
     void* surface;
 };
 
-struct ModelToGpuUploadRequestEvent {
-    Kernel::Utils::Storage<std::shared_ptr<Model>>::Handle model_handle;
-};
 }  // namespace Corona::Events

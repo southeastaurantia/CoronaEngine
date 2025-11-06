@@ -79,9 +79,6 @@ CoronaEngineAPI::Actor::Actor(const std::string& path)
     });
 
     registry_.emplace_or_replace<Corona::Components::ModelResource>(actor_id_, Corona::Components::ModelResource{model_handle_, model_id, device_handle_});
-    if (auto* event_bus = Corona::Kernel::KernelContext::instance().event_bus()) {
-        event_bus->publish<Corona::Events::ModelToGpuUploadRequestEvent>({model_handle_});
-    }
 }
 
 CoronaEngineAPI::Actor::~Actor() {

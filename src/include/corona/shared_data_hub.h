@@ -1,11 +1,13 @@
 #pragma once
 #include <corona/kernel/utils/storage.h>
+
 #include <memory>
 #include <vector>
-#include <CabbageHardware.h>
+
+#include "CabbageHardware.h"
+#include "Mesh.h"
 
 // Forward declarations
-#include "Mesh.h"
 
 namespace Corona {
 
