@@ -110,6 +110,8 @@ if(CORONA_BUILD_HARDWARE)
 endif()
 
 if(CORONA_BUILD_VISION)
+    set(SDL_SHARED ON CACHE BOOL "" FORCE)
+    set(VISION_BUILD_VULKAN OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(Vision)
     message(STATUS "[3rdparty] Vision module enabled")
 endif()

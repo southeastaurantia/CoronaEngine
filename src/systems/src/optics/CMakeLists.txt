@@ -7,4 +7,5 @@ corona_add_system(optics
     DEPENDENCIES 
         CabbageHardware
         CoronaResource::Resource
+        vision-all_libs
 )
