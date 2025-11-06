@@ -29,18 +29,20 @@ struct MeshDevice {
 
 struct ModelDevice {
     ktm::fmat4x4 modelMatrix;
+    HardwareBuffer boneMatrix;
     std::vector<MeshDevice> devices;
 };
 
 struct CameraDevice {
+    std::uint64_t surface;
     ktm::fvec3 eyePosition;
     ktm::fvec3 eyeDir;
     ktm::fmat4x4 eyeViewMatrix;
     ktm::fmat4x4 eyeProjMatrix;
+    ktm::fmat4x4 viewProjMatrix;
 };
 
 struct LightDevice {
-
 };
 
 struct SceneDevice {

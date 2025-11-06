@@ -60,9 +60,8 @@ class OpticsSystem : public Kernel::SystemBase {
 
    private:
     // TODO: 添加光学系统私有成员
-    void gbuffer_pipeline();
+    void optics_pipeline(float frame_count) const;
     Kernel::EventId surface_changed_sub_id_ = 0;
-    void* surface_handle_ = nullptr;
 
     std::unique_ptr<Hardware> hardware_;
 };

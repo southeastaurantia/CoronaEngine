@@ -21,7 +21,7 @@ entt::registry CoronaEngineAPI::registry_;
 //          Scene
 // ########################
 CoronaEngineAPI::Scene::Scene(bool lightField)
-    : scene_id_(registry_.create()), scene_handle_(0) {
+    : scene_id_(registry_.create()) {
     registry_.emplace<RenderTag>(scene_id_);
 
     scene_handle_ = Corona::SharedDataHub::instance().scene_storage().allocate([&](Corona::SceneDevice& slot) {
@@ -35,10 +35,6 @@ CoronaEngineAPI::Scene::~Scene() {
     }
     registry_.destroy(scene_id_);
 }
-
-// void CoronaEngineAPI::Scene::set_camera(const ktm::fvec3& position, const ktm::fvec3& forward, const ktm::fvec3& world_up, float fov) const {
-//     registry_.emplace_or_replace<Corona::Components::Camera>(scene_id_, Corona::Components::Camera{fov, position, forward,  world_up});
-// }
 
 void CoronaEngineAPI::Scene::set_sun_direction(ktm::fvec3 direction) const {
     registry_.emplace_or_replace<Corona::Components::SunDirection>(scene_id_, Corona::Components::SunDirection{direction});
@@ -182,7 +178,7 @@ void CoronaEngineAPI::Scene::remove_actor(const Actor& actor) const {
 //          Actor
 // ########################
 CoronaEngineAPI::Actor::Actor(const std::string& path)
-    : Base(), model_handle_(0), device_handle_(0) {
+    : device_handle_(0) {
     registry_.emplace<RenderTag>(id_);
     auto model_id = Corona::ResourceId::from("model", path);
     auto model_ptr = std::static_pointer_cast<Corona::Model>(Corona::ResourceManager::instance().load_once(model_id));
@@ -233,6 +229,7 @@ CoronaEngineAPI::Actor::Actor(const std::string& path)
 
     device_handle_ = Corona::SharedDataHub::instance().model_device_storage().allocate([&](Corona::ModelDevice& slot) {
         slot.modelMatrix = ktm::fmat4x4(ktm::translate3d(actor.position) * ktm::translate3d(actor.rotation) * ktm::translate3d(actor.scale));
+        slot.boneMatrix = HardwareBuffer(model_ptr->bones, BufferUsage::StorageBuffer);
         slot.devices = std::move(devices);
     });
 
@@ -308,7 +305,7 @@ void CoronaEngineAPI::Actor::scale(ktm::fvec3 size) const {
 //          Camera
 //  ########################
 CoronaEngineAPI::Camera::Camera()
-    : Base(), handle_(0) {
+    : handle_(0) {
     ktm::fvec3 position{0.0f, 0.0f, 5.0f};
     ktm::fvec3 forward{0.0f, 0.0f, -1.0f};
     ktm::fvec3 world_up{0.0f, 1.0f, 0.0f};
@@ -321,11 +318,12 @@ CoronaEngineAPI::Camera::Camera()
         slot.eyeDir = ktm::normalize(forward);
         slot.eyeViewMatrix = ktm::look_at_lh(position, ktm::normalize(forward), world_up);
         slot.eyeProjMatrix = ktm::perspective_lh(ktm::radians(fov), 16.0f / 9.0f, 0.1f, 100.0f);
+        slot.viewProjMatrix = slot.eyeProjMatrix * slot.eyeViewMatrix;
     });
 }
 
 CoronaEngineAPI::Camera::Camera(const ktm::fvec3& position, const ktm::fvec3& forward, const ktm::fvec3& world_up, float fov)
-    : Base(), handle_(0) {
+    : handle_(0) {
     registry_.emplace<Corona::Components::Camera>(id_, Corona::Components::Camera{position, forward, world_up, fov});
 
     handle_ = Corona::SharedDataHub::instance().camera_storage().allocate([&](Corona::CameraDevice& slot) {
@@ -351,13 +349,26 @@ std::uintptr_t CoronaEngineAPI::Camera::get_handle_id() const {
 
 void CoronaEngineAPI::Camera::set_surface(void* surface) const {
     registry_.emplace_or_replace<Corona::Components::DisplaySurface>(id_, Corona::Components::DisplaySurface{surface});
+    if (auto* event_bus = Corona::Kernel::KernelContext::instance().event_bus()) {
+        event_bus->publish<Corona::Events::DisplaySurfaceChangedEvent>({surface});
+    }
+
+    bool info = Corona::SharedDataHub::instance().camera_storage().write(handle_, [&](Corona::CameraDevice& slot) {
+        slot.surface = reinterpret_cast<std::uint64_t>(surface);
+    });
+
+    if (!info) {
+        if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
+            logger->warning("[CoronaEngineAPI::Camera::set_surface] 更新相机数据失败");
+        }
+    }
 }
 
 // ########################
 //          Light
 // ########################
 CoronaEngineAPI::Light::Light()
-    : Base(), handle_(0) {
+    : handle_(0) {
     registry_.emplace<Corona::Components::Light>(id_, Corona::Components::Light{ktm::fvec3{0.0f, 5.0f, 0.0f}, ktm::fvec3{1.0f, 1.0f, 1.0f}, ktm::fvec3{0.0f, 0.0f, 0.0f}});
     handle_ = Corona::SharedDataHub::instance().light_storage().allocate([&](Corona::LightDevice& slot) {
         // 初始化 LightDevice 相关数据
