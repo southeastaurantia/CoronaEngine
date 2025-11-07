@@ -15,6 +15,39 @@ bool AnimationSystem::initialize(Kernel::ISystemContext* ctx) {
 }
 
 void AnimationSystem::update() {
+
+}
+
+void AnimationSystem::update_animation_state() {
+    // if (!state.model) {
+    //     return;
+    // }
+    // const auto animCount = state.model->skeletalAnimations.size();
+    // if (animCount == 0 || state.animationIndex >= animCount) {
+    //     return;
+    // }
+    //
+    // const Animation& anim = state.model->skeletalAnimations[state.animationIndex];
+    // // 推进时间（anim.m_TicksPerSecond 为动画时钟刻度）
+    // state.currentTime += static_cast<float>(anim.m_TicksPerSecond) * dt;
+    // const auto duration = static_cast<float>(anim.m_Duration);
+    // if (duration > 0.0f) {
+    //     state.currentTime = fmod(state.currentTime, duration);
+    // }
+    //
+    // // 准备输出骨矩阵数组
+    // const size_t boneCount = state.model->m_BoneInfoMap.size();
+    // state.bones.resize(boneCount, ktm::fmat4x4::from_eye());
+    //
+    // const ktm::fmat4x4 identity = ktm::fmat4x4::from_eye();
+    // // 从根开始递归计算
+    // calculateBoneTransform(state, anim, anim.m_RootNode, identity, state.bones);
+
+    // if (!state.model->bonesMatrixBuffer) {
+    //     state.model->bonesMatrixBuffer = HardwareBuffer(state.bones, BufferUsage::StorageBuffer);
+    // } else {
+    //     state.model->bonesMatrixBuffer.copyFromData(state.bones.data(), state.bones.size() * sizeof(ktm::fmat4x4));
+    // }
 }
 
 void AnimationSystem::shutdown() {

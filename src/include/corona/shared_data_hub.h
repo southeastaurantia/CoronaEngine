@@ -27,6 +27,11 @@ struct MeshDevice {
     Mesh meshData;
 };
 
+struct ModelBounding {
+    ktm::fvec3 max_xyz;
+    ktm::fvec3 min_xyz;
+};
+
 struct ModelDevice {
     ktm::fmat4x4 modelMatrix;
     HardwareBuffer boneMatrix;
@@ -86,8 +91,13 @@ class SharedDataHub {
     LightStorage& light_storage();
     const LightStorage& light_storage() const;
 
+    using ModelBoundingStorage = Kernel::Utils::Storage<ModelBounding>;
+    ModelBoundingStorage& model_bounding_storage();
+    const ModelBoundingStorage& model_bounding_storage() const;
+
    private:
     ModelDeviceStorage model_device_storage_;
+    ModelBoundingStorage model_bounding_storage_;
     ModelStorage model_storage_;
     SceneStorage scene_storage_;
     CameraStorage camera_storage_;

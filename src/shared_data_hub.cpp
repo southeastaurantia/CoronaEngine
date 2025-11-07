@@ -7,7 +7,6 @@ SharedDataHub& SharedDataHub::instance() {
     return instance;
 }
 
-
 SharedDataHub::ModelStorage& SharedDataHub::model_storage() {
     return model_storage_;
 }
@@ -46,6 +45,14 @@ SharedDataHub::LightStorage& SharedDataHub::light_storage() {
 
 const SharedDataHub::LightStorage& SharedDataHub::light_storage() const {
     return this->light_storage_;
+}
+
+SharedDataHub::ModelBoundingStorage& SharedDataHub::model_bounding_storage() {
+    return this->model_bounding_storage_;
+}
+
+const SharedDataHub::ModelBoundingStorage& SharedDataHub::model_bounding_storage() const {
+    return this->model_bounding_storage_;
 }
 
 }  // namespace Corona

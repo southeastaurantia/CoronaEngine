@@ -128,7 +128,7 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
             hardware_->rasterizerPipeline["gbufferMotionVector"] = hardware_->gbufferMotionVectorImage;
 
             SharedDataHub::instance().model_device_storage().for_each_read([&](const ModelDevice& model) {
-                hardware_->rasterizerPipeline["pushConsts.modelMatrix"] = model.modelMatrix;
+                hardware_->rasterizerPipeline["pushConsts.modelMatrix"] = ktm::fmat4x4::from_eye();
                 hardware_->rasterizerPipeline["pushConsts.uniformBufferIndex"] = hardware_->gbufferUniformBuffer.storeDescriptor();
                 HardwareBuffer boneMatrix = model.boneMatrix;
                 hardware_->rasterizerPipeline["pushConsts.boneIndex"] = boneMatrix.storeDescriptor();

@@ -179,7 +179,7 @@ void CoronaEngineAPI::Scene::remove_actor(const Actor& actor) const {
 //          Actor
 // ########################
 CoronaEngineAPI::Actor::Actor(const std::string& path)
-    : device_handle_(0) {
+    : device_handle_(0), bounding_handle_(0) {
     registry_.emplace<RenderTag>(id_);
     auto model_id = Corona::ResourceId::from("model", path);
     auto model_ptr = std::static_pointer_cast<Corona::Model>(Corona::ResourceManager::instance().load_once(model_id));
@@ -228,6 +228,20 @@ CoronaEngineAPI::Actor::Actor(const std::string& path)
         devices.emplace_back(std::move(dev));
     }
 
+    bounding_handle_ = Corona::SharedDataHub::instance().model_bounding_storage().allocate([&](Corona::ModelBounding& slot) {
+        slot.max_xyz = model_ptr->maxXYZ;
+        slot.min_xyz = model_ptr->minXYZ;
+    });
+
+    if (bounding_handle_ == 0) {
+        Corona::SharedDataHub::instance().model_bounding_storage().deallocate(bounding_handle_);
+        bounding_handle_ = 0;
+        if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
+            logger->warning("[CoronaEngineAPI::Actor::Actor] model_bounding_storage allocation failed for: " + path);
+        }
+        return;
+    }
+
     device_handle_ = Corona::SharedDataHub::instance().model_device_storage().allocate([&](Corona::ModelDevice& slot) {
         slot.modelMatrix = ktm::fmat4x4(ktm::translate3d(actor.position) * ktm::translate3d(actor.rotation) * ktm::translate3d(actor.scale));
         slot.boneMatrix = HardwareBuffer(model_ptr->bones, BufferUsage::StorageBuffer);
@@ -252,6 +266,9 @@ CoronaEngineAPI::Actor::~Actor() {
     }
     if (device_handle_) {
         Corona::SharedDataHub::instance().model_device_storage().deallocate(device_handle_);
+    }
+    if (bounding_handle_) {
+        Corona::SharedDataHub::instance().model_bounding_storage().deallocate(bounding_handle_);
     }
     registry_.destroy(id_);
 }

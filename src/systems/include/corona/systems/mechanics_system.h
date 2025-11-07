@@ -58,6 +58,7 @@ class MechanicsSystem : public Kernel::SystemBase {
 
    private:
     // 力学系统私有成员
+    void update_physics();
 };
 
 }  // namespace Corona::Systems

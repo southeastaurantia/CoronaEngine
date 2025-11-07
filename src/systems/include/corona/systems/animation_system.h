@@ -58,6 +58,7 @@ class AnimationSystem : public Kernel::SystemBase {
 
    private:
     // 动画系统私有成员
+    void update_animation_state();
 };
 
 }  // namespace Corona::Systems
