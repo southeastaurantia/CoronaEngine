@@ -7,7 +7,7 @@ corona_add_system(optics
     DEPENDENCIES 
         CabbageHardware
         CoronaResource::Resource
-        vision-all_libs
+        $<$<BOOL:${CORONA_BUILD_VISION}>:vision-all_libs>
     INCLUDE_DIRS
-        ${Vision_SOURCE_DIR}/src
+    	$<$<BOOL:${CORONA_BUILD_VISION}>:${Vision_SOURCE_DIR}/src>
 )
