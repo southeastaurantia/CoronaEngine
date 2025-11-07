@@ -6,7 +6,7 @@
 #include <string>
 
 namespace Corona {
-    class Model;
+class Model;
 }
 
 struct CoronaEngineAPI {
@@ -67,6 +67,23 @@ struct CoronaEngineAPI {
 
         void set_surface(void* surface) const;
 
+        void set_position(const ktm::fvec3& position) const;
+        [[nodiscard]] ktm::fvec3 get_position() const;
+
+        void set_forward(const ktm::fvec3& forward) const;
+        [[nodiscard]] ktm::fvec3 get_forward() const;
+
+        void set_world_up(const ktm::fvec3& world_up) const;
+        [[nodiscard]] ktm::fvec3 get_world_up() const;
+
+        void set_fov(float fov) const;
+        [[nodiscard]] float get_fov() const;
+
+        void move(ktm::fvec3 pos) const;
+        void rotate(ktm::fvec3 euler) const;
+
+        void look_at(ktm::fvec3 pos, ktm::fvec3 forward) const;
+
        private:
         std::uintptr_t handle_{};
     };
@@ -76,8 +93,6 @@ struct CoronaEngineAPI {
         explicit Scene(bool light_field = false);
         ~Scene();
 
-        // void set_camera(const ktm::fvec3& position, const ktm::fvec3& forward, const ktm::fvec3& world_up, float fov) const;
-        // void set_display_surface(void* surface) const;
         void set_sun_direction(ktm::fvec3 direction) const;
 
         void add_camera(const Camera& camera) const;
@@ -92,7 +107,6 @@ struct CoronaEngineAPI {
         entt::entity scene_id_{};
         std::uintptr_t scene_handle_{};
     };
-
 
    private:
     static entt::registry registry_;

@@ -14,7 +14,6 @@
 
 #include "Model.h"
 
-// 定义静态 ECS 注册表
 entt::registry CoronaEngineAPI::registry_;
 
 // ########################
@@ -25,7 +24,9 @@ CoronaEngineAPI::Scene::Scene(bool lightField)
     registry_.emplace<RenderTag>(scene_id_);
 
     scene_handle_ = Corona::SharedDataHub::instance().scene_storage().allocate([&](Corona::SceneDevice& slot) {
-        slot.sun_direction = ktm::fvec3{0.0f, -1.0f, 0.0f};
+        slot.sun_direction.x = 0.0f;
+        slot.sun_direction.y = -1.0f;
+        slot.sun_direction.z = 0.0f;
     });
 }
 
@@ -190,9 +191,9 @@ CoronaEngineAPI::Actor::Actor(const std::string& path)
     }
 
     auto& actor = registry_.emplace<Corona::Components::Actor>(id_);
-    actor.position = ktm::fvec3{0.0f, 0.0f, 0.0f};
-    actor.rotation = ktm::fvec3{0.0f, 0.0f, 0.0f};
-    actor.scale = ktm::fvec3{1.0f, 1.0f, 1.0f};
+    actor.position.x = 0.0f; actor.position.y = 0.0f; actor.position.z = 0.0f;
+    actor.rotation.x = 0.0f; actor.rotation.y = 0.0f; actor.rotation.z = 0.0f;
+    actor.scale.x = 1.0f; actor.scale.y = 1.0f; actor.scale.z = 1.0f;
 
     model_handle_ = Corona::SharedDataHub::instance().model_storage().allocate([&](std::shared_ptr<Corona::Model>& slot) {
         slot = model_ptr;
@@ -306,9 +307,10 @@ void CoronaEngineAPI::Actor::scale(ktm::fvec3 size) const {
 //  ########################
 CoronaEngineAPI::Camera::Camera()
     : handle_(0) {
-    ktm::fvec3 position{0.0f, 0.0f, 5.0f};
-    ktm::fvec3 forward{0.0f, 0.0f, -1.0f};
-    ktm::fvec3 world_up{0.0f, 1.0f, 0.0f};
+    ktm::fvec3 position, forward, world_up;
+    position.x = 0.0f; position.y = 0.0f; position.z = 5.0f;
+    forward.x = 0.0f; forward.y = 0.0f; forward.z = -1.0f;
+    world_up.x = 0.0f; world_up.y = 1.0f; world_up.z = 0.0f;
     float fov = 45.0f;
 
     registry_.emplace<Corona::Components::Camera>(id_, Corona::Components::Camera{position, forward, world_up, fov});
@@ -331,6 +333,7 @@ CoronaEngineAPI::Camera::Camera(const ktm::fvec3& position, const ktm::fvec3& fo
         slot.eyeDir = ktm::normalize(forward);
         slot.eyeViewMatrix = ktm::look_at_lh(position, ktm::normalize(forward), world_up);
         slot.eyeProjMatrix = ktm::perspective_lh(ktm::radians(fov), 16.0f / 9.0f, 0.1f, 100.0f);
+        slot.viewProjMatrix = slot.eyeProjMatrix * slot.eyeViewMatrix;
     });
 }
 
@@ -364,12 +367,143 @@ void CoronaEngineAPI::Camera::set_surface(void* surface) const {
     }
 }
 
+void CoronaEngineAPI::Camera::set_position(const ktm::fvec3& position) const {
+    auto& cam = registry_.get<Corona::Components::Camera>(id_);
+    cam.position = position;
+
+    bool info = Corona::SharedDataHub::instance().camera_storage().write(handle_, [&](Corona::CameraDevice& slot) {
+        slot.eyePosition = cam.position;
+        slot.eyeDir = ktm::normalize(cam.forward);
+        slot.eyeViewMatrix = ktm::look_at_lh(cam.position, ktm::normalize(cam.forward), cam.world_up);
+        slot.eyeProjMatrix = ktm::perspective_lh(ktm::radians(cam.fov), 16.0f / 9.0f, 0.1f, 100.0f);
+        slot.viewProjMatrix = slot.eyeProjMatrix * slot.eyeViewMatrix;
+    });
+
+    if (!info) {
+        if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
+            logger->warning("[CoronaEngineAPI::Camera::set_position] 更新相机数据失败");
+        }
+    }
+}
+
+void CoronaEngineAPI::Camera::set_forward(const ktm::fvec3& forward) const {
+    auto& cam = registry_.get<Corona::Components::Camera>(id_);
+    cam.forward = forward;
+
+    bool info = Corona::SharedDataHub::instance().camera_storage().write(handle_, [&](Corona::CameraDevice& slot) {
+        slot.eyePosition = cam.position;
+        slot.eyeDir = ktm::normalize(cam.forward);
+        slot.eyeViewMatrix = ktm::look_at_lh(cam.position, ktm::normalize(cam.forward), cam.world_up);
+        slot.eyeProjMatrix = ktm::perspective_lh(ktm::radians(cam.fov), 16.0f / 9.0f, 0.1f, 100.0f);
+        slot.viewProjMatrix = slot.eyeProjMatrix * slot.eyeViewMatrix;
+    });
+
+    if (!info) {
+        if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
+            logger->warning("[CoronaEngineAPI::Camera::set_forward] 更新相机数据失败");
+        }
+    }
+}
+
+void CoronaEngineAPI::Camera::set_world_up(const ktm::fvec3& world_up) const {
+    auto& cam = registry_.get<Corona::Components::Camera>(id_);
+    cam.world_up = world_up;
+
+    bool info = Corona::SharedDataHub::instance().camera_storage().write(handle_, [&](Corona::CameraDevice& slot) {
+        slot.eyePosition = cam.position;
+        slot.eyeDir = ktm::normalize(cam.forward);
+        slot.eyeViewMatrix = ktm::look_at_lh(cam.position, ktm::normalize(cam.forward), cam.world_up);
+        slot.eyeProjMatrix = ktm::perspective_lh(ktm::radians(cam.fov), 16.0f / 9.0f, 0.1f, 100.0f);
+        slot.viewProjMatrix = slot.eyeProjMatrix * slot.eyeViewMatrix;
+    });
+
+    if (!info) {
+        if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
+            logger->warning("[CoronaEngineAPI::Camera::set_world_up] 更新相机数据失败");
+        }
+    }
+}
+
+void CoronaEngineAPI::Camera::set_fov(float fov) const {
+    auto& cam = registry_.get<Corona::Components::Camera>(id_);
+    cam.fov = fov;
+
+    bool info = Corona::SharedDataHub::instance().camera_storage().write(handle_, [&](Corona::CameraDevice& slot) {
+        slot.eyePosition = cam.position;
+        slot.eyeDir = ktm::normalize(cam.forward);
+        slot.eyeViewMatrix = ktm::look_at_lh(cam.position, ktm::normalize(cam.forward), cam.world_up);
+        slot.eyeProjMatrix = ktm::perspective_lh(ktm::radians(cam.fov), 16.0f / 9.0f, 0.1f, 100.0f);
+        slot.viewProjMatrix = slot.eyeProjMatrix * slot.eyeViewMatrix;
+    });
+
+    if (!info) {
+        if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
+            logger->warning("[CoronaEngineAPI::Camera::set_fov] 更新相机数据失败");
+        }
+    }
+}
+
+ktm::fvec3 CoronaEngineAPI::Camera::get_position() const {
+    auto& cam = registry_.get<Corona::Components::Camera>(id_);
+    return cam.position;
+}
+
+ktm::fvec3 CoronaEngineAPI::Camera::get_forward() const {
+    auto& cam = registry_.get<Corona::Components::Camera>(id_);
+    return cam.forward;
+}
+
+ktm::fvec3 CoronaEngineAPI::Camera::get_world_up() const {
+    auto& cam = registry_.get<Corona::Components::Camera>(id_);
+    return cam.world_up;
+}
+
+float CoronaEngineAPI::Camera::get_fov() const {
+    auto& cam = registry_.get<Corona::Components::Camera>(id_);
+    return cam.fov;
+}
+
+void CoronaEngineAPI::Camera::move(ktm::fvec3 pos) const {
+    auto& cam = registry_.get<Corona::Components::Camera>(id_);
+    // 手动实现向量加法（ktm 可能不支持 operator+）
+    cam.position.x += pos.x;
+    cam.position.y += pos.y;
+    cam.position.z += pos.z;
+
+    bool info = Corona::SharedDataHub::instance().camera_storage().write(handle_, [&](Corona::CameraDevice& slot) {
+        slot.eyePosition = cam.position;
+        slot.eyeDir = ktm::normalize(cam.forward);
+        slot.eyeViewMatrix = ktm::look_at_lh(cam.position, ktm::normalize(cam.forward), cam.world_up);
+        slot.eyeProjMatrix = ktm::perspective_lh(ktm::radians(cam.fov), 16.0f / 9.0f, 0.1f, 100.0f);
+        slot.viewProjMatrix = slot.eyeProjMatrix * slot.eyeViewMatrix;
+    });
+
+    if (!info) {
+        if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
+            logger->warning("[CoronaEngineAPI::Camera::move] 更新相机数据失败");
+        }
+    }
+}
+
+void CoronaEngineAPI::Camera::rotate(ktm::fvec3 euler) const {
+
+}
+
+void CoronaEngineAPI::Camera::look_at(ktm::fvec3 pos, ktm::fvec3 forward) const {
+
+}
+
 // ########################
 //          Light
 // ########################
 CoronaEngineAPI::Light::Light()
     : handle_(0) {
-    registry_.emplace<Corona::Components::Light>(id_, Corona::Components::Light{ktm::fvec3{0.0f, 5.0f, 0.0f}, ktm::fvec3{1.0f, 1.0f, 1.0f}, ktm::fvec3{0.0f, 0.0f, 0.0f}});
+    ktm::fvec3 pos, color, dir;
+    pos.x = 0.0f; pos.y = 5.0f; pos.z = 0.0f;
+    color.x = 1.0f; color.y = 1.0f; color.z = 1.0f;
+    dir.x = 0.0f; dir.y = 0.0f; dir.z = 0.0f;
+
+    registry_.emplace<Corona::Components::Light>(id_, Corona::Components::Light{pos, color, dir});
     handle_ = Corona::SharedDataHub::instance().light_storage().allocate([&](Corona::LightDevice& slot) {
         // 初始化 LightDevice 相关数据
     });

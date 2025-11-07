@@ -25,7 +25,7 @@ struct Light {
 struct Camera {
     ktm::fvec3 position;
     ktm::fvec3 forward;
-    ktm::fvec3 worldUp;
+    ktm::fvec3 world_up;
     float fov{};
 };
 

@@ -85,7 +85,9 @@ void OpticsSystem::update() {
     float dt = delta_time();
     frame_count += dt;
 
-    optics_pipeline(frame_count);
+    if (!hardware_->displayers_.empty()) {
+        optics_pipeline(frame_count);
+    }
 }
 
 void OpticsSystem::optics_pipeline(float frame_count) const {
@@ -145,6 +147,9 @@ void OpticsSystem::shutdown() {
 
     // 取消 EventBus 订阅
     if (auto* event_bus = context()->event_bus()) {
+        if (surface_changed_sub_id_ != 0) {
+            event_bus->unsubscribe(surface_changed_sub_id_);
+        }
     }
 
     hardware_.reset();
