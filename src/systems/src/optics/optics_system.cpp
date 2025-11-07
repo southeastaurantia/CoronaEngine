@@ -11,6 +11,12 @@
 #include "Shader.h"
 #include "hardware.h"
 
+#ifdef CORONA_ENABLE_VISION
+#include "base/import/importer.h"
+#include "base/mgr/pipeline.h"
+#include "rhi/context.h"
+#endif
+
 namespace {
 
 std::shared_ptr<Corona::Shader> load_shader(const std::filesystem::path& shader_path) {
@@ -28,6 +34,21 @@ OpticsSystem::OpticsSystem() {
 OpticsSystem::~OpticsSystem() = default;
 
 bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
+    {
+        // using namespace vision;
+        // using namespace ocarina;
+        // auto device = RHIContext::instance().create_device("cuda");
+        // device.init_rtx();
+        // Global::instance().set_device(&device);
+        // Global::instance().set_scene_path("C:\\Users\\Lee\\Documents\\Github\\VS\\CoronaEngine\\build\\_deps\\coronaresource-src\\examples\\assets\\test_vision\\render_scene\\kitchen");
+        // auto str = "C:\\Users\\Lee\\Documents\\Github\\VS\\CoronaEngine\\build\\_deps\\coronaresource-src\\examples\\assets\\test_vision\\render_scene\\kitchen\\\\vision_scene.json";
+        // auto rp = Importer::import_scene(str);
+        // rp->init();
+        // rp->prepare();
+        // rp->display(1 / 30);
+        // auto& buffer = rp->frame_buffer()->view_buffer();
+    }
+
     auto* logger = ctx->logger();
     logger->info("OpticsSystem: Initializing...");
 
@@ -87,7 +108,6 @@ void OpticsSystem::update() {
     frame_count += dt;
 
     for (auto& displayer : hardware_->displayers_ | std::views::values) {
-
         hardware_->computeUniformBufferObjects.imageID = hardware_->finalOutputImage.storeDescriptor();
         hardware_->computeUniformBufferObjects.imageSize = hardware_->gbufferSize;
         hardware_->computeUniformBufferObjects.time = frame_count;

@@ -36,6 +36,16 @@ function(corona_examples_copy_assets target_name)
         COMMAND     ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/assets" $<TARGET_FILE_DIR:${target_name}>/assets
         VERBATIM
     )
+
+    if(CORONA_BUILD_VISION)
+        add_custom_command(
+            TARGET      ${target_name}
+            POST_BUILD
+            COMMAND     ${CMAKE_COMMAND} -E echo "[${target_name}] vision runtime deps copied"
+            COMMAND     ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/bin/$<CONFIG>/. $<TARGET_FILE_DIR:${target_name}>/.
+            VERBATIM
+        )
+    endif()
 endfunction()
 
 # ------------------------------------------------------------------------------

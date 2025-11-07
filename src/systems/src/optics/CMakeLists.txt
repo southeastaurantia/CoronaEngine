@@ -8,4 +8,6 @@ corona_add_system(optics
         CabbageHardware
         CoronaResource::Resource
         vision-all_libs
+    INCLUDE_DIRS
+        ${Vision_SOURCE_DIR}/src
 )
