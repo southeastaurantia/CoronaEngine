@@ -8,17 +8,55 @@
 #include <regex>
 #include <set>
 #include <unordered_map>
+#include <nanobind/stl/string.h>
 
 namespace {
 inline void log_nanobind_python_error(const nanobind::python_error& e) {
-    nanobind::gil_scoped_acquire gil;
-    nanobind::module_ traceback = nanobind::module_::import_("traceback");
-    nanobind::object format_exception = nanobind::getattr(traceback, "format_exception");
-    auto formatted = format_exception(e.type(), e.value(), e.traceback());
-    nanobind::str sep("");
-    auto joined = nanobind::getattr(sep, "join")(formatted);
-    std::cerr << "[Python Error] ";
-    nanobind::print(joined);
+    // Ensure GIL is held and try to render a full traceback into a single string.
+    try {
+        nanobind::gil_scoped_acquire gil;
+        std::string formatted;
+        try {
+            nanobind::module_ traceback = nanobind::module_::import_("traceback");
+            nanobind::object format_exception = nanobind::getattr(traceback, "format_exception");
+            auto formatted_list = format_exception(e.type(), e.value(), e.traceback());
+            nanobind::str sep("");
+            auto joined = nanobind::getattr(sep, "join")(formatted_list);
+            formatted = nanobind::cast<std::string>(joined);
+        } catch (...) {
+            // Fallback: best-effort type/value rendering.
+            try {
+                std::string type_name;
+                try {
+                    type_name = nanobind::cast<std::string>(nanobind::str(nanobind::getattr(e.type(), "__name__")));
+                } catch (...) {
+                }
+                std::string value_str;
+                try {
+                    value_str = nanobind::cast<std::string>(nanobind::str(e.value()));
+                } catch (...) {
+                }
+                if (!type_name.empty() || !value_str.empty()) {
+                    formatted = type_name;
+                    if (!value_str.empty()) {
+                        if (!formatted.empty()) formatted += ": ";
+                        formatted += value_str;
+                    }
+                } else {
+                    formatted = e.what();
+                }
+            } catch (...) {
+                formatted = e.what();
+            }
+        }
+        // Write everything to stderr in one place to avoid mixed stdout/stderr ordering.
+        std::cerr << "[Python Error] " << formatted << std::endl;
+        std::cerr.flush();
+    } catch (const std::exception& ex) {
+        std::cerr << "[Python Error] (formatting failed) " << ex.what() << std::endl;
+    } catch (...) {
+        std::cerr << "[Python Error] (formatting failed) Unknown error" << std::endl;
+    }
 }
 
 }  // namespace
@@ -96,6 +134,15 @@ int64_t PythonAPI::nowMsec() {
         .count();
 }
 
+std::string PythonAPI::wstr2str(const std::wstring& wstr) {
+    if (wstr.empty()) return {};
+    int len = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), static_cast<int>(wstr.size()), nullptr, 0, nullptr, nullptr);
+    if (len <= 0) return {};
+    std::string out(static_cast<size_t>(len), '\0');
+    WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), static_cast<int>(wstr.size()), out.data(), len, nullptr, nullptr);
+    return out;
+}
+
 bool PythonAPI::ensureInitialized() {
     if (Py_IsInitialized()) {
         return true;
@@ -120,6 +167,21 @@ bool PythonAPI::ensureInitialized() {
     Py_InitializeFromConfig(&config);
 
     if (!Py_IsInitialized()) {
+        std::cerr << "[Python Error] Python failed to initialize. Diagnostics:" << std::endl;
+        try {
+            auto print_wlist = [&](const char* title, const PyWideStringList& list) {
+                std::cerr << "  " << title << " (" << list.length << "):" << std::endl;
+                for (Py_ssize_t i = 0; i < list.length; ++i) {
+                    std::wstring ws = list.items[i] ? std::wstring(list.items[i]) : L"";
+                    std::cerr << "    - " << wstr2str(ws) << std::endl;
+                }
+            };
+            std::cerr << "  home: " << wstr2str(config.home) << std::endl;
+            std::cerr << "  pythonpath_env: " << wstr2str(config.pythonpath_env) << std::endl;
+            print_wlist("module_search_paths", config.module_search_paths);
+        } catch (...) {
+            // swallow
+        }
         return false;
     }
 

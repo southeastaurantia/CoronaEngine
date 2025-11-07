@@ -1,8 +1,10 @@
+#include <Model.h>
 #include <ResourceManager.h>
 #include <corona/events/optics_system_events.h>
 #include <corona/kernel/core/i_logger.h>
 #include <corona/kernel/event/i_event_bus.h>
 #include <corona/kernel/event/i_event_stream.h>
+#include <corona/shared_data_hub.h>
 #include <corona/systems/optics_system.h>
 
 #include <filesystem>
@@ -53,9 +55,6 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
 
     auto* logger = ctx->logger();
     logger->info("OpticsSystem: Initializing...");
-
-    auto& resource_manager = ResourceManager::instance();
-    resource_manager.register_loader(std::make_shared<ShaderLoader>());
 
     hardware_ = std::make_unique<Hardware>();
 
@@ -109,21 +108,62 @@ void OpticsSystem::update() {
     float dt = delta_time();
     frame_count += dt;
 
-    for (auto& displayer : hardware_->displayers_ | std::views::values) {
-        hardware_->computeUniformBufferObjects.imageID = hardware_->finalOutputImage.storeDescriptor();
-        hardware_->computeUniformBufferObjects.imageSize = hardware_->gbufferSize;
-        hardware_->computeUniformBufferObjects.time = frame_count;
-
-        hardware_->computeUniformBuffer.copyFromData(&hardware_->computeUniformBufferObjects, sizeof(hardware_->computeUniformBufferObjects));
-        hardware_->computePipeline["pushConsts.uniformBufferIndex"] = hardware_->computeUniformBuffer.storeDescriptor();
-
-        hardware_->executor
-            // << hardware_->rasterizerPipeline(1920, 1080)
-            << hardware_->computePipeline(1920 / 8, 1080 / 8, 1)
-            << hardware_->executor.commit();
-
-        displayer = hardware_->finalOutputImage;
+    if (!hardware_->displayers_.empty()) {
+        optics_pipeline(frame_count);
     }
+}
+void OpticsSystem::optics_pipeline(float frame_count) const {
+    SharedDataHub::instance().scene_storage().for_each_read([&](const SceneDevice& scene) {
+        SharedDataHub::instance().camera_storage().for_each_read([&](const CameraDevice& camera) {
+            hardware_->uniformBufferObjects.eyePosition = camera.eyePosition;
+            hardware_->uniformBufferObjects.eyeDir = camera.eyeDir;
+            hardware_->uniformBufferObjects.eyeViewMatrix = camera.eyeViewMatrix;
+            hardware_->uniformBufferObjects.eyeProjMatrix = camera.eyeProjMatrix;
+            hardware_->gbufferUniformBufferObjects.viewProjMatrix = camera.viewProjMatrix;
+            hardware_->gbufferUniformBuffer.copyFromData(&hardware_->gbufferUniformBufferObjects, sizeof(hardware_->gbufferUniformBufferObjects));
+
+            SharedDataHub::instance().model_device_storage().for_each_read([&](const ModelDevice& model) {
+                hardware_->rasterizerPipeline["pushConsts.modelMatrix"] = model.modelMatrix;
+                hardware_->rasterizerPipeline["pushConsts.uniformBufferIndex"] = hardware_->gbufferUniformBuffer.storeDescriptor();
+                HardwareBuffer boneMatrix = model.boneMatrix;
+                hardware_->rasterizerPipeline["pushConsts.boneIndex"] = boneMatrix.storeDescriptor();
+
+                hardware_->rasterizerPipeline["gbufferPostion"] = hardware_->gbufferPostionImage;
+                hardware_->rasterizerPipeline["gbufferBaseColor"] = hardware_->gbufferBaseColorImage;
+                hardware_->rasterizerPipeline["gbufferNormal"] = hardware_->gbufferNormalImage;
+                hardware_->rasterizerPipeline["gbufferMotionVector"] = hardware_->gbufferMotionVectorImage;
+
+                for (auto& m : model.devices) {
+                    hardware_->rasterizerPipeline["inPosition"] = m.pointsBuffer;
+                    hardware_->rasterizerPipeline["inNormal"] = m.normalsBuffer;
+                    hardware_->rasterizerPipeline["inTexCoord"] = m.texCoordsBuffer;
+                    hardware_->rasterizerPipeline["boneIndexes"] = m.boneIndexesBuffer;
+                    hardware_->rasterizerPipeline["jointWeights"] = m.boneWeightsBuffer;
+                    hardware_->rasterizerPipeline["pushConsts.textureIndex"] = m.textureIndex;
+
+                    hardware_->executor << hardware_->rasterizerPipeline.record(m.indexBuffer);
+                }
+            });
+            hardware_->computeUniformBufferObjects.imageID = hardware_->finalOutputImage.storeDescriptor();
+            hardware_->computeUniformBufferObjects.imageSize = hardware_->gbufferSize;
+            hardware_->computeUniformBufferObjects.time = frame_count;
+
+            hardware_->computeUniformBuffer.copyFromData(&hardware_->computeUniformBufferObjects, sizeof(hardware_->computeUniformBufferObjects));
+            hardware_->computePipeline["pushConsts.uniformBufferIndex"] = hardware_->computeUniformBuffer.storeDescriptor();
+
+            if (!SharedDataHub::instance().model_device_storage().empty()) {
+                hardware_->executor << hardware_->rasterizerPipeline(1920, 1080);
+            }
+
+            hardware_->executor
+                << hardware_->computePipeline(1920 / 8, 1080 / 8, 1)
+                << hardware_->executor.commit();
+
+            if (hardware_->displayers_.contains(camera.surface)) {
+                hardware_->displayers_.at(camera.surface) = hardware_->gbufferBaseColorImage;
+            }
+        });
+    });
 }
 
 void OpticsSystem::shutdown() {

@@ -8,11 +8,10 @@ struct DisplaySurface {
     void* surface = nullptr;
 };
 
-struct Camera {
-    float fov = 45.0f;
-    ktm::fvec3 pos{};
-    ktm::fvec3 forward{};
-    ktm::fvec3 worldUp{};
+struct Storage {
+    std::vector<entt::entity> actors;
+    std::vector<entt::entity> cameras;
+    std::vector<entt::entity> lights;
 };
 
 struct SunDirection {
