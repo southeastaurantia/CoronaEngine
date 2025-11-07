@@ -122,16 +122,16 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
             hardware_->gbufferUniformBufferObjects.viewProjMatrix = camera.viewProjMatrix;
             hardware_->gbufferUniformBuffer.copyFromData(&hardware_->gbufferUniformBufferObjects, sizeof(hardware_->gbufferUniformBufferObjects));
 
+            hardware_->rasterizerPipeline["gbufferPostion"] = hardware_->gbufferPostionImage;
+            hardware_->rasterizerPipeline["gbufferBaseColor"] = hardware_->gbufferBaseColorImage;
+            hardware_->rasterizerPipeline["gbufferNormal"] = hardware_->gbufferNormalImage;
+            hardware_->rasterizerPipeline["gbufferMotionVector"] = hardware_->gbufferMotionVectorImage;
+
             SharedDataHub::instance().model_device_storage().for_each_read([&](const ModelDevice& model) {
                 hardware_->rasterizerPipeline["pushConsts.modelMatrix"] = model.modelMatrix;
                 hardware_->rasterizerPipeline["pushConsts.uniformBufferIndex"] = hardware_->gbufferUniformBuffer.storeDescriptor();
                 HardwareBuffer boneMatrix = model.boneMatrix;
                 hardware_->rasterizerPipeline["pushConsts.boneIndex"] = boneMatrix.storeDescriptor();
-
-                hardware_->rasterizerPipeline["gbufferPostion"] = hardware_->gbufferPostionImage;
-                hardware_->rasterizerPipeline["gbufferBaseColor"] = hardware_->gbufferBaseColorImage;
-                hardware_->rasterizerPipeline["gbufferNormal"] = hardware_->gbufferNormalImage;
-                hardware_->rasterizerPipeline["gbufferMotionVector"] = hardware_->gbufferMotionVectorImage;
 
                 for (auto& m : model.devices) {
                     hardware_->rasterizerPipeline["inPosition"] = m.pointsBuffer;
