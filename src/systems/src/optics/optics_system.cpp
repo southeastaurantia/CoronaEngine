@@ -129,8 +129,11 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
             hardware_->computeUniformBuffer.copyFromData(&hardware_->computeUniformBufferObjects, sizeof(hardware_->computeUniformBufferObjects));
             hardware_->computePipeline["pushConsts.uniformBufferIndex"] = hardware_->computeUniformBuffer.storeDescriptor();
 
+            if (!SharedDataHub::instance().model_device_storage().empty()) {
+                hardware_->executor << hardware_->rasterizerPipeline(1920, 1080);
+            }
+
             hardware_->executor
-                << hardware_->rasterizerPipeline(1920, 1080)
                 << hardware_->computePipeline(1920 / 8, 1080 / 8, 1)
                 << hardware_->executor.commit();
 
