@@ -138,7 +138,7 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
                 << hardware_->executor.commit();
 
             if (hardware_->displayers_.contains(camera.surface)) {
-                hardware_->displayers_.at(camera.surface) = hardware_->finalOutputImage;
+                hardware_->displayers_.at(camera.surface) = hardware_->gbufferBaseColorImage;
             }
         });
     });
