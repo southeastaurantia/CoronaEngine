@@ -55,4 +55,28 @@ const SharedDataHub::ModelBoundingStorage& SharedDataHub::model_bounding_storage
     return this->model_bounding_storage_;
 }
 
+SharedDataHub::ModelTransformStorage& SharedDataHub::model_transform_storage() {
+    return this->model_transform_storage_;
+}
+
+const SharedDataHub::ModelTransformStorage& SharedDataHub::model_transform_storage() const {
+    return this->model_transform_storage_;
+}
+
+SharedDataHub::AnimationStateStorage& SharedDataHub::animation_state_storage() {
+    return this->animation_state_storage_;
+}
+
+const SharedDataHub::AnimationStateStorage& SharedDataHub::animation_state_storage() const {
+    return this->animation_state_storage_;
+}
+
+SharedDataHub::BoneMatrixStorage& SharedDataHub::bone_matrix_storage() {
+    return this->bone_matrix_storage_;
+}
+
+const SharedDataHub::BoneMatrixStorage& SharedDataHub::bone_matrix_storage() const {
+    return this->bone_matrix_storage_;
+}
+
 }  // namespace Corona

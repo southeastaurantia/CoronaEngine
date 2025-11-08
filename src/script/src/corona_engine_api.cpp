@@ -179,7 +179,7 @@ void CoronaEngineAPI::Scene::remove_actor(const Actor& actor) const {
 //          Actor
 // ########################
 CoronaEngineAPI::Actor::Actor(const std::string& path)
-    : device_handle_(0), bounding_handle_(0) {
+    : animation_handle_(0), bone_matrix_handle_(0), model_handle_(0), matrix_handle_(0), bounding_handle_(0), device_handle_(0) {
     registry_.emplace<RenderTag>(id_);
     auto model_id = Corona::ResourceId::from("model", path);
     auto model_ptr = std::static_pointer_cast<Corona::Model>(Corona::ResourceManager::instance().load_once(model_id));
@@ -191,9 +191,6 @@ CoronaEngineAPI::Actor::Actor(const std::string& path)
     }
 
     auto& actor = registry_.emplace<Corona::Components::Actor>(id_);
-    actor.position.x = 0.0f; actor.position.y = 0.0f; actor.position.z = 0.0f;
-    actor.rotation.x = 0.0f; actor.rotation.y = 0.0f; actor.rotation.z = 0.0f;
-    actor.scale.x = 1.0f; actor.scale.y = 1.0f; actor.scale.z = 1.0f;
 
     model_handle_ = Corona::SharedDataHub::instance().model_storage().allocate([&](std::shared_ptr<Corona::Model>& slot) {
         slot = model_ptr;
@@ -205,6 +202,24 @@ CoronaEngineAPI::Actor::Actor(const std::string& path)
         }
         return;
     }
+
+    if (model_ptr->m_BoneCounter > 0) {
+        registry_.emplace<AnimationTag>(id_);
+        bone_matrix_handle_ = Corona::SharedDataHub::instance().bone_matrix_storage().allocate([&](std::vector<ktm::fmat4x4>& slot) {
+            slot.resize(model_ptr->m_BoneCounter);
+            for (auto& mat : slot) {
+                mat = ktm::fmat4x4::from_eye();
+            }
+        });
+    }
+
+    animation_handle_ = Corona::SharedDataHub::instance().animation_state_storage().allocate([&](Corona::AnimationState& slot) {
+        slot.model = model_ptr;
+        slot.transform_handle = bone_matrix_handle_;
+        slot.animation_index = 0;
+        slot.current_time = 0.0f;
+        slot.active = model_ptr->m_BoneCounter > 0;
+    });
 
     std::vector<Corona::MeshDevice> devices;
     devices.reserve(model_ptr->meshes.size());
@@ -228,8 +243,14 @@ CoronaEngineAPI::Actor::Actor(const std::string& path)
         devices.emplace_back(std::move(dev));
     }
 
+    matrix_handle_ = Corona::SharedDataHub::instance().model_transform_storage().allocate([&](Corona::ModelTransform& slot) {
+        ktm::faffine3d affine;
+        affine.translate(actor.position).rotate(actor.rotation).scale(actor.scale);
+        affine >> slot.model_matrix;
+    });
+
     bounding_handle_ = Corona::SharedDataHub::instance().model_bounding_storage().allocate([&](Corona::ModelBounding& slot) {
-        slot.modelMat = ktm::fmat4x4(ktm::translate3d(actor.position) * ktm::translate3d(actor.rotation) * ktm::translate3d(actor.scale));
+        slot.transform_handle = matrix_handle_;
         slot.max_xyz = model_ptr->maxXYZ;
         slot.min_xyz = model_ptr->minXYZ;
     });
@@ -244,8 +265,12 @@ CoronaEngineAPI::Actor::Actor(const std::string& path)
     }
 
     device_handle_ = Corona::SharedDataHub::instance().model_device_storage().allocate([&](Corona::ModelDevice& slot) {
-        slot.modelMatrix = ktm::fmat4x4(ktm::translate3d(actor.position) * ktm::translate3d(actor.rotation) * ktm::translate3d(actor.scale));
-        slot.boneMatrix = HardwareBuffer(model_ptr->bones, BufferUsage::StorageBuffer);
+        slot.transform_handle = matrix_handle_;
+        slot.animation_handle = animation_handle_;
+        slot.bone_matrix_dirty = true;
+        if (model_ptr->m_BoneCounter > 0) {
+            slot.bone_matrix = HardwareBuffer(model_ptr->bones, BufferUsage::StorageBuffer); 
+        }
         slot.devices = std::move(devices);
     });
 
@@ -262,14 +287,23 @@ CoronaEngineAPI::Actor::Actor(const std::string& path)
 }
 
 CoronaEngineAPI::Actor::~Actor() {
-    if (model_handle_) {
-        Corona::SharedDataHub::instance().model_storage().deallocate(model_handle_);
-    }
     if (device_handle_) {
         Corona::SharedDataHub::instance().model_device_storage().deallocate(device_handle_);
     }
     if (bounding_handle_) {
         Corona::SharedDataHub::instance().model_bounding_storage().deallocate(bounding_handle_);
+    }
+    if (animation_handle_) {
+        Corona::SharedDataHub::instance().animation_state_storage().deallocate(animation_handle_);
+    }
+    if (bone_matrix_handle_) {
+        Corona::SharedDataHub::instance().bone_matrix_storage().deallocate(bone_matrix_handle_);
+    }
+    if (matrix_handle_) {
+        Corona::SharedDataHub::instance().model_transform_storage().deallocate(matrix_handle_);
+    }
+    if (model_handle_) {
+        Corona::SharedDataHub::instance().model_storage().deallocate(model_handle_);
     }
     registry_.destroy(id_);
 }
@@ -281,8 +315,10 @@ std::uintptr_t CoronaEngineAPI::Actor::get_handle_id() const {
 void CoronaEngineAPI::Actor::move(ktm::fvec3 pos) const {
     auto& actor = registry_.get<Corona::Components::Actor>(id_);
     actor.position = pos;
-    bool info = Corona::SharedDataHub::instance().model_device_storage().write(device_handle_, [&](Corona::ModelDevice& slot) {
-        slot.modelMatrix = ktm::fmat4x4(ktm::translate3d(actor.position) * ktm::translate3d(actor.rotation) * ktm::translate3d(actor.scale));
+    bool info = Corona::SharedDataHub::instance().model_transform_storage().write(matrix_handle_, [&](Corona::ModelTransform& slot) {
+        ktm::faffine3d affine;
+        affine.translate(actor.position).rotate(actor.rotation).scale(actor.scale);
+        affine >> slot.model_matrix;
     });
 
     if (!info) {
@@ -294,9 +330,16 @@ void CoronaEngineAPI::Actor::move(ktm::fvec3 pos) const {
 
 void CoronaEngineAPI::Actor::rotate(ktm::fvec3 euler) const {
     auto& actor = registry_.get<Corona::Components::Actor>(id_);
-    actor.rotation = euler;
-    bool info = Corona::SharedDataHub::instance().model_device_storage().write(device_handle_, [&](Corona::ModelDevice& slot) {
-        slot.modelMatrix = ktm::fmat4x4(ktm::translate3d(actor.position) * ktm::translate3d(actor.rotation) * ktm::translate3d(actor.scale));
+    ktm::fquat qx = ktm::fquat::from_angle_x(euler.x);
+    ktm::fquat qy = ktm::fquat::from_angle_y(euler.y);
+    ktm::fquat qz = ktm::fquat::from_angle_z(euler.z);
+
+    actor.rotation = qz * qy * qx;
+
+    bool info = Corona::SharedDataHub::instance().model_transform_storage().write(matrix_handle_, [&](Corona::ModelTransform& slot) {
+        ktm::faffine3d affine;
+        affine.translate(actor.position).rotate(actor.rotation).scale(actor.scale);
+        affine >> slot.model_matrix;
     });
 
     if (!info) {
@@ -309,8 +352,10 @@ void CoronaEngineAPI::Actor::rotate(ktm::fvec3 euler) const {
 void CoronaEngineAPI::Actor::scale(ktm::fvec3 size) const {
     auto& actor = registry_.get<Corona::Components::Actor>(id_);
     actor.scale = size;
-    bool info = Corona::SharedDataHub::instance().model_device_storage().write(device_handle_, [&](Corona::ModelDevice& slot) {
-        slot.modelMatrix = ktm::fmat4x4(ktm::translate3d(actor.position) * ktm::translate3d(actor.rotation) * ktm::translate3d(actor.scale));
+    bool info = Corona::SharedDataHub::instance().model_transform_storage().write(matrix_handle_, [&](Corona::ModelTransform& slot) {
+        ktm::faffine3d affine;
+        affine.translate(actor.position).rotate(actor.rotation).scale(actor.scale);
+        affine >> slot.model_matrix;
     });
 
     if (!info) {
@@ -326,19 +371,25 @@ void CoronaEngineAPI::Actor::scale(ktm::fvec3 size) const {
 CoronaEngineAPI::Camera::Camera()
     : handle_(0) {
     ktm::fvec3 position, forward, world_up;
-    position.x = 0.0f; position.y = 0.0f; position.z = 5.0f;
-    forward.x = 0.0f; forward.y = 0.0f; forward.z = -1.0f;
-    world_up.x = 0.0f; world_up.y = 1.0f; world_up.z = 0.0f;
+    position.x = 0.0f;
+    position.y = 0.0f;
+    position.z = 5.0f;
+    forward.x = 0.0f;
+    forward.y = 0.0f;
+    forward.z = -1.0f;
+    world_up.x = 0.0f;
+    world_up.y = 1.0f;
+    world_up.z = 0.0f;
     float fov = 45.0f;
 
     registry_.emplace<Corona::Components::Camera>(id_, Corona::Components::Camera{position, forward, world_up, fov});
 
     handle_ = Corona::SharedDataHub::instance().camera_storage().allocate([&](Corona::CameraDevice& slot) {
-        slot.eyePosition = position;
-        slot.eyeDir = ktm::normalize(forward);
-        slot.eyeViewMatrix = ktm::look_at_lh(position, ktm::normalize(forward), world_up);
-        slot.eyeProjMatrix = ktm::perspective_lh(ktm::radians(fov), 16.0f / 9.0f, 0.1f, 100.0f);
-        slot.viewProjMatrix = slot.eyeProjMatrix * slot.eyeViewMatrix;
+        slot.eye_position = position;
+        slot.eye_dir = ktm::normalize(forward);
+        slot.eye_view_matrix = ktm::look_to_lh(position, ktm::normalize(forward), world_up);
+        slot.eye_proj_matrix = ktm::perspective_lh(ktm::radians(fov), 16.0f / 9.0f, 0.1f, 100.0f);
+        slot.view_proj_matrix = slot.eye_proj_matrix * slot.eye_view_matrix;
     });
 }
 
@@ -347,11 +398,11 @@ CoronaEngineAPI::Camera::Camera(const ktm::fvec3& position, const ktm::fvec3& fo
     registry_.emplace<Corona::Components::Camera>(id_, Corona::Components::Camera{position, forward, world_up, fov});
 
     handle_ = Corona::SharedDataHub::instance().camera_storage().allocate([&](Corona::CameraDevice& slot) {
-        slot.eyePosition = position;
-        slot.eyeDir = ktm::normalize(forward);
-        slot.eyeViewMatrix = ktm::look_at_lh(position, ktm::normalize(forward), world_up);
-        slot.eyeProjMatrix = ktm::perspective_lh(ktm::radians(fov), 16.0f / 9.0f, 0.1f, 100.0f);
-        slot.viewProjMatrix = slot.eyeProjMatrix * slot.eyeViewMatrix;
+        slot.eye_position = position;
+        slot.eye_dir = ktm::normalize(forward);
+        slot.eye_view_matrix = ktm::look_to_lh(position, ktm::normalize(forward), world_up);
+        slot.eye_proj_matrix = ktm::perspective_lh(ktm::radians(fov), 16.0f / 9.0f, 0.1f, 100.0f);
+        slot.view_proj_matrix = slot.eye_proj_matrix * slot.eye_view_matrix;
     });
 }
 
@@ -390,11 +441,11 @@ void CoronaEngineAPI::Camera::set_position(const ktm::fvec3& position) const {
     cam.position = position;
 
     bool info = Corona::SharedDataHub::instance().camera_storage().write(handle_, [&](Corona::CameraDevice& slot) {
-        slot.eyePosition = cam.position;
-        slot.eyeDir = ktm::normalize(cam.forward);
-        slot.eyeViewMatrix = ktm::look_at_lh(cam.position, ktm::normalize(cam.forward), cam.world_up);
-        slot.eyeProjMatrix = ktm::perspective_lh(ktm::radians(cam.fov), 16.0f / 9.0f, 0.1f, 100.0f);
-        slot.viewProjMatrix = slot.eyeProjMatrix * slot.eyeViewMatrix;
+        slot.eye_position = cam.position;
+        slot.eye_dir = ktm::normalize(cam.forward);
+        slot.eye_view_matrix = ktm::look_to_lh(cam.position, ktm::normalize(cam.forward), cam.world_up);
+        slot.eye_proj_matrix = ktm::perspective_lh(ktm::radians(cam.fov), 16.0f / 9.0f, 0.1f, 100.0f);
+        slot.view_proj_matrix = slot.eye_proj_matrix * slot.eye_view_matrix;
     });
 
     if (!info) {
@@ -409,11 +460,11 @@ void CoronaEngineAPI::Camera::set_forward(const ktm::fvec3& forward) const {
     cam.forward = forward;
 
     bool info = Corona::SharedDataHub::instance().camera_storage().write(handle_, [&](Corona::CameraDevice& slot) {
-        slot.eyePosition = cam.position;
-        slot.eyeDir = ktm::normalize(cam.forward);
-        slot.eyeViewMatrix = ktm::look_at_lh(cam.position, ktm::normalize(cam.forward), cam.world_up);
-        slot.eyeProjMatrix = ktm::perspective_lh(ktm::radians(cam.fov), 16.0f / 9.0f, 0.1f, 100.0f);
-        slot.viewProjMatrix = slot.eyeProjMatrix * slot.eyeViewMatrix;
+        slot.eye_position = cam.position;
+        slot.eye_dir = ktm::normalize(cam.forward);
+        slot.eye_view_matrix = ktm::look_to_lh(cam.position, ktm::normalize(cam.forward), cam.world_up);
+        slot.eye_proj_matrix = ktm::perspective_lh(ktm::radians(cam.fov), 16.0f / 9.0f, 0.1f, 100.0f);
+        slot.view_proj_matrix = slot.eye_proj_matrix * slot.eye_view_matrix;
     });
 
     if (!info) {
@@ -428,11 +479,11 @@ void CoronaEngineAPI::Camera::set_world_up(const ktm::fvec3& world_up) const {
     cam.world_up = world_up;
 
     bool info = Corona::SharedDataHub::instance().camera_storage().write(handle_, [&](Corona::CameraDevice& slot) {
-        slot.eyePosition = cam.position;
-        slot.eyeDir = ktm::normalize(cam.forward);
-        slot.eyeViewMatrix = ktm::look_at_lh(cam.position, ktm::normalize(cam.forward), cam.world_up);
-        slot.eyeProjMatrix = ktm::perspective_lh(ktm::radians(cam.fov), 16.0f / 9.0f, 0.1f, 100.0f);
-        slot.viewProjMatrix = slot.eyeProjMatrix * slot.eyeViewMatrix;
+        slot.eye_position = cam.position;
+        slot.eye_dir = ktm::normalize(cam.forward);
+        slot.eye_view_matrix = ktm::look_to_lh(cam.position, ktm::normalize(cam.forward), cam.world_up);
+        slot.eye_proj_matrix = ktm::perspective_lh(ktm::radians(cam.fov), 16.0f / 9.0f, 0.1f, 100.0f);
+        slot.view_proj_matrix = slot.eye_proj_matrix * slot.eye_view_matrix;
     });
 
     if (!info) {
@@ -447,11 +498,11 @@ void CoronaEngineAPI::Camera::set_fov(float fov) const {
     cam.fov = fov;
 
     bool info = Corona::SharedDataHub::instance().camera_storage().write(handle_, [&](Corona::CameraDevice& slot) {
-        slot.eyePosition = cam.position;
-        slot.eyeDir = ktm::normalize(cam.forward);
-        slot.eyeViewMatrix = ktm::look_at_lh(cam.position, ktm::normalize(cam.forward), cam.world_up);
-        slot.eyeProjMatrix = ktm::perspective_lh(ktm::radians(cam.fov), 16.0f / 9.0f, 0.1f, 100.0f);
-        slot.viewProjMatrix = slot.eyeProjMatrix * slot.eyeViewMatrix;
+        slot.eye_position = cam.position;
+        slot.eye_dir = ktm::normalize(cam.forward);
+        slot.eye_view_matrix = ktm::look_to_lh(cam.position, ktm::normalize(cam.forward), cam.world_up);
+        slot.eye_proj_matrix = ktm::perspective_lh(ktm::radians(cam.fov), 16.0f / 9.0f, 0.1f, 100.0f);
+        slot.view_proj_matrix = slot.eye_proj_matrix * slot.eye_view_matrix;
     });
 
     if (!info) {
@@ -489,11 +540,11 @@ void CoronaEngineAPI::Camera::move(ktm::fvec3 pos) const {
     cam.position.z += pos.z;
 
     bool info = Corona::SharedDataHub::instance().camera_storage().write(handle_, [&](Corona::CameraDevice& slot) {
-        slot.eyePosition = cam.position;
-        slot.eyeDir = ktm::normalize(cam.forward);
-        slot.eyeViewMatrix = ktm::look_at_lh(cam.position, ktm::normalize(cam.forward), cam.world_up);
-        slot.eyeProjMatrix = ktm::perspective_lh(ktm::radians(cam.fov), 16.0f / 9.0f, 0.1f, 100.0f);
-        slot.viewProjMatrix = slot.eyeProjMatrix * slot.eyeViewMatrix;
+        slot.eye_position = cam.position;
+        slot.eye_dir = ktm::normalize(cam.forward);
+        slot.eye_view_matrix = ktm::look_to_lh(cam.position, ktm::normalize(cam.forward), cam.world_up);
+        slot.eye_proj_matrix = ktm::perspective_lh(ktm::radians(cam.fov), 16.0f / 9.0f, 0.1f, 100.0f);
+        slot.view_proj_matrix = slot.eye_proj_matrix * slot.eye_view_matrix;
     });
 
     if (!info) {
@@ -504,11 +555,9 @@ void CoronaEngineAPI::Camera::move(ktm::fvec3 pos) const {
 }
 
 void CoronaEngineAPI::Camera::rotate(ktm::fvec3 euler) const {
-
 }
 
 void CoronaEngineAPI::Camera::look_at(ktm::fvec3 pos, ktm::fvec3 forward) const {
-
 }
 
 // ########################
@@ -517,9 +566,15 @@ void CoronaEngineAPI::Camera::look_at(ktm::fvec3 pos, ktm::fvec3 forward) const 
 CoronaEngineAPI::Light::Light()
     : handle_(0) {
     ktm::fvec3 pos, color, dir;
-    pos.x = 0.0f; pos.y = 5.0f; pos.z = 0.0f;
-    color.x = 1.0f; color.y = 1.0f; color.z = 1.0f;
-    dir.x = 0.0f; dir.y = 0.0f; dir.z = 0.0f;
+    pos.x = 0.0f;
+    pos.y = 5.0f;
+    pos.z = 0.0f;
+    color.x = 1.0f;
+    color.y = 1.0f;
+    color.z = 1.0f;
+    dir.x = 0.0f;
+    dir.y = 0.0f;
+    dir.z = 0.0f;
 
     registry_.emplace<Corona::Components::Light>(id_, Corona::Components::Light{pos, color, dir});
     handle_ = Corona::SharedDataHub::instance().light_storage().allocate([&](Corona::LightDevice& slot) {

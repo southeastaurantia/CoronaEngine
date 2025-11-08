@@ -42,7 +42,7 @@ void AnimationSystem::update_animation_state() {
     // const ktm::fmat4x4 identity = ktm::fmat4x4::from_eye();
     // // 从根开始递归计算
     // calculateBoneTransform(state, anim, anim.m_RootNode, identity, state.bones);
-
+    //
     // if (!state.model->bonesMatrixBuffer) {
     //     state.model->bonesMatrixBuffer = HardwareBuffer(state.bones, BufferUsage::StorageBuffer);
     // } else {

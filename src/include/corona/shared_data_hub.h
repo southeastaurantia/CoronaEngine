@@ -27,25 +27,39 @@ struct MeshDevice {
     Mesh meshData;
 };
 
+struct AnimationState {
+    std::shared_ptr<Model> model;
+    std::uintptr_t transform_handle{};
+    std::uint32_t animation_index = 0;
+    float current_time = 0.0f;
+    bool active = true;
+};
+
+struct ModelTransform {
+    ktm::fmat4x4 model_matrix;
+};
+
 struct ModelBounding {
-    ktm::fmat4x4 modelMat;
+    std::uintptr_t transform_handle{};
     ktm::fvec3 max_xyz;
     ktm::fvec3 min_xyz;
 };
 
 struct ModelDevice {
-    ktm::fmat4x4 modelMatrix;
-    HardwareBuffer boneMatrix;
+    std::uintptr_t transform_handle{};
+    std::uintptr_t animation_handle{};
+    HardwareBuffer bone_matrix;
     std::vector<MeshDevice> devices;
+    bool bone_matrix_dirty = true;
 };
 
 struct CameraDevice {
-    std::uint64_t surface;
-    ktm::fvec3 eyePosition;
-    ktm::fvec3 eyeDir;
-    ktm::fmat4x4 eyeViewMatrix;
-    ktm::fmat4x4 eyeProjMatrix;
-    ktm::fmat4x4 viewProjMatrix;
+    std::uint64_t surface{};
+    ktm::fvec3 eye_position;
+    ktm::fvec3 eye_dir;
+    ktm::fmat4x4 eye_view_matrix;
+    ktm::fmat4x4 eye_proj_matrix;
+    ktm::fmat4x4 view_proj_matrix;
 };
 
 struct LightDevice {
@@ -76,10 +90,6 @@ class SharedDataHub {
     ModelStorage& model_storage();
     const ModelStorage& model_storage() const;
 
-    using ModelDeviceStorage = Kernel::Utils::Storage<ModelDevice>;
-    ModelDeviceStorage& model_device_storage();
-    const ModelDeviceStorage& model_device_storage() const;
-
     using SceneStorage = Kernel::Utils::Storage<SceneDevice>;
     SceneStorage& scene_storage();
     const SceneStorage& scene_storage() const;
@@ -92,13 +102,32 @@ class SharedDataHub {
     LightStorage& light_storage();
     const LightStorage& light_storage() const;
 
+    using ModelTransformStorage = Kernel::Utils::Storage<ModelTransform>;
+    ModelTransformStorage& model_transform_storage();
+    const ModelTransformStorage& model_transform_storage() const;
+
+    using ModelDeviceStorage = Kernel::Utils::Storage<ModelDevice>;
+    ModelDeviceStorage& model_device_storage();
+    const ModelDeviceStorage& model_device_storage() const;
+
     using ModelBoundingStorage = Kernel::Utils::Storage<ModelBounding>;
     ModelBoundingStorage& model_bounding_storage();
     const ModelBoundingStorage& model_bounding_storage() const;
 
+    using AnimationStateStorage = Kernel::Utils::Storage<AnimationState>;
+    AnimationStateStorage& animation_state_storage();
+    const AnimationStateStorage& animation_state_storage() const;
+
+    using BoneMatrixStorage = Kernel::Utils::Storage<std::vector<ktm::fmat4x4>>;
+    BoneMatrixStorage& bone_matrix_storage();
+    const BoneMatrixStorage& bone_matrix_storage() const;
+
    private:
     ModelDeviceStorage model_device_storage_;
     ModelBoundingStorage model_bounding_storage_;
+    ModelTransformStorage model_transform_storage_;
+    AnimationStateStorage animation_state_storage_;
+    BoneMatrixStorage bone_matrix_storage_;
     ModelStorage model_storage_;
     SceneStorage scene_storage_;
     CameraStorage camera_storage_;
