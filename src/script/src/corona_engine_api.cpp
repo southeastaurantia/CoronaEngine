@@ -211,6 +211,11 @@ CoronaEngineAPI::Actor::Actor(const std::string& path)
                 mat = ktm::fmat4x4::from_eye();
             }
         });
+    } else {
+        bone_matrix_handle_ = Corona::SharedDataHub::instance().bone_matrix_storage().allocate([&](std::vector<ktm::fmat4x4>& slot) {
+            slot.resize(1);
+            slot[0] = ktm::fmat4x4::from_eye();
+        });
     }
 
     animation_handle_ = Corona::SharedDataHub::instance().animation_state_storage().allocate([&](Corona::AnimationState& slot) {
@@ -269,7 +274,9 @@ CoronaEngineAPI::Actor::Actor(const std::string& path)
         slot.animation_handle = animation_handle_;
         slot.bone_matrix_dirty = true;
         if (model_ptr->m_BoneCounter > 0) {
-            slot.bone_matrix = HardwareBuffer(model_ptr->bones, BufferUsage::StorageBuffer); 
+            slot.bone_matrix = HardwareBuffer(model_ptr->bones, BufferUsage::StorageBuffer);
+        }else {
+            slot.bone_matrix = HardwareBuffer(ktm::fmat4x4::from_eye(), BufferUsage::StorageBuffer);
         }
         slot.devices = std::move(devices);
     });

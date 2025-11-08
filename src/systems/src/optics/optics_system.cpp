@@ -137,6 +137,7 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
                     hardware_->rasterizerPipeline["pushConsts.modelMatrix"] = transform.model_matrix;
                 });
                 hardware_->rasterizerPipeline["pushConsts.uniformBufferIndex"] = hardware_->gbufferUniformBuffer.storeDescriptor();
+
                 HardwareBuffer boneMatrix = model.bone_matrix;
                 hardware_->rasterizerPipeline["pushConsts.boneIndex"] = boneMatrix.storeDescriptor();
 
