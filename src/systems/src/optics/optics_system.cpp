@@ -40,19 +40,19 @@ OpticsSystem::~OpticsSystem() = default;
 bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
     {
 #ifdef CORONA_ENABLE_VISION
-        using namespace vision;
-        using namespace ocarina;
-        auto device = RHIContext::instance().create_device("cuda");
-        device.init_rtx();
-        Global::instance().set_device(&device);
-        Global::instance().set_scene_path("E:\\CoronaResource\\examples\\assets\\test_vision\\render_scene\\kitchen");
-        auto str = "E:\\CoronaResource\\examples\\assets\\test_vision\\render_scene\\kitchen\\vision_scene.json";
-        auto rp = Importer::import_scene(str);
-        rp->init();
-        rp->prepare();
-        rp->display(1 / 30);
-        auto& buffer = rp->frame_buffer()->view_buffer();
-        viewBufferHandle = buffer.handle();
+        //using namespace vision;
+        //using namespace ocarina;
+        //auto device = RHIContext::instance().create_device("cuda");
+        //device.init_rtx();
+        //Global::instance().set_device(&device);
+        //Global::instance().set_scene_path("E:\\CoronaResource\\examples\\assets\\test_vision\\render_scene\\kitchen");
+        //auto str = "E:\\CoronaResource\\examples\\assets\\test_vision\\render_scene\\kitchen\\vision_scene.json";
+        //auto rp = Importer::import_scene(str);
+        //rp->init();
+        //rp->prepare();
+        //rp->display(1 / 30);
+        //auto& buffer = rp->frame_buffer()->view_buffer();
+        //viewBufferHandle = buffer.handle();
 #endif
     }
 
@@ -67,6 +67,7 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
     hardware_->gbufferBaseColorImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
     hardware_->gbufferNormalImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
     hardware_->gbufferMotionVectorImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::RG32_FLOAT, ImageUsage::StorageImage);
+    hardware_->gbufferDepthImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::D32_FLOAT, ImageUsage::DepthImage);
 
     hardware_->uniformBuffer = HardwareBuffer(sizeof(Hardware::UniformBufferObject), BufferUsage::UniformBuffer);
     hardware_->gbufferUniformBuffer = HardwareBuffer(sizeof(Hardware::gbufferUniformBufferObject), BufferUsage::UniformBuffer);
@@ -129,6 +130,7 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
             hardware_->rasterizerPipeline["gbufferBaseColor"] = hardware_->gbufferBaseColorImage;
             hardware_->rasterizerPipeline["gbufferNormal"] = hardware_->gbufferNormalImage;
             hardware_->rasterizerPipeline["gbufferMotionVector"] = hardware_->gbufferMotionVectorImage;
+            hardware_->rasterizerPipeline.setDepthImage(hardware_->gbufferDepthImage);
 
             SharedDataHub::instance().model_device_storage().for_each_read([&](const ModelDevice& model) {
                 bool info = SharedDataHub::instance().model_transform_storage().read(model.transform_handle, [&](const ModelTransform& transform) {

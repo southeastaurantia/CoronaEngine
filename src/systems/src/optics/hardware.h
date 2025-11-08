@@ -9,6 +9,7 @@ struct Hardware {
     HardwareImage gbufferBaseColorImage;
     HardwareImage gbufferNormalImage;
     HardwareImage gbufferMotionVectorImage;
+    HardwareImage gbufferDepthImage;
     HardwareImage finalOutputImage;
 
     HardwareBuffer uniformBuffer;
