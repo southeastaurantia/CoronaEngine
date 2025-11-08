@@ -219,7 +219,7 @@ CoronaEngineAPI::Actor::Actor(const std::string& path)
     }
 
     animation_handle_ = Corona::SharedDataHub::instance().animation_state_storage().allocate([&](Corona::AnimationState& slot) {
-        slot.model = model_ptr;
+        slot.model_handle = model_handle_;
         slot.transform_handle = bone_matrix_handle_;
         slot.animation_index = 0;
         slot.current_time = 0.0f;
@@ -272,12 +272,15 @@ CoronaEngineAPI::Actor::Actor(const std::string& path)
     device_handle_ = Corona::SharedDataHub::instance().model_device_storage().allocate([&](Corona::ModelDevice& slot) {
         slot.transform_handle = matrix_handle_;
         slot.animation_handle = animation_handle_;
-        slot.bone_matrix_dirty = true;
+
         if (model_ptr->m_BoneCounter > 0) {
-            slot.bone_matrix = HardwareBuffer(model_ptr->bones, BufferUsage::StorageBuffer);
-        }else {
-            slot.bone_matrix = HardwareBuffer(ktm::fmat4x4::from_eye(), BufferUsage::StorageBuffer);
+            std::vector<ktm::fmat4x4> initial_bone_matrices(model_ptr->m_BoneCounter, ktm::fmat4x4::from_eye());
+            slot.bone_matrix_buffer = HardwareBuffer(initial_bone_matrices, BufferUsage::StorageBuffer);
+        } else {
+            std::vector<ktm::fmat4x4> identity_matrix = {ktm::fmat4x4::from_eye()};
+            slot.bone_matrix_buffer = HardwareBuffer(identity_matrix, BufferUsage::StorageBuffer);
         }
+
         slot.devices = std::move(devices);
     });
 

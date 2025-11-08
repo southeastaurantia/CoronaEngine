@@ -116,6 +116,7 @@ void OpticsSystem::update() {
         optics_pipeline(frame_count);
     }
 }
+
 void OpticsSystem::optics_pipeline(float frame_count) const {
     SharedDataHub::instance().scene_storage().for_each_read([&](const SceneDevice& scene) {
         SharedDataHub::instance().camera_storage().for_each_read([&](const CameraDevice& camera) {
@@ -138,7 +139,7 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
                 });
                 hardware_->rasterizerPipeline["pushConsts.uniformBufferIndex"] = hardware_->gbufferUniformBuffer.storeDescriptor();
 
-                HardwareBuffer boneMatrix = model.bone_matrix;
+                HardwareBuffer boneMatrix = model.bone_matrix_buffer;
                 hardware_->rasterizerPipeline["pushConsts.boneIndex"] = boneMatrix.storeDescriptor();
 
                 for (auto& m : model.devices) {

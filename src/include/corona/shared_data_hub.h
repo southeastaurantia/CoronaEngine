@@ -28,7 +28,7 @@ struct MeshDevice {
 };
 
 struct AnimationState {
-    std::shared_ptr<Model> model;
+    std::uintptr_t model_handle{};
     std::uintptr_t transform_handle{};
     std::uint32_t animation_index = 0;
     float current_time = 0.0f;
@@ -48,9 +48,8 @@ struct ModelBounding {
 struct ModelDevice {
     std::uintptr_t transform_handle{};
     std::uintptr_t animation_handle{};
-    HardwareBuffer bone_matrix;
+    HardwareBuffer bone_matrix_buffer;
     std::vector<MeshDevice> devices;
-    bool bone_matrix_dirty = true;
 };
 
 struct CameraDevice {
@@ -118,16 +117,11 @@ class SharedDataHub {
     AnimationStateStorage& animation_state_storage();
     const AnimationStateStorage& animation_state_storage() const;
 
-    using BoneMatrixStorage = Kernel::Utils::Storage<std::vector<ktm::fmat4x4>>;
-    BoneMatrixStorage& bone_matrix_storage();
-    const BoneMatrixStorage& bone_matrix_storage() const;
-
    private:
     ModelDeviceStorage model_device_storage_;
     ModelBoundingStorage model_bounding_storage_;
     ModelTransformStorage model_transform_storage_;
     AnimationStateStorage animation_state_storage_;
-    BoneMatrixStorage bone_matrix_storage_;
     ModelStorage model_storage_;
     SceneStorage scene_storage_;
     CameraStorage camera_storage_;
