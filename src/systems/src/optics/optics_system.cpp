@@ -144,12 +144,20 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
                     hardware_->executor << hardware_->rasterizerPipeline.record(m.indexBuffer);
                 }
             });
-            hardware_->computeUniformBufferObjects.imageID = hardware_->finalOutputImage.storeDescriptor();
-            hardware_->computeUniformBufferObjects.imageSize = hardware_->gbufferSize;
-            hardware_->computeUniformBufferObjects.time = frame_count;
 
-            hardware_->computeUniformBuffer.copyFromData(&hardware_->computeUniformBufferObjects, sizeof(hardware_->computeUniformBufferObjects));
-            hardware_->computePipeline["pushConsts.uniformBufferIndex"] = hardware_->computeUniformBuffer.storeDescriptor();
+            hardware_->computePipeline["pushConsts.gbufferSize"] = hardware_->gbufferSize;
+            hardware_->computePipeline["pushConsts.gbufferPostionImage"] = hardware_->gbufferPostionImage.storeDescriptor();
+            hardware_->computePipeline["pushConsts.gbufferBaseColorImage"] = hardware_->gbufferBaseColorImage.storeDescriptor();
+            hardware_->computePipeline["pushConsts.gbufferNormalImage"] = hardware_->gbufferNormalImage.storeDescriptor();
+            hardware_->computePipeline["pushConsts.gbufferDepthImage"] = hardware_->rasterizerPipeline.getDepthImage().storeDescriptor();
+
+            hardware_->computePipeline["pushConsts.finalOutputImage"] = hardware_->finalOutputImage.storeDescriptor();
+
+            hardware_->computePipeline["pushConsts.sun_dir"] = ktm::normalize(scene.sun_direction);
+            hardware_->computePipeline["pushConsts.lightColor"] = ktm::fvec3(23.47f, 21.31f, 20.79f);
+
+            hardware_->uniformBuffer.copyFromData(&hardware_->uniformBufferObjects, sizeof(hardware_->uniformBufferObjects));
+            hardware_->computePipeline["pushConsts.uniformBufferIndex"] = hardware_->uniformBuffer.storeDescriptor();
 
             if (!SharedDataHub::instance().model_device_storage().empty()) {
                 hardware_->executor << hardware_->rasterizerPipeline(1920, 1080);
@@ -160,7 +168,7 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
                 << hardware_->executor.commit();
 
             if (hardware_->displayers_.contains(camera.surface)) {
-                hardware_->displayers_.at(camera.surface) = hardware_->gbufferBaseColorImage;
+                hardware_->displayers_.at(camera.surface) = hardware_->finalOutputImage;
             }
         });
     });

@@ -229,6 +229,7 @@ CoronaEngineAPI::Actor::Actor(const std::string& path)
     }
 
     bounding_handle_ = Corona::SharedDataHub::instance().model_bounding_storage().allocate([&](Corona::ModelBounding& slot) {
+        slot.modelMat = ktm::fmat4x4(ktm::translate3d(actor.position) * ktm::translate3d(actor.rotation) * ktm::translate3d(actor.scale));
         slot.max_xyz = model_ptr->maxXYZ;
         slot.min_xyz = model_ptr->minXYZ;
     });

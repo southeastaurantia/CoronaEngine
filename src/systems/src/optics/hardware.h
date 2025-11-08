@@ -36,7 +36,8 @@ struct Hardware {
     struct ComputeUniformBufferObject {
         float time;
         ktm::fvec2 imageSize;
-        uint32_t imageID;
+        uint32_t inputImageID;
+        uint32_t outputImageID;
     } computeUniformBufferObjects{};
 
     // 渲染大小

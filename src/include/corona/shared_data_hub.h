@@ -28,6 +28,7 @@ struct MeshDevice {
 };
 
 struct ModelBounding {
+    ktm::fmat4x4 modelMat;
     ktm::fvec3 max_xyz;
     ktm::fvec3 min_xyz;
 };
