@@ -179,7 +179,7 @@ void CoronaEngineAPI::Scene::remove_actor(const Actor& actor) const {
 //          Actor
 // ########################
 CoronaEngineAPI::Actor::Actor(const std::string& path)
-    : animation_handle_(0), bone_matrix_handle_(0), model_handle_(0), matrix_handle_(0), bounding_handle_(0), device_handle_(0) {
+    : animation_handle_(0), model_handle_(0), matrix_handle_(0), bounding_handle_(0), device_handle_(0) {
     registry_.emplace<RenderTag>(id_);
     auto model_id = Corona::ResourceId::from("model", path);
     auto model_ptr = std::static_pointer_cast<Corona::Model>(Corona::ResourceManager::instance().load_once(model_id));
@@ -205,22 +205,10 @@ CoronaEngineAPI::Actor::Actor(const std::string& path)
 
     if (model_ptr->m_BoneCounter > 0) {
         registry_.emplace<AnimationTag>(id_);
-        bone_matrix_handle_ = Corona::SharedDataHub::instance().bone_matrix_storage().allocate([&](std::vector<ktm::fmat4x4>& slot) {
-            slot.resize(model_ptr->m_BoneCounter);
-            for (auto& mat : slot) {
-                mat = ktm::fmat4x4::from_eye();
-            }
-        });
-    } else {
-        bone_matrix_handle_ = Corona::SharedDataHub::instance().bone_matrix_storage().allocate([&](std::vector<ktm::fmat4x4>& slot) {
-            slot.resize(1);
-            slot[0] = ktm::fmat4x4::from_eye();
-        });
     }
 
     animation_handle_ = Corona::SharedDataHub::instance().animation_state_storage().allocate([&](Corona::AnimationState& slot) {
         slot.model_handle = model_handle_;
-        slot.transform_handle = bone_matrix_handle_;
         slot.animation_index = 0;
         slot.current_time = 0.0f;
         slot.active = model_ptr->m_BoneCounter > 0;
@@ -305,9 +293,6 @@ CoronaEngineAPI::Actor::~Actor() {
     }
     if (animation_handle_) {
         Corona::SharedDataHub::instance().animation_state_storage().deallocate(animation_handle_);
-    }
-    if (bone_matrix_handle_) {
-        Corona::SharedDataHub::instance().bone_matrix_storage().deallocate(bone_matrix_handle_);
     }
     if (matrix_handle_) {
         Corona::SharedDataHub::instance().model_transform_storage().deallocate(matrix_handle_);

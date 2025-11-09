@@ -71,12 +71,4 @@ const SharedDataHub::AnimationStateStorage& SharedDataHub::animation_state_stora
     return this->animation_state_storage_;
 }
 
-SharedDataHub::BoneMatrixStorage& SharedDataHub::bone_matrix_storage() {
-    return this->bone_matrix_storage_;
-}
-
-const SharedDataHub::BoneMatrixStorage& SharedDataHub::bone_matrix_storage() const {
-    return this->bone_matrix_storage_;
-}
-
 }  // namespace Corona

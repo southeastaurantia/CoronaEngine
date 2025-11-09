@@ -43,7 +43,6 @@ struct CoronaEngineAPI {
 
        private:
         std::uintptr_t animation_handle_{};
-        std::uintptr_t bone_matrix_handle_{};
         std::uintptr_t model_handle_{};
         std::uintptr_t matrix_handle_{};
         std::uintptr_t bounding_handle_{};

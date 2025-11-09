@@ -29,7 +29,6 @@ struct MeshDevice {
 
 struct AnimationState {
     std::uintptr_t model_handle{};
-    std::uintptr_t transform_handle{};
     std::uint32_t animation_index = 0;
     float current_time = 0.0f;
     bool active = true;
