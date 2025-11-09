@@ -41,21 +41,11 @@ add_library(CoronaEngine STATIC
     engine.cpp
     shared_data_hub.cpp
 
-  include/corona/engine.h
-    include/corona/shared_data_hub.h
-)
-
-add_library(corona::engine ALIAS CoronaEngine)
-
-# 为核心引擎文件设置 source_group，按实际目录结构组织
-set(CORONA_ENGINE_FILES
-    engine.cpp
-    shared_data_hub.cpp
     include/corona/engine.h
     include/corona/shared_data_hub.h
 )
 
-corona_set_source_groups(${CORONA_ENGINE_FILES})
+add_library(corona::engine ALIAS CoronaEngine)
 
 # 设置包含目录
 target_include_directories(CoronaEngine PUBLIC

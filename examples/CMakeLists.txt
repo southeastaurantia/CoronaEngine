@@ -60,7 +60,6 @@ endfunction()
 #   - Create an executable target linked against CoronaEngine and dependencies.
 #   - Install runtime dependencies (Helicon/Python/editor) when available.
 #   - Optionally copy shared assets next to the built executable.
-#   - Organize files in Visual Studio using source_group based on directory structure.
 # ------------------------------------------------------------------------------
 function(corona_add_example)
     set(options COPY_ASSETS)
@@ -73,14 +72,10 @@ function(corona_add_example)
     endif()
 
     if(NOT CORONA_EX_SOURCES)
-      message(FATAL_ERROR "corona_add_example requires SOURCES for ${CORONA_EX_NAME}")
+        message(FATAL_ERROR "corona_add_example requires SOURCES for ${CORONA_EX_NAME}")
     endif()
 
     add_executable(${CORONA_EX_NAME} ${CORONA_EX_SOURCES})
-    
-  # 为所有文件设置 source_group，按实际目录结构组织
-    corona_set_source_groups(${CORONA_EX_SOURCES})
-    
     target_compile_features(${CORONA_EX_NAME} PRIVATE cxx_std_20)
     set_target_properties(${CORONA_EX_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY $<TARGET_FILE_DIR:${CORONA_EX_NAME}>)
     target_link_libraries(${CORONA_EX_NAME} PRIVATE CoronaEngine cabbage::concurrent)
@@ -88,12 +83,12 @@ function(corona_add_example)
     if(COMMAND helicon_install_runtime_deps)
         helicon_install_runtime_deps(${CORONA_EX_NAME})
     else()
-   message(STATUS "[Corona:Example:${CORONA_EX_NAME}] helicon_install_runtime_deps not available; skipping Helicon runtime dependencies")
+        message(STATUS "[Corona:Example:${CORONA_EX_NAME}] helicon_install_runtime_deps not available; skipping Helicon runtime dependencies")
     endif()
 
-corona_install_runtime_deps(${CORONA_EX_NAME})
+    corona_install_runtime_deps(${CORONA_EX_NAME})
 
-  if(BUILD_CORONA_EDITOR)
+    if(BUILD_CORONA_EDITOR)
         corona_install_corona_editor(${CORONA_EX_NAME} CoronaEngine)
     endif()
 
@@ -105,7 +100,7 @@ corona_install_runtime_deps(${CORONA_EX_NAME})
 
     if(DEFINED CORONA_CURRENT_EXAMPLE_FOLDER)
         set_property(GLOBAL APPEND PROPERTY _CORONA_EXAMPLE_REGISTRY
-       "${CORONA_CURRENT_EXAMPLE_FOLDER}|${CORONA_EX_NAME}"
+            "${CORONA_CURRENT_EXAMPLE_FOLDER}|${CORONA_EX_NAME}"
         )
     endif()
 
