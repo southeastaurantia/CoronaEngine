@@ -37,14 +37,13 @@ add_subdirectory(script/src)
 # CoronaEngine 核心库
 # ==============================================================================
 
-set(CORONA_ENGINE_SOURCES
+add_library(CoronaEngine STATIC
     engine.cpp
     shared_data_hub.cpp
-    include/corona/engine.h
+
+  include/corona/engine.h
     include/corona/shared_data_hub.h
 )
-
-add_library(CoronaEngine STATIC ${CORONA_ENGINE_SOURCES})
 
 add_library(corona::engine ALIAS CoronaEngine)
 
@@ -68,9 +67,6 @@ target_link_libraries(CoronaEngine PUBLIC
 
 # 设置 C++ 标准
 target_compile_features(CoronaEngine PUBLIC cxx_std_20)
-
-# 应用 Visual Studio source groups
-corona_set_source_groups(${CORONA_ENGINE_SOURCES})
 
 # 配置运行时依赖（Python DLLs/PDBs 等）
 # 这会将依赖文件列表存储在 CoronaEngine 目标的 INTERFACE_CORONA_RUNTIME_DEPS 属性中

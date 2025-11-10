@@ -81,9 +81,6 @@ function(corona_add_example)
     set_target_properties(${CORONA_EX_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY $<TARGET_FILE_DIR:${CORONA_EX_NAME}>)
     target_link_libraries(${CORONA_EX_NAME} PRIVATE CoronaEngine cabbage::concurrent)
 
-    # 应用 Visual Studio source groups
-    corona_set_source_groups(${CORONA_EX_SOURCES})
-
     if(COMMAND helicon_install_runtime_deps)
         helicon_install_runtime_deps(${CORONA_EX_NAME})
     else()

@@ -70,7 +70,4 @@ target_link_libraries(CoronaScriptPython PUBLIC
 set_property(TARGET CoronaScriptPython PROPERTY CXX_STANDARD 20)
 set_property(TARGET CoronaScriptPython PROPERTY CXX_STANDARD_REQUIRED ON)
 
-# 应用 Visual Studio source groups
-corona_set_source_groups(${CORONA_SCRIPT_SOURCES})
-
 message(STATUS "[CoronaScriptPython] Script binding library configured")
