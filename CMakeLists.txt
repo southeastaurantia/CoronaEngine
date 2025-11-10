@@ -27,6 +27,7 @@ project(
 # ------------------------------------------------------------------------------
 # Modular Configuration Includes
 # ------------------------------------------------------------------------------
+include(corona_source_groups)      # Source group helpers for Visual Studio organization
 include(corona_options)             # Global build options (editor/examples/runtime switches)
 include(corona_python)              # Embedded Python discovery and dependency checks
 include(corona_third_party)         # FetchContent declarations for external dependencies
