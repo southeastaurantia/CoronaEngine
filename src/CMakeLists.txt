@@ -9,13 +9,13 @@
 # ------------------------------------------------------------------------------
 message(STATUS "[CoronaEngine] Discovering system modules...")
 
-file(GLOB _CORONA_SYSTEM_DIRS LIST_DIRECTORIES true 
-     "${CMAKE_CURRENT_SOURCE_DIR}/systems/*")
+file(GLOB _CORONA_SYSTEM_DIRS LIST_DIRECTORIES true
+    "${CMAKE_CURRENT_SOURCE_DIR}/systems/*")
 
 foreach(_system_dir IN LISTS _CORONA_SYSTEM_DIRS)
     if(IS_DIRECTORY "${_system_dir}")
         get_filename_component(_system_name "${_system_dir}" NAME)
-        
+
         if(EXISTS "${_system_dir}/CMakeLists.txt")
             add_subdirectory("systems/${_system_name}")
         else()
@@ -36,16 +36,23 @@ add_subdirectory(script)
 # ==============================================================================
 # CoronaEngine 核心库
 # ==============================================================================
-
 add_library(CoronaEngine STATIC
-        engine.cpp
-        shared_data_hub.cpp
-        ${PROJECT_SOURCE_DIR}/include/corona/engine.h
-        ${PROJECT_SOURCE_DIR}/include/corona/shared_data_hub.h
+    engine.cpp
+    shared_data_hub.cpp
+    ${PROJECT_SOURCE_DIR}/include/corona/engine.h
+    ${PROJECT_SOURCE_DIR}/include/corona/shared_data_hub.h
+    ${PROJECT_SOURCE_DIR}/include/corona/components/actor_components.h
+    ${PROJECT_SOURCE_DIR}/include/corona/components/scene_components.h
+    ${PROJECT_SOURCE_DIR}/include/corona/events/acoustics_system_events.h
+    ${PROJECT_SOURCE_DIR}/include/corona/events/animation_system_events.h
+    ${PROJECT_SOURCE_DIR}/include/corona/events/display_system_events.h
+    ${PROJECT_SOURCE_DIR}/include/corona/events/engine_events.h
+    ${PROJECT_SOURCE_DIR}/include/corona/events/geometry_system_events.h
+    ${PROJECT_SOURCE_DIR}/include/corona/events/mechanics_system_events.h
+    ${PROJECT_SOURCE_DIR}/include/corona/events/optics_system_events.h
 )
 
 add_library(corona::engine ALIAS CoronaEngine)
-
 
 # 设置包含目录
 target_include_directories(CoronaEngine PUBLIC

@@ -3,7 +3,9 @@
 # ==============================================================================
 
 corona_add_system(optics
-    SOURCES optics_system.cpp
+    SOURCES
+        optics_system.cpp
+        hardware.h
     DEPENDENCIES 
         CabbageHardware
         CoronaResource::Resource
