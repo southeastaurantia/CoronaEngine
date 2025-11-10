@@ -1,4 +1,4 @@
-#include <corona/python/python_hotfix.h>
+#include <corona/script/python/python_hotfix.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/string.h>
 

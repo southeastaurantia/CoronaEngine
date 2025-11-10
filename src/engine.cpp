@@ -1,7 +1,7 @@
 #include "corona/engine.h"
 
 #include <corona/events/engine_events.h>
-#include <corona/python/python_api.h>
+#include <corona/script/python/python_api.h>
 #include <corona/systems/acoustics_system.h>
 #include <corona/systems/animation_system.h>
 #include <corona/systems/display_system.h>

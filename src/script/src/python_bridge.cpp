@@ -1,4 +1,4 @@
-#include <corona/python/python_bridge.h>
+#include <corona/script/python/python_bridge.h>
 
 #include <optional>
 

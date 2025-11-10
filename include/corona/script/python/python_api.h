@@ -2,7 +2,7 @@
 
 #include <Python.h>
 #include <corona/kernel/core/i_logger.h>
-#include <corona/python/python_hotfix.h>
+#include <corona/script/python/python_hotfix.h>
 #include <nanobind/nanobind.h>
 
 #include <chrono>

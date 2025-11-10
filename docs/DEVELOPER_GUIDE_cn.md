@@ -52,7 +52,7 @@
 最常见的任务之一是向引擎添加一个新系统。操作方法如下：
 
 1.  **创建头文件**:
-    创建 `src/systems/include/corona/systems/my_new_system.h`。该类必须继承自 `Kernel::SystemBase`。
+    创建 `include/corona/systems/my_new_system.h`。该类必须继承自 `Kernel::SystemBase`。
     ```cpp
     #pragma once
     #include <corona/kernel/system/system_base.h>

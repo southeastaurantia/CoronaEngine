@@ -38,11 +38,10 @@ add_subdirectory(script/src)
 # ==============================================================================
 
 add_library(CoronaEngine STATIC
-    engine.cpp
-    shared_data_hub.cpp
-
-  include/corona/engine.h
-    include/corona/shared_data_hub.h
+        engine.cpp
+        shared_data_hub.cpp
+        ${PROJECT_SOURCE_DIR}/include/corona/engine.h
+        ${PROJECT_SOURCE_DIR}/include/corona/shared_data_hub.h
 )
 
 add_library(corona::engine ALIAS CoronaEngine)
@@ -50,7 +49,7 @@ add_library(corona::engine ALIAS CoronaEngine)
 
 # 设置包含目录
 target_include_directories(CoronaEngine PUBLIC
-    ${PROJECT_SOURCE_DIR}/src/include
+    ${PROJECT_SOURCE_DIR}/include
 )
 
 # 链接依赖

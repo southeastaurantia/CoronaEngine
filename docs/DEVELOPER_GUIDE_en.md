@@ -52,7 +52,7 @@ To contribute effectively, it's important to understand the engine's design. The
 One of the most common tasks is adding a new system to the engine. Here’s how you do it:
 
 1.  **Create the Header File**:
-    Create `src/systems/include/corona/systems/my_new_system.h`. The class must inherit from `Kernel::SystemBase`.
+    Create `include/corona/systems/my_new_system.h`. The class must inherit from `Kernel::SystemBase`.
     ```cpp
     #pragma once
     #include <corona/kernel/system/system_base.h>

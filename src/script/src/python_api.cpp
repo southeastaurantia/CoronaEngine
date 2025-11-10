@@ -1,5 +1,5 @@
 #define PY_SSIZE_T_CLEAN
-#include <corona/python/python_api.h>
+#include <corona/script/python/python_api.h>
 #include <windows.h>
 
 #include <entt/signal/sigh.hpp>
