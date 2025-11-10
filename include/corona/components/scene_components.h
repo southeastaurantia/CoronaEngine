@@ -1,5 +1,6 @@
 #pragma once
 
+#include <entt/entt.hpp>
 #include <ktm/type_vec.h>
 
 namespace Corona::Components {
