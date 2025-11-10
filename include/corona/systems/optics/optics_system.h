@@ -1,5 +1,6 @@
 #pragma once
 
+#include <CabbageHardware.h>
 #include <corona/events/optics_system_events.h>
 #include <corona/kernel/event/i_event_bus.h>
 #include <corona/kernel/event/i_event_stream.h>
@@ -8,7 +9,6 @@
 #include <memory>
 
 #include "Mesh.h"
-#include <CabbageHardware.h>
 // 前向声明 Hardware 结构体
 struct Hardware;
 

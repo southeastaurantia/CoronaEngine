@@ -172,7 +172,7 @@ void calculate_bone_transform(
         calculate_bone_transform(model, current_time, anim, child, global, outBones);
     }
 }
-} // namespace Corona
+}  // namespace Corona
 
 namespace Corona::Systems {
 bool AnimationSystem::initialize(Kernel::ISystemContext* ctx) {
@@ -263,4 +263,4 @@ void AnimationSystem::shutdown() {
     auto* logger = context()->logger();
     logger->info("AnimationSystem: Shutting down...");
 }
-} // namespace Corona::Systems
+}  // namespace Corona::Systems

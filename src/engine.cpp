@@ -1,5 +1,6 @@
 #include "corona/engine.h"
 
+#include <ResourceManager.h>
 #include <corona/events/engine_events.h>
 #include <corona/script/python/python_api.h>
 #include <corona/systems/acoustics/acoustics_system.h>
@@ -8,14 +9,13 @@
 #include <corona/systems/geometry/geometry_system.h>
 #include <corona/systems/mechanics/mechanics_system.h>
 #include <corona/systems/optics/optics_system.h>
-#include <ResourceManager.h>
-
-#include "Shader.h"
-#include "Model.h"
 
 #include <chrono>
 #include <memory>
 #include <thread>
+
+#include "Model.h"
+#include "Shader.h"
 
 namespace Corona {
 

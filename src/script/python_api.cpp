@@ -1,5 +1,6 @@
 #define PY_SSIZE_T_CLEAN
 #include <corona/script/python/python_api.h>
+#include <nanobind/stl/string.h>
 #include <windows.h>
 
 #include <entt/signal/sigh.hpp>
@@ -8,7 +9,6 @@
 #include <regex>
 #include <set>
 #include <unordered_map>
-#include <nanobind/stl/string.h>
 
 namespace {
 inline void log_nanobind_python_error(const nanobind::python_error& e) {

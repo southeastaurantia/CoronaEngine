@@ -3,7 +3,7 @@
 #include <corona/kernel/utils/storage.h>
 
 namespace Corona {
-    class Model;
+class Model;
 }
 
 namespace Corona::Events {

@@ -59,7 +59,7 @@ try {
         throw "Unable to determine git repository root."
     }
 
-    $defaultRoots = @('engine', 'examples', 'include', 'src', 'tests')
+    $defaultRoots = @('examples', 'include', 'src', 'tests')
     $stringComparison = [System.StringComparison]::OrdinalIgnoreCase
     $allowedRoots = @()
     foreach ($root in $defaultRoots) {
@@ -70,7 +70,7 @@ try {
         }
     }
     if (-not $allowedRoots -or $allowedRoots.Count -eq 0) {
-        throw "No formatting roots found under the repository. Expected one of: engine, examples, include, src."
+        throw "No formatting roots found under the repository. Expected one of: examples, include, src, tests."
     }
 
     $logPath = Join-Path $gitRoot 'code-format.log'

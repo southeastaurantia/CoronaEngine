@@ -91,8 +91,7 @@ bool checkCollision(const std::vector<ktm::fvec3>& vertices1, const std::vector<
 
     return false;
 }
-} // namespace
-
+}  // namespace
 
 namespace Corona::Systems {
 bool MechanicsSystem::initialize(Kernel::ISystemContext* ctx) {
@@ -245,4 +244,4 @@ void MechanicsSystem::shutdown() {
     auto* logger = context()->logger();
     logger->info("MechanicsSystem: Shutting down...");
 }
-} // namespace Corona::Systems
+}  // namespace Corona::Systems
