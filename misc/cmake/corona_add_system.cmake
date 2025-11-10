@@ -27,7 +27,6 @@
 #   - Creates an alias `corona::<namespace>::<system_name>` (default namespace: "system")
 #   - Automatically sets up include directories and links to corona::kernel
 #   - Applies consistent compile features (C++20)
-#   - Organizes files in Visual Studio using source_group based on directory structure
 # ==============================================================================
 
 include_guard(GLOBAL)
@@ -66,9 +65,6 @@ function(corona_add_system SYSTEM_NAME)
     
     # 创建静态库目标
     add_library(${TARGET_NAME} STATIC ${ALL_FILES})
-    
-    # 为所有文件设置 source_group，按实际目录结构组织
-    corona_set_source_groups(${ALL_FILES})
     
     # 创建带命名空间的别名: corona::<namespace>::<name>
     add_library(corona::${SYS_NAMESPACE}::${SYSTEM_NAME} ALIAS ${TARGET_NAME})

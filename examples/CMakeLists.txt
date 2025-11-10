@@ -60,7 +60,6 @@ endfunction()
 #   - Create an executable target linked against CoronaEngine and dependencies.
 #   - Install runtime dependencies (Helicon/Python/editor) when available.
 #   - Optionally copy shared assets next to the built executable.
-#   - Organize files in Visual Studio using source_group based on directory structure.
 # ------------------------------------------------------------------------------
 function(corona_add_example)
     set(options COPY_ASSETS)
@@ -77,9 +76,6 @@ function(corona_add_example)
     endif()
 
     add_executable(${CORONA_EX_NAME} ${CORONA_EX_SOURCES})
-    
-  # 为所有文件设置 source_group，按实际目录结构组织
-    corona_set_source_groups(${CORONA_EX_SOURCES})
     
     target_compile_features(${CORONA_EX_NAME} PRIVATE cxx_std_20)
     set_target_properties(${CORONA_EX_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY $<TARGET_FILE_DIR:${CORONA_EX_NAME}>)

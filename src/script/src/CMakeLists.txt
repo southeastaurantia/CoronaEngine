@@ -35,7 +35,6 @@ endforeach()
 # Sources
 add_library(CoronaScriptPython STATIC ${CORONA_SCRIPT_SOURCES})
 
-corona_set_source_groups(${CORONA_SCRIPT_SOURCES})
 
 # Public alias used by core engine
 add_library(corona::script::python ALIAS CoronaScriptPython)

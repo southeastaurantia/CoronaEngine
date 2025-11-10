@@ -27,7 +27,6 @@ project(
 # ------------------------------------------------------------------------------
 # Modular Configuration Includes
 # ------------------------------------------------------------------------------
-include(corona_source_groups)      # Source group helpers for Visual Studio organization
 include(corona_options)             # Global build options (editor/examples/runtime switches)
 include(corona_python)              # Embedded Python discovery and dependency checks
 include(corona_third_party)         # FetchContent declarations for external dependencies
@@ -70,5 +69,3 @@ message(STATUS "  Check Python deps     : ${CORONA_CHECK_PY_DEPS}")
 message(STATUS "  Auto install deps     : ${CORONA_AUTO_INSTALL_PY_DEPS}")
 message(STATUS "================================================================================")
 message(STATUS "")
-
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR})
