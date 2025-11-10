@@ -12,7 +12,7 @@ CoronaEngine is designed as a modular, multi-threaded, and data-oriented game en
 
 ## 2. Key Components
 
-### `Engine` Class (`src/include/corona/engine.h`)
+### `Engine` Class (`include/corona/engine.h`)
 The `Engine` class is the central orchestrator of the entire application. It is responsible for:
 - **Lifecycle Management**: Manages the main `initialize()`, `run()`, and `shutdown()` sequence.
 - **System Registration**: Discovers and registers all available systems.
@@ -63,13 +63,13 @@ Systems are designed to be decoupled and communicate primarily through an event-
 - The `KernelContext` provides a global `EventBus` and `EventStream`.
 - Systems can publish events (e.g., `EntityCreated`, `CollisionDetected`) without needing to know which other systems are listening.
 - Other systems can subscribe to specific event types to react accordingly.
-- Event definitions are strongly-typed structs located in `src/include/corona/events/`.
+- Event definitions are strongly-typed structs located in `include/corona/events/`.
 
 ## 5. Directory Structure
 
-- `src/include/corona/`: Public headers for the engine's core components.
+- `include/corona/`: Public headers for the engine's core components.
 - `src/engine.cpp`: Implementation of the `Engine` class.
-- `src/systems/include/corona/systems/`: Public headers for all systems.
+- `include/corona/systems/`: Public headers for all systems.
 - `src/systems/src/<module>/`: Private implementation for each system module.
 - `examples/`: Contains example applications demonstrating how to use the engine.
 - `misc/cmake/`: Home to the modular CMake helper scripts that drive the build process.

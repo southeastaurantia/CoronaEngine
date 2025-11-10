@@ -4,7 +4,7 @@
 # Build nanobind static library
 # nanobind is NOT header-only, it needs to be compiled
 if(DEFINED nanobind_SOURCE_DIR)
-  # Use nanobind's build function to create the library target
+    # Use nanobind's build function to create the library target
     include(${nanobind_SOURCE_DIR}/cmake/nanobind-config.cmake)
     nanobind_build_library(nanobind-static)
 else()
@@ -15,34 +15,35 @@ endif()
 set(CORONA_SCRIPT_SOURCES
     corona_engine_api.cpp
     corona_engine_module.cpp
- engine_bindings.cpp
+    engine_bindings.cpp
     python_api.cpp
     python_bridge.cpp
     python_hotfix.cpp
 )
 
 set(CORONA_SCRIPT_HEADERS
-    ${PROJECT_SOURCE_DIR}/src/script/include/corona/script/python_api.h
-  ${PROJECT_SOURCE_DIR}/src/script/include/corona/script/python_bridge.h
+    ${PROJECT_SOURCE_DIR}/include/corona/script/api/corona_engine_api.h
+    ${PROJECT_SOURCE_DIR}/include/corona/script/python/engine_scripts.h
+    ${PROJECT_SOURCE_DIR}/include/corona/script/python/python_api.h
+    ${PROJECT_SOURCE_DIR}/include/corona/script/python/python_bridge.h
+    ${PROJECT_SOURCE_DIR}/include/corona/script/python/python_hotfix.h
 )
 
 foreach(header ${CORONA_SCRIPT_HEADERS})
     if(EXISTS ${header})
-    list(APPEND CORONA_SCRIPT_SOURCES ${header})
+        list(APPEND CORONA_SCRIPT_SOURCES ${header})
     endif()
 endforeach()
 
 # Sources
 add_library(CoronaScriptPython STATIC ${CORONA_SCRIPT_SOURCES})
 
-
 # Public alias used by core engine
 add_library(corona::script::python ALIAS CoronaScriptPython)
 
 # Public include directories (match systems style and expose script headers)
 target_include_directories(CoronaScriptPython PUBLIC
-    ${PROJECT_SOURCE_DIR}/src/script/include
-    ${PROJECT_SOURCE_DIR}/src/include
+    ${PROJECT_SOURCE_DIR}/include
     $<BUILD_INTERFACE:${ktm_SOURCE_DIR}>
 )
 

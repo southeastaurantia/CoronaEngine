@@ -1,13 +1,13 @@
 #include "corona/engine.h"
 
 #include <corona/events/engine_events.h>
-#include <corona/python/python_api.h>
-#include <corona/systems/acoustics_system.h>
-#include <corona/systems/animation_system.h>
-#include <corona/systems/display_system.h>
-#include <corona/systems/geometry_system.h>
-#include <corona/systems/mechanics_system.h>
-#include <corona/systems/optics_system.h>
+#include <corona/script/python/python_api.h>
+#include <corona/systems/acoustics/acoustics_system.h>
+#include <corona/systems/animation/animation_system.h>
+#include <corona/systems/display/display_system.h>
+#include <corona/systems/geometry/geometry_system.h>
+#include <corona/systems/mechanics/mechanics_system.h>
+#include <corona/systems/optics/optics_system.h>
 #include <ResourceManager.h>
 
 #include "Shader.h"

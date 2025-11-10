@@ -33,7 +33,7 @@
 **目标**: 定义脚本系统的接口和基础架构
 
 #### 1.1 定义脚本运行时接口
-- [ ] 创建 `src/systems/include/corona/systems/script/i_script_runtime.h`
+- [ ] 创建 `include/corona/systems/script/i_script_runtime.h`
   - [ ] 定义 `IScriptRuntime` 接口
   - [ ] 包含生命周期方法（`initialize`, `shutdown`）
   - [ ] 包含脚本执行方法（`execute_script`, `reload_scripts`）
@@ -41,7 +41,7 @@
   - [ ] 包含事件处理方法（`on_event`）
 
 #### 1.2 创建 ScriptSystem
-- [ ] 创建 `src/systems/include/corona/systems/script_system.h`
+- [ ] 创建 `include/corona/systems/script_system.h`
   - [ ] 继承 `Kernel::SystemBase`
   - [ ] 设置优先级为 50（中等优先级）
   - [ ] 实现生命周期方法
@@ -69,7 +69,7 @@
 **目标**: 将现有 `PythonAPI` 重构为符合新架构的 `PythonRuntime`
 
 #### 2.1 创建配置结构
-- [ ] 创建 `src/systems/include/corona/systems/script/python_config.h`
+- [ ] 创建 `include/corona/systems/script/python_config.h`
   - [ ] 定义 `PythonConfig` 结构体
   - [ ] 包含 Python 主目录路径
   - [ ] 包含模块搜索路径列表
@@ -77,7 +77,7 @@
   - [ ] 包含热重载配置（启用/间隔/监控模式）
 
 #### 2.2 实现 PythonRuntime
-- [ ] 创建 `src/systems/include/corona/systems/script/python_runtime.h`
+- [ ] 创建 `include/corona/systems/script/python_runtime.h`
   - [ ] 实现 `IScriptRuntime` 接口
   - [ ] 使用 PIMPL 模式隐藏 Python.h 依赖
   - [ ] 添加配置注入构造函数
@@ -135,7 +135,7 @@
 **目标**: 解除 API 与全局状态的耦合，通过服务提供者模式访问引擎功能
 
 #### 3.1 创建服务提供者接口
-- [ ] 创建 `src/script/include/corona/script/i_script_service_provider.h`
+- [ ] 创建 `include/corona/script/i_script_service_provider.h`
   - [ ] 定义 `IScriptServiceProvider` 接口
   - [ ] 提供 ECS registry 访问方法
   - [ ] 提供事件总线发布方法
@@ -150,7 +150,7 @@
   - [ ] 实现所有接口方法，委托给对应的系统
 
 #### 3.3 重构 CoronaEngineAPI
-- [ ] 修改 `src/script/include/corona/api/corona_engine_api.h`
+- [ ] 修改 `include/corona/script/api/corona_engine_api.h`
   - [ ] 移除静态 `registry_` 成员
   - [ ] 为 `Actor` 和 `Scene` 类添加 `IScriptServiceProvider*` 成员
   - [ ] 修改构造函数签名，接受 service provider
@@ -179,7 +179,7 @@
 **目标**: 使用事件总线替代直接调用和 `PythonBridge`
 
 #### 4.1 定义脚本事件
-- [ ] 创建 `src/include/corona/events/script_events.h`
+- [ ] 创建 `include/corona/events/script_events.h`
   - [ ] `ScriptSystemInitializedEvent`
   - [ ] `ScriptReloadRequestedEvent`
   - [ ] `ScriptErrorEvent`
@@ -200,7 +200,7 @@
   - [ ] 错误事件
 
 #### 4.3 替换 PythonBridge
-- [ ] 移除 `src/script/include/corona/python/python_bridge.h`
+- [ ] 移除 `include/corona/script/python/python_bridge.h`
 - [ ] 移除 `src/script/src/python_bridge.cpp`
 - [ ] 在 Python 绑定中添加事件发布接口
   ```python
@@ -265,9 +265,9 @@
 **目标**: 移除旧代码，优化性能，完善文档
 
 #### 6.1 移除旧实现
-- [ ] 删除 `src/script/include/corona/python/python_api.h`
+- [ ] 删除 `include/corona/script/python/python_api.h`
 - [ ] 删除 `src/script/src/python_api.cpp`
-- [ ] 删除 `src/script/include/corona/python/python_bridge.h`
+- [ ] 删除 `include/corona/script/python/python_bridge.h`
 - [ ] 删除 `src/script/src/python_bridge.cpp`
 - [ ] 从 `src/engine.cpp` 移除 `PythonAPI` 引用
 - [ ] 移除 `CORONA_ENABLE_PYTHON_API` 条件编译（改为运行时配置）

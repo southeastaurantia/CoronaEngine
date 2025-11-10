@@ -4,7 +4,7 @@
 
 #include <CabbageHardware.h>
 #include <ResourceManager.h>
-#include <corona/api/corona_engine_api.h>
+#include <corona/script/api/corona_engine_api.h>
 #include <corona/components/actor_components.h>
 #include <corona/components/scene_components.h>
 #include <corona/events/optics_system_events.h>

@@ -12,7 +12,7 @@ CoronaEngine 被设计为一个模块化、多线程、数据驱动的游戏引�
 
 ## 2. 关键组件
 
-### `Engine` 类 (`src/include/corona/engine.h`)
+### `Engine` 类 (`include/corona/engine.h`)
 `Engine` 类是整个应用程序的中央协调器。它负责：
 - **生命周期管理**: 管理主要的 `initialize()`、`run()` 和 `shutdown()` 序列。
 - **系统注册**: 发现并注册所有可用的系统。
@@ -63,13 +63,13 @@ CoronaEngine 被设计为一个模块化、多线程、数据驱动的游戏引�
 - `KernelContext` 提供了一个全局的 `EventBus` 和 `EventStream`。
 - 系统可以发布事件（例如 `EntityCreated`、`CollisionDetected`），而无需知道哪些其他系统在监听。
 - 其他系统可以订阅特定的事件类型以作出相应反应。
-- 事件定义是位于 `src/include/corona/events/` 中的强类型结构体。
+- 事件定义是位于 `include/corona/events/` 中的强类型结构体。
 
 ## 5. 目录结构
 
-- `src/include/corona/`: 引擎核心组件的公共头文件。
+- `include/corona/`: 引擎核心组件的公共头文件。
 - `src/engine.cpp`: `Engine` 类的实现。
-- `src/systems/include/corona/systems/`: 所有系统的公共头文件。
+- `include/corona/systems/`: 所有系统的公共头文件。
 - `src/systems/src/<module>/`: 每个系统模块的私有实现。
 - `examples/`: 包含演示如何使用引擎的示例应用程序。
 - `misc/cmake/`: 存放驱动构建过程的模块化 CMake 辅助脚本。

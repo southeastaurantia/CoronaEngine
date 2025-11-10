@@ -6,10 +6,10 @@
 
 CoronaEngine 是一个模块化、多线程、数据驱动的 C++ 游戏引擎。
 
-- **中央协调器**: `Engine` 类 (`src/include/corona/engine.h`) 负责管理应用程序的生命周期（初始化、运行、关闭）和系统注册。
+- **中央协调器**: `Engine` 类 (`include/corona/engine.h`) 负责管理应用程序的生命周期（初始化、运行、关闭）和系统注册。
 - **服务中心**: 引擎建立在 `CoronaFramework` 之上，使用其 `KernelContext` 作为提供日志、事件总线和系统管理的中央服务中心。
 - **系统 (Systems)**: 功能被封装在独立的、继承自 `Kernel::SystemBase` 的“系统”中（位于 `src/systems/`）。每个系统（如 `DisplaySystem`, `MechanicsSystem`）都在其专用线程中运行，并通过覆盖 `get_priority()` 来定义其初始化顺序。
-- **数据驱动与事件通信**: 系统之间是解耦的，主要通过 `KernelContext` 提供的全局 `EventBus` 进行通信。事件在 `src/include/corona/events/` 中定义。
+- **数据驱动与事件通信**: 系统之间是解耦的，主要通过 `KernelContext` 提供的全局 `EventBus` 进行通信。事件在 `include/corona/events/` 中定义。
 
 ## 开发工作流
 
@@ -33,9 +33,9 @@ CoronaEngine 是一个模块化、多线程、数据驱动的 C++ 游戏引擎�
 
 这是最常见的开发任务：
 
-1.  **创建头文件**: 在 `src/systems/include/corona/systems/` 中创建一个新的头文件，使其继承自 `Kernel::SystemBase` 并覆盖必要的方法（`get_name`, `get_priority`, `initialize`, `update`, `shutdown`）。
+1.  **创建头文件**: 在 `include/corona/systems/` 中创建一个新的头文件，使其继承自 `Kernel::SystemBase` 并覆盖必要的方法（`get_name`, `get_priority`, `initialize`, `update`, `shutdown`）。
     ```cpp
-    // src/systems/include/corona/systems/my_new_system.h
+  // include/corona/systems/my_new_system.h
     #pragma once
     #include <corona/kernel/system/system_base.h>
     
@@ -76,7 +76,7 @@ CoronaEngine 是一个模块化、多线程、数据驱动的 C++ 游戏引擎�
 ## 关键文件和目录
 
 - `src/engine.cpp`: 引擎的入口点和系统注册。
-- `src/include/corona/`: 核心引擎组件的公共 API。
+- `include/corona/`: 核心引擎组件的公共 API。
 - `src/systems/`: 所有功能模块（系统）的所在地。
 - `examples/`: 演示如何使用引擎功能的示例项目。
 - `CMakeLists.txt`: 根 CMake 文件，协调整个构建过程。
