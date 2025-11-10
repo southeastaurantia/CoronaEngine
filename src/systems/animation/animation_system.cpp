@@ -199,6 +199,7 @@ void AnimationSystem::update_animation_state(AnimationState& state, float dt) {
         return;
     }
 
+    std::cout << "Updating animation for model handle: " << state.model_handle << std::endl;
     bool should_update = false;
     const Animation* current_anim = nullptr;
     std::shared_ptr<Model> model_ptr;
@@ -244,23 +245,13 @@ void AnimationSystem::update_animation_state(AnimationState& state, float dt) {
         identity,
         bone_matrices);
 
-    // 直接更新 ModelDevice 中的 bone_matrix_buffer
-    // 缓存 model_handle 以避免在 lambda 中捕获 state 引用
     const std::uintptr_t target_model_handle = state.model_handle;
 
     SharedDataHub::instance().model_device_storage().for_each_write([&](ModelDevice& device) {
-        if (device.animation_handle == 0) {
+        if (device.model_handle != target_model_handle) {
             return;
         }
-
-        // 检查这个 device 是否对应当前的动画状态
-        bool is_target_device = false;
-        SharedDataHub::instance().animation_state_storage().read(
-            device.animation_handle, [&](const AnimationState& anim_state) {
-                is_target_device = (anim_state.model_handle == target_model_handle);
-            });
-
-        if (is_target_device && !bone_matrices.empty()) {
+        if (!bone_matrices.empty()) {
             device.bone_matrix_buffer.copyFromData(
                 bone_matrices.data(),
                 bone_matrices.size() * sizeof(ktm::fmat4x4));

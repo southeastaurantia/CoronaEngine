@@ -45,6 +45,7 @@ struct ModelBounding {
 };
 
 struct ModelDevice {
+    std::uintptr_t model_handle{};
     std::uintptr_t transform_handle{};
     std::uintptr_t animation_handle{};
     HardwareBuffer bone_matrix_buffer;

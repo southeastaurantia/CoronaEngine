@@ -143,6 +143,7 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
                 hardware_->rasterizerPipeline["pushConsts.boneIndex"] = boneMatrix.storeDescriptor();
 
                 for (auto& m : model.devices) {
+                    std::cout << "Rendering Mesh with Texture Index: " << m.textureIndex << std::endl;
                     hardware_->rasterizerPipeline["inPosition"] = m.pointsBuffer;
                     hardware_->rasterizerPipeline["inNormal"] = m.normalsBuffer;
                     hardware_->rasterizerPipeline["inTexCoord"] = m.texCoordsBuffer;

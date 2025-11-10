@@ -258,6 +258,7 @@ CoronaEngineAPI::Actor::Actor(const std::string& path)
     }
 
     device_handle_ = Corona::SharedDataHub::instance().model_device_storage().allocate([&](Corona::ModelDevice& slot) {
+        slot.model_handle = model_handle_; // 新增: 直接存储模型句柄用于骨骼矩阵匹配
         slot.transform_handle = matrix_handle_;
         slot.animation_handle = animation_handle_;
 
