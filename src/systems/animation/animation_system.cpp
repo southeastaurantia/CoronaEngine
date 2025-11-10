@@ -4,7 +4,7 @@
 #include <corona/kernel/event/i_event_bus.h>
 #include <corona/kernel/event/i_event_stream.h>
 #include <corona/shared_data_hub.h>
-#include <corona/systems/animation_system.h>
+#include <corona/systems/animation/animation_system.h>
 
 #include "Animation.h"
 #include "Bone.h"

@@ -59,8 +59,8 @@ function(corona_add_system SYSTEM_NAME)
 
     # 查找对应的头文件
     set(HEADER_DIR "${PROJECT_SOURCE_DIR}/include/corona/systems")
-    if(EXISTS "${HEADER_DIR}/${SYSTEM_NAME}_system.h")
-        list(APPEND ALL_FILES "${HEADER_DIR}/${SYSTEM_NAME}_system.h")
+    if(EXISTS "${HEADER_DIR}/${SYSTEM_NAME}/${SYSTEM_NAME}_system.h")
+        list(APPEND ALL_FILES "${HEADER_DIR}/${SYSTEM_NAME}/${SYSTEM_NAME}_system.h")
     endif()
 
     # 创建静态库目标
