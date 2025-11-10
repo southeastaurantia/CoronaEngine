@@ -116,14 +116,15 @@ void OpticsSystem::update() {
         optics_pipeline(frame_count);
     }
 }
+
 void OpticsSystem::optics_pipeline(float frame_count) const {
     SharedDataHub::instance().scene_storage().for_each_read([&](const SceneDevice& scene) {
         SharedDataHub::instance().camera_storage().for_each_read([&](const CameraDevice& camera) {
-            hardware_->uniformBufferObjects.eyePosition = camera.eyePosition;
-            hardware_->uniformBufferObjects.eyeDir = camera.eyeDir;
-            hardware_->uniformBufferObjects.eyeViewMatrix = camera.eyeViewMatrix;
-            hardware_->uniformBufferObjects.eyeProjMatrix = camera.eyeProjMatrix;
-            hardware_->gbufferUniformBufferObjects.viewProjMatrix = camera.viewProjMatrix;
+            hardware_->uniformBufferObjects.eyePosition = camera.eye_position;
+            hardware_->uniformBufferObjects.eyeDir = camera.eye_dir;
+            hardware_->uniformBufferObjects.eyeViewMatrix = camera.eye_view_matrix;
+            hardware_->uniformBufferObjects.eyeProjMatrix = camera.eye_proj_matrix;
+            hardware_->gbufferUniformBufferObjects.viewProjMatrix = camera.view_proj_matrix;
             hardware_->gbufferUniformBuffer.copyFromData(&hardware_->gbufferUniformBufferObjects, sizeof(hardware_->gbufferUniformBufferObjects));
 
             hardware_->rasterizerPipeline["gbufferPostion"] = hardware_->gbufferPostionImage;
@@ -133,9 +134,12 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
             hardware_->rasterizerPipeline.setDepthImage(hardware_->gbufferDepthImage);
 
             SharedDataHub::instance().model_device_storage().for_each_read([&](const ModelDevice& model) {
-                hardware_->rasterizerPipeline["pushConsts.modelMatrix"] = ktm::fmat4x4::from_eye();
+                bool info = SharedDataHub::instance().model_transform_storage().read(model.transform_handle, [&](const ModelTransform& transform) {
+                    hardware_->rasterizerPipeline["pushConsts.modelMatrix"] = transform.model_matrix;
+                });
                 hardware_->rasterizerPipeline["pushConsts.uniformBufferIndex"] = hardware_->gbufferUniformBuffer.storeDescriptor();
-                HardwareBuffer boneMatrix = model.boneMatrix;
+
+                HardwareBuffer boneMatrix = model.bone_matrix_buffer;
                 hardware_->rasterizerPipeline["pushConsts.boneIndex"] = boneMatrix.storeDescriptor();
 
                 for (auto& m : model.devices) {
@@ -159,7 +163,7 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
             hardware_->computePipeline["pushConsts.finalOutputImage"] = hardware_->finalOutputImage.storeDescriptor();
 
             hardware_->computePipeline["pushConsts.sun_dir"] = ktm::normalize(scene.sun_direction);
-            hardware_->computePipeline["pushConsts.lightColor"] = ktm::fvec3(23.47f, 21.31f, 20.79f);
+            hardware_->computePipeline["pushConsts.lightColor"] = ktm::fvec3{23.47f, 21.31f, 20.79f};
 
             hardware_->uniformBuffer.copyFromData(&hardware_->uniformBufferObjects, sizeof(hardware_->uniformBufferObjects));
             hardware_->computePipeline["pushConsts.uniformBufferIndex"] = hardware_->uniformBuffer.storeDescriptor();

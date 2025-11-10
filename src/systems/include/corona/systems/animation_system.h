@@ -7,6 +7,10 @@
 
 #include <memory>
 
+namespace Corona {
+struct AnimationState;
+}
+
 namespace Corona::Systems {
 
 /**
@@ -58,7 +62,8 @@ class AnimationSystem : public Kernel::SystemBase {
 
    private:
     // 动画系统私有成员
-    void update_animation_state();
+    static void update_animation();
+    static void update_animation_state(AnimationState& state, float dt);
 };
 
 }  // namespace Corona::Systems

@@ -42,7 +42,9 @@ struct CoronaEngineAPI {
         void scale(ktm::fvec3 size) const;
 
        private:
+        std::uintptr_t animation_handle_{};
         std::uintptr_t model_handle_{};
+        std::uintptr_t matrix_handle_{};
         std::uintptr_t bounding_handle_{};
         std::uintptr_t device_handle_{};
     };

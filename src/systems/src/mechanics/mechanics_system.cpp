@@ -12,14 +12,47 @@ namespace {
 std::vector<ktm::fvec3> calculateVertices(const ktm::fvec3& startMin, const ktm::fvec3& startMax) {
     std::vector<ktm::fvec3> vertices;
     vertices.reserve(8);
+
     vertices.push_back(startMin);
-    vertices.emplace_back(startMax.x, startMin.y, startMin.z);
-    vertices.emplace_back(startMin.x, startMax.y, startMin.z);
-    vertices.emplace_back(startMax.x, startMax.y, startMin.z);
-    vertices.emplace_back(startMin.x, startMin.y, startMax.z);
-    vertices.emplace_back(startMax.x, startMin.y, startMax.z);
-    vertices.emplace_back(startMin.x, startMax.y, startMax.z);
+
+    ktm::fvec3 v1;
+    v1.x = startMax.x;
+    v1.y = startMin.y;
+    v1.z = startMin.z;
+    vertices.push_back(v1);
+
+    ktm::fvec3 v2;
+    v2.x = startMin.x;
+    v2.y = startMax.y;
+    v2.z = startMin.z;
+    vertices.push_back(v2);
+
+    ktm::fvec3 v3;
+    v3.x = startMax.x;
+    v3.y = startMax.y;
+    v3.z = startMin.z;
+    vertices.push_back(v3);
+
+    ktm::fvec3 v4;
+    v4.x = startMin.x;
+    v4.y = startMin.y;
+    v4.z = startMax.z;
+    vertices.push_back(v4);
+
+    ktm::fvec3 v5;
+    v5.x = startMax.x;
+    v5.y = startMin.y;
+    v5.z = startMax.z;
+    vertices.push_back(v5);
+
+    ktm::fvec3 v6;
+    v6.x = startMin.x;
+    v6.y = startMax.y;
+    v6.z = startMax.z;
+    vertices.push_back(v6);
+
     vertices.push_back(startMax);
+
     return vertices;
 }
 
@@ -37,7 +70,7 @@ bool checkCollision(const std::vector<ktm::fvec3>& vertices1, const std::vector<
             point.y >= min2.y && point.y <= max2.y &&
             point.z >= min2.z && point.z <= max2.z) {
             return true;
-            }
+        }
     }
 
     // 计算vertices1的AABB
@@ -53,16 +86,15 @@ bool checkCollision(const std::vector<ktm::fvec3>& vertices1, const std::vector<
             point.y >= min1.y && point.y <= max1.y &&
             point.z >= min1.z && point.z <= max1.z) {
             return true;
-            }
+        }
     }
 
     return false;
 }
-}  // namespace
+} // namespace
 
 
 namespace Corona::Systems {
-
 bool MechanicsSystem::initialize(Kernel::ISystemContext* ctx) {
     auto* logger = ctx->logger();
     logger->info("MechanicsSystem: Initializing...");
@@ -70,107 +102,147 @@ bool MechanicsSystem::initialize(Kernel::ISystemContext* ctx) {
 }
 
 void MechanicsSystem::update() {
-
-    SharedDataHub::instance().model_bounding_storage().for_each_read([&](const ModelBounding& model) {
-       // SharedDataHub::instance().model_bounding_storage().for_each_read([&](const ModelBounding& other_model) {
-       //     if (&model == &other_model) {
-       //         return;
-       //     }
-       //
-       //     auto StartMin = model.min_xyz;
-       //     auto StartMax = model.max_xyz;
-       //
-       //     // 计算世界坐标下的包围盒顶点
-       //     std::vector<ktm::fvec3> Vertices1 = calculateVertices(StartMin, StartMax);
-       //     ktm::fmat4x4 actorMatrix = model.modelMatrix;
-       //     for (auto& v : Vertices1) {
-       //         v = ktm::fvec4(actorMatrix * ktm::fvec4(v, 1.0f)).xyz();
-       //     }
-       //
-       //     auto otherStartMin = otherM.minXYZ;
-       //     auto otherStartMax = otherM.maxXYZ;
-       //
-       //     // 计算世界坐标下的包围盒顶点
-       //     std::vector<ktm::fvec3> Vertices2 = calculateVertices(otherStartMin, otherStartMax);
-       //     ktm::fmat4x4 otherModelMatrix = otherM.modelMatrix;
-       //     for (auto& v : Vertices2) {
-       //         v = ktm::fvec4(otherModelMatrix * ktm::fvec4(v, 1.0f)).xyz();
-       //     }
-       //
-       //     // 碰撞检测
-       //     if (checkCollision(Vertices1, Vertices2)) {
-       //         CE_LOG_INFO("Collision detected!");
-       //         collisionActors_.insert(&otherM);
-       //         collisionActors_.insert(&m);
-       //     }
-       // });
-    });
-
+    update_physics();
 }
 
 void MechanicsSystem::update_physics() {
-    // collisionActors_.clear();
-    //
-    // auto StartMin = m.minXYZ;
-    // auto StartMax = m.maxXYZ;
-    //
-    // // 计算世界坐标下的包围盒顶点
-    // std::vector<ktm::fvec3> Vertices1 = calculateVertices(StartMin, StartMax);
-    // ktm::fmat4x4 actorMatrix = m.modelMatrix;
-    // for (auto& v : Vertices1) {
-    //     v = ktm::fvec4(actorMatrix * ktm::fvec4(v, 1.0f)).xyz();
-    // }
-    //
-    // if (auto* caches = data_caches()) {
-    //     auto& model_cache = caches->get<Model>();
-    //     model_cache.safe_loop_foreach(other_model_cache_keys_, [&](std::shared_ptr<Model> otherModel) {
-    //         if (!otherModel) {
-    //             return;
-    //         }
-    //
-    //         auto otherStartMin = otherModel->minXYZ;
-    //         auto otherStartMax = otherModel->maxXYZ;
-    //
-    //         // 计算世界坐标下的包围盒顶点
-    //         std::vector<ktm::fvec3> Vertices2 = calculateVertices(otherStartMin, otherStartMax);
-    //         ktm::fmat4x4 otherModelMatrix = otherModel->modelMatrix;
-    //         for (auto& v : Vertices2) {
-    //             v = ktm::fvec4(otherModelMatrix * ktm::fvec4(v, 1.0f)).xyz();
-    //         }
-    //
-    //         // 碰撞检测
-    //         if (checkCollision(Vertices1, Vertices2)) {
-    //             CE_LOG_INFO("Collision detected!");
-    //             collisionActors_.insert(otherModel.get());
-    //             collisionActors_.insert(std::addressof(m));
-    //
-    //             // 碰撞响应
-    //             // 计算碰撞法线（从actor指向otherActor）
-    //             ktm::fvec3 center1 = (StartMin + StartMax) * 0.5f;
-    //             ktm::fvec3 center2 = (otherStartMin + otherStartMax) * 0.5f;
-    //             ktm::fvec3 normal = ktm::normalize(center2 - center1);
-    //
-    //             // 物体分离（防止穿透）
-    //             const float separation = 0.02f;
-    //             m.positon += ktm::fvec3(-normal * separation);
-    //             otherModel->positon += (normal * separation);
-    //
-    //             // 直接施加反弹位移
-    //             const float bounceStrength = 0.1f;  // 反弹强度
-    //             m.positon += ktm::fvec3(-normal * bounceStrength);
-    //             otherModel->positon += (normal * bounceStrength);
-    //
-    //             // 更新模型矩阵           /*变换矩阵 = 平移 * 旋转 * 缩放/     //先缩放在旋转后平移//
-    //             m.modelMatrix = ktm::fmat4x4(ktm::translate3d(m.positon) * ktm::translate3d(m.rotation) * ktm::translate3d(m.scale));
-    //             otherModel->modelMatrix = ktm::fmat4x4(ktm::translate3d(otherModel->positon) * ktm::translate3d(otherModel->rotation) * ktm::translate3d(otherModel->scale));
-    //         }
-    //     });
-    // }
+    auto* logger = context()->logger();
+
+    // 直接使用 SharedDataHub 进行碰撞检测，不需要额外的数据结构
+    SharedDataHub::instance().model_bounding_storage().for_each_read([&](const ModelBounding& bounding1) {
+        SharedDataHub::instance().model_bounding_storage().for_each_read([&](const ModelBounding& bounding2) {
+            // 跳过自己与自己的比较
+            if (&bounding1 == &bounding2) {
+                return;
+            }
+
+            // 获取第一个模型的变换矩阵和世界坐标顶点
+            std::vector<ktm::fvec3> vertices1;
+            bool found1 = SharedDataHub::instance().model_transform_storage().read(
+                bounding1.transform_handle,
+                [&](const ModelTransform& transform) {
+                    // 计算本地空间的包围盒顶点
+                    vertices1 = calculateVertices(bounding1.min_xyz, bounding1.max_xyz);
+
+                    // 变换到世界坐标
+                    for (auto& v : vertices1) {
+                        ktm::fvec4 v4;
+                        v4.x = v.x;
+                        v4.y = v.y;
+                        v4.z = v.z;
+                        v4.w = 1.0f;
+
+                        ktm::fvec4 world_v = transform.model_matrix * v4;
+                        v.x = world_v.x;
+                        v.y = world_v.y;
+                        v.z = world_v.z;
+                    }
+                });
+
+            if (!found1 || vertices1.empty()) {
+                return;
+            }
+
+            // 获取第二个模型的变换矩阵和世界坐标顶点
+            std::vector<ktm::fvec3> vertices2;
+            bool found2 = SharedDataHub::instance().model_transform_storage().read(
+                bounding2.transform_handle,
+                [&](const ModelTransform& transform) {
+                    vertices2 = calculateVertices(bounding2.min_xyz, bounding2.max_xyz);
+
+                    for (auto& v : vertices2) {
+                        ktm::fvec4 v4;
+                        v4.x = v.x;
+                        v4.y = v.y;
+                        v4.z = v.z;
+                        v4.w = 1.0f;
+
+                        ktm::fvec4 world_v = transform.model_matrix * v4;
+                        v.x = world_v.x;
+                        v.y = world_v.y;
+                        v.z = world_v.z;
+                    }
+                });
+
+            if (!found2 || vertices2.empty()) {
+                return;
+            }
+
+            // 碰撞检测
+            if (checkCollision(vertices1, vertices2)) {
+                if (logger) {
+                    logger->info("Collision detected!");
+                }
+
+                // 计算碰撞法线（从 bounding1 指向 bounding2）
+                ktm::fvec3 center1;
+                center1.x = (bounding1.min_xyz.x + bounding1.max_xyz.x) * 0.5f;
+                center1.y = (bounding1.min_xyz.y + bounding1.max_xyz.y) * 0.5f;
+                center1.z = (bounding1.min_xyz.z + bounding1.max_xyz.z) * 0.5f;
+
+                ktm::fvec3 center2;
+                center2.x = (bounding2.min_xyz.x + bounding2.max_xyz.x) * 0.5f;
+                center2.y = (bounding2.min_xyz.y + bounding2.max_xyz.y) * 0.5f;
+                center2.z = (bounding2.min_xyz.z + bounding2.max_xyz.z) * 0.5f;
+
+                ktm::fvec3 diff;
+                diff.x = center2.x - center1.x;
+                diff.y = center2.y - center1.y;
+                diff.z = center2.z - center1.z;
+
+                ktm::fvec3 normal = ktm::normalize(diff);
+
+                // 物体分离（防止穿透）
+                const float separation = 0.02f;
+                const float bounceStrength = 0.1f;
+
+                ktm::fvec3 total_offset;
+                total_offset.x = normal.x * (separation + bounceStrength);
+                total_offset.y = normal.y * (separation + bounceStrength);
+                total_offset.z = normal.z * (separation + bounceStrength);
+
+                // 更新第一个模型的位置（反方向）
+                bool updated1 = SharedDataHub::instance().model_transform_storage().write(
+                    bounding1.transform_handle,
+                    [&](ModelTransform& transform) {
+                        ktm::faffine3d offset_transform;
+                        ktm::fvec3 neg_offset;
+                        neg_offset.x = -total_offset.x;
+                        neg_offset.y = -total_offset.y;
+                        neg_offset.z = -total_offset.z;
+                        offset_transform.translate(neg_offset);
+
+                        ktm::fmat4x4 offset_matrix;
+                        offset_transform >> offset_matrix;
+
+                        transform.model_matrix = transform.model_matrix * offset_matrix;
+                    });
+
+                // 更新第二个模型的位置（正方向）
+                bool updated2 = SharedDataHub::instance().model_transform_storage().write(
+                    bounding2.transform_handle,
+                    [&](ModelTransform& transform) {
+                        ktm::faffine3d offset_transform;
+                        offset_transform.translate(total_offset);
+
+                        ktm::fmat4x4 offset_matrix;
+                        offset_transform >> offset_matrix;
+
+                        transform.model_matrix = transform.model_matrix * offset_matrix;
+                    });
+
+                if (!updated1 || !updated2) {
+                    if (logger) {
+                        logger->warning("MechanicsSystem: Failed to update transform after collision");
+                    }
+                }
+            }
+        });
+    });
 }
 
 void MechanicsSystem::shutdown() {
     auto* logger = context()->logger();
     logger->info("MechanicsSystem: Shutting down...");
 }
-
-}  // namespace Corona::Systems
+} // namespace Corona::Systems

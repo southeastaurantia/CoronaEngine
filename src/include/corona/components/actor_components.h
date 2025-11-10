@@ -11,9 +11,9 @@ struct ModelResource {
 };
 
 struct Actor {
-    ktm::fvec3 position;
-    ktm::fvec3 scale;
-    ktm::fvec3 rotation;
+    ktm::fvec3 position{0.0f, 0.0f, 0.0f};
+    ktm::fvec3 scale{1.0f, 1.0f, 1.0f};
+    ktm::fquat rotation = ktm::fquat::identity();
 };
 
 struct Light {
