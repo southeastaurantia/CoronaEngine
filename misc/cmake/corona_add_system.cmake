@@ -92,6 +92,9 @@ function(corona_add_system SYSTEM_NAME)
     # 设置 C++ 标准
     target_compile_features(${TARGET_NAME} PUBLIC cxx_std_20)
     
+    # 应用 Visual Studio source groups 以保持目录结构
+    corona_set_source_groups(${ALL_FILES})
+
     # 输出状态信息（除非设置了 QUIET）
     if(NOT SYS_QUIET)
       message(STATUS "[System] ${SYSTEM_NAME} system configured (target: ${TARGET_NAME})")
