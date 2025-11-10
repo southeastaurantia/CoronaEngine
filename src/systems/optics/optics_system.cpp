@@ -170,7 +170,8 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
             hardware_->computePipeline["pushConsts.uniformBufferIndex"] = hardware_->uniformBuffer.storeDescriptor();
 
             if (!SharedDataHub::instance().model_device_storage().empty()) {
-                hardware_->executor << hardware_->rasterizerPipeline(1920, 1080);
+                hardware_->executor << hardware_->rasterizerPipeline(1920, 1080)
+                                    << hardware_->executor.commit();
             }
 
             hardware_->executor
@@ -178,7 +179,7 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
                 << hardware_->executor.commit();
 
             if (hardware_->displayers_.contains(camera.surface)) {
-                hardware_->displayers_.at(camera.surface) = hardware_->finalOutputImage;
+                hardware_->displayers_.at(camera.surface).wait(hardware_->executor) << hardware_->finalOutputImage;
             }
         });
     });
