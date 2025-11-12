@@ -27,7 +27,9 @@ set(CORONA_EMBEDDED_PY_DIR "${PROJECT_SOURCE_DIR}/third_party/Python-3.13.7" CAC
 # ------------------------------------------------------------------------------
 # Python Discovery
 # ------------------------------------------------------------------------------
+set(Python3_ROOT_DIR "${CORONA_EMBEDDED_PY_DIR}" CACHE FILEPATH "Embedded Python3 root directory" FORCE)
 set(Python_ROOT_DIR "${CORONA_EMBEDDED_PY_DIR}" CACHE FILEPATH "Embedded Python root directory" FORCE)
+message(STATUS "[Python3] Using embedded Python3: ${Python3_ROOT_DIR}")
 message(STATUS "[Python] Using embedded Python: ${Python_ROOT_DIR}")
 
 find_package(Python COMPONENTS Interpreter Development Development.Module REQUIRED)
