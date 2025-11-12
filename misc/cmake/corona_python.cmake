@@ -40,7 +40,7 @@ endif()
 
 message(STATUS "[Python] Final chosen interpreter: ${Python_EXECUTABLE}")
 
-set(CORONA_PY_REQUIREMENTS_FILE "${PROJECT_SOURCE_DIR}/misc/pytools/requirements.txt")
+set(CORONA_PY_REQUIREMENTS_FILE "${PROJECT_SOURCE_DIR}/editor/CabbageEditor/requirements.txt")
 set(CORONA_PY_CHECK_SCRIPT "${PROJECT_SOURCE_DIR}/misc/pytools/check_pip_modules.py")
 
 # ------------------------------------------------------------------------------
@@ -118,13 +118,13 @@ function(corona_run_python_requirements_check)
     endif()
 endfunction()
 
-if(CORONA_CHECK_PY_DEPS)
+if(BUILD_CORONA_EDITOR)
     corona_run_python_requirements_check()
+    add_custom_target(check_python_deps
+            COMMAND "${Python_EXECUTABLE}" "${CORONA_PY_CHECK_SCRIPT}" -r "${CORONA_PY_REQUIREMENTS_FILE}" --no-unicode
+            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+            COMMENT "[Python] Manually trigger dependency check"
+            VERBATIM
+    )
 endif()
 
-add_custom_target(check_python_deps
-    COMMAND "${Python_EXECUTABLE}" "${CORONA_PY_CHECK_SCRIPT}" -r "${CORONA_PY_REQUIREMENTS_FILE}" --no-unicode
-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-    COMMENT "[Python] Manually trigger dependency check"
-    VERBATIM
-)
