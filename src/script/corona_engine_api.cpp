@@ -4,8 +4,6 @@
 
 #include <CabbageHardware.h>
 #include <ResourceManager.h>
-#include <corona/components/actor_components.h>
-#include <corona/components/scene_components.h>
 #include <corona/events/optics_system_events.h>
 #include <corona/kernel/core/kernel_context.h>
 #include <corona/kernel/event/i_event_bus.h>
@@ -18,39 +16,55 @@
 // ########################
 //          Scene
 // ########################
-CoronaEngineAPI::Scene::Scene(bool lightField) {
-    // TODO: Initialize scene based on lightField parameter
+Corona::API::Scene::Scene()
+    :handle_(0){
+    handle_ = SharedDataHub::instance().scene_storage().allocate([&](const SceneDevice& slot) {
+        slot.scene_handle = handle_;
+    });
 }
-
-CoronaEngineAPI::Scene::~Scene() {
+Corona::API::Scene::Scene(bool light_field)
+    :handle_(0){
+}
+Corona::API::Scene::~Scene() {
     if (handle_ != 0) {
         Corona::SharedDataHub::instance().scene_storage().deallocate(handle_);
+        handle_ = 0;
     }
 }
+void Corona::API::Scene::set_environment(Environment* env) {
 
-void CoronaEngineAPI::Scene::bind_environment() {
 }
-void CoronaEngineAPI::Scene::unbind_environment() {
+void Corona::API::Scene::remove_environment() {
+}
+void Corona::API::Scene::add_actor(Actor* actor) {
+}
+void Corona::API::Scene::remove_actor(Actor* actor) {
+}
+void Corona::API::Scene::remove_actor_at(std::size_t index) {
+}
+void Corona::API::Scene::clear_actors() {
+}
+Corona::API::Actor* Corona::API::Scene::get_actor(std::size_t index) {
+}
+const Corona::API::Actor* Corona::API::Scene::get_actor(std::size_t index) const {
+}
+bool Corona::API::Scene::has_actor(const Actor* actor) const {
+}
+void Corona::API::Scene::add_viewport(Viewport* viewport) {
+}
+void Corona::API::Scene::remove_viewport(Viewport* viewport) {
+}
+void Corona::API::Scene::remove_viewport_at(std::size_t index) {
+}
+void Corona::API::Scene::clear_viewports() {
+}
+Corona::API::Viewport* Corona::API::Scene::get_viewport(std::size_t index) {
+}
+const Corona::API::Viewport* Corona::API::Scene::get_viewport(std::size_t index) const {
+}
+bool Corona::API::Scene::has_viewport(const Viewport* viewport) const {
 }
 
-void CoronaEngineAPI::Scene::add_viewport(const Viewport& viewport) const {
-}
-void CoronaEngineAPI::Scene::remove_viewport(const Viewport& viewport) const {
-}
-
-void CoronaEngineAPI::Scene::add_actor(const Actor& actor) const {
-    // TODO: Implement actor management without ECS
-    if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
-        logger->warning("[CoronaEngineAPI::Scene::add_actor] Not implemented yet (ECS removed)");
-    }
-}
-
-void CoronaEngineAPI::Scene::remove_actor(const Actor& actor) const {
-    // TODO: Implement actor removal without ECS
-    if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
-        logger->warning("[CoronaEngineAPI::Scene::remove_actor] Not implemented yet (ECS removed)");
-    }
-}
 
 // ########################
 //        Geometry

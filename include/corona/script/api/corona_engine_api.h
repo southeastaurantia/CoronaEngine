@@ -62,7 +62,6 @@ class Mechanics {
     // Geometry access
     [[nodiscard]] const Geometry* get_geometry() const { return geometry_; }
     [[nodiscard]] Geometry* get_geometry() { return geometry_; }
-    [[nodiscard]] bool is_bound() const { return geometry_ != nullptr; }
 
     // Physics operations (直接操作绑定的 Geometry)
     void move(const std::array<float, 3>& direction);
@@ -87,7 +86,6 @@ class Optics {
     // Geometry access
     [[nodiscard]] const Geometry* get_geometry() const { return geometry_; }
     [[nodiscard]] Geometry* get_geometry() { return geometry_; }
-    [[nodiscard]] bool is_bound() const { return geometry_ != nullptr; }
 
     // Rendering properties
     void set_material(const std::string& material_name);
@@ -112,7 +110,6 @@ class Acoustics {
     // Geometry access
     [[nodiscard]] const Geometry* get_geometry() const { return geometry_; }
     [[nodiscard]] Geometry* get_geometry() { return geometry_; }
-    [[nodiscard]] bool is_bound() const { return geometry_ != nullptr; }
 
     // Audio properties
     void play_sound(const std::string& sound_path);
@@ -135,7 +132,6 @@ class Kinematics {
     // Geometry access
     [[nodiscard]] const Geometry* get_geometry() const { return geometry_; }
     [[nodiscard]] Geometry* get_geometry() { return geometry_; }
-    [[nodiscard]] bool is_bound() const { return geometry_ != nullptr; }
 
     // Animation control
     void set_animation(std::uint32_t animation_index);
@@ -145,7 +141,6 @@ class Kinematics {
     [[nodiscard]] std::uintptr_t get_animation_handle() const { return animation_handle_; }
     [[nodiscard]] std::uint32_t get_animation_index() const { return animation_index_; }
     [[nodiscard]] float get_current_time() const { return current_time_; }
-    [[nodiscard]] bool is_active() const { return active_; }
 
    private:
     Geometry* geometry_;
@@ -164,89 +159,18 @@ class Actor {
     Actor();
     virtual ~Actor();
 
-    // ========== Geometry 管理（支持多个） ==========
-    std::size_t add_geometry(const Geometry& geo);
-    std::size_t add_geometry(Geometry&& geo);
-    void remove_geometry(std::size_t index);
+    struct Profile {
+        std::unique_ptr<Optics> optics;
+        std::unique_ptr<Acoustics> acoustics;
+        std::unique_ptr<Mechanics> mechanics;
+        std::unique_ptr<Kinematics> kinematics;
+    }profile;
 
-    [[nodiscard]] Geometry* get_geometry(std::size_t index);
-    [[nodiscard]] const Geometry* get_geometry(std::size_t index) const;
-    [[nodiscard]] std::size_t geometry_count() const { return geometries_.size(); }
-
-    // ========== Mechanics 组件管理（支持多套） ==========
-    std::size_t add_mechanics(const Mechanics& mech);
-    void remove_mechanics(std::size_t index);
-    void set_active_mechanics(std::size_t index);
-
-    [[nodiscard]] Mechanics* get_mechanics(std::size_t index);
-    [[nodiscard]] const Mechanics* get_mechanics(std::size_t index) const;
-    [[nodiscard]] Mechanics* get_active_mechanics();
-    [[nodiscard]] const Mechanics* get_active_mechanics() const;
-    [[nodiscard]] std::size_t mechanics_count() const { return mechanics_.size(); }
-    [[nodiscard]] std::size_t get_active_mechanics_index() const { return active_mechanics_; }
-
-    // ========== Optics 组件管理（支持多套） ==========
-    std::size_t add_optics(const Optics& opt);
-    void remove_optics(std::size_t index);
-    void set_active_optics(std::size_t index);
-
-    [[nodiscard]] Optics* get_optics(std::size_t index);
-    [[nodiscard]] const Optics* get_optics(std::size_t index) const;
-    [[nodiscard]] Optics* get_active_optics();
-    [[nodiscard]] const Optics* get_active_optics() const;
-    [[nodiscard]] std::size_t optics_count() const { return optics_.size(); }
-    [[nodiscard]] std::size_t get_active_optics_index() const { return active_optics_; }
-
-    // ========== Kinematics 组件管理（支持多套） ==========
-    std::size_t add_kinematics(const Kinematics& kin);
-    void remove_kinematics(std::size_t index);
-    void set_active_kinematics(std::size_t index);
-
-    [[nodiscard]] Kinematics* get_kinematics(std::size_t index);
-    [[nodiscard]] const Kinematics* get_kinematics(std::size_t index) const;
-    [[nodiscard]] Kinematics* get_active_kinematics();
-    [[nodiscard]] const Kinematics* get_active_kinematics() const;
-    [[nodiscard]] std::size_t kinematics_count() const { return kinematics_.size(); }
-    [[nodiscard]] std::size_t get_active_kinematics_index() const { return active_kinematics_; }
-
-    // ========== Acoustics 组件管理（支持多套） ==========
-    std::size_t add_acoustics(const Acoustics& aco);
-    void remove_acoustics(std::size_t index);
-    void set_active_acoustics(std::size_t index);
-
-    [[nodiscard]] Acoustics* get_acoustics(std::size_t index);
-    [[nodiscard]] const Acoustics* get_acoustics(std::size_t index) const;
-    [[nodiscard]] Acoustics* get_active_acoustics();
-    [[nodiscard]] const Acoustics* get_active_acoustics() const;
-    [[nodiscard]] std::size_t acoustics_count() const { return acoustics_.size(); }
-    [[nodiscard]] std::size_t get_active_acoustics_index() const { return active_acoustics_; }
-
-    // ========== 配置集管理（快速切换） ==========
-    struct ComponentProfile {
-        std::size_t mechanics_index{0};
-        std::size_t optics_index{0};
-        std::size_t kinematics_index{0};
-        std::size_t acoustics_index{0};
-    };
-
-    void activate_profile(const ComponentProfile& profile);
-    [[nodiscard]] ComponentProfile get_current_profile() const;
+    void set_profile(const Profile& profile);
+    [[nodiscard]] Profile get_profile();
 
    private:
-    // Actor 拥有多个 Geometry
-    std::vector<Geometry> geometries_;
-
-    // Actor 拥有多套组件
-    std::vector<Mechanics> mechanics_;
-    std::vector<Optics> optics_;
-    std::vector<Kinematics> kinematics_;
-    std::vector<Acoustics> acoustics_;
-
-    // 当前激活的组件索引
-    std::size_t active_mechanics_{0};
-    std::size_t active_optics_{0};
-    std::size_t active_kinematics_{0};
-    std::size_t active_acoustics_{0};
+    std::vector<Profile> profiles_;
 };
 
 // ============================================================================
@@ -319,26 +243,14 @@ class Viewport {
 
     // ========== 视口属性 ==========
     void set_size(int width, int height);
-    void set_position(int x, int y);
     void set_viewport_rect(int x, int y, int width, int height);
 
     [[nodiscard]] int get_width() const { return width_; }
     [[nodiscard]] int get_height() const { return height_; }
-    [[nodiscard]] int get_x() const { return x_; }
-    [[nodiscard]] int get_y() const { return y_; }
     [[nodiscard]] float get_aspect_ratio() const;
 
     // ========== 渲染表面 ==========
     void set_surface(void* surface);
-    [[nodiscard]] void* get_surface() const { return surface_; }
-    [[nodiscard]] bool has_surface() const { return surface_ != nullptr; }
-
-    // ========== 渲染控制 ==========
-    void set_clear_color(const std::array<float, 4>& color);
-    [[nodiscard]] std::array<float, 4> get_clear_color() const { return clear_color_; }
-
-    void set_enabled(bool enabled) { enabled_ = enabled; }
-    [[nodiscard]] bool is_enabled() const { return enabled_; }
 
     // ========== 交互功能 ==========
     Actor* pick_actor_at_pixel(int x, int y) const;
@@ -354,13 +266,9 @@ class Viewport {
     // 视口属性
     int width_{1960};
     int height_{1080};
-    int x_{0};
-    int y_{0};
 
     // 渲染属性
     void* surface_{nullptr};
-    std::array<float, 4> clear_color_{0.0f, 0.0f, 0.0f, 1.0f};
-    bool enabled_{true};
 };
 
 // ============================================================================

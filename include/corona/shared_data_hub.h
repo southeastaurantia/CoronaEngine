@@ -38,18 +38,44 @@ struct ModelTransform {
     ktm::fmat4x4 model_matrix;
 };
 
-struct ModelBounding {
-    std::uintptr_t transform_handle{};
-    ktm::fvec3 max_xyz;
-    ktm::fvec3 min_xyz;
-};
-
 struct ModelDevice {
     std::uintptr_t model_handle{};
     std::uintptr_t transform_handle{};
     std::uintptr_t animation_handle{};
     HardwareBuffer bone_matrix_buffer;
     std::vector<MeshDevice> devices;
+};
+
+struct GeometryDevice {
+    std::uintptr_t transform_handle{};
+};
+
+struct KinematicsDevice {
+
+};
+
+struct MechanicsDevice {
+    std::uintptr_t geometry_device{};
+    ktm::fvec3 max_xyz;
+    ktm::fvec3 min_xyz;
+};
+
+struct AcousticsDevice {
+
+};
+
+struct OpticsDevice {
+
+};
+
+struct ProfileDevice {
+    std::uintptr_t optics_device{};
+    std::uintptr_t acoustics_device{};
+    std::uintptr_t mechanics_device{};
+    std::uintptr_t kinematics_device{};
+};
+
+struct ActorDevice {
 };
 
 struct CameraDevice {
@@ -61,14 +87,18 @@ struct CameraDevice {
     ktm::fmat4x4 view_proj_matrix;
 };
 
-struct LightDevice {
+struct ViewportDevice {
+    std::uintptr_t camera{};
+};
 
+struct EnvironmentDevice {
+    ktm::fvec3 sun_position;
 };
 
 struct SceneDevice {
-    std::uintptr_t environment_handle{};
-    std::vector<std::uintptr_t> viewports;
-    std::vector<ModelDevice> actors;
+    std::uintptr_t environment{};
+    std::vector<ActorDevice> actors_;
+    std::vector<ViewportDevice> viewports_;
 };
 
 class SharedDataHub {
