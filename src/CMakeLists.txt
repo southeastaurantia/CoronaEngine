@@ -10,19 +10,19 @@
 message(STATUS "[CoronaEngine] Discovering system modules...")
 
 file(GLOB _CORONA_SYSTEM_DIRS LIST_DIRECTORIES true
-    "${CMAKE_CURRENT_SOURCE_DIR}/systems/*")
+        "${CMAKE_CURRENT_SOURCE_DIR}/systems/*")
 
-foreach(_system_dir IN LISTS _CORONA_SYSTEM_DIRS)
-    if(IS_DIRECTORY "${_system_dir}")
+foreach (_system_dir IN LISTS _CORONA_SYSTEM_DIRS)
+    if (IS_DIRECTORY "${_system_dir}")
         get_filename_component(_system_name "${_system_dir}" NAME)
 
-        if(EXISTS "${_system_dir}/CMakeLists.txt")
+        if (EXISTS "${_system_dir}/CMakeLists.txt")
             add_subdirectory("systems/${_system_name}")
-        else()
+        else ()
             message(WARNING "[CoronaEngine] System '${_system_name}' has no CMakeLists.txt, skipping")
-        endif()
-    endif()
-endforeach()
+        endif ()
+    endif ()
+endforeach ()
 
 unset(_CORONA_SYSTEM_DIRS)
 unset(_system_dir)
@@ -37,38 +37,38 @@ add_subdirectory(script)
 # CoronaEngine 核心库
 # ==============================================================================
 add_library(CoronaEngine STATIC
-    engine.cpp
-    shared_data_hub.cpp
-    ${PROJECT_SOURCE_DIR}/include/corona/engine.h
-    ${PROJECT_SOURCE_DIR}/include/corona/shared_data_hub.h
-    ${PROJECT_SOURCE_DIR}/include/corona/components/actor_components.h
-    ${PROJECT_SOURCE_DIR}/include/corona/components/scene_components.h
-    ${PROJECT_SOURCE_DIR}/include/corona/events/acoustics_system_events.h
-    ${PROJECT_SOURCE_DIR}/include/corona/events/animation_system_events.h
-    ${PROJECT_SOURCE_DIR}/include/corona/events/display_system_events.h
-    ${PROJECT_SOURCE_DIR}/include/corona/events/engine_events.h
-    ${PROJECT_SOURCE_DIR}/include/corona/events/geometry_system_events.h
-    ${PROJECT_SOURCE_DIR}/include/corona/events/mechanics_system_events.h
-    ${PROJECT_SOURCE_DIR}/include/corona/events/optics_system_events.h
+        engine.cpp
+        shared_data_hub.cpp
+        ${PROJECT_SOURCE_DIR}/include/corona/engine.h
+        ${PROJECT_SOURCE_DIR}/include/corona/shared_data_hub.h
+        ${PROJECT_SOURCE_DIR}/include/corona/components/actor_components.h
+        ${PROJECT_SOURCE_DIR}/include/corona/components/scene_components.h
+        ${PROJECT_SOURCE_DIR}/include/corona/events/acoustics_system_events.h
+        ${PROJECT_SOURCE_DIR}/include/corona/events/kinematics_system_events.h
+        ${PROJECT_SOURCE_DIR}/include/corona/events/display_system_events.h
+        ${PROJECT_SOURCE_DIR}/include/corona/events/engine_events.h
+        ${PROJECT_SOURCE_DIR}/include/corona/events/geometry_system_events.h
+        ${PROJECT_SOURCE_DIR}/include/corona/events/mechanics_system_events.h
+        ${PROJECT_SOURCE_DIR}/include/corona/events/optics_system_events.h
 )
 
 add_library(corona::engine ALIAS CoronaEngine)
 
 # 设置包含目录
 target_include_directories(CoronaEngine PUBLIC
-    ${PROJECT_SOURCE_DIR}/include
+        ${PROJECT_SOURCE_DIR}/include
 )
 
 # 链接依赖
 target_link_libraries(CoronaEngine PUBLIC
-    corona::kernel
-    corona::system::acoustics
-    corona::system::optics
-    corona::system::mechanics
-    corona::system::geometry
-    corona::system::animation
-    corona::system::display
-    corona::script::python
+        corona::kernel
+        corona::system::acoustics
+        corona::system::optics
+        corona::system::mechanics
+        corona::system::geometry
+        corona::system::animation
+        corona::system::display
+        corona::script::python
 )
 
 # 设置 C++ 标准
@@ -80,8 +80,8 @@ target_compile_features(CoronaEngine PUBLIC cxx_std_20)
 corona_configure_runtime_deps(CoronaEngine)
 
 # 配置编辑器资源
-if(BUILD_CORONA_EDITOR)
+if (BUILD_CORONA_EDITOR)
     corona_configure_corona_editor(CoronaEngine)
-endif()
+endif ()
 
 message(STATUS "[CoronaEngine] Core engine library configured")

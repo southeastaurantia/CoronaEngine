@@ -1,10 +1,10 @@
-#include <corona/events/animation_system_events.h>
 #include <corona/events/engine_events.h>
+#include <corona/events/kinematics_system_events.h>
 #include <corona/kernel/core/i_logger.h>
 #include <corona/kernel/event/i_event_bus.h>
 #include <corona/kernel/event/i_event_stream.h>
 #include <corona/shared_data_hub.h>
-#include <corona/systems/animation/animation_system.h>
+#include <corona/systems/kinematics/kinematics_system.h>
 
 #include "Animation.h"
 #include "Bone.h"
@@ -175,17 +175,17 @@ void calculate_bone_transform(
 }  // namespace Corona
 
 namespace Corona::Systems {
-bool AnimationSystem::initialize(Kernel::ISystemContext* ctx) {
+bool KinematicsSystem::initialize(Kernel::ISystemContext* ctx) {
     auto* logger = ctx->logger();
     logger->info("AnimationSystem: Initializing...");
     return true;
 }
 
-void AnimationSystem::update() {
+void KinematicsSystem::update() {
     update_animation();
 }
 
-void AnimationSystem::update_animation() {
+void KinematicsSystem::update_animation() {
     const float dt = 0.016f;
 
     // 正确使用 for_each_write 来修改 AnimationState
@@ -194,7 +194,7 @@ void AnimationSystem::update_animation() {
     });
 }
 
-void AnimationSystem::update_animation_state(AnimationState& state, float dt) {
+void KinematicsSystem::update_animation_state(AnimationState& state, float dt) {
     if (state.model_handle == 0 || !state.active) {
         return;
     }
@@ -259,7 +259,7 @@ void AnimationSystem::update_animation_state(AnimationState& state, float dt) {
     });
 }
 
-void AnimationSystem::shutdown() {
+void KinematicsSystem::shutdown() {
     auto* logger = context()->logger();
     logger->info("AnimationSystem: Shutting down...");
 }

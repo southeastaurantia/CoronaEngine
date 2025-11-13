@@ -5,7 +5,7 @@
 
 
 corona_add_system(animation
-    SOURCES animation_system.cpp
+    SOURCES kinematics_system.cpp
     DEPENDENCIES
         CoronaResource::Resource
         CabbageHardware

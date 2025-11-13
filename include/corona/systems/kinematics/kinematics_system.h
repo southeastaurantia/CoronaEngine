@@ -1,6 +1,6 @@
 #pragma once
 
-#include <corona/events/animation_system_events.h>
+#include <corona/events/kinematics_system_events.h>
 #include <corona/kernel/event/i_event_bus.h>
 #include <corona/kernel/event/i_event_stream.h>
 #include <corona/kernel/system/system_base.h>
@@ -19,13 +19,13 @@ namespace Corona::Systems {
  * 负责管理和更新所有动画状态，包括骨骼动画、变换动画等。
  * 运行在独立线程，以 60 FPS 更新动画逻辑。
  */
-class AnimationSystem : public Kernel::SystemBase {
+class KinematicsSystem : public Kernel::SystemBase {
    public:
-    AnimationSystem() {
+    KinematicsSystem() {
         set_target_fps(60);  // 动画系统运行在 60 FPS
     }
 
-    ~AnimationSystem() override = default;
+    ~KinematicsSystem() override = default;
 
     // ========================================
     // ISystem 接口实现
