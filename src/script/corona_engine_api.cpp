@@ -14,164 +14,151 @@
 
 #include "Model.h"
 
-entt::registry CoronaEngineAPI::registry_;
 
 // ########################
 //          Scene
 // ########################
-CoronaEngineAPI::Scene::Scene(bool lightField)
-    : scene_id_(registry_.create()) {
-    registry_.emplace<RenderTag>(scene_id_);
-
-    scene_handle_ = Corona::SharedDataHub::instance().scene_storage().allocate([&](Corona::SceneDevice& slot) {
-        slot.sun_direction.x = 0.0f;
-        slot.sun_direction.y = -1.0f;
-        slot.sun_direction.z = 0.0f;
-    });
+CoronaEngineAPI::Scene::Scene(bool lightField) {
+    // TODO: Initialize scene based on lightField parameter
 }
 
 CoronaEngineAPI::Scene::~Scene() {
-    if (scene_handle_ != 0) {
-        Corona::SharedDataHub::instance().scene_storage().deallocate(scene_handle_);
-    }
-    registry_.destroy(scene_id_);
-}
-
-void CoronaEngineAPI::Scene::set_sun_direction(ktm::fvec3 direction) const {
-    registry_.emplace_or_replace<Corona::Components::SunDirection>(scene_id_, Corona::Components::SunDirection{direction});
-    bool info = Corona::SharedDataHub::instance().scene_storage().write(scene_handle_, [&](Corona::SceneDevice& slot) {
-        slot.sun_direction = direction;
-    });
-    if (!info) {
-        if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
-            logger->warning("[CoronaEngineAPI::Scene::set_sun_direction] 更新场景数据失败");
-        }
+    if (handle_ != 0) {
+        Corona::SharedDataHub::instance().scene_storage().deallocate(handle_);
     }
 }
 
-void CoronaEngineAPI::Scene::add_camera(const Camera& camera) const {
-    auto& storage = registry_.get_or_emplace<Corona::Components::Storage>(scene_id_);
-    storage.cameras.push_back(camera.get_id());
-
-    std::uintptr_t handle = camera.get_handle_id();
-    if (handle == 0) {
-        if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
-            logger->warning("[CoronaEngineAPI::Scene::add_camera] Camera 句柄无效，跳过添加");
-        }
-        return;
-    }
-
-    bool info = Corona::SharedDataHub::instance().scene_storage().write(scene_handle_, [&](Corona::SceneDevice& slot) {
-        slot.cameras.push_back(handle);
-    });
-
-    if (!info) {
-        if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
-            logger->warning("[CoronaEngineAPI::Scene::add_camera] 更新场景数据失败");
-        }
-    }
+void CoronaEngineAPI::Scene::bind_environment() {
+}
+void CoronaEngineAPI::Scene::unbind_environment() {
 }
 
-void CoronaEngineAPI::Scene::add_light(const Light& light) const {
-    auto& storage = registry_.get_or_emplace<Corona::Components::Storage>(scene_id_);
-    storage.lights.push_back(light.get_id());
-
-    std::uintptr_t handle = light.get_handle_id();
-    if (handle == 0) {
-        if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
-            logger->warning("[CoronaEngineAPI::Scene::add_light] Light 句柄无效，跳过添加");
-        }
-        return;
-    }
-
-    bool info = Corona::SharedDataHub::instance().scene_storage().write(scene_handle_, [&](Corona::SceneDevice& slot) {
-        slot.lights.push_back(handle);
-    });
-
-    if (!info) {
-        if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
-            logger->warning("[CoronaEngineAPI::Scene::add_light] 更新场景数据失败");
-        }
-    }
+void CoronaEngineAPI::Scene::add_viewport(const Viewport& viewport) const {
+}
+void CoronaEngineAPI::Scene::remove_viewport(const Viewport& viewport) const {
 }
 
 void CoronaEngineAPI::Scene::add_actor(const Actor& actor) const {
-    auto& storage = registry_.get_or_emplace<Corona::Components::Storage>(scene_id_);
-    storage.actors.push_back(actor.get_id());
-
-    std::uintptr_t handle = actor.get_handle_id();
-    if (handle == 0) {
-        if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
-            logger->warning("[CoronaEngineAPI::Scene::add_actor] Actor 句柄无效，跳过添加");
-        }
-        return;
-    }
-
-    bool info = Corona::SharedDataHub::instance().scene_storage().write(scene_handle_, [&](Corona::SceneDevice& slot) {
-        slot.actors.push_back(handle);
-    });
-
-    if (!info) {
-        if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
-            logger->warning("[CoronaEngineAPI::Scene::add_actor] 更新场景数据失败");
-        }
-    }
-}
-
-void CoronaEngineAPI::Scene::remove_camera(const Camera& camera) const {
-    auto& storage = registry_.get_or_emplace<Corona::Components::Storage>(scene_id_);
-    auto cam_id = camera.get_id();
-    std::erase(storage.cameras, cam_id);
-
-    std::uintptr_t handle = camera.get_handle_id();
-    if (handle != 0) {
-        bool info = Corona::SharedDataHub::instance().scene_storage().write(scene_handle_, [&](Corona::SceneDevice& slot) {
-            std::erase(slot.cameras, handle);
-        });
-
-        if (!info) {
-            if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
-                logger->warning("[CoronaEngineAPI::Scene::remove_camera] 更新场景数据失败");
-            }
-        }
-    }
-}
-
-void CoronaEngineAPI::Scene::remove_light(const Light& light) const {
-    auto& storage = registry_.get_or_emplace<Corona::Components::Storage>(scene_id_);
-    auto light_id = light.get_id();
-    std::erase(storage.lights, light_id);
-
-    std::uintptr_t handle = light.get_handle_id();
-    if (handle != 0) {
-        bool info = Corona::SharedDataHub::instance().scene_storage().write(scene_handle_, [&](Corona::SceneDevice& slot) {
-            std::erase(slot.lights, handle);
-        });
-
-        if (!info) {
-            if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
-                logger->warning("[CoronaEngineAPI::Scene::remove_light] 更新场景数据失败");
-            }
-        }
+    // TODO: Implement actor management without ECS
+    if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
+        logger->warning("[CoronaEngineAPI::Scene::add_actor] Not implemented yet (ECS removed)");
     }
 }
 
 void CoronaEngineAPI::Scene::remove_actor(const Actor& actor) const {
-    auto& storage = registry_.get_or_emplace<Corona::Components::Storage>(scene_id_);
-    auto actor_id = actor.get_id();
-    std::erase(storage.actors, actor_id);
+    // TODO: Implement actor removal without ECS
+    if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
+        logger->warning("[CoronaEngineAPI::Scene::remove_actor] Not implemented yet (ECS removed)");
+    }
+}
 
-    std::uintptr_t handle = actor.get_handle_id();
-    if (handle != 0) {
-        bool info = Corona::SharedDataHub::instance().scene_storage().write(scene_handle_, [&](Corona::SceneDevice& slot) {
-            std::erase(slot.actors, handle);
-        });
+// ########################
+//        Geometry
+// ########################
+// Internal data storage for Geometry (without ECS)
+struct GeometryData {
+    std::array<float, 3> position{0.0f, 0.0f, 0.0f};
+    std::array<float, 3> scale{1.0f, 1.0f, 1.0f};
+    std::array<std::array<float,4>, 4> rotation = {{{1.0f, 0.0f, 0.0f, 0.0f},;
+                                              {0.0f, 1.0f, 0.0f, 0.0f},
+                                              {0.0f, 0.0f, 1.0f, 0.0f},
+                                              {0.0f, 0.0f, 0.0f, 1.0f}}};
+};
 
-        if (!info) {
-            if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
-                logger->warning("[CoronaEngineAPI::Scene::remove_actor] 更新场景数据失败");
-            }
-        }
+// Static storage map for geometry data
+static std::unordered_map<const CoronaEngineAPI::Geometry*, GeometryData> geometry_data_map;
+
+CoronaEngineAPI::Geometry::Geometry() {
+    geometry_data_map[this] = GeometryData{};
+}
+
+CoronaEngineAPI::Geometry::~Geometry() {
+    geometry_data_map.erase(this);
+}
+
+void CoronaEngineAPI::Geometry::set_position(const std::array<float, 3>& position) {
+    auto& data = geometry_data_map[this];
+    data.position[0] = position[0];
+    data.position[1] = position[1];
+    data.position[2] = position[2];
+}
+
+void CoronaEngineAPI::Geometry::set_rotation(const std::array<float, 3>& euler) {
+    auto& data = geometry_data_map[this];
+    ktm::fquat qx = ktm::fquat::from_angle_x(euler[0]);
+    ktm::fquat qy = ktm::fquat::from_angle_y(euler[1]);
+    ktm::fquat qz = ktm::fquat::from_angle_z(euler[2]);
+    data.rotation = qz * qy * qx;
+}
+
+void CoronaEngineAPI::Geometry::set_scale(const std::array<float, 3>& size) {
+    auto& data = geometry_data_map[this];
+    data.scale[0] = size[0];
+    data.scale[1] = size[1];
+    data.scale[2] = size[2];
+}
+
+std::array<float, 3> CoronaEngineAPI::Geometry::get_position() const {
+    auto& data = geometry_data_map[this];
+    return {data.position[0], data.position[1], data.position[2]};
+}
+
+std::array<float, 3> CoronaEngineAPI::Geometry::get_rotation() const {
+    // TODO: Implement proper quaternion to euler conversion for ktm library
+    if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
+        logger->warning("[CoronaEngineAPI::Geometry::get_rotation] Quaternion to euler conversion not fully implemented");
+    }
+    return {0.0f, 0.0f, 0.0f};
+}
+
+std::array<float, 3> CoronaEngineAPI::Geometry::get_scale() const {
+    auto& data = geometry_data_map[this];
+    return {data.scale[0], data.scale[1], data.scale[2]};
+}
+
+// ########################
+//        Mechanics
+// ########################
+CoronaEngineAPI::Mechanics::Mechanics() {
+}
+
+CoronaEngineAPI::Mechanics::~Mechanics() {
+}
+
+
+// ########################
+//        Optics
+// ########################
+CoronaEngineAPI::Optics::Optics() {
+    // Optics component for rendering/lighting properties
+}
+
+CoronaEngineAPI::Optics::~Optics() {
+}
+
+// ########################
+//        Acoustics
+// ########################
+CoronaEngineAPI::Acoustics::Acoustics() {
+    // Acoustics component for audio properties
+}
+
+CoronaEngineAPI::Acoustics::~Acoustics() {
+}
+
+// ########################
+//        Kinematics
+// ########################
+CoronaEngineAPI::Kinematics::Kinematics() {
+}
+
+CoronaEngineAPI::Kinematics::~Kinematics() {
+}
+
+void CoronaEngineAPI::Kinematics::set_skeletal_anim() {
+    // TODO: Implement skeletal animation control
+    if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
+        logger->warning("[CoronaEngineAPI::Kinematics::set_skeletal_anim] Not implemented yet");
     }
 }
 
@@ -179,8 +166,7 @@ void CoronaEngineAPI::Scene::remove_actor(const Actor& actor) const {
 //          Actor
 // ########################
 CoronaEngineAPI::Actor::Actor(const std::string& path)
-    : animation_handle_(0), model_handle_(0), matrix_handle_(0), bounding_handle_(0), device_handle_(0) {
-    registry_.emplace<RenderTag>(id_);
+    {
     auto model_id = Corona::ResourceId::from("model", path);
     auto model_ptr = std::static_pointer_cast<Corona::Model>(Corona::ResourceManager::instance().load_once(model_id));
     if (!model_ptr) {
@@ -190,7 +176,7 @@ CoronaEngineAPI::Actor::Actor(const std::string& path)
         return;
     }
 
-    auto& actor = registry_.emplace<Corona::Components::Actor>(id_);
+    auto& actor = registry_.emplace<Corona::Components::Geometry>(id_);
 
     model_handle_ = Corona::SharedDataHub::instance().model_storage().allocate([&](std::shared_ptr<Corona::Model>& slot) {
         slot = model_ptr;
@@ -204,7 +190,7 @@ CoronaEngineAPI::Actor::Actor(const std::string& path)
     }
 
     if (model_ptr->m_BoneCounter > 0) {
-        registry_.emplace<AnimationTag>(id_);
+        registry_.emplace<KinematicsTag>(id_);
     }
 
     animation_handle_ = Corona::SharedDataHub::instance().animation_state_storage().allocate([&](Corona::AnimationState& slot) {
@@ -301,64 +287,10 @@ CoronaEngineAPI::Actor::~Actor() {
     if (model_handle_) {
         Corona::SharedDataHub::instance().model_storage().deallocate(model_handle_);
     }
-    registry_.destroy(id_);
 }
 
 std::uintptr_t CoronaEngineAPI::Actor::get_handle_id() const {
     return model_handle_;
-}
-
-void CoronaEngineAPI::Actor::move(ktm::fvec3 pos) const {
-    auto& actor = registry_.get<Corona::Components::Actor>(id_);
-    actor.position = pos;
-    bool info = Corona::SharedDataHub::instance().model_transform_storage().write(matrix_handle_, [&](Corona::ModelTransform& slot) {
-        ktm::faffine3d affine;
-        affine.translate(actor.position).rotate(actor.rotation).scale(actor.scale);
-        affine >> slot.model_matrix;
-    });
-
-    if (!info) {
-        if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
-            logger->error("[CoronaEngineAPI::Actor::move] model_device_storage error");
-        }
-    }
-}
-
-void CoronaEngineAPI::Actor::rotate(ktm::fvec3 euler) const {
-    auto& actor = registry_.get<Corona::Components::Actor>(id_);
-    ktm::fquat qx = ktm::fquat::from_angle_x(euler.x);
-    ktm::fquat qy = ktm::fquat::from_angle_y(euler.y);
-    ktm::fquat qz = ktm::fquat::from_angle_z(euler.z);
-
-    actor.rotation = qz * qy * qx;
-
-    bool info = Corona::SharedDataHub::instance().model_transform_storage().write(matrix_handle_, [&](Corona::ModelTransform& slot) {
-        ktm::faffine3d affine;
-        affine.translate(actor.position).rotate(actor.rotation).scale(actor.scale);
-        affine >> slot.model_matrix;
-    });
-
-    if (!info) {
-        if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
-            logger->error("[CoronaEngineAPI::Actor::rotate] model_device_storage error");
-        }
-    }
-}
-
-void CoronaEngineAPI::Actor::scale(ktm::fvec3 size) const {
-    auto& actor = registry_.get<Corona::Components::Actor>(id_);
-    actor.scale = size;
-    bool info = Corona::SharedDataHub::instance().model_transform_storage().write(matrix_handle_, [&](Corona::ModelTransform& slot) {
-        ktm::faffine3d affine;
-        affine.translate(actor.position).rotate(actor.rotation).scale(actor.scale);
-        affine >> slot.model_matrix;
-    });
-
-    if (!info) {
-        if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
-            logger->error("[CoronaEngineAPI::Actor::scale] model_device_storage error");
-        }
-    }
 }
 
 // ########################
@@ -378,25 +310,21 @@ CoronaEngineAPI::Camera::Camera()
     world_up.z = 0.0f;
     float fov = 45.0f;
 
-    registry_.emplace<Corona::Components::Camera>(id_, Corona::Components::Camera{position, forward, world_up, fov});
-
     handle_ = Corona::SharedDataHub::instance().camera_storage().allocate([&](Corona::CameraDevice& slot) {
         slot.eye_position = position;
         slot.eye_dir = ktm::normalize(forward);
-        slot.eye_view_matrix = ktm::look_to_lh(position, ktm::normalize(forward), world_up);
+        slot.eye_view_matrix = ktm::look_at_lh(position, ktm::normalize(forward), world_up);
         slot.eye_proj_matrix = ktm::perspective_lh(ktm::radians(fov), 16.0f / 9.0f, 0.1f, 100.0f);
         slot.view_proj_matrix = slot.eye_proj_matrix * slot.eye_view_matrix;
     });
 }
-
-CoronaEngineAPI::Camera::Camera(const ktm::fvec3& position, const ktm::fvec3& forward, const ktm::fvec3& world_up, float fov)
+CoronaEngineAPI::Camera::Camera(const std::array<float, 3>& position, const std::array<float, 3>& forward, const std::array<float, 3>& world_up, float fov)
     : handle_(0) {
-    registry_.emplace<Corona::Components::Camera>(id_, Corona::Components::Camera{position, forward, world_up, fov});
 
     handle_ = Corona::SharedDataHub::instance().camera_storage().allocate([&](Corona::CameraDevice& slot) {
         slot.eye_position = position;
         slot.eye_dir = ktm::normalize(forward);
-        slot.eye_view_matrix = ktm::look_to_lh(position, ktm::normalize(forward), world_up);
+        slot.eye_view_matrix = ktm::look_at_lh(position, ktm::normalize(forward), world_up);
         slot.eye_proj_matrix = ktm::perspective_lh(ktm::radians(fov), 16.0f / 9.0f, 0.1f, 100.0f);
         slot.view_proj_matrix = slot.eye_proj_matrix * slot.eye_view_matrix;
     });
@@ -407,185 +335,126 @@ CoronaEngineAPI::Camera::~Camera() {
         Corona::SharedDataHub::instance().camera_storage().deallocate(handle_);
         handle_ = 0;
     }
-
-    registry_.destroy(id_);
 }
 
 std::uintptr_t CoronaEngineAPI::Camera::get_handle_id() const {
     return handle_;
 }
 
-void CoronaEngineAPI::Camera::set_surface(void* surface) const {
-    registry_.emplace_or_replace<Corona::Components::DisplaySurface>(id_, Corona::Components::DisplaySurface{surface});
-    if (auto* event_bus = Corona::Kernel::KernelContext::instance().event_bus()) {
-        event_bus->publish<Corona::Events::DisplaySurfaceChangedEvent>({surface});
-    }
+void CoronaEngineAPI::Camera::set(std::array<float, 3>& position, std::array<float, 3>& forward, std::array<float, 3> world_up, float fov) const {
 
-    bool info = Corona::SharedDataHub::instance().camera_storage().write(handle_, [&](Corona::CameraDevice& slot) {
-        slot.surface = reinterpret_cast<std::uint64_t>(surface);
-    });
-
-    if (!info) {
-        if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
-            logger->warning("[CoronaEngineAPI::Camera::set_surface] 更新相机数据失败");
-        }
-    }
-}
-
-void CoronaEngineAPI::Camera::set_position(const ktm::fvec3& position) const {
-    auto& cam = registry_.get<Corona::Components::Camera>(id_);
-    cam.position = position;
-
-    bool info = Corona::SharedDataHub::instance().camera_storage().write(handle_, [&](Corona::CameraDevice& slot) {
-        slot.eye_position = cam.position;
-        slot.eye_dir = ktm::normalize(cam.forward);
-        slot.eye_view_matrix = ktm::look_to_lh(cam.position, ktm::normalize(cam.forward), cam.world_up);
-        slot.eye_proj_matrix = ktm::perspective_lh(ktm::radians(cam.fov), 16.0f / 9.0f, 0.1f, 100.0f);
+    Corona::SharedDataHub::instance().camera_storage().write(handle_, [&](Corona::CameraDevice& slot) {
+        slot.eye_position = ktm::fvec3{position[0], position[1], position[2]};
+        slot.eye_dir = ktm::normalize(ktm::fvec3{forward[0], forward[1], forward[2]});
+        slot.eye_view_matrix = ktm::look_at_lh(slot.eye_position, slot.eye_position + slot.eye_dir, ktm::fvec3{world_up[0], world_up[1], world_up[2]});
+        slot.eye_proj_matrix = ktm::perspective_lh(ktm::radians(fov), 16.0f / 9.0f, 0.1f, 100.0f);
         slot.view_proj_matrix = slot.eye_proj_matrix * slot.eye_view_matrix;
     });
-
-    if (!info) {
-        if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
-            logger->warning("[CoronaEngineAPI::Camera::set_position] 更新相机数据失败");
-        }
-    }
 }
 
-void CoronaEngineAPI::Camera::set_forward(const ktm::fvec3& forward) const {
-    auto& cam = registry_.get<Corona::Components::Camera>(id_);
-    cam.forward = forward;
-
-    bool info = Corona::SharedDataHub::instance().camera_storage().write(handle_, [&](Corona::CameraDevice& slot) {
-        slot.eye_position = cam.position;
-        slot.eye_dir = ktm::normalize(cam.forward);
-        slot.eye_view_matrix = ktm::look_to_lh(cam.position, ktm::normalize(cam.forward), cam.world_up);
-        slot.eye_proj_matrix = ktm::perspective_lh(ktm::radians(cam.fov), 16.0f / 9.0f, 0.1f, 100.0f);
-        slot.view_proj_matrix = slot.eye_proj_matrix * slot.eye_view_matrix;
-    });
-
-    if (!info) {
-        if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
-            logger->warning("[CoronaEngineAPI::Camera::set_forward] 更新相机数据失败");
-        }
-    }
+std::array<float, 3> CoronaEngineAPI::Camera::get_position() const {
 }
 
-void CoronaEngineAPI::Camera::set_world_up(const ktm::fvec3& world_up) const {
-    auto& cam = registry_.get<Corona::Components::Camera>(id_);
-    cam.world_up = world_up;
+std::array<float, 3> CoronaEngineAPI::Camera::get_forward() const {
 
-    bool info = Corona::SharedDataHub::instance().camera_storage().write(handle_, [&](Corona::CameraDevice& slot) {
-        slot.eye_position = cam.position;
-        slot.eye_dir = ktm::normalize(cam.forward);
-        slot.eye_view_matrix = ktm::look_to_lh(cam.position, ktm::normalize(cam.forward), cam.world_up);
-        slot.eye_proj_matrix = ktm::perspective_lh(ktm::radians(cam.fov), 16.0f / 9.0f, 0.1f, 100.0f);
-        slot.view_proj_matrix = slot.eye_proj_matrix * slot.eye_view_matrix;
-    });
-
-    if (!info) {
-        if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
-            logger->warning("[CoronaEngineAPI::Camera::set_world_up] 更新相机数据失败");
-        }
-    }
 }
 
-void CoronaEngineAPI::Camera::set_fov(float fov) const {
-    auto& cam = registry_.get<Corona::Components::Camera>(id_);
-    cam.fov = fov;
+std::array<float, 3> CoronaEngineAPI::Camera::get_world_up() const {
 
-    bool info = Corona::SharedDataHub::instance().camera_storage().write(handle_, [&](Corona::CameraDevice& slot) {
-        slot.eye_position = cam.position;
-        slot.eye_dir = ktm::normalize(cam.forward);
-        slot.eye_view_matrix = ktm::look_to_lh(cam.position, ktm::normalize(cam.forward), cam.world_up);
-        slot.eye_proj_matrix = ktm::perspective_lh(ktm::radians(cam.fov), 16.0f / 9.0f, 0.1f, 100.0f);
-        slot.view_proj_matrix = slot.eye_proj_matrix * slot.eye_view_matrix;
-    });
-
-    if (!info) {
-        if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
-            logger->warning("[CoronaEngineAPI::Camera::set_fov] 更新相机数据失败");
-        }
-    }
-}
-
-ktm::fvec3 CoronaEngineAPI::Camera::get_position() const {
-    auto& cam = registry_.get<Corona::Components::Camera>(id_);
-    return cam.position;
-}
-
-ktm::fvec3 CoronaEngineAPI::Camera::get_forward() const {
-    auto& cam = registry_.get<Corona::Components::Camera>(id_);
-    return cam.forward;
-}
-
-ktm::fvec3 CoronaEngineAPI::Camera::get_world_up() const {
-    auto& cam = registry_.get<Corona::Components::Camera>(id_);
-    return cam.world_up;
 }
 
 float CoronaEngineAPI::Camera::get_fov() const {
-    auto& cam = registry_.get<Corona::Components::Camera>(id_);
-    return cam.fov;
-}
 
-void CoronaEngineAPI::Camera::move(ktm::fvec3 pos) const {
-    auto& cam = registry_.get<Corona::Components::Camera>(id_);
-    // 手动实现向量加法（ktm 可能不支持 operator+）
-    cam.position.x += pos.x;
-    cam.position.y += pos.y;
-    cam.position.z += pos.z;
-
-    bool info = Corona::SharedDataHub::instance().camera_storage().write(handle_, [&](Corona::CameraDevice& slot) {
-        slot.eye_position = cam.position;
-        slot.eye_dir = ktm::normalize(cam.forward);
-        slot.eye_view_matrix = ktm::look_to_lh(cam.position, ktm::normalize(cam.forward), cam.world_up);
-        slot.eye_proj_matrix = ktm::perspective_lh(ktm::radians(cam.fov), 16.0f / 9.0f, 0.1f, 100.0f);
-        slot.view_proj_matrix = slot.eye_proj_matrix * slot.eye_view_matrix;
-    });
-
-    if (!info) {
-        if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
-            logger->warning("[CoronaEngineAPI::Camera::move] 更新相机数据失败");
-        }
-    }
-}
-
-void CoronaEngineAPI::Camera::rotate(ktm::fvec3 euler) const {
-}
-
-void CoronaEngineAPI::Camera::look_at(ktm::fvec3 pos, ktm::fvec3 forward) const {
 }
 
 // ########################
-//          Light
+//      ImageEffects
 // ########################
-CoronaEngineAPI::Light::Light()
-    : handle_(0) {
-    ktm::fvec3 pos, color, dir;
-    pos.x = 0.0f;
-    pos.y = 5.0f;
-    pos.z = 0.0f;
-    color.x = 1.0f;
-    color.y = 1.0f;
-    color.z = 1.0f;
-    dir.x = 0.0f;
-    dir.y = 0.0f;
-    dir.z = 0.0f;
-
-    registry_.emplace<Corona::Components::Light>(id_, Corona::Components::Light{pos, color, dir});
-    handle_ = Corona::SharedDataHub::instance().light_storage().allocate([&](Corona::LightDevice& slot) {
-        // 初始化 LightDevice 相关数据
-    });
+CoronaEngineAPI::ImageEffects::ImageEffects() {
 }
 
-CoronaEngineAPI::Light::~Light() {
-    if (handle_) {
-        Corona::SharedDataHub::instance().light_storage().deallocate(handle_);
-        handle_ = 0;
+CoronaEngineAPI::ImageEffects::~ImageEffects() {
+}
+
+// ########################
+//        Viewport
+// ########################
+CoronaEngineAPI::Viewport::Viewport() {
+}
+
+CoronaEngineAPI::Viewport::~Viewport() {
+}
+
+void CoronaEngineAPI::Viewport::bind_camera() {
+    // TODO: Bind camera to viewport for rendering
+    if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
+        logger->warning("[CoronaEngineAPI::Viewport::bind_camera] Not implemented yet");
     }
-    registry_.destroy(id_);
 }
 
-std::uintptr_t CoronaEngineAPI::Light::get_handle_id() const {
-    return handle_;
+void CoronaEngineAPI::Viewport::unbind_camera() {
+    // TODO: Unbind camera from viewport
+    if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
+        logger->warning("[CoronaEngineAPI::Viewport::unbind_camera] Not implemented yet");
+    }
+}
+
+void CoronaEngineAPI::Viewport::bind_image_effects() {
+    // TODO: Bind post-processing effects to viewport
+    if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
+        logger->warning("[CoronaEngineAPI::Viewport::bind_image_effects] Not implemented yet");
+    }
+}
+
+void CoronaEngineAPI::Viewport::unbind_image_effects() {
+    // TODO: Unbind post-processing effects from viewport
+    if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
+        logger->warning("[CoronaEngineAPI::Viewport::unbind_image_effects] Not implemented yet");
+    }
+}
+
+void CoronaEngineAPI::Viewport::detect_actor_by_pixel() {
+    // TODO: Implement pixel picking for actor selection
+    if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
+        logger->warning("[CoronaEngineAPI::Viewport::detect_actor_by_pixel] Not implemented yet");
+    }
+}
+
+void CoronaEngineAPI::Viewport::set_surface(void* surface) const {
+    if (auto* event_bus = Corona::Kernel::KernelContext::instance().event_bus()) {
+        event_bus->publish<Corona::Events::DisplaySurfaceChangedEvent>({surface});
+    }
+}
+
+void CoronaEngineAPI::Viewport::save_picture(const std::string& path) const {
+    // TODO: Implement screenshot functionality
+    if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
+        logger->warning("[CoronaEngineAPI::Viewport::save_picture] Not implemented yet: " + path);
+    }
+}
+
+// ########################
+//      Environment
+// ########################
+CoronaEngineAPI::Environment::Environment() {
+}
+
+CoronaEngineAPI::Environment::~Environment() {
+}
+
+void CoronaEngineAPI::Environment::set_sun_direction(const ktm::fvec3& direction) const {
+    if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
+        logger->info("[CoronaEngineAPI::Environment::set_sun_direction] Sun direction set to: (" +
+                     std::to_string(direction.x) + ", " +
+                     std::to_string(direction.y) + ", " +
+                     std::to_string(direction.z) + ")");
+    }
+}
+
+void CoronaEngineAPI::Environment::set_floor_grid(bool enabled) const {
+    // TODO: Implement floor grid rendering control
+    if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
+        logger->warning("[CoronaEngineAPI::Environment::set_floor_grid] Not implemented yet: " +
+                        std::string(enabled ? "enabled" : "disabled"));
+    }
 }

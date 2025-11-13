@@ -62,13 +62,13 @@ struct CameraDevice {
 };
 
 struct LightDevice {
+
 };
 
 struct SceneDevice {
-    ktm::fvec3 sun_direction;
-    std::vector<std::uintptr_t> actors;
-    std::vector<std::uintptr_t> cameras;
-    std::vector<std::uintptr_t> lights;
+    std::uintptr_t environment_handle{};
+    std::vector<std::uintptr_t> viewports;
+    std::vector<ModelDevice> actors;
 };
 
 class SharedDataHub {

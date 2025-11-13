@@ -21,10 +21,7 @@ static inline ktm::fvec3 vec3_from(const std::array<float, 3>& a) {
 void BindAll(nanobind::module_& m) {
     // Actor bindings
     nanobind::class_<CoronaEngineAPI::Actor>(m, "Actor")
-        .def(nanobind::init<const std::string&>(), nanobind::arg("path") = std::string())
-        .def("move", [](const CoronaEngineAPI::Actor& self, const std::array<float, 3>& v) { self.move(vec3_from(v)); }, nanobind::arg("position"))
-        .def("rotate", [](const CoronaEngineAPI::Actor& self, const std::array<float, 3>& v) { self.rotate(vec3_from(v)); }, nanobind::arg("euler"))
-        .def("scale", [](const CoronaEngineAPI::Actor& self, const std::array<float, 3>& v) { self.scale(vec3_from(v)); }, nanobind::arg("size"));
+        .def(nanobind::init<const std::string&>(), nanobind::arg("path") = std::string());
 
     // Camera bindings
     nanobind::class_<CoronaEngineAPI::Camera>(m, "Camera")
@@ -49,19 +46,11 @@ void BindAll(nanobind::module_& m) {
         .def("rotate", [](const CoronaEngineAPI::Camera& self, const std::array<float, 3>& v) { self.rotate(vec3_from(v)); }, nanobind::arg("euler"))
         .def("look_at", [](const CoronaEngineAPI::Camera& self, const std::array<float, 3>& pos, const std::array<float, 3>& forward) { self.look_at(vec3_from(pos), vec3_from(forward)); }, nanobind::arg("position"), nanobind::arg("forward"));
 
-    // Light bindings
-    nanobind::class_<CoronaEngineAPI::Light>(m, "Light")
-        .def(nanobind::init<>());
-
     // Scene bindings
     nanobind::class_<CoronaEngineAPI::Scene>(m, "Scene")
         .def(nanobind::init<const bool>(), nanobind::arg("light_field") = false)
-        .def("set_sun_direction", [](const CoronaEngineAPI::Scene& self, const std::array<float, 3>& dir) { self.set_sun_direction(vec3_from(dir)); }, nanobind::arg("direction"))
-        .def("add_camera", &CoronaEngineAPI::Scene::add_camera, nanobind::arg("camera"))
-        .def("add_light", &CoronaEngineAPI::Scene::add_light, nanobind::arg("light"))
+        // Note: set_sun_direction, add_camera, add_light, remove_camera, remove_light methods are not available in Scene API
         .def("add_actor", &CoronaEngineAPI::Scene::add_actor, nanobind::arg("actor"))
-        .def("remove_camera", &CoronaEngineAPI::Scene::remove_camera, nanobind::arg("camera"))
-        .def("remove_light", &CoronaEngineAPI::Scene::remove_light, nanobind::arg("light"))
         .def("remove_actor", &CoronaEngineAPI::Scene::remove_actor, nanobind::arg("actor"));
 }
 
