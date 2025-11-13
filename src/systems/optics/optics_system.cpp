@@ -40,19 +40,19 @@ OpticsSystem::~OpticsSystem() = default;
 bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
     {
 #ifdef CORONA_ENABLE_VISION
-        // using namespace vision;
-        // using namespace ocarina;
-        // auto device = RHIContext::instance().create_device("cuda");
-        // device.init_rtx();
-        // Global::instance().set_device(&device);
-        // Global::instance().set_scene_path("E:\\CoronaResource\\examples\\assets\\test_vision\\render_scene\\kitchen");
-        // auto str = "E:\\CoronaResource\\examples\\assets\\test_vision\\render_scene\\kitchen\\vision_scene.json";
-        // auto rp = Importer::import_scene(str);
-        // rp->init();
-        // rp->prepare();
-        // rp->display(1 / 30);
-        // auto& buffer = rp->frame_buffer()->view_buffer();
-        // viewBufferHandle = buffer.handle();
+         using namespace vision;
+         using namespace ocarina;
+         auto device = RHIContext::instance().create_device("cuda");
+         device.init_rtx();
+         Global::instance().set_device(&device);
+         Global::instance().set_scene_path("E:\\CoronaResource\\examples\\assets\\test_vision\\render_scene\\kitchen");
+         auto str = "E:\\CoronaResource\\examples\\assets\\test_vision\\render_scene\\kitchen\\vision_scene.json";
+         auto rp = Importer::import_scene(str);
+         rp->init();
+         rp->prepare();
+         rp->display(1 / 30);
+         auto& buffer = rp->frame_buffer()->view_buffer();
+         viewBufferHandle = buffer.handle();
 #endif
     }
 
