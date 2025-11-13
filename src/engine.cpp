@@ -4,9 +4,9 @@
 #include <corona/events/engine_events.h>
 #include <corona/script/python/python_api.h>
 #include <corona/systems/acoustics/acoustics_system.h>
-#include <corona/systems/animation/animation_system.h>
 #include <corona/systems/display/display_system.h>
 #include <corona/systems/geometry/geometry_system.h>
+#include <corona/systems/kinematics/kinematics_system.h>
 #include <corona/systems/mechanics/mechanics_system.h>
 #include <corona/systems/optics/optics_system.h>
 
@@ -246,7 +246,7 @@ bool Engine::register_systems() {
     logger->info("  - GeometrySystem registered (priority 85)");
 
     // Animation System (动画系统)
-    sys_mgr->register_system(std::make_shared<Systems::AnimationSystem>());
+    sys_mgr->register_system(std::make_shared<Systems::KinematicsSystem>());
     logger->info("  - AnimationSystem registered (priority 80)");
 
     // Mechanics System (力学系统)
