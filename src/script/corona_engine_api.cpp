@@ -227,7 +227,7 @@ CoronaEngineAPI::Actor::Actor(const std::string& path)
         dev.materialIndex = 0;
 
         if (!mesh.textures.empty() && mesh.textures[0]) {
-            dev.textureIndex = HardwareImage(mesh.textures[0]->width, mesh.textures[0]->height, ImageFormat::RGBA8_SRGB, ImageUsage::SampledImage, 1, mesh.textures[0]->data);
+            //dev.textureIndex = HardwareImage(mesh.textures[0]->width, mesh.textures[0]->height, ImageFormat::RGBA8_SRGB, ImageUsage::SampledImage, 1, mesh.textures[0]->data);
         } else {
             dev.textureIndex = 0;
         }

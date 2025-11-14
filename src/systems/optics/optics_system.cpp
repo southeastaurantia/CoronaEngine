@@ -27,7 +27,10 @@ std::shared_ptr<Corona::Shader> load_shader(const std::filesystem::path& shader_
     return shader;
 }
 
+#ifdef CORONA_ENABLE_VISION
 uint64_t viewBufferHandle = 0;
+HardwareBuffer importedViewBuffer;
+#endif
 }  // namespace
 
 namespace Corona::Systems {
@@ -52,7 +55,11 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
          rp->prepare();
          rp->display(1 / 30);
          auto& buffer = rp->frame_buffer()->view_buffer();
-         viewBufferHandle = buffer.handle();
+         viewBufferHandle = buffer.device()->export_handle(buffer.handle());
+
+         ExternalHandle handle;
+         handle.handle = reinterpret_cast<HANDLE>(viewBufferHandle);
+         //importedViewBuffer.importBufferMemory(handle,);
 #endif
     }
 
