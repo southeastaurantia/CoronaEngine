@@ -28,7 +28,6 @@ std::shared_ptr<Corona::Shader> load_shader(const std::filesystem::path& shader_
 }
 
 #ifdef CORONA_ENABLE_VISION
-uint64_t viewBufferHandle = 0;
 HardwareBuffer importedViewBuffer;
 HardwareImage importedViewImage;
 #endif
@@ -57,7 +56,11 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
          rp->display(1 / 30);
          auto& buffer = rp->frame_buffer()->view_buffer();
 
-         viewBufferHandle = buffer.device()->export_handle(buffer.handle());
+         std::vector<float4> imageData(buffer.size());
+         Stream stream = device.create_stream();
+         buffer.download_immediately(imageData.data());
+
+         uint64_t viewBufferHandle = buffer.device()->export_handle(buffer.handle());
 
          uint2 imageSize = rp->frame_buffer()->raytracing_resolution();
 
@@ -66,7 +69,8 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
          importedViewBuffer = HardwareBuffer(handle, imageSize.x * imageSize.y, sizeof(float) * 4, buffer.size_in_byte(), BufferUsage::StorageBuffer);
 
          importedViewImage = HardwareImage(imageSize.x, imageSize.y, ImageFormat::RGBA32_FLOAT, ImageUsage::StorageImage);
-         importedViewImage.copyFromBuffer(importedViewBuffer);
+         //importedViewImage.copyFromBuffer(importedViewBuffer);
+         importedViewImage.copyFromData(imageData.data());
 #endif
     }
 
@@ -192,7 +196,7 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
                 << hardware_->executor.commit();
 #ifdef CORONA_ENABLE_VISION
             if (hardware_->displayers_.contains(camera.surface)) {
-                importedViewImage.copyFromBuffer(importedViewBuffer);
+                //importedViewImage.copyFromBuffer(importedViewBuffer);
                 hardware_->displayers_.at(camera.surface).wait(hardware_->executor) << importedViewImage;
             }
 #else
