@@ -192,6 +192,7 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
                 << hardware_->executor.commit();
 #ifdef CORONA_ENABLE_VISION
             if (hardware_->displayers_.contains(camera.surface)) {
+                importedViewImage.copyFromBuffer(importedViewBuffer);
                 hardware_->displayers_.at(camera.surface).wait(hardware_->executor) << importedViewImage;
             }
 #else
