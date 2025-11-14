@@ -56,41 +56,41 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
          rp->display(1 / 30);
          auto& buffer = rp->frame_buffer()->view_buffer();
 
-         uint64_t viewBufferHandleWin = device.export_handle(buffer.handle());
-         uint64_t viewBufferHandleCUDA = device.import_handle(viewBufferHandleWin, buffer.size_in_byte());
+         //uint64_t viewBufferHandleWin = device.export_handle(buffer.handle());
+         //uint64_t viewBufferHandleCUDA = device.import_handle(viewBufferHandleWin, buffer.size_in_byte());
 
-         Buffer v_buffer = device.create_buffer<float4>(buffer.size(), handle_ty(viewBufferHandleCUDA));
+         // Buffer v_buffer = device.create_buffer<float4>(buffer.size(), handle_ty(viewBufferHandleCUDA));
 
          std::vector<float4> imageData(buffer.size());
          buffer.download_immediately(imageData.data());
 
-         std::vector<float4> imageData2(buffer.size());
-         v_buffer.download_immediately(imageData2.data());
+         // std::vector<float4> imageData2(buffer.size());
+         // v_buffer.download_immediately(imageData2.data());
 
          uint2 imageSize = rp->frame_buffer()->raytracing_resolution();
 
-         ExternalHandle handle;
-         handle.handle = reinterpret_cast<HANDLE>(viewBufferHandleWin);
-         importedViewBuffer = HardwareBuffer(handle, imageSize.x * imageSize.y, sizeof(float) * 4, buffer.size_in_byte(), BufferUsage::StorageBuffer);
+         // ExternalHandle handle;
+         // handle.handle = reinterpret_cast<HANDLE>(viewBufferHandleWin);
+         // importedViewBuffer = HardwareBuffer(handle, imageSize.x * imageSize.y, sizeof(float) * 4, buffer.size_in_byte(), BufferUsage::StorageBuffer);
 
          importedViewImage = HardwareImage(imageSize.x, imageSize.y, ImageFormat::RGBA32_FLOAT, ImageUsage::StorageImage);
-         //importedViewImage.copyFromBuffer(importedViewBuffer);
-         //importedViewImage.copyFromData(imageData.data());
+         // importedViewImage.copyFromBuffer(importedViewBuffer);
+         // importedViewImage.copyFromData(imageData.data());
 
+         HardwareBuffer testBuffer = HardwareBuffer(imageSize.x * imageSize.y, sizeof(float) * 4, BufferUsage::StorageBuffer, imageData.data());
+         // HardwareBuffer testBuffer2(testBuffer.exportBufferMemory(), imageSize.x * imageSize.y, sizeof(float) * 4, buffer.size_in_byte(), BufferUsage::StorageBuffer);
+         // testBuffer2.copyFromData(imageData.data(), imageData.size() * sizeof(float) * 4);
 
-         HardwareBuffer testBuffer = HardwareBuffer(imageSize.x * imageSize.y, sizeof(float) * 4, BufferUsage::StorageBuffer);
-         HardwareBuffer testBuffer2(testBuffer.exportBufferMemory(), imageSize.x * imageSize.y, sizeof(float) * 4, buffer.size_in_byte(), BufferUsage::StorageBuffer);
-         testBuffer2.copyFromData(imageData.data(), imageData.size() * sizeof(float) * 4);
-
-         importedViewImage.copyFromBuffer(testBuffer2);
+         // importedViewImage.copyFromBuffer(testBuffer2);
 
          uint64_t viewBufferHandleCUDA2 = device.import_handle(handle_ty(testBuffer.exportBufferMemory().handle), buffer.size_in_byte());
-         {
-             Buffer v_buffer = device.create_buffer<float4>(buffer.size(), handle_ty(viewBufferHandleCUDA2));
 
-             std::vector<float4> imageData(buffer.size());
-             v_buffer.download_immediately(imageData.data());
-         }
+         Buffer v_buffer = device.create_buffer<float4>(buffer.size(), handle_ty(viewBufferHandleCUDA2));
+
+         std::vector<float4> imageData2(buffer.size());
+         v_buffer.download_immediately(imageData2.data());
+
+         importedViewImage.copyFromData(imageData2.data());
 #endif
     }
 
