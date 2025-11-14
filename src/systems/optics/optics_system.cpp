@@ -45,7 +45,7 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
 #ifdef CORONA_ENABLE_VISION
          using namespace vision;
          using namespace ocarina;
-         auto device = RHIContext::instance().create_device("cuda");
+         Device device = RHIContext::instance().create_device("cuda");
          device.init_rtx();
          Global::instance().set_device(&device);
          Global::instance().set_scene_path("E:\\CoronaResource\\examples\\assets\\test_vision\\render_scene\\kitchen");
@@ -56,16 +56,21 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
          rp->display(1 / 30);
          auto& buffer = rp->frame_buffer()->view_buffer();
 
+         uint64_t viewBufferHandleWin = device.export_handle(buffer.handle());
+         uint64_t viewBufferHandleCUDA = device.import_handle(viewBufferHandleWin, buffer.size_in_byte());
+
+         Buffer v_buffer = device.create_buffer<float4>(buffer.size(), handle_ty(viewBufferHandleCUDA));
+
          std::vector<float4> imageData(buffer.size());
-         Stream stream = device.create_stream();
          buffer.download_immediately(imageData.data());
 
-         uint64_t viewBufferHandle = buffer.device()->export_handle(buffer.handle());
+         std::vector<float4> imageData2(buffer.size());
+         v_buffer.download_immediately(imageData2.data());
 
          uint2 imageSize = rp->frame_buffer()->raytracing_resolution();
 
          ExternalHandle handle;
-         handle.handle = reinterpret_cast<HANDLE>(viewBufferHandle);
+         handle.handle = reinterpret_cast<HANDLE>(viewBufferHandleWin);
          importedViewBuffer = HardwareBuffer(handle, imageSize.x * imageSize.y, sizeof(float) * 4, buffer.size_in_byte(), BufferUsage::StorageBuffer);
 
          importedViewImage = HardwareImage(imageSize.x, imageSize.y, ImageFormat::RGBA32_FLOAT, ImageUsage::StorageImage);
