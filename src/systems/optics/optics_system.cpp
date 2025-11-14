@@ -75,7 +75,15 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
 
          importedViewImage = HardwareImage(imageSize.x, imageSize.y, ImageFormat::RGBA32_FLOAT, ImageUsage::StorageImage);
          //importedViewImage.copyFromBuffer(importedViewBuffer);
-         importedViewImage.copyFromData(imageData.data());
+         //importedViewImage.copyFromData(imageData.data());
+
+         {
+             HardwareBuffer testBuffer = HardwareBuffer(imageSize.x * imageSize.y, sizeof(float) * 4, BufferUsage::StorageBuffer);
+             HardwareBuffer testBuffer2(testBuffer.exportBufferMemory(), imageSize.x * imageSize.y, sizeof(float) * 4, buffer.size_in_byte(), BufferUsage::StorageBuffer);
+             testBuffer2.copyFromData(imageData.data(), imageData.size() * sizeof(float) * 4);
+
+             importedViewImage.copyFromBuffer(testBuffer2);
+         }
 #endif
     }
 
@@ -202,6 +210,7 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
 #ifdef CORONA_ENABLE_VISION
             if (hardware_->displayers_.contains(camera.surface)) {
                 //importedViewImage.copyFromBuffer(importedViewBuffer);
+
                 hardware_->displayers_.at(camera.surface).wait(hardware_->executor) << importedViewImage;
             }
 #else
