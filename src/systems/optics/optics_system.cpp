@@ -77,12 +77,19 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
          //importedViewImage.copyFromBuffer(importedViewBuffer);
          //importedViewImage.copyFromData(imageData.data());
 
-         {
-             HardwareBuffer testBuffer = HardwareBuffer(imageSize.x * imageSize.y, sizeof(float) * 4, BufferUsage::StorageBuffer);
-             HardwareBuffer testBuffer2(testBuffer.exportBufferMemory(), imageSize.x * imageSize.y, sizeof(float) * 4, buffer.size_in_byte(), BufferUsage::StorageBuffer);
-             testBuffer2.copyFromData(imageData.data(), imageData.size() * sizeof(float) * 4);
 
-             importedViewImage.copyFromBuffer(testBuffer2);
+         HardwareBuffer testBuffer = HardwareBuffer(imageSize.x * imageSize.y, sizeof(float) * 4, BufferUsage::StorageBuffer);
+         HardwareBuffer testBuffer2(testBuffer.exportBufferMemory(), imageSize.x * imageSize.y, sizeof(float) * 4, buffer.size_in_byte(), BufferUsage::StorageBuffer);
+         testBuffer2.copyFromData(imageData.data(), imageData.size() * sizeof(float) * 4);
+
+         importedViewImage.copyFromBuffer(testBuffer2);
+
+         uint64_t viewBufferHandleCUDA2 = device.import_handle(handle_ty(testBuffer.exportBufferMemory().handle), buffer.size_in_byte());
+         {
+             Buffer v_buffer = device.create_buffer<float4>(buffer.size(), handle_ty(viewBufferHandleCUDA2));
+
+             std::vector<float4> imageData(buffer.size());
+             v_buffer.download_immediately(imageData.data());
          }
 #endif
     }
