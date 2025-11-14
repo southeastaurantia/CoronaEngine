@@ -107,23 +107,22 @@ void MechanicsSystem::update() {
 void MechanicsSystem::update_physics() {
     auto* logger = context()->logger();
 
-    // 直接使用 SharedDataHub 进行碰撞检测，不需要额外的数据结构
-    SharedDataHub::instance().model_bounding_storage().for_each_read([&](const ModelBounding& bounding1) {
-        SharedDataHub::instance().model_bounding_storage().for_each_read([&](const ModelBounding& bounding2) {
-            // 跳过自己与自己的比较
-            if (&bounding1 == &bounding2) {
+    SharedDataHub::instance().mechanics_storage().for_each_read([&](const MechanicsDevice& m1) {
+        SharedDataHub::instance().mechanics_storage().for_each_read([&](const MechanicsDevice& m2) {
+            if (&m1 == &m2) {
                 return;
             }
 
-            // 获取第一个模型的变换矩阵和世界坐标顶点
             std::vector<ktm::fvec3> vertices1;
-            bool found1 = SharedDataHub::instance().model_transform_storage().read(
-                bounding1.transform_handle,
-                [&](const ModelTransform& transform) {
-                    // 计算本地空间的包围盒顶点
-                    vertices1 = calculateVertices(bounding1.min_xyz, bounding1.max_xyz);
+            bool found1 = false;
 
-                    // 变换到世界坐标
+            SharedDataHub::instance().geometry_storage().read(m1.geometry_handle, [&](const GeometryDevice& geom) {
+                SharedDataHub::instance().model_transform_storage().read(geom.transform_handle, [&](const ModelTransform& transform) {
+                    vertices1 = calculateVertices(m1.min_xyz, m1.max_xyz);
+
+                    // 从局部参数计算世界矩阵
+                    ktm::fmat4x4 world_matrix = transform.compute_matrix();
+
                     for (auto& v : vertices1) {
                         ktm::fvec4 v4;
                         v4.x = v.x;
@@ -131,23 +130,29 @@ void MechanicsSystem::update_physics() {
                         v4.z = v.z;
                         v4.w = 1.0f;
 
-                        ktm::fvec4 world_v = transform.model_matrix * v4;
+                        ktm::fvec4 world_v = world_matrix * v4;
                         v.x = world_v.x;
                         v.y = world_v.y;
                         v.z = world_v.z;
                     }
+                    found1 = true;
                 });
+            });
 
             if (!found1 || vertices1.empty()) {
                 return;
             }
 
-            // 获取第二个模型的变换矩阵和世界坐标顶点
+            // 获取 m2 的世界坐标顶点
             std::vector<ktm::fvec3> vertices2;
-            bool found2 = SharedDataHub::instance().model_transform_storage().read(
-                bounding2.transform_handle,
-                [&](const ModelTransform& transform) {
-                    vertices2 = calculateVertices(bounding2.min_xyz, bounding2.max_xyz);
+            bool found2 = false;
+
+            SharedDataHub::instance().geometry_storage().read(m2.geometry_handle, [&](const GeometryDevice& geom) {
+                SharedDataHub::instance().model_transform_storage().read(geom.transform_handle, [&](const ModelTransform& transform) {
+                    vertices2 = calculateVertices(m2.min_xyz, m2.max_xyz);
+
+                    // 从局部参数计算世界矩阵
+                    ktm::fmat4x4 world_matrix = transform.compute_matrix();
 
                     for (auto& v : vertices2) {
                         ktm::fvec4 v4;
@@ -156,12 +161,14 @@ void MechanicsSystem::update_physics() {
                         v4.z = v.z;
                         v4.w = 1.0f;
 
-                        ktm::fvec4 world_v = transform.model_matrix * v4;
+                        ktm::fvec4 world_v = world_matrix * v4;
                         v.x = world_v.x;
                         v.y = world_v.y;
                         v.z = world_v.z;
                     }
+                    found2 = true;
                 });
+            });
 
             if (!found2 || vertices2.empty()) {
                 return;
@@ -173,16 +180,16 @@ void MechanicsSystem::update_physics() {
                     logger->info("Collision detected!");
                 }
 
-                // 计算碰撞法线（从 bounding1 指向 bounding2）
+                // 计算碰撞法线（从 m1 中心指向 m2 中心）
                 ktm::fvec3 center1;
-                center1.x = (bounding1.min_xyz.x + bounding1.max_xyz.x) * 0.5f;
-                center1.y = (bounding1.min_xyz.y + bounding1.max_xyz.y) * 0.5f;
-                center1.z = (bounding1.min_xyz.z + bounding1.max_xyz.z) * 0.5f;
+                center1.x = (m1.min_xyz.x + m1.max_xyz.x) * 0.5f;
+                center1.y = (m1.min_xyz.y + m1.max_xyz.y) * 0.5f;
+                center1.z = (m1.min_xyz.z + m1.max_xyz.z) * 0.5f;
 
                 ktm::fvec3 center2;
-                center2.x = (bounding2.min_xyz.x + bounding2.max_xyz.x) * 0.5f;
-                center2.y = (bounding2.min_xyz.y + bounding2.max_xyz.y) * 0.5f;
-                center2.z = (bounding2.min_xyz.z + bounding2.max_xyz.z) * 0.5f;
+                center2.x = (m2.min_xyz.x + m2.max_xyz.x) * 0.5f;
+                center2.y = (m2.min_xyz.y + m2.max_xyz.y) * 0.5f;
+                center2.z = (m2.min_xyz.z + m2.max_xyz.z) * 0.5f;
 
                 ktm::fvec3 diff;
                 diff.x = center2.x - center1.x;
@@ -192,49 +199,33 @@ void MechanicsSystem::update_physics() {
                 ktm::fvec3 normal = ktm::normalize(diff);
 
                 // 物体分离（防止穿透）
-                const float separation = 0.02f;
-                const float bounceStrength = 0.1f;
+                constexpr float separation = 0.02f;
+                constexpr float bounceStrength = 0.1f;
 
                 ktm::fvec3 total_offset;
                 total_offset.x = normal.x * (separation + bounceStrength);
                 total_offset.y = normal.y * (separation + bounceStrength);
                 total_offset.z = normal.z * (separation + bounceStrength);
 
-                // 更新第一个模型的位置（反方向）
-                bool updated1 = SharedDataHub::instance().model_transform_storage().write(
-                    bounding1.transform_handle,
-                    [&](ModelTransform& transform) {
-                        ktm::faffine3d offset_transform;
-                        ktm::fvec3 neg_offset;
-                        neg_offset.x = -total_offset.x;
-                        neg_offset.y = -total_offset.y;
-                        neg_offset.z = -total_offset.z;
-                        offset_transform.translate(neg_offset);
-
-                        ktm::fmat4x4 offset_matrix;
-                        offset_transform >> offset_matrix;
-
-                        transform.model_matrix = transform.model_matrix * offset_matrix;
+                // 更新 m1 的 transform（反方向偏移）- 直接修改局部位置参数
+                SharedDataHub::instance().geometry_storage().read(m1.geometry_handle, [&](const GeometryDevice& geom) {
+                    SharedDataHub::instance().model_transform_storage().write(geom.transform_handle, [&](ModelTransform& transform) {
+                        // 直接修改局部位置参数
+                        transform.position.x -= total_offset.x;
+                        transform.position.y -= total_offset.y;
+                        transform.position.z -= total_offset.z;
                     });
+                });
 
-                // 更新第二个模型的位置（正方向）
-                bool updated2 = SharedDataHub::instance().model_transform_storage().write(
-                    bounding2.transform_handle,
-                    [&](ModelTransform& transform) {
-                        ktm::faffine3d offset_transform;
-                        offset_transform.translate(total_offset);
-
-                        ktm::fmat4x4 offset_matrix;
-                        offset_transform >> offset_matrix;
-
-                        transform.model_matrix = transform.model_matrix * offset_matrix;
+                // 更新 m2 的 transform（正方向偏移）- 直接修改局部位置参数
+                SharedDataHub::instance().geometry_storage().read(m2.geometry_handle, [&](const GeometryDevice& geom) {
+                    SharedDataHub::instance().model_transform_storage().write(geom.transform_handle, [&](ModelTransform& transform) {
+                        // 直接修改局部位置参数
+                        transform.position.x += total_offset.x;
+                        transform.position.y += total_offset.y;
+                        transform.position.z += total_offset.z;
                     });
-
-                if (!updated1 || !updated2) {
-                    if (logger) {
-                        logger->warning("MechanicsSystem: Failed to update transform after collision");
-                    }
-                }
+                });
             }
         });
     });

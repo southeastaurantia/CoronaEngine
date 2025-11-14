@@ -7,68 +7,50 @@ SharedDataHub& SharedDataHub::instance() {
     return instance;
 }
 
-SharedDataHub::ModelStorage& SharedDataHub::model_storage() {
-    return model_storage_;
-}
+// Storage accessors definitions
+SharedDataHub::ModelResourceStorage& SharedDataHub::model_resource_storage() { return model_resource_storage_; }
+const SharedDataHub::ModelResourceStorage& SharedDataHub::model_resource_storage() const { return model_resource_storage_; }
 
-const SharedDataHub::ModelStorage& SharedDataHub::model_storage() const {
-    return this->model_storage_;
-}
+SharedDataHub::ModelTransformStorage& SharedDataHub::model_transform_storage() { return model_transform_storage_; }
+const SharedDataHub::ModelTransformStorage& SharedDataHub::model_transform_storage() const { return model_transform_storage_; }
 
-SharedDataHub::ModelDeviceStorage& SharedDataHub::model_device_storage() {
-    return this->model_device_storage_;
-}
+SharedDataHub::AnimationControllerStorage& SharedDataHub::animation_controller_storage() { return animation_controller_storage_; }
+const SharedDataHub::AnimationControllerStorage& SharedDataHub::animation_controller_storage() const { return animation_controller_storage_; }
 
-const SharedDataHub::ModelDeviceStorage& SharedDataHub::model_device_storage() const {
-    return this->model_device_storage_;
-}
+SharedDataHub::SkinningStorage& SharedDataHub::skinning_storage() { return skinning_storage_; }
+const SharedDataHub::SkinningStorage& SharedDataHub::skinning_storage() const { return skinning_storage_; }
 
-SharedDataHub::SceneStorage& SharedDataHub::scene_storage() {
-    return this->scene_storage_;
-}
+SharedDataHub::GeometryStorage& SharedDataHub::geometry_storage() { return geometry_storage_; }
+const SharedDataHub::GeometryStorage& SharedDataHub::geometry_storage() const { return geometry_storage_; }
 
-const SharedDataHub::SceneStorage& SharedDataHub::scene_storage() const {
-    return this->scene_storage_;
-}
+SharedDataHub::KinematicsStorage& SharedDataHub::kinematics_storage() { return kinematics_storage_; }
+const SharedDataHub::KinematicsStorage& SharedDataHub::kinematics_storage() const { return kinematics_storage_; }
 
-SharedDataHub::CameraStorage& SharedDataHub::camera_storage() {
-    return this->camera_storage_;
-}
+SharedDataHub::MechanicsStorage& SharedDataHub::mechanics_storage() { return mechanics_storage_; }
+const SharedDataHub::MechanicsStorage& SharedDataHub::mechanics_storage() const { return mechanics_storage_; }
 
-const SharedDataHub::CameraStorage& SharedDataHub::camera_storage() const {
-    return this->camera_storage_;
-}
+SharedDataHub::AcousticsStorage& SharedDataHub::acoustics_storage() { return acoustics_storage_; }
+const SharedDataHub::AcousticsStorage& SharedDataHub::acoustics_storage() const { return acoustics_storage_; }
 
-SharedDataHub::LightStorage& SharedDataHub::light_storage() {
-    return this->light_storage_;
-}
+SharedDataHub::OpticsStorage& SharedDataHub::optics_storage() { return optics_storage_; }
+const SharedDataHub::OpticsStorage& SharedDataHub::optics_storage() const { return optics_storage_; }
 
-const SharedDataHub::LightStorage& SharedDataHub::light_storage() const {
-    return this->light_storage_;
-}
+SharedDataHub::ProfileStorage& SharedDataHub::profile_storage() { return profile_storage_; }
+const SharedDataHub::ProfileStorage& SharedDataHub::profile_storage() const { return profile_storage_; }
 
-SharedDataHub::ModelBoundingStorage& SharedDataHub::model_bounding_storage() {
-    return this->model_bounding_storage_;
-}
+SharedDataHub::ActorStorage& SharedDataHub::actor_storage() { return actor_storage_; }
+const SharedDataHub::ActorStorage& SharedDataHub::actor_storage() const { return actor_storage_; }
 
-const SharedDataHub::ModelBoundingStorage& SharedDataHub::model_bounding_storage() const {
-    return this->model_bounding_storage_;
-}
+SharedDataHub::CameraStorage& SharedDataHub::camera_storage() { return camera_storage_; }
+const SharedDataHub::CameraStorage& SharedDataHub::camera_storage() const { return camera_storage_; }
 
-SharedDataHub::ModelTransformStorage& SharedDataHub::model_transform_storage() {
-    return this->model_transform_storage_;
-}
+SharedDataHub::ViewportStorage& SharedDataHub::viewport_storage() { return viewport_storage_; }
+const SharedDataHub::ViewportStorage& SharedDataHub::viewport_storage() const { return viewport_storage_; }
 
-const SharedDataHub::ModelTransformStorage& SharedDataHub::model_transform_storage() const {
-    return this->model_transform_storage_;
-}
+SharedDataHub::EnvironmentStorage& SharedDataHub::environment_storage() { return environment_storage_; }
+const SharedDataHub::EnvironmentStorage& SharedDataHub::environment_storage() const { return environment_storage_; }
 
-SharedDataHub::AnimationStateStorage& SharedDataHub::animation_state_storage() {
-    return this->animation_state_storage_;
-}
-
-const SharedDataHub::AnimationStateStorage& SharedDataHub::animation_state_storage() const {
-    return this->animation_state_storage_;
-}
+SharedDataHub::SceneStorage& SharedDataHub::scene_storage() { return scene_storage_; }
+const SharedDataHub::SceneStorage& SharedDataHub::scene_storage() const { return scene_storage_; }
 
 }  // namespace Corona

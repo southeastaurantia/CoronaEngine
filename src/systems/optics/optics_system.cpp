@@ -8,7 +8,6 @@
 #include <corona/systems/optics/optics_system.h>
 
 #include <filesystem>
-#include <ranges>
 
 #include "Shader.h"
 #include "hardware.h"
@@ -27,7 +26,6 @@ std::shared_ptr<Corona::Shader> load_shader(const std::filesystem::path& shader_
     return shader;
 }
 
-uint64_t viewBufferHandle = 0;
 }  // namespace
 
 namespace Corona::Systems {
@@ -61,7 +59,9 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
 
     hardware_ = std::make_unique<Hardware>();
 
-    hardware_->gbufferSize = {1920, 1080};
+    // 修正：避免聚合初始化引发的赋值问题
+    hardware_->gbufferSize.x = 1920;
+    hardware_->gbufferSize.y = 1080;
 
     hardware_->gbufferPostionImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
     hardware_->gbufferBaseColorImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
@@ -119,68 +119,108 @@ void OpticsSystem::update() {
 
 void OpticsSystem::optics_pipeline(float frame_count) const {
     SharedDataHub::instance().scene_storage().for_each_read([&](const SceneDevice& scene) {
-        SharedDataHub::instance().camera_storage().for_each_read([&](const CameraDevice& camera) {
-            hardware_->uniformBufferObjects.eyePosition = camera.eye_position;
-            hardware_->uniformBufferObjects.eyeDir = camera.eye_dir;
-            hardware_->uniformBufferObjects.eyeViewMatrix = camera.eye_view_matrix;
-            hardware_->uniformBufferObjects.eyeProjMatrix = camera.eye_proj_matrix;
-            hardware_->gbufferUniformBufferObjects.viewProjMatrix = camera.view_proj_matrix;
-            hardware_->gbufferUniformBuffer.copyFromData(&hardware_->gbufferUniformBufferObjects, sizeof(hardware_->gbufferUniformBufferObjects));
-
-            hardware_->rasterizerPipeline["gbufferPostion"] = hardware_->gbufferPostionImage;
-            hardware_->rasterizerPipeline["gbufferBaseColor"] = hardware_->gbufferBaseColorImage;
-            hardware_->rasterizerPipeline["gbufferNormal"] = hardware_->gbufferNormalImage;
-            hardware_->rasterizerPipeline["gbufferMotionVector"] = hardware_->gbufferMotionVectorImage;
-            hardware_->rasterizerPipeline.setDepthImage(hardware_->gbufferDepthImage);
-
-            SharedDataHub::instance().model_device_storage().for_each_read([&](const ModelDevice& model) {
-                bool info = SharedDataHub::instance().model_transform_storage().read(model.transform_handle, [&](const ModelTransform& transform) {
-                    hardware_->rasterizerPipeline["pushConsts.modelMatrix"] = transform.model_matrix;
-                });
-                hardware_->rasterizerPipeline["pushConsts.uniformBufferIndex"] = hardware_->gbufferUniformBuffer.storeDescriptor();
-
-                HardwareBuffer boneMatrix = model.bone_matrix_buffer;
-                hardware_->rasterizerPipeline["pushConsts.boneIndex"] = boneMatrix.storeDescriptor();
-
-                for (auto& m : model.devices) {
-                    hardware_->rasterizerPipeline["inPosition"] = m.pointsBuffer;
-                    hardware_->rasterizerPipeline["inNormal"] = m.normalsBuffer;
-                    hardware_->rasterizerPipeline["inTexCoord"] = m.texCoordsBuffer;
-                    hardware_->rasterizerPipeline["boneIndexes"] = m.boneIndexesBuffer;
-                    hardware_->rasterizerPipeline["jointWeights"] = m.boneWeightsBuffer;
-                    hardware_->rasterizerPipeline["pushConsts.textureIndex"] = m.textureIndex;
-
-                    hardware_->executor << hardware_->rasterizerPipeline.record(m.indexBuffer);
+        for (auto vp_handle : scene.viewport_handles) {
+            SharedDataHub::instance().viewport_storage().read(vp_handle, [&](const ViewportDevice& viewport) {
+                if (viewport.camera == 0) {
+                    return;
                 }
+                SharedDataHub::instance().camera_storage().read(viewport.camera, [&](const CameraDevice& camera) {
+                    hardware_->uniformBufferObjects.eyePosition = camera.position;
+                    hardware_->uniformBufferObjects.eyeDir = camera.forward;
+                    hardware_->uniformBufferObjects.eyeViewMatrix = camera.compute_view_matrix();
+                    hardware_->uniformBufferObjects.eyeProjMatrix = camera.compute_projection_matrix();
+                    hardware_->gbufferUniformBufferObjects.viewProjMatrix = camera.compute_view_proj_matrix();
+                    hardware_->gbufferUniformBuffer.copyFromData(&hardware_->gbufferUniformBufferObjects, sizeof(hardware_->gbufferUniformBufferObjects));
+
+                    hardware_->rasterizerPipeline["gbufferPostion"] = hardware_->gbufferPostionImage;
+                    hardware_->rasterizerPipeline["gbufferBaseColor"] = hardware_->gbufferBaseColorImage;
+                    hardware_->rasterizerPipeline["gbufferNormal"] = hardware_->gbufferNormalImage;
+                    hardware_->rasterizerPipeline["gbufferMotionVector"] = hardware_->gbufferMotionVectorImage;
+                    hardware_->rasterizerPipeline.setDepthImage(hardware_->gbufferDepthImage);
+
+                    SharedDataHub::instance().optics_storage().for_each_read([&](const OpticsDevice& optics) {
+                        static HardwareBuffer s_identity_bone_buffer;
+                        static bool s_identity_inited = false;
+                        if (!s_identity_inited) {
+                            std::vector<ktm::fmat4x4> identity_matrix = {ktm::fmat4x4::from_eye()};
+                            s_identity_bone_buffer = HardwareBuffer(identity_matrix, BufferUsage::StorageBuffer);
+                            s_identity_inited = true;
+                        }
+
+                        HardwareBuffer boneMatrixBuf = s_identity_bone_buffer;
+                        if (optics.skinning_handle != 0) {
+                            SharedDataHub::instance().skinning_storage().read(optics.skinning_handle, [&](const SkinningDevice& skin) {
+                                boneMatrixBuf = skin.bone_matrix_buffer;
+                            });
+                        }
+
+                        SharedDataHub::instance().geometry_storage().read(optics.geometry_handle, [&](const GeometryDevice& geom) {
+                            SharedDataHub::instance().model_transform_storage().read(geom.transform_handle, [&](const ModelTransform& transform) {
+                                // 从局部参数计算世界矩阵
+                                hardware_->rasterizerPipeline["pushConsts.modelMatrix"] = transform.compute_matrix();
+                            });
+                            hardware_->rasterizerPipeline["pushConsts.uniformBufferIndex"] = hardware_->gbufferUniformBuffer.storeDescriptor();
+
+                            hardware_->rasterizerPipeline["pushConsts.boneIndex"] = boneMatrixBuf.storeDescriptor();
+
+                            for (const auto& m : geom.mesh_handles) {
+                                hardware_->rasterizerPipeline["inPosition"] = m.pointsBuffer;
+                                hardware_->rasterizerPipeline["inNormal"] = m.normalsBuffer;
+                                hardware_->rasterizerPipeline["inTexCoord"] = m.texCoordsBuffer;
+                                hardware_->rasterizerPipeline["boneIndexes"] = m.boneIndexesBuffer;
+                                hardware_->rasterizerPipeline["jointWeights"] = m.boneWeightsBuffer;
+                                hardware_->rasterizerPipeline["pushConsts.textureIndex"] = m.textureIndex;
+
+                                hardware_->executor << hardware_->rasterizerPipeline.record(m.indexBuffer);
+                            }
+                        });
+                    });
+
+                    hardware_->computePipeline["pushConsts.gbufferSize"] = hardware_->gbufferSize;
+                    hardware_->computePipeline["pushConsts.gbufferPostionImage"] = hardware_->gbufferPostionImage.storeDescriptor();
+                    hardware_->computePipeline["pushConsts.gbufferBaseColorImage"] = hardware_->gbufferBaseColorImage.storeDescriptor();
+                    hardware_->computePipeline["pushConsts.gbufferNormalImage"] = hardware_->gbufferNormalImage.storeDescriptor();
+                    hardware_->computePipeline["pushConsts.gbufferDepthImage"] = hardware_->rasterizerPipeline.getDepthImage().storeDescriptor();
+
+                    hardware_->computePipeline["pushConsts.finalOutputImage"] = hardware_->finalOutputImage.storeDescriptor();
+
+                    ktm::fvec3 sun_dir;
+                    sun_dir.x = 1.0f;
+                    sun_dir.y = 1.0f;
+                    sun_dir.z = 1.0f;
+                    if (scene.environment != 0) {
+                        SharedDataHub::instance().environment_storage().read(scene.environment, [&](const EnvironmentDevice& env) {
+                            sun_dir = env.sun_position;
+                        });
+                    }
+
+                    hardware_->computePipeline["pushConsts.sun_dir"] = ktm::normalize(sun_dir);
+                    {
+                        ktm::fvec3 lightColor;
+                        lightColor.x = 23.47f;
+                        lightColor.y = 21.31f;
+                        lightColor.z = 20.79f;
+                        hardware_->computePipeline["pushConsts.lightColor"] = lightColor;
+                    }
+
+                    hardware_->uniformBuffer.copyFromData(&hardware_->uniformBufferObjects, sizeof(hardware_->uniformBufferObjects));
+                    hardware_->computePipeline["pushConsts.uniformBufferIndex"] = hardware_->uniformBuffer.storeDescriptor();
+
+                    if (!SharedDataHub::instance().optics_storage().empty()) {
+                        hardware_->executor << hardware_->rasterizerPipeline(1920, 1080)
+                                            << hardware_->executor.commit();
+                    }
+
+                    hardware_->executor
+                        << hardware_->computePipeline(1920 / 8, 1080 / 8, 1)
+                        << hardware_->executor.commit();
+
+                    if (hardware_->displayers_.contains(reinterpret_cast<uint64_t>(camera.surface))) {
+                        hardware_->displayers_.at(reinterpret_cast<uint64_t>(camera.surface)).wait(hardware_->executor) << hardware_->finalOutputImage;
+                    }
+                });
             });
-
-            hardware_->computePipeline["pushConsts.gbufferSize"] = hardware_->gbufferSize;
-            hardware_->computePipeline["pushConsts.gbufferPostionImage"] = hardware_->gbufferPostionImage.storeDescriptor();
-            hardware_->computePipeline["pushConsts.gbufferBaseColorImage"] = hardware_->gbufferBaseColorImage.storeDescriptor();
-            hardware_->computePipeline["pushConsts.gbufferNormalImage"] = hardware_->gbufferNormalImage.storeDescriptor();
-            hardware_->computePipeline["pushConsts.gbufferDepthImage"] = hardware_->rasterizerPipeline.getDepthImage().storeDescriptor();
-
-            hardware_->computePipeline["pushConsts.finalOutputImage"] = hardware_->finalOutputImage.storeDescriptor();
-
-            hardware_->computePipeline["pushConsts.sun_dir"] = ktm::normalize(scene.sun_direction);
-            hardware_->computePipeline["pushConsts.lightColor"] = ktm::fvec3{23.47f, 21.31f, 20.79f};
-
-            hardware_->uniformBuffer.copyFromData(&hardware_->uniformBufferObjects, sizeof(hardware_->uniformBufferObjects));
-            hardware_->computePipeline["pushConsts.uniformBufferIndex"] = hardware_->uniformBuffer.storeDescriptor();
-
-            if (!SharedDataHub::instance().model_device_storage().empty()) {
-                hardware_->executor << hardware_->rasterizerPipeline(1920, 1080)
-                                    << hardware_->executor.commit();
-            }
-
-            hardware_->executor
-                << hardware_->computePipeline(1920 / 8, 1080 / 8, 1)
-                << hardware_->executor.commit();
-
-            if (hardware_->displayers_.contains(camera.surface)) {
-                hardware_->displayers_.at(camera.surface).wait(hardware_->executor) << hardware_->finalOutputImage;
-            }
-        });
+        }
     });
 }
 

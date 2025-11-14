@@ -5,6 +5,7 @@
 #include <corona/kernel/event/i_event_stream.h>
 #include <corona/shared_data_hub.h>
 #include <corona/systems/kinematics/kinematics_system.h>
+#include <ktm/ktm.h>
 
 #include "Animation.h"
 #include "Bone.h"
@@ -188,73 +189,82 @@ void KinematicsSystem::update() {
 void KinematicsSystem::update_animation() {
     const float dt = 0.016f;
 
-    // 正确使用 for_each_write 来修改 AnimationState
-    SharedDataHub::instance().animation_state_storage().for_each_write([&](AnimationState& state) {
-        update_animation_state(state, dt);
-    });
-}
-
-void KinematicsSystem::update_animation_state(AnimationState& state, float dt) {
-    if (state.model_handle == 0 || !state.active) {
-        return;
-    }
-
-    std::cout << "Updating animation for model handle: " << state.model_handle << std::endl;
-    bool should_update = false;
-    const Animation* current_anim = nullptr;
-    std::shared_ptr<Model> model_ptr;
-
-    bool read_success = SharedDataHub::instance().model_storage().read(
-        state.model_handle,
-        [&](const std::shared_ptr<Model>& model) {
-            model_ptr = model;
-            if (!model) {
-                return;
-            }
-            if (const auto anim_count = model->skeletalAnimations.size();
-                anim_count > 0 && state.animation_index < anim_count) {
-                current_anim = &model->skeletalAnimations[state.animation_index];
-                should_update = true;
-            }
-        });
-
-    if (!read_success || !should_update || !current_anim || !model_ptr) {
-        return;
-    }
-
-    // 更新动画时间
-    state.current_time += static_cast<float>(current_anim->m_TicksPerSecond) * dt;
-    if (const auto duration = static_cast<float>(current_anim->m_Duration); duration > 0.0f) {
-        state.current_time = std::fmod(state.current_time, duration);
-    }
-
-    // 计算骨骼变换矩阵
-    const size_t bone_count = model_ptr->m_BoneInfoMap.size();
-    if (bone_count == 0) {
-        return;
-    }
-
-    std::vector<ktm::fmat4x4> bone_matrices(bone_count, ktm::fmat4x4::from_eye());
-    const ktm::fmat4x4 identity = ktm::fmat4x4::from_eye();
-
-    calculate_bone_transform(
-        model_ptr,
-        state.current_time,
-        *current_anim,
-        current_anim->m_RootNode,
-        identity,
-        bone_matrices);
-
-    const std::uintptr_t target_model_handle = state.model_handle;
-
-    SharedDataHub::instance().model_device_storage().for_each_write([&](ModelDevice& device) {
-        if (device.model_handle != target_model_handle) {
+    // 1. 遍历所有动画控制器，更新动画时间
+    SharedDataHub::instance().animation_controller_storage().for_each_write([&](AnimationState& state) {
+        if (!state.active) {
             return;
         }
-        if (!bone_matrices.empty()) {
-            device.bone_matrix_buffer.copyFromData(
-                bone_matrices.data(),
-                bone_matrices.size() * sizeof(ktm::fmat4x4));
+        state.current_time += state.playback_speed * dt;
+    });
+
+    // 2. 遍历所有 KinematicsDevice，计算并写入骨骼矩阵
+    SharedDataHub::instance().kinematics_storage().for_each_read([&](const KinematicsDevice& kine) {
+        if (kine.animation_controller_handle == 0 || kine.geometry_handle == 0) {
+            return;
+        }
+
+        // 读取动画状态
+        AnimationState anim_state{};
+        bool has_state = SharedDataHub::instance().animation_controller_storage().read(kine.animation_controller_handle, [&](const AnimationState& s) {
+            anim_state = s;
+        });
+
+        if (!has_state || !anim_state.active) {
+            return;
+        }
+
+        std::shared_ptr<Model> model_ptr;
+        const Animation* current_anim = nullptr;
+
+        bool has_model = SharedDataHub::instance().geometry_storage().read(kine.geometry_handle, [&](const GeometryDevice& geom) {
+            SharedDataHub::instance().model_resource_storage().read(geom.model_resource_handle, [&](const ModelResource& res) {
+                model_ptr = res.model_ptr;
+                if (model_ptr && !model_ptr->skeletalAnimations.empty() &&
+                    anim_state.animation_index < model_ptr->skeletalAnimations.size()) {
+                    current_anim = &model_ptr->skeletalAnimations[anim_state.animation_index];
+                }
+            });
+        });
+
+        if (!has_model || !model_ptr || !current_anim) {
+            return;
+        }
+
+        // 计算动画当前时间（循环）
+        float current_time = anim_state.current_time;
+        if (current_anim->m_TicksPerSecond > 0.0) {
+            current_time *= static_cast<float>(current_anim->m_TicksPerSecond);
+        }
+        if (current_anim->m_Duration > 0.0) {
+            current_time = std::fmod(current_time, static_cast<float>(current_anim->m_Duration));
+        }
+
+        // 计算骨骼矩阵
+        const size_t bone_count = model_ptr->m_BoneInfoMap.size();
+        if (bone_count == 0) {
+            return;
+        }
+
+        std::vector<ktm::fmat4x4> bone_matrices(bone_count, ktm::fmat4x4::from_eye());
+        const ktm::fmat4x4 identity = ktm::fmat4x4::from_eye();
+
+        calculate_bone_transform(
+            model_ptr,
+            current_time,
+            *current_anim,
+            current_anim->m_RootNode,
+            identity,
+            bone_matrices);
+
+        // 写入 skinning 的骨骼矩阵缓冲
+        if (kine.skinning_handle != 0) {
+            SharedDataHub::instance().skinning_storage().write(kine.skinning_handle, [&](SkinningDevice& skin) {
+                if (!bone_matrices.empty()) {
+                    skin.bone_matrix_buffer.copyFromData(
+                        bone_matrices.data(),
+                        bone_matrices.size() * sizeof(ktm::fmat4x4));
+                }
+            });
         }
     });
 }
