@@ -48,6 +48,14 @@ void Corona::API::Scene::set_environment(Environment* env) {
     });
 }
 
+Corona::API::Environment* Corona::API::Scene::get_environment() {
+    return environment_;
+}
+
+bool Corona::API::Scene::has_environment() const {
+    return environment_ != nullptr;
+}
+
 void Corona::API::Scene::remove_environment() {
     if (handle_ == 0) return;
 
@@ -246,6 +254,10 @@ void Corona::API::Environment::set_floor_grid(bool enabled) const {
         logger->warning("[Corona::API::Environment::set_floor_grid] Not implemented yet: " +
                         std::string(enabled ? "enabled" : "disabled"));
     }
+}
+
+std::uintptr_t Corona::API::Environment::get_handle() const {
+    return handle_;
 }
 
 // ########################
@@ -525,7 +537,6 @@ Corona::API::Acoustics::~Acoustics() {
 // ########################
 Corona::API::Kinematics::Kinematics(Geometry& geo)
     : geometry_(&geo), handle_(0), animation_handle_(0), skinning_handle_(0) {
-    // 检查是否有骨骼动画
     bool has_bones = false;
     size_t bone_count = 0;
     SharedDataHub::instance().geometry_storage().read(geo.get_handle(), [&](const GeometryDevice& geom_dev) {
@@ -537,7 +548,6 @@ Corona::API::Kinematics::Kinematics(Geometry& geo)
         });
     });
 
-    // 创建 AnimationController
     animation_handle_ = SharedDataHub::instance().animation_controller_storage().allocate([&](AnimationState& slot) {
         slot.animation_index = 0;
         slot.current_time = 0.0f;
@@ -545,7 +555,6 @@ Corona::API::Kinematics::Kinematics(Geometry& geo)
         slot.active = has_bones;
     });
 
-    // 如果有骨骼，创建 SkinningDevice
     if (has_bones) {
         skinning_handle_ = SharedDataHub::instance().skinning_storage().allocate([&](SkinningDevice& slot) {
             std::vector<ktm::fmat4x4> initial_matrices(bone_count, ktm::fmat4x4::from_eye());
@@ -553,7 +562,6 @@ Corona::API::Kinematics::Kinematics(Geometry& geo)
         });
     }
 
-    // 创建 KinematicsDevice
     handle_ = SharedDataHub::instance().kinematics_storage().allocate([&](KinematicsDevice& slot) {
         slot.geometry_handle = geo.get_handle();
         slot.skinning_handle = skinning_handle_;
@@ -581,19 +589,9 @@ void Corona::API::Kinematics::set_animation(std::uint32_t animation_index) {
         return;
     }
 
-    animation_index_ = animation_index;
     SharedDataHub::instance().animation_controller_storage().write(animation_handle_, [&](AnimationState& slot) {
         slot.animation_index = animation_index;
-        slot.current_time = 0.0f;  // 重置时间
-    });
-
-    // 读回验证
-    SharedDataHub::instance().animation_controller_storage().read(animation_handle_, [&](const AnimationState& slot) {
-        if (slot.animation_index != animation_index) {
-            if (auto* logger = Kernel::KernelContext::instance().logger()) {
-                logger->warning("[Kinematics::set_animation] State sync mismatch");
-            }
-        }
+        slot.current_time = 0.0f;
     });
 }
 
@@ -604,9 +602,6 @@ void Corona::API::Kinematics::play_animation(float speed) {
         }
         return;
     }
-
-    speed_ = speed;
-    active_ = true;
 
     SharedDataHub::instance().animation_controller_storage().write(animation_handle_, [&](AnimationState& slot) {
         slot.playback_speed = speed;
@@ -622,11 +617,33 @@ void Corona::API::Kinematics::stop_animation() {
         return;
     }
 
-    active_ = false;
-
     SharedDataHub::instance().animation_controller_storage().write(animation_handle_, [&](AnimationState& slot) {
         slot.active = false;
     });
+}
+
+std::uint32_t Corona::API::Kinematics::get_animation_index() const {
+    if (animation_handle_ == 0) {
+        return 0;
+    }
+
+    std::uint32_t result = 0;
+    SharedDataHub::instance().animation_controller_storage().read(animation_handle_, [&](const AnimationState& slot) {
+        result = slot.animation_index;
+    });
+    return result;
+}
+
+float Corona::API::Kinematics::get_current_time() const {
+    if (animation_handle_ == 0) {
+        return 0.0f;
+    }
+
+    float result = 0.0f;
+    SharedDataHub::instance().animation_controller_storage().read(animation_handle_, [&](const AnimationState& slot) {
+        result = slot.current_time;
+    });
+    return result;
 }
 
 // ########################
@@ -644,16 +661,14 @@ Corona::API::Actor::~Actor() {
     }
 }
 
-Corona::API::Actor::Profile* Corona::API::Actor::add_profile(Profile profile) {
+Corona::API::Actor::Profile* Corona::API::Actor::add_profile(const Profile& profile) {
     std::uintptr_t profile_handle = next_profile_handle_++;
     profiles_[profile_handle] = profile;
 
-    // 如果是第一个 profile，自动设为激活
     if (active_profile_handle_ == 0) {
         active_profile_handle_ = profile_handle;
     }
 
-    // 更新 ActorDevice 中的 profile_handles
     if (handle_ != 0) {
         SharedDataHub::instance().actor_storage().write(handle_, [&](ActorDevice& slot) {
             slot.profile_handles.push_back(profile_handle);
@@ -663,7 +678,7 @@ Corona::API::Actor::Profile* Corona::API::Actor::add_profile(Profile profile) {
     return &profiles_[profile_handle];
 }
 
-void Corona::API::Actor::remove_profile(Profile* profile) {
+void Corona::API::Actor::remove_profile(const Profile* profile) {
     if (handle_ == 0 || profile == nullptr) {
         if (auto* logger = Kernel::KernelContext::instance().logger()) {
             logger->warning("[Actor::remove_profile] Invalid actor handle or null profile");
@@ -671,7 +686,6 @@ void Corona::API::Actor::remove_profile(Profile* profile) {
         return;
     }
 
-    // 查找该 Profile 指针对应的 handle
     std::uintptr_t profile_handle = 0;
     for (const auto& [handle, prof] : profiles_) {
         if (&prof == profile) {
@@ -692,18 +706,12 @@ void Corona::API::Actor::remove_profile(Profile* profile) {
         return;
     }
 
-    // 停用组件（如动画）
     if (it->second.kinematics) {
         it->second.kinematics->stop_animation();
     }
 
-    // 注意：组件指针由外部管理，这里只移除引用
-    // 不销毁实际的组件对象
-
-    // 从 map 中删除
     profiles_.erase(it);
 
-    // 如果删除的是激活的 profile，选择新的激活项
     if (active_profile_handle_ == profile_handle) {
         if (!profiles_.empty()) {
             active_profile_handle_ = profiles_.begin()->first;
@@ -718,13 +726,12 @@ void Corona::API::Actor::remove_profile(Profile* profile) {
         }
     }
 
-    // 更新 ActorDevice
     SharedDataHub::instance().actor_storage().write(handle_, [&](ActorDevice& slot) {
         std::erase(slot.profile_handles, profile_handle);
     });
 }
 
-void Corona::API::Actor::set_active_profile(Profile* profile) {
+void Corona::API::Actor::set_active_profile(const Profile* profile) {
     if (profile == nullptr) {
         if (auto* logger = Kernel::KernelContext::instance().logger()) {
             logger->warning("[Actor::set_active_profile] Null profile pointer");
@@ -732,7 +739,6 @@ void Corona::API::Actor::set_active_profile(Profile* profile) {
         return;
     }
 
-    // 查找该 Profile 指针对应的 handle
     for (const auto& [handle, prof] : profiles_) {
         if (&prof == profile) {
             active_profile_handle_ = handle;
@@ -838,7 +844,6 @@ std::array<float, 3> Corona::API::Camera::get_position() const {
         return {0.0f, 0.0f, 0.0f};
     }
 
-    // 从 storage 同步读取最新状态
     std::array result = {0.0f, 0.0f, 0.0f};
     SharedDataHub::instance().camera_storage().read(handle_, [&](const CameraDevice& slot) {
         result[0] = slot.position.x;
@@ -899,6 +904,10 @@ float Corona::API::Camera::get_fov() const {
     });
 
     return result;
+}
+
+std::uintptr_t Corona::API::Camera::get_handle() const {
+    return handle_;
 }
 
 void Corona::API::Camera::set_surface(void* surface) {
@@ -963,30 +972,44 @@ void Corona::API::Viewport::set_camera(Camera* camera) {
         return;
     }
 
-    camera_ = camera;  // 仅存储指针，不拥有所有权
+    camera_ = camera;
 
-    // 更新 viewport_storage 中的 camera handle
     SharedDataHub::instance().viewport_storage().write(handle_, [&](ViewportDevice& slot) {
         slot.camera = camera_ ? camera_->get_handle() : 0;
     });
+}
+Corona::API::Camera* Corona::API::Viewport::get_camera() {
+    return camera_;
+}
+
+bool Corona::API::Viewport::has_camera() const {
+    return camera_ != nullptr;
 }
 
 void Corona::API::Viewport::remove_camera() {
     if (handle_ == 0) return;
 
-    camera_ = nullptr;  // 仅移除引用，不销毁对象
+    camera_ = nullptr;
     SharedDataHub::instance().viewport_storage().write(handle_, [&](ViewportDevice& slot) {
         slot.camera = 0;
     });
 }
 
 void Corona::API::Viewport::set_image_effects(ImageEffects* effects) {
-    image_effects_ = effects;  // 仅存储指针，不拥有所有权
+    image_effects_ = effects;
     // TODO: 如果有 image_effects_storage，在此写入
 }
 
+Corona::API::ImageEffects* Corona::API::Viewport::get_image_effects() {
+    return image_effects_;
+}
+
+bool Corona::API::Viewport::has_image_effects() const {
+    return image_effects_ != nullptr;
+}
+
 void Corona::API::Viewport::remove_image_effects() {
-    image_effects_ = nullptr;  // 仅移除引用，不销毁对象
+    image_effects_ = nullptr;
     // TODO: 如果有 image_effects_storage，在此清理
 }
 
@@ -1016,7 +1039,7 @@ void Corona::API::Viewport::set_size(int width, int height) {
 
 void Corona::API::Viewport::set_viewport_rect(int x, int y, int width, int height) {
     // TODO: Implement viewport rectangle settings
-    if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
+    if (auto* logger = Kernel::KernelContext::instance().logger()) {
         logger->warning("[Corona::API::Viewport::set_viewport_rect] Not implemented yet");
     }
 }
@@ -1037,7 +1060,11 @@ void Corona::API::Viewport::pick_actor_at_pixel(int x, int y) const {
 
 void Corona::API::Viewport::save_screenshot(const std::string& path) const {
     // TODO: Implement screenshot functionality
-    if (auto* logger = Corona::Kernel::KernelContext::instance().logger()) {
+    if (auto* logger = Kernel::KernelContext::instance().logger()) {
         logger->warning("[Corona::API::Viewport::save_screenshot] Not implemented yet: " + path);
     }
+}
+
+std::uintptr_t Corona::API::Viewport::get_handle() const {
+    return handle_;
 }

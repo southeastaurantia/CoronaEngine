@@ -98,18 +98,14 @@ class Kinematics {
     void play_animation(float speed = 1.0f);
     void stop_animation();
 
-    [[nodiscard]] std::uint32_t get_animation_index() const { return animation_index_; }
-    [[nodiscard]] float get_current_time() const { return current_time_; }
+    [[nodiscard]] std::uint32_t get_animation_index() const;
+    [[nodiscard]] float get_current_time() const;
 
    private:
     Geometry* geometry_;
     std::uintptr_t handle_{0};
     std::uintptr_t animation_handle_{0};
     std::uintptr_t skinning_handle_{0};
-    std::uint32_t animation_index_{0};
-    float current_time_{0.0f};
-    float speed_{1.0f};
-    bool active_{false};
 };
 
 // ============================================================================
@@ -128,9 +124,9 @@ class Actor {
         Geometry* geometry{nullptr};
     };
 
-    Profile* add_profile(Profile profile);
-    void remove_profile(Profile* profile);
-    void set_active_profile(Profile* profile);
+    Profile* add_profile(const Profile& profile);
+    void remove_profile(const Profile* profile);
+    void set_active_profile(const Profile* profile);
     [[nodiscard]] Profile* get_active_profile();
     [[nodiscard]] std::size_t profile_count() const { return profiles_.size(); }
 
@@ -167,7 +163,7 @@ class Camera {
    private:
     friend class Viewport;
 
-    [[nodiscard]] std::uintptr_t get_handle() const { return handle_; }
+    [[nodiscard]] std::uintptr_t get_handle() const;
 
     std::uintptr_t handle_{};
 };
@@ -195,14 +191,14 @@ class Viewport {
 
     // ========== Camera 管理（直接使用实例指针）==========
     void set_camera(Camera* camera);
-    [[nodiscard]] Camera* get_camera() { return camera_; }
-    [[nodiscard]] bool has_camera() const { return camera_ != nullptr; }
+    [[nodiscard]] Camera* get_camera();
+    [[nodiscard]] bool has_camera() const;
     void remove_camera();
 
     // ========== ImageEffects 管理（直接使用实例指针）==========
     void set_image_effects(ImageEffects* effects);
-    [[nodiscard]] ImageEffects* get_image_effects() { return image_effects_; }
-    [[nodiscard]] bool has_image_effects() const { return image_effects_ != nullptr; }
+    [[nodiscard]] ImageEffects* get_image_effects();
+    [[nodiscard]] bool has_image_effects() const;
     void remove_image_effects();
 
     // ========== 视口属性 ==========
@@ -219,7 +215,7 @@ class Viewport {
    private:
     friend class Scene;
 
-    [[nodiscard]] std::uintptr_t get_handle() const { return handle_; }
+    [[nodiscard]] std::uintptr_t get_handle() const;
 
     std::uintptr_t handle_{};
 
@@ -246,7 +242,7 @@ class Environment {
    private:
     friend class Scene;
 
-    [[nodiscard]] std::uintptr_t get_handle() const { return handle_; }
+    [[nodiscard]] std::uintptr_t get_handle() const;
 
     std::uintptr_t handle_{};
 };
@@ -261,9 +257,8 @@ class Scene {
 
     // ========== Environment 管理 ==========
     void set_environment(Environment* env);
-    [[nodiscard]] Environment* get_environment() { return environment_; }
-    [[nodiscard]] const Environment* get_environment() const { return environment_; }
-    [[nodiscard]] bool has_environment() const { return environment_ != nullptr; }
+    [[nodiscard]] Environment* get_environment();
+    [[nodiscard]] bool has_environment() const;
     void remove_environment();
 
     // ========== Actor 管理 ==========

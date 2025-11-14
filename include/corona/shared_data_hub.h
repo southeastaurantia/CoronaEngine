@@ -108,6 +108,7 @@ struct ProfileDevice {
     std::uintptr_t acoustics_handle{};
     std::uintptr_t mechanics_handle{};
     std::uintptr_t kinematics_handle{};
+    std::uintptr_t geometry_handle{};
 };
 
 struct ActorDevice {
