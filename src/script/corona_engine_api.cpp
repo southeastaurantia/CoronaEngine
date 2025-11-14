@@ -17,7 +17,8 @@
 // ########################
 Corona::API::Scene::Scene()
     : handle_(0) {
-    handle_ = SharedDataHub::instance().scene_storage().allocate([&](SceneDevice& slot) {});
+    handle_ = SharedDataHub::instance().scene_storage().allocate([&](SceneDevice& slot) {
+    });
 }
 
 Corona::API::Scene::~Scene() {
@@ -80,22 +81,21 @@ void Corona::API::Scene::add_actor(Actor* actor) {
         return;
     }
 
-    const auto actor_handle = actor->get_handle();
-    if (actors_.contains(actor_handle)) {
+    auto it = std::ranges::find(actors_, actor);
+    if (it != actors_.end()) {
         if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Scene::add_actor] Actor already exists in scene, handle: " +
-                            std::to_string(actor_handle));
+            logger->warning("[Scene::add_actor] Actor already exists in scene, handle: " + std::to_string(actor->get_handle()));
         }
         return;
     }
 
-    actors_.emplace(actor_handle, actor);
+    actors_.push_back(actor);
     SharedDataHub::instance().scene_storage().write(handle_, [&](SceneDevice& slot) {
-        slot.actor_handles.push_back(actor_handle);
+        slot.actor_handles.push_back(actor->get_handle());
     });
 }
 
-void Corona::API::Scene::remove_actor(const Actor* actor) {
+void Corona::API::Scene::remove_actor(Actor* actor) {
     if (handle_ == 0) return;
 
     if (actor == nullptr) {
@@ -105,18 +105,15 @@ void Corona::API::Scene::remove_actor(const Actor* actor) {
         return;
     }
 
-    const auto actor_handle = actor->get_handle();
-    if (!actors_.contains(actor_handle)) {
+    auto removed = std::erase(actors_, actor);
+    if (removed == 0) {
         if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Scene::remove_actor] Actor not found in scene, handle: " +
-                            std::to_string(actor_handle));
+            logger->warning("[Scene::remove_actor] Actor not found in scene, handle: " + std::to_string(actor->get_handle()));
         }
-        return;
     }
 
-    actors_.erase(actor_handle);
     SharedDataHub::instance().scene_storage().write(handle_, [&](SceneDevice& slot) {
-        std::erase(slot.actor_handles, actor_handle);
+        std::erase(slot.actor_handles, actor->get_handle());
     });
 }
 
@@ -133,9 +130,13 @@ void Corona::API::Scene::clear_actors() {
     });
 }
 
+std::size_t Corona::API::Scene::actor_count() const {
+    return actors_.size();
+}
+
 bool Corona::API::Scene::has_actor(const Actor* actor) const {
     if (actor == nullptr) return false;
-    return actors_.contains(actor->get_handle());
+    return std::ranges::find(actors_, actor) != actors_.end();
 }
 
 void Corona::API::Scene::add_viewport(Viewport* viewport) {
@@ -153,22 +154,21 @@ void Corona::API::Scene::add_viewport(Viewport* viewport) {
         return;
     }
 
-    const auto vp_handle = viewport->get_handle();
-    if (viewports_.contains(vp_handle)) {
+    auto it = std::ranges::find(viewports_, viewport);
+    if (it != viewports_.end()) {
         if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Scene::add_viewport] Viewport already exists in scene, handle: " +
-                            std::to_string(vp_handle));
+            logger->warning("[Scene::add_viewport] Viewport already exists in scene");
         }
         return;
     }
 
-    viewports_.emplace(vp_handle, viewport);
+    viewports_.push_back(viewport);
     SharedDataHub::instance().scene_storage().write(handle_, [&](SceneDevice& slot) {
-        slot.viewport_handles.push_back(vp_handle);
+        slot.viewport_handles.push_back(viewport->get_handle());
     });
 }
 
-void Corona::API::Scene::remove_viewport(const Viewport* viewport) {
+void Corona::API::Scene::remove_viewport(Viewport* viewport) {
     if (handle_ == 0) return;
 
     if (viewport == nullptr) {
@@ -178,18 +178,16 @@ void Corona::API::Scene::remove_viewport(const Viewport* viewport) {
         return;
     }
 
-    const auto vp_handle = viewport->get_handle();
-    if (!viewports_.contains(vp_handle)) {
+    auto removed = std::erase(viewports_, viewport);
+    if (removed == 0) {
         if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Scene::remove_viewport] Viewport not found in scene, handle: " +
-                            std::to_string(vp_handle));
+            logger->warning("[Scene::remove_viewport] Viewport not found in scene");
         }
         return;
     }
 
-    viewports_.erase(vp_handle);
     SharedDataHub::instance().scene_storage().write(handle_, [&](SceneDevice& slot) {
-        std::erase(slot.viewport_handles, vp_handle);
+        std::erase(slot.viewport_handles, viewport->get_handle());
     });
 }
 
@@ -206,9 +204,13 @@ void Corona::API::Scene::clear_viewports() {
     });
 }
 
+std::size_t Corona::API::Scene::viewport_count() const {
+    return viewports_.size();
+}
+
 bool Corona::API::Scene::has_viewport(const Viewport* viewport) const {
     if (viewport == nullptr) return false;
-    return viewports_.contains(viewport->get_handle());
+    return std::ranges::find(viewports_, viewport) != viewports_.end();
 }
 
 // ########################
@@ -216,7 +218,8 @@ bool Corona::API::Scene::has_viewport(const Viewport* viewport) const {
 // ########################
 Corona::API::Environment::Environment()
     : handle_(0) {
-    handle_ = SharedDataHub::instance().environment_storage().allocate([&](EnvironmentDevice& slot) {});
+    handle_ = SharedDataHub::instance().environment_storage().allocate([&](EnvironmentDevice& slot) {
+    });
 }
 
 Corona::API::Environment::~Environment() {
@@ -365,9 +368,9 @@ void Corona::API::Geometry::set_rotation(const std::array<float, 3>& euler) {
 
     // 直接写入容器中的局部旋转参数（欧拉角 ZYX 顺序）
     SharedDataHub::instance().model_transform_storage().write(transform_handle_, [&](ModelTransform& slot) {
-        slot.euler_rotation.x = euler[0];  // Pitch
-        slot.euler_rotation.y = euler[1];  // Yaw
-        slot.euler_rotation.z = euler[2];  // Roll
+        slot.euler_rotation.x = euler[0]; // Pitch
+        slot.euler_rotation.y = euler[1]; // Yaw
+        slot.euler_rotation.z = euler[2]; // Roll
     });
 }
 
@@ -417,9 +420,9 @@ std::array<float, 3> Corona::API::Geometry::get_rotation() const {
     // 从容器中读取局部旋转参数（欧拉角 ZYX 顺序）
     std::array<float, 3> result = {0.0f, 0.0f, 0.0f};
     SharedDataHub::instance().model_transform_storage().read(transform_handle_, [&](const ModelTransform& slot) {
-        result[0] = slot.euler_rotation.x;  // Pitch
-        result[1] = slot.euler_rotation.y;  // Yaw
-        result[2] = slot.euler_rotation.z;  // Roll
+        result[0] = slot.euler_rotation.x; // Pitch
+        result[1] = slot.euler_rotation.y; // Yaw
+        result[2] = slot.euler_rotation.z; // Roll
     });
 
     return result;
@@ -442,6 +445,18 @@ std::array<float, 3> Corona::API::Geometry::get_scale() const {
     });
 
     return result;
+}
+
+std::uintptr_t Corona::API::Geometry::get_handle() const {
+    return handle_;
+}
+
+std::uintptr_t Corona::API::Geometry::get_transform_handle() const {
+    return transform_handle_;
+}
+
+std::uintptr_t Corona::API::Geometry::get_model_resource_handle() const {
+    return model_resource_handle_;
 }
 
 // ########################
@@ -520,7 +535,7 @@ Corona::API::Mechanics::~Mechanics() {
 //       Acoustics
 // ########################
 Corona::API::Acoustics::Acoustics(Geometry& geo)
-    : geometry_(&geo), handle_(0), volume_(1.0f) {
+    : geometry_(&geo), handle_(0) {
     handle_ = SharedDataHub::instance().acoustics_storage().allocate([&](AcousticsDevice& slot) {
         slot.geometry_handle = geo.get_handle();
     });
@@ -531,6 +546,35 @@ Corona::API::Acoustics::~Acoustics() {
         SharedDataHub::instance().acoustics_storage().deallocate(handle_);
     }
 }
+
+void Corona::API::Acoustics::set_volume(float volume) {
+    if (handle_ == 0) {
+        if (auto* logger = Kernel::KernelContext::instance().logger()) {
+            logger->warning("[Acoustics::set_volume] Invalid acoustics handle");
+        }
+        return;
+    }
+
+    SharedDataHub::instance().acoustics_storage().write(handle_, [&](AcousticsDevice& slot) {
+        slot.volume = volume;
+    });
+}
+
+float Corona::API::Acoustics::get_volume() const {
+    if (handle_ == 0) {
+        if (auto* logger = Kernel::KernelContext::instance().logger()) {
+            logger->warning("Acoustics::get_volume] Invalid acoustics handle");
+        }
+        return 0.0f;
+    }
+
+    float result = 0.0f;
+    SharedDataHub::instance().acoustics_storage().read(handle_, [&](const AcousticsDevice& slot) {
+        result = slot.volume;
+    });
+    return result;
+}
+
 
 // ########################
 //       Kinematics
@@ -662,6 +706,41 @@ Corona::API::Actor::~Actor() {
 }
 
 Corona::API::Actor::Profile* Corona::API::Actor::add_profile(const Profile& profile) {
+    if (!profile.geometry) {
+        if (auto* logger = Kernel::KernelContext::instance().logger()) {
+            logger->error("[Actor::add_profile] Profile must have a valid Geometry");
+        }
+        return nullptr;
+    }
+
+    if (profile.optics && profile.optics->geometry_ != profile.geometry) {
+        if (auto* logger = Kernel::KernelContext::instance().logger()) {
+            logger->error("[Actor::add_profile] Optics references a different Geometry");
+        }
+        return nullptr;
+    }
+
+    if (profile.mechanics && profile.mechanics->geometry_ != profile.geometry) {
+        if (auto* logger = Kernel::KernelContext::instance().logger()) {
+            logger->error("[Actor::add_profile] Mechanics references a different Geometry");
+        }
+        return nullptr;
+    }
+
+    if (profile.acoustics && profile.acoustics->geometry_ != profile.geometry) {
+        if (auto* logger = Kernel::KernelContext::instance().logger()) {
+            logger->error("[Actor::add_profile] Acoustics references a different Geometry");
+        }
+        return nullptr;
+    }
+
+    if (profile.kinematics && profile.kinematics->geometry_ != profile.geometry) {
+        if (auto* logger = Kernel::KernelContext::instance().logger()) {
+            logger->error("[Actor::add_profile] Kinematics references a different Geometry");
+        }
+        return nullptr;
+    }
+
     std::uintptr_t profile_handle = next_profile_handle_++;
     profiles_[profile_handle] = profile;
 
@@ -757,21 +836,22 @@ Corona::API::Actor::Profile* Corona::API::Actor::get_active_profile() {
     return (it != profiles_.end()) ? &it->second : nullptr;
 }
 
+std::size_t Corona::API::Actor::profile_count() const {
+    return profiles_.size();
+}
+
+std::uintptr_t Corona::API::Actor::get_handle() const {
+    return handle_;
+}
+
 // ########################
 //          Camera
 // ########################
 Corona::API::Camera::Camera()
     : handle_(0) {
-    ktm::fvec3 pos_vec, fwd_vec, up_vec;
-    pos_vec.x = 0.0f;
-    pos_vec.y = 0.0f;
-    pos_vec.z = 5.0f;
-    fwd_vec.x = 0.0f;
-    fwd_vec.y = 0.0f;
-    fwd_vec.z = -1.0f;
-    up_vec.x = 0.0f;
-    up_vec.y = 1.0f;
-    up_vec.z = 0.0f;
+    ktm::fvec3 pos_vec{0.0f, 0.0f, 5.0f};
+    ktm::fvec3 fwd_vec{0.0f, 0.0f, -1.0f};
+    ktm::fvec3 up_vec{0.0f, 1.0f, 0.0f};
     float fov = 45.0f;
 
     handle_ = SharedDataHub::instance().camera_storage().allocate([&](CameraDevice& slot) {
@@ -784,16 +864,10 @@ Corona::API::Camera::Camera()
 
 Corona::API::Camera::Camera(const std::array<float, 3>& position, const std::array<float, 3>& forward, const std::array<float, 3>& world_up, float fov)
     : handle_(0) {
-    ktm::fvec3 pos_vec, fwd_vec, up_vec;
-    pos_vec.x = position[0];
-    pos_vec.y = position[1];
-    pos_vec.z = position[2];
-    fwd_vec.x = forward[0];
-    fwd_vec.y = forward[1];
-    fwd_vec.z = forward[2];
-    up_vec.x = world_up[0];
-    up_vec.y = world_up[1];
-    up_vec.z = world_up[2];
+    ktm::fvec3 pos_vec{position[0], position[1], position[2]};
+    ktm::fvec3 fwd_vec{forward[0], forward[1], forward[2]};
+    ktm::fvec3 up_vec{world_up[0], world_up[1], world_up[2]};
+
     handle_ = SharedDataHub::instance().camera_storage().allocate([&](CameraDevice& slot) {
         slot.position = pos_vec;
         slot.forward = fwd_vec;
@@ -817,16 +891,9 @@ void Corona::API::Camera::set(const std::array<float, 3>& position, const std::a
         return;
     }
 
-    ktm::fvec3 pos_vec, fwd_vec, up_vec;
-    pos_vec.x = position[0];
-    pos_vec.y = position[1];
-    pos_vec.z = position[2];
-    fwd_vec.x = forward[0];
-    fwd_vec.y = forward[1];
-    fwd_vec.z = forward[2];
-    up_vec.x = world_up[0];
-    up_vec.y = world_up[1];
-    up_vec.z = world_up[2];
+    ktm::fvec3 pos_vec{position[0], position[1], position[2]};
+    ktm::fvec3 fwd_vec{forward[0], forward[1], forward[2]};
+    ktm::fvec3 up_vec{world_up[0], world_up[1], world_up[2]};
 
     SharedDataHub::instance().camera_storage().write(handle_, [&](CameraDevice& slot) {
         slot.position = pos_vec;
@@ -946,14 +1013,14 @@ Corona::API::ImageEffects::~ImageEffects() {
 Corona::API::Viewport::Viewport()
     : handle_(0) {
     handle_ = SharedDataHub::instance().viewport_storage().allocate([&](ViewportDevice& slot) {
-        slot.camera = 0;  // 初始无 Camera
+        slot.camera = 0; // 初始无 Camera
     });
 }
 
 Corona::API::Viewport::Viewport(int width, int height, bool light_field)
     : handle_(0), width_(width), height_(height) {
     handle_ = SharedDataHub::instance().viewport_storage().allocate([&](ViewportDevice& slot) {
-        slot.camera = 0;  // 初始无 Camera
+        slot.camera = 0; // 初始无 Camera
     });
 }
 
@@ -978,6 +1045,7 @@ void Corona::API::Viewport::set_camera(Camera* camera) {
         slot.camera = camera_ ? camera_->get_handle() : 0;
     });
 }
+
 Corona::API::Camera* Corona::API::Viewport::get_camera() {
     return camera_;
 }
@@ -1033,7 +1101,6 @@ void Corona::API::Viewport::set_size(int width, int height) {
     height_ = height;
 
     SharedDataHub::instance().viewport_storage().write(handle_, [&](ViewportDevice& slot) {
-
     });
 }
 

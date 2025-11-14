@@ -96,6 +96,7 @@ struct MechanicsDevice {
 
 struct AcousticsDevice {
     std::uintptr_t geometry_handle{};
+    float volume{1.0f};
 };
 
 struct OpticsDevice {
