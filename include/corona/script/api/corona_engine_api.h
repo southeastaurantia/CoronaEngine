@@ -42,6 +42,7 @@ protected:
     [[nodiscard]] std::uintptr_t get_transform_handle() const;
     [[nodiscard]] std::uintptr_t get_model_resource_handle() const;
 
+private:
     std::uintptr_t handle_{};
     std::uintptr_t transform_handle_{};
     std::uintptr_t model_resource_handle_{};
@@ -56,6 +57,11 @@ public:
     ~Mechanics();
 
 private:
+    friend class Actor;
+
+    [[nodiscard]] std::uintptr_t get_handle() const;
+    [[nodiscard]] Geometry* get_geometry() const;
+
     Geometry* geometry_;
     std::uintptr_t handle_{};
 };
@@ -69,6 +75,11 @@ public:
     ~Optics();
 
 private:
+    friend class Actor;
+
+    [[nodiscard]] std::uintptr_t get_handle() const;
+    [[nodiscard]] Geometry* get_geometry() const;
+
     Geometry* geometry_;
     std::uintptr_t handle_{};
     std::uintptr_t skinning_handle_{};
@@ -86,6 +97,11 @@ public:
     [[nodiscard]] float get_volume() const;
 
 private:
+    friend class Actor;
+
+    [[nodiscard]] std::uintptr_t get_handle() const;
+    [[nodiscard]] Geometry* get_geometry() const;
+
     Geometry* geometry_;
     std::uintptr_t handle_{};
 };
@@ -106,6 +122,11 @@ public:
     [[nodiscard]] float get_current_time() const;
 
 private:
+    friend class Actor;
+
+    [[nodiscard]] std::uintptr_t get_handle() const;
+    [[nodiscard]] Geometry* get_geometry() const;
+
     Geometry* geometry_;
     std::uintptr_t handle_{0};
     std::uintptr_t animation_handle_{0};

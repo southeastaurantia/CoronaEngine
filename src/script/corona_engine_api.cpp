@@ -500,6 +500,14 @@ Corona::API::Optics::~Optics() {
     }
 }
 
+std::uintptr_t Corona::API::Optics::get_handle() const {
+    return handle_;
+}
+
+Corona::API::Geometry* Corona::API::Optics::get_geometry() const {
+    return geometry_;
+}
+
 // ########################
 //       Mechanics
 // ########################
@@ -529,6 +537,14 @@ Corona::API::Mechanics::~Mechanics() {
     if (handle_ != 0) {
         SharedDataHub::instance().mechanics_storage().deallocate(handle_);
     }
+}
+
+std::uintptr_t Corona::API::Mechanics::get_handle() const {
+    return handle_;
+}
+
+Corona::API::Geometry* Corona::API::Mechanics::get_geometry() const {
+    return geometry_;
 }
 
 // ########################
@@ -575,6 +591,13 @@ float Corona::API::Acoustics::get_volume() const {
     return result;
 }
 
+std::uintptr_t Corona::API::Acoustics::get_handle() const {
+    return handle_;
+}
+
+Corona::API::Geometry* Corona::API::Acoustics::get_geometry() const {
+    return geometry_;
+}
 
 // ########################
 //       Kinematics
@@ -688,6 +711,14 @@ float Corona::API::Kinematics::get_current_time() const {
         result = slot.current_time;
     });
     return result;
+}
+
+std::uintptr_t Corona::API::Kinematics::get_handle() const {
+    return handle_;
+}
+
+Corona::API::Geometry* Corona::API::Kinematics::get_geometry() const {
+    return geometry_;
 }
 
 // ########################
