@@ -350,7 +350,6 @@ void Corona::API::Geometry::set_position(const std::array<float, 3>& pos) {
         return;
     }
 
-    // 直接写入容器中的局部位置参数
     SharedDataHub::instance().model_transform_storage().write(transform_handle_, [&](ModelTransform& slot) {
         slot.position.x = pos[0];
         slot.position.y = pos[1];
