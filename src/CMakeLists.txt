@@ -41,8 +41,6 @@ add_library(CoronaEngine STATIC
         shared_data_hub.cpp
         ${PROJECT_SOURCE_DIR}/include/corona/engine.h
         ${PROJECT_SOURCE_DIR}/include/corona/shared_data_hub.h
-        ${PROJECT_SOURCE_DIR}/include/corona/components/actor_components.h
-        ${PROJECT_SOURCE_DIR}/include/corona/components/scene_components.h
         ${PROJECT_SOURCE_DIR}/include/corona/events/acoustics_system_events.h
         ${PROJECT_SOURCE_DIR}/include/corona/events/kinematics_system_events.h
         ${PROJECT_SOURCE_DIR}/include/corona/events/display_system_events.h
