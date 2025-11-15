@@ -230,9 +230,6 @@ public:
     void set_size(int width, int height);
     void set_viewport_rect(int x, int y, int width, int height);
 
-    // ========== 渲染表面 ==========
-    void set_surface(void* surface);
-
     // ========== 交互功能 ==========
     void pick_actor_at_pixel(int x, int y) const;
     void save_screenshot(const std::string& path) const;
@@ -249,8 +246,6 @@ private:
 
     int width_{1960};
     int height_{1080};
-
-    void* surface_{nullptr};
 };
 
 // ============================================================================

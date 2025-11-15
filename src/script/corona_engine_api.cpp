@@ -1009,12 +1009,13 @@ std::uintptr_t Corona::API::Camera::get_handle() const {
 }
 
 void Corona::API::Camera::set_surface(void* surface) {
-    if (surface) {
+    if (handle_ == 0) {
         if (auto* logger = Kernel::KernelContext::instance().logger()) {
             logger->warning("[Camera::set_surface] Invalid camera handle");
         }
         return;
     }
+
     SharedDataHub::instance().camera_storage().write(handle_, [&](CameraDevice& slot) {
         slot.surface = surface;
     });
@@ -1139,13 +1140,6 @@ void Corona::API::Viewport::set_viewport_rect(int x, int y, int width, int heigh
     // TODO: Implement viewport rectangle settings
     if (auto* logger = Kernel::KernelContext::instance().logger()) {
         logger->warning("[Corona::API::Viewport::set_viewport_rect] Not implemented yet");
-    }
-}
-
-void Corona::API::Viewport::set_surface(void* surface) {
-    surface_ = surface;
-    if (auto* event_bus = Kernel::KernelContext::instance().event_bus()) {
-        event_bus->publish<Events::DisplaySurfaceChangedEvent>({surface});
     }
 }
 
