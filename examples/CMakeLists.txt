@@ -88,6 +88,7 @@ function(corona_add_example)
     endif ()
 
     corona_install_runtime_deps(${CORONA_EX_NAME})
+    corona_copy_tbb_runtime_artifacts(${CORONA_EX_NAME})
 
     if (BUILD_CORONA_EDITOR)
         corona_install_corona_editor(${CORONA_EX_NAME} CoronaEngine)
