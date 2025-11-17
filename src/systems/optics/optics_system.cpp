@@ -85,7 +85,7 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
         // importedViewBuffer = HardwareBuffer(handle, imageSize.x * imageSize.y, sizeof(float) * 4, cudaViewBuffer->size_in_byte(), BufferUsage::StorageBuffer);
 
         // importedViewBuffer.copyToData(imageData2.data(), cudaViewBuffer->size_in_byte());
-
+         
         // importedViewImage = HardwareImage(imageSize.x, imageSize.y, ImageFormat::RGBA32_FLOAT, ImageUsage::StorageImage);
         //  importedViewImage.copyFromBuffer(importedViewBuffer);
         //  importedViewImage.copyFromData(imageData.data());
@@ -275,27 +275,23 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
                     hardware_->uniformBuffer.copyFromData(&hardware_->uniformBufferObjects, sizeof(hardware_->uniformBufferObjects));
                     hardware_->computePipeline["pushConsts.uniformBufferIndex"] = hardware_->uniformBuffer.storeDescriptor();
 
-                    if (!SharedDataHub::instance().optics_storage().empty()) {
-                        hardware_->executor << hardware_->rasterizerPipeline(1920, 1080)
-                                            << hardware_->executor.commit();
-                    }
+                    hardware_->executor << hardware_->rasterizerPipeline(1920, 1080)
+                                        << hardware_->computePipeline(1920 / 8, 1080 / 8, 1)
+                                        << hardware_->executor.commit();
 
-                    hardware_->executor
-                        << hardware_->computePipeline(1920 / 8, 1080 / 8, 1)
-                        << hardware_->executor.commit();
-#ifdef CORONA_ENABLE_VISION
-                    if (hardware_->displayers_.contains(reinterpret_cast<uint64_t>(camera.surface))) {
-                        renderPipeline->display(1 / 30);
-                        cudaViewBuffer->download_immediately(imageData.data());
-                        importedViewBuffer.copyFromData(imageData.data(), imageData.size() * sizeof(float) * 4);
-                        importedViewImage.copyFromBuffer(importedViewBuffer);
-                        hardware_->displayers_.at(reinterpret_cast<uint64_t>(camera.surface)).wait(hardware_->executor) << importedViewImage;
-                    }
-#else
+//#ifdef CORONA_ENABLE_VISION
+//                    if (hardware_->displayers_.contains(reinterpret_cast<uint64_t>(camera.surface))) {
+//                        renderPipeline->display(1 / 30);
+//                        cudaViewBuffer->download_immediately(imageData.data());
+//                        importedViewBuffer.copyFromData(imageData.data(), imageData.size() * sizeof(float) * 4);
+//                        importedViewImage.copyFromBuffer(importedViewBuffer);
+//                        hardware_->displayers_.at(reinterpret_cast<uint64_t>(camera.surface)).wait(hardware_->executor) << importedViewImage;
+//                    }
+//#else
                     if (hardware_->displayers_.contains(reinterpret_cast<uint64_t>(camera.surface))) {
                         hardware_->displayers_.at(reinterpret_cast<uint64_t>(camera.surface)).wait(hardware_->executor) << hardware_->finalOutputImage;
                     }
-#endif
+//#endif
                 });
             });
         }
