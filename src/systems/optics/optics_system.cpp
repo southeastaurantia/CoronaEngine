@@ -85,7 +85,7 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
         // importedViewBuffer = HardwareBuffer(handle, imageSize.x * imageSize.y, sizeof(float) * 4, cudaViewBuffer->size_in_byte(), BufferUsage::StorageBuffer);
 
         // importedViewBuffer.copyToData(imageData2.data(), cudaViewBuffer->size_in_byte());
-         
+
         // importedViewImage = HardwareImage(imageSize.x, imageSize.y, ImageFormat::RGBA32_FLOAT, ImageUsage::StorageImage);
         //  importedViewImage.copyFromBuffer(importedViewBuffer);
         //  importedViewImage.copyFromData(imageData.data());
@@ -139,8 +139,8 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
 
     auto shader_code = load_shader(std::filesystem::current_path() / "assets");
 
-    hardware_->rasterizerPipeline = RasterizerPipeline(shader_code->vertCode, shader_code->fragCode);
-    hardware_->computePipeline = ComputePipeline(shader_code->computeCode);
+    hardware_->rasterizerPipeline = RasterizerPipeline(shader_code->vert_code, shader_code->frag_code);
+    hardware_->computePipeline = ComputePipeline(shader_code->compute_code);
     hardware_->shaderHasInit = true;
 
     // 【订阅系统内部事件】使用 EventBus
