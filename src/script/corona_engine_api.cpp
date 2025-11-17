@@ -3,14 +3,14 @@
 //
 
 #include <CabbageHardware.h>
-#include <ResourceManager.h>
 #include <corona/events/optics_system_events.h>
 #include <corona/kernel/core/kernel_context.h>
 #include <corona/kernel/event/i_event_bus.h>
+#include <corona/resource_manager/resource_manager.h>
 #include <corona/script/api/corona_engine_api.h>
 #include <corona/shared_data_hub.h>
 
-#include "Model.h"
+#include "corona/resource_manager/model.h"
 
 // ########################
 //          Scene
@@ -297,14 +297,13 @@ Corona::API::Geometry::Geometry(const std::string& model_path)
         MeshDevice dev{};
         dev.pointsBuffer = HardwareBuffer(mesh.points, BufferUsage::VertexBuffer);
         dev.normalsBuffer = HardwareBuffer(mesh.normals, BufferUsage::VertexBuffer);
-        dev.texCoordsBuffer = HardwareBuffer(mesh.texCoords, BufferUsage::VertexBuffer);
-        dev.indexBuffer = HardwareBuffer(mesh.Indices, BufferUsage::IndexBuffer);
-        dev.boneIndexesBuffer = HardwareBuffer(mesh.boneIndices, BufferUsage::VertexBuffer);
-        dev.boneWeightsBuffer = HardwareBuffer(mesh.boneWeights, BufferUsage::VertexBuffer);
+        dev.texCoordsBuffer = HardwareBuffer(mesh.tex_coords, BufferUsage::VertexBuffer);
+        dev.indexBuffer = HardwareBuffer(mesh.indices, BufferUsage::IndexBuffer);
+        dev.boneIndexesBuffer = HardwareBuffer(mesh.bone_indices, BufferUsage::VertexBuffer);
+        dev.boneWeightsBuffer = HardwareBuffer(mesh.bone_weights, BufferUsage::VertexBuffer);
         dev.materialIndex = 0;
 
         if (!mesh.textures.empty() && mesh.textures[0]) {
-
         } else {
             dev.textureIndex = 0;
         }
@@ -365,9 +364,9 @@ void Corona::API::Geometry::set_rotation(const std::array<float, 3>& euler) {
 
     // 直接写入容器中的局部旋转参数（欧拉角 ZYX 顺序）
     SharedDataHub::instance().model_transform_storage().write(transform_handle_, [&](ModelTransform& slot) {
-        slot.euler_rotation.x = euler[0]; // Pitch
-        slot.euler_rotation.y = euler[1]; // Yaw
-        slot.euler_rotation.z = euler[2]; // Roll
+        slot.euler_rotation.x = euler[0];  // Pitch
+        slot.euler_rotation.y = euler[1];  // Yaw
+        slot.euler_rotation.z = euler[2];  // Roll
     });
 }
 
@@ -417,9 +416,9 @@ std::array<float, 3> Corona::API::Geometry::get_rotation() const {
     // 从容器中读取局部旋转参数（欧拉角 ZYX 顺序）
     std::array<float, 3> result = {0.0f, 0.0f, 0.0f};
     SharedDataHub::instance().model_transform_storage().read(transform_handle_, [&](const ModelTransform& slot) {
-        result[0] = slot.euler_rotation.x; // Pitch
-        result[1] = slot.euler_rotation.y; // Yaw
-        result[2] = slot.euler_rotation.z; // Roll
+        result[0] = slot.euler_rotation.x;  // Pitch
+        result[1] = slot.euler_rotation.y;  // Yaw
+        result[2] = slot.euler_rotation.z;  // Roll
     });
 
     return result;
@@ -464,7 +463,7 @@ Corona::API::Optics::Optics(Geometry& geo)
     bool has_bones = false;
     SharedDataHub::instance().geometry_storage().read(geo.get_handle(), [&](const GeometryDevice& geom_dev) {
         SharedDataHub::instance().model_resource_storage().read(geom_dev.model_resource_handle, [&](const ModelResource& res) {
-            has_bones = (res.model_ptr && res.model_ptr->m_BoneCounter > 0);
+            has_bones = (res.model_ptr && res.model_ptr->bone_counter > 0);
         });
     });
 
@@ -472,7 +471,7 @@ Corona::API::Optics::Optics(Geometry& geo)
         size_t bone_count = 0;
         SharedDataHub::instance().geometry_storage().read(geo.get_handle(), [&](const GeometryDevice& geom_dev) {
             SharedDataHub::instance().model_resource_storage().read(geom_dev.model_resource_handle, [&](const ModelResource& res) {
-                bone_count = res.model_ptr->m_BoneCounter;
+                bone_count = res.model_ptr->bone_counter;
             });
         });
 
@@ -516,8 +515,8 @@ Corona::API::Mechanics::Mechanics(Geometry& geo)
     SharedDataHub::instance().geometry_storage().read(geo.get_handle(), [&](const GeometryDevice& geom_dev) {
         SharedDataHub::instance().model_resource_storage().read(geom_dev.model_resource_handle, [&](const ModelResource& res) {
             if (res.model_ptr) {
-                max_xyz = res.model_ptr->maxXYZ;
-                min_xyz = res.model_ptr->minXYZ;
+                max_xyz = res.model_ptr->max_xyz;
+                min_xyz = res.model_ptr->min_xyz;
             }
         });
     });
@@ -606,8 +605,8 @@ Corona::API::Kinematics::Kinematics(Geometry& geo)
     SharedDataHub::instance().geometry_storage().read(geo.get_handle(), [&](const GeometryDevice& geom_dev) {
         SharedDataHub::instance().model_resource_storage().read(geom_dev.model_resource_handle, [&](const ModelResource& res) {
             if (res.model_ptr) {
-                has_bones = (res.model_ptr->m_BoneCounter > 0);
-                bone_count = res.model_ptr->m_BoneCounter;
+                has_bones = (res.model_ptr->bone_counter > 0);
+                bone_count = res.model_ptr->bone_counter;
             }
         });
     });
@@ -1042,14 +1041,14 @@ Corona::API::ImageEffects::~ImageEffects() {
 Corona::API::Viewport::Viewport()
     : handle_(0) {
     handle_ = SharedDataHub::instance().viewport_storage().allocate([&](ViewportDevice& slot) {
-        slot.camera = 0; // 初始无 Camera
+        slot.camera = 0;  // 初始无 Camera
     });
 }
 
 Corona::API::Viewport::Viewport(int width, int height, bool light_field)
     : handle_(0), width_(width), height_(height) {
     handle_ = SharedDataHub::instance().viewport_storage().allocate([&](ViewportDevice& slot) {
-        slot.camera = 0; // 初始无 Camera
+        slot.camera = 0;  // 初始无 Camera
     });
 }
 

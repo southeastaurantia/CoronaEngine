@@ -1,15 +1,15 @@
-#include <Model.h>
-#include <ResourceManager.h>
 #include <corona/events/optics_system_events.h>
 #include <corona/kernel/core/i_logger.h>
 #include <corona/kernel/event/i_event_bus.h>
 #include <corona/kernel/event/i_event_stream.h>
+#include <corona/resource_manager/model.h>
+#include <corona/resource_manager/resource_manager.h>
 #include <corona/shared_data_hub.h>
 #include <corona/systems/optics/optics_system.h>
 
 #include <filesystem>
 
-#include "Shader.h"
+#include "corona/resource_manager/shader.h"
 #include "hardware.h"
 
 #ifdef CORONA_ENABLE_VISION

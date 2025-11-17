@@ -63,7 +63,7 @@ target_link_libraries(CoronaScriptPython PUBLIC
     Python::Python
     EnTT::EnTT
     nanobind-static
-    CoronaResource::Resource
+    corona::resource::manager
     CabbageHardware
 )
 

@@ -14,7 +14,7 @@ namespace API {
 // Geometry: 作为所有组件的锚点，存储位置/旋转/缩放和模型数据
 // ============================================================================
 class Geometry {
-public:
+   public:
     explicit Geometry(const std::string& model_path);
     ~Geometry();
 
@@ -31,18 +31,18 @@ public:
     [[nodiscard]] std::array<float, 3> get_rotation() const;
     [[nodiscard]] std::array<float, 3> get_scale() const;
 
-private:
+   private:
     friend class Mechanics;
     friend class Optics;
     friend class Acoustics;
     friend class Kinematics;
 
-protected:
+   protected:
     [[nodiscard]] std::uintptr_t get_handle() const;
     [[nodiscard]] std::uintptr_t get_transform_handle() const;
     [[nodiscard]] std::uintptr_t get_model_resource_handle() const;
 
-private:
+   private:
     std::uintptr_t handle_{};
     std::uintptr_t transform_handle_{};
     std::uintptr_t model_resource_handle_{};
@@ -52,11 +52,11 @@ private:
 // Mechanics: 物理/力学组件，依赖 Geometry
 // ============================================================================
 class Mechanics {
-public:
+   public:
     explicit Mechanics(Geometry& geo);
     ~Mechanics();
 
-private:
+   private:
     friend class Actor;
 
     [[nodiscard]] std::uintptr_t get_handle() const;
@@ -70,11 +70,11 @@ private:
 // Optics: 光学/渲染组件，依赖 Geometry
 // ============================================================================
 class Optics {
-public:
+   public:
     explicit Optics(Geometry& geo);
     ~Optics();
 
-private:
+   private:
     friend class Actor;
 
     [[nodiscard]] std::uintptr_t get_handle() const;
@@ -89,14 +89,14 @@ private:
 // Acoustics: 声学组件，依赖 Geometry
 // ============================================================================
 class Acoustics {
-public:
+   public:
     explicit Acoustics(Geometry& geo);
     ~Acoustics();
 
     void set_volume(float volume);
     [[nodiscard]] float get_volume() const;
 
-private:
+   private:
     friend class Actor;
 
     [[nodiscard]] std::uintptr_t get_handle() const;
@@ -110,7 +110,7 @@ private:
 // Kinematics: 运动学/动画组件，依赖 Geometry
 // ============================================================================
 class Kinematics {
-public:
+   public:
     explicit Kinematics(Geometry& geo);
     ~Kinematics();
 
@@ -121,7 +121,7 @@ public:
     [[nodiscard]] std::uint32_t get_animation_index() const;
     [[nodiscard]] float get_current_time() const;
 
-private:
+   private:
     friend class Actor;
 
     [[nodiscard]] std::uintptr_t get_handle() const;
@@ -137,7 +137,7 @@ private:
 // Actor: OOP 风格的实体类，支持多套组件和多个 Geometry
 // ============================================================================
 class Actor {
-public:
+   public:
     Actor();
     ~Actor();
 
@@ -155,7 +155,7 @@ public:
     [[nodiscard]] Profile* get_active_profile();
     [[nodiscard]] std::size_t profile_count() const;
 
-private:
+   private:
     friend class Scene;
 
     [[nodiscard]] std::uintptr_t get_handle() const;
@@ -170,7 +170,7 @@ private:
 // Camera: 相机类
 // ============================================================================
 class Camera {
-public:
+   public:
     Camera();
     Camera(const std::array<float, 3>& position, const std::array<float, 3>& forward,
            const std::array<float, 3>& world_up, float fov);
@@ -185,7 +185,7 @@ public:
     [[nodiscard]] std::array<float, 3> get_world_up() const;
     [[nodiscard]] float get_fov() const;
 
-private:
+   private:
     friend class Viewport;
 
     [[nodiscard]] std::uintptr_t get_handle() const;
@@ -197,11 +197,11 @@ private:
 // ImageEffects: 图像效果类
 // ============================================================================
 class ImageEffects {
-public:
+   public:
     ImageEffects();
     ~ImageEffects();
 
-private:
+   private:
     std::uintptr_t handle_{};
 };
 
@@ -209,7 +209,7 @@ private:
 // Viewport: 视口类（OOP 设计）
 // ============================================================================
 class Viewport {
-public:
+   public:
     Viewport();
     explicit Viewport(int width, int height, bool light_field = false);
     ~Viewport();
@@ -234,7 +234,7 @@ public:
     void pick_actor_at_pixel(int x, int y) const;
     void save_screenshot(const std::string& path) const;
 
-private:
+   private:
     friend class Scene;
 
     [[nodiscard]] std::uintptr_t get_handle() const;
@@ -252,14 +252,14 @@ private:
 // Environment: 环境类
 // ============================================================================
 class Environment {
-public:
+   public:
     Environment();
     ~Environment();
 
     void set_sun_direction(const std::array<float, 3>& direction);
     void set_floor_grid(bool enabled) const;
 
-private:
+   private:
     friend class Scene;
 
     [[nodiscard]] std::uintptr_t get_handle() const;
@@ -271,7 +271,7 @@ private:
 // Scene: 场景类（OOP 设计）
 // ============================================================================
 class Scene {
-public:
+   public:
     Scene();
     ~Scene();
 
@@ -297,7 +297,7 @@ public:
     [[nodiscard]] std::size_t viewport_count() const;
     [[nodiscard]] bool has_viewport(const Viewport* viewport) const;
 
-private:
+   private:
     std::uintptr_t handle_{};
 
     Environment* environment_{nullptr};
@@ -310,5 +310,5 @@ private:
 // ============================================================================
 Scene* read_scene(const std::filesystem::path& scene_path);
 void write_scene(Scene* scene, const std::filesystem::path& scene_path);
-} // namespace API
-} // namespace Corona
+}  // namespace API
+}  // namespace Corona

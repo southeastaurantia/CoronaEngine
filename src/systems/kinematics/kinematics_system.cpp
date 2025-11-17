@@ -7,14 +7,14 @@
 #include <corona/systems/kinematics/kinematics_system.h>
 #include <ktm/ktm.h>
 
-#include "Animation.h"
-#include "Bone.h"
-#include "Model.h"
+#include "corona/resource_manager/animation.h"
+#include "corona/resource_manager/bone.h"
+#include "corona/resource_manager/model.h"
 
 namespace Corona {
 const Bone* findBone(const Animation& anim, const std::string& name) {
-    for (const Bone& b : anim.m_Bones) {
-        if (b.m_Name == name) {
+    for (const Bone& b : anim.bones) {
+        if (b.name == name) {
             return &b;
         }
     }
@@ -22,30 +22,30 @@ const Bone* findBone(const Animation& anim, const std::string& name) {
 }
 
 int getPositionIndex(const Bone& bone, float time) {
-    for (int i = 0; i < bone.m_NumPositions - 1; ++i) {
-        if (time < bone.m_Positions[i + 1].timeStamp) {
+    for (int i = 0; i < bone.num_positions - 1; ++i) {
+        if (time < bone.positions[i + 1].time_stamp) {
             return i;
         }
     }
-    return bone.m_NumPositions - 2;
+    return bone.num_positions - 2;
 }
 
 int getRotationIndex(const Bone& bone, float time) {
-    for (int i = 0; i < bone.m_NumRotations - 1; ++i) {
-        if (time < bone.m_Rotations[i + 1].timeStamp) {
+    for (int i = 0; i < bone.num_rotations - 1; ++i) {
+        if (time < bone.rotations[i + 1].time_stamp) {
             return i;
         }
     }
-    return bone.m_NumRotations - 2;
+    return bone.num_rotations - 2;
 }
 
 int getScaleIndex(const Bone& bone, float time) {
-    for (int i = 0; i < bone.m_NumScales - 1; ++i) {
-        if (time < bone.m_Scales[i + 1].timeStamp) {
+    for (int i = 0; i < bone.num_scales - 1; ++i) {
+        if (time < bone.scales[i + 1].time_stamp) {
             return i;
         }
     }
-    return bone.m_NumScales - 2;
+    return bone.num_scales - 2;
 }
 
 ktm::fmat4x4 interpolatePosition(const Bone& bone, float time) {
@@ -54,7 +54,7 @@ ktm::fmat4x4 interpolatePosition(const Bone& bone, float time) {
     pos.y = 0.0f;
     pos.z = 0.0f;
 
-    if (bone.m_NumPositions == 0) {
+    if (bone.num_positions == 0) {
         // 返回单位矩阵
         ktm::faffine3d affine;
         affine.translate(pos);
@@ -63,15 +63,15 @@ ktm::fmat4x4 interpolatePosition(const Bone& bone, float time) {
         return result;
     }
 
-    if (bone.m_NumPositions == 1) {
-        pos = bone.m_Positions[0].position;
+    if (bone.num_positions == 1) {
+        pos = bone.positions[0].position;
     } else {
         const int p0 = getPositionIndex(bone, time);
         const int p1 = p0 + 1;
-        const float last = bone.m_Positions[p0].timeStamp;
-        const float next = bone.m_Positions[p1].timeStamp;
+        const float last = bone.positions[p0].time_stamp;
+        const float next = bone.positions[p1].time_stamp;
         const float factor = (time - last) / (next - last);
-        pos = ktm::lerp(bone.m_Positions[p0].position, bone.m_Positions[p1].position, factor);
+        pos = ktm::lerp(bone.positions[p0].position, bone.positions[p1].position, factor);
     }
 
     ktm::faffine3d affine;
@@ -84,7 +84,7 @@ ktm::fmat4x4 interpolatePosition(const Bone& bone, float time) {
 ktm::fmat4x4 interpolateRotation(const Bone& bone, float time) {
     ktm::fquat rot = ktm::fquat::identity();
 
-    if (bone.m_NumRotations == 0) {
+    if (bone.num_rotations == 0) {
         ktm::faffine3d affine;
         affine.rotate(rot);
         ktm::fmat4x4 result;
@@ -92,15 +92,15 @@ ktm::fmat4x4 interpolateRotation(const Bone& bone, float time) {
         return result;
     }
 
-    if (bone.m_NumRotations == 1) {
-        rot = ktm::normalize(bone.m_Rotations[0].orientation);
+    if (bone.num_rotations == 1) {
+        rot = ktm::normalize(bone.rotations[0].orientation);
     } else {
         const int r0 = getRotationIndex(bone, time);
         const int r1 = r0 + 1;
-        const float last = bone.m_Rotations[r0].timeStamp;
-        const float next = bone.m_Rotations[r1].timeStamp;
+        const float last = bone.rotations[r0].time_stamp;
+        const float next = bone.rotations[r1].time_stamp;
         const float factor = (time - last) / (next - last);
-        rot = ktm::slerp(bone.m_Rotations[r0].orientation, bone.m_Rotations[r1].orientation, factor);
+        rot = ktm::slerp(bone.rotations[r0].orientation, bone.rotations[r1].orientation, factor);
         rot = ktm::normalize(rot);
     }
 
@@ -117,7 +117,7 @@ ktm::fmat4x4 interpolateScale(const Bone& bone, float time) {
     sc.y = 1.0f;
     sc.z = 1.0f;
 
-    if (bone.m_NumScales == 0) {
+    if (bone.num_scales == 0) {
         ktm::faffine3d affine;
         affine.scale(sc);
         ktm::fmat4x4 result;
@@ -125,15 +125,15 @@ ktm::fmat4x4 interpolateScale(const Bone& bone, float time) {
         return result;
     }
 
-    if (bone.m_NumScales == 1) {
-        sc = bone.m_Scales[0].scale;
+    if (bone.num_scales == 1) {
+        sc = bone.scales[0].scale;
     } else {
         const int s0 = getScaleIndex(bone, time);
         const int s1 = s0 + 1;
-        const float last = bone.m_Scales[s0].timeStamp;
-        const float next = bone.m_Scales[s1].timeStamp;
+        const float last = bone.scales[s0].time_stamp;
+        const float next = bone.scales[s1].time_stamp;
         const float factor = (time - last) / (next - last);
-        sc = ktm::lerp(bone.m_Scales[s0].scale, bone.m_Scales[s1].scale, factor);
+        sc = ktm::lerp(bone.scales[s0].scale, bone.scales[s1].scale, factor);
     }
 
     ktm::faffine3d affine;
@@ -161,9 +161,9 @@ void calculate_bone_transform(
 
     const ktm::fmat4x4 global = parent * nodeTransform;
 
-    if (auto it = model->m_BoneInfoMap.find(node.name); it != model->m_BoneInfoMap.end()) {
-        const int index = it->second->ID;
-        const ktm::fmat4x4& offset = it->second->OffsetMatrix;
+    if (auto it = model->bone_info_map.find(node.name); it != model->bone_info_map.end()) {
+        const int index = it->second->id;
+        const ktm::fmat4x4& offset = it->second->offset_matrix;
         if (index >= 0 && static_cast<size_t>(index) < outBones.size()) {
             outBones[index] = global * offset;
         }
@@ -219,9 +219,9 @@ void KinematicsSystem::update_animation() {
         bool has_model = SharedDataHub::instance().geometry_storage().read(kine.geometry_handle, [&](const GeometryDevice& geom) {
             SharedDataHub::instance().model_resource_storage().read(geom.model_resource_handle, [&](const ModelResource& res) {
                 model_ptr = res.model_ptr;
-                if (model_ptr && !model_ptr->skeletalAnimations.empty() &&
-                    anim_state.animation_index < model_ptr->skeletalAnimations.size()) {
-                    current_anim = &model_ptr->skeletalAnimations[anim_state.animation_index];
+                if (model_ptr && !model_ptr->skeletal_animations.empty() &&
+                    anim_state.animation_index < model_ptr->skeletal_animations.size()) {
+                    current_anim = &model_ptr->skeletal_animations[anim_state.animation_index];
                 }
             });
         });
@@ -232,15 +232,15 @@ void KinematicsSystem::update_animation() {
 
         // 计算动画当前时间（循环）
         float current_time = anim_state.current_time;
-        if (current_anim->m_TicksPerSecond > 0.0) {
-            current_time *= static_cast<float>(current_anim->m_TicksPerSecond);
+        if (current_anim->ticks_per_second > 0.0) {
+            current_time *= static_cast<float>(current_anim->ticks_per_second);
         }
-        if (current_anim->m_Duration > 0.0) {
-            current_time = std::fmod(current_time, static_cast<float>(current_anim->m_Duration));
+        if (current_anim->duration > 0.0) {
+            current_time = std::fmod(current_time, static_cast<float>(current_anim->duration));
         }
 
         // 计算骨骼矩阵
-        const size_t bone_count = model_ptr->m_BoneInfoMap.size();
+        const size_t bone_count = model_ptr->bone_info_map.size();
         if (bone_count == 0) {
             return;
         }
@@ -252,7 +252,7 @@ void KinematicsSystem::update_animation() {
             model_ptr,
             current_time,
             *current_anim,
-            current_anim->m_RootNode,
+            current_anim->root_node,
             identity,
             bone_matrices);
 
