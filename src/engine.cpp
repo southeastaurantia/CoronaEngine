@@ -1,7 +1,7 @@
 #include "corona/engine.h"
 
-#include <ResourceManager.h>
 #include <corona/events/engine_events.h>
+#include <corona/resource_manager/resource_manager.h>
 #include <corona/script/python/python_api.h>
 #include <corona/systems/acoustics/acoustics_system.h>
 #include <corona/systems/display/display_system.h>
@@ -14,8 +14,8 @@
 #include <memory>
 #include <thread>
 
-#include "Model.h"
-#include "Shader.h"
+#include "corona/resource_manager/model.h"
+#include "corona/resource_manager/text_file.h"
 
 namespace Corona {
 
@@ -64,7 +64,7 @@ bool Engine::initialize() {
     }
 
     auto& resource_manager = ResourceManager::instance();
-    resource_manager.register_loader(std::make_shared<ShaderLoader>());
+    resource_manager.register_loader(std::make_shared<TextFileLoader>());
     resource_manager.register_loader(std::make_shared<ModelLoader>());
 
     // 3. 初始化所有系统

@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "CabbageHardware.h"
-#include "Mesh.h"
+#include "corona/resource_manager/mesh.h"
 
 // Forward declarations
 
@@ -123,7 +123,7 @@ struct CameraDevice {
     ktm::fvec3 forward;
     ktm::fvec3 world_up;
     float fov{60.0f};
-    float aspect{16.0f/9.0f};
+    float aspect{16.0f / 9.0f};
     float near_plane{0.1f};
     float far_plane{100.0f};
 
@@ -143,7 +143,7 @@ struct CameraDevice {
 
     [[nodiscard]] ktm::fmat4x4 compute_view_matrix() const {
         ktm::fvec3 normalized_forward = ktm::normalize(forward);
-        return ktm::look_at_lh(position,  normalized_forward, world_up);
+        return ktm::look_at_lh(position, normalized_forward, world_up);
     }
 
     [[nodiscard]] ktm::fmat4x4 compute_projection_matrix() const {

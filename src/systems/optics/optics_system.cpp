@@ -1,15 +1,15 @@
-#include <Model.h>
-#include <ResourceManager.h>
 #include <corona/events/optics_system_events.h>
 #include <corona/kernel/core/i_logger.h>
 #include <corona/kernel/event/i_event_bus.h>
 #include <corona/kernel/event/i_event_stream.h>
+#include <corona/resource_manager/model.h>
+#include <corona/resource_manager/resource_manager.h>
 #include <corona/shared_data_hub.h>
 #include <corona/systems/optics/optics_system.h>
 
 #include <filesystem>
 
-#include "Shader.h"
+#include "corona/resource_manager/text_file.h"
 #include "hardware.h"
 
 #ifdef CORONA_ENABLE_VISION
@@ -20,9 +20,9 @@
 
 namespace {
 
-std::shared_ptr<Corona::Shader> load_shader(const std::filesystem::path& shader_path) {
-    auto shaderId = Corona::ResourceId::from("shader", (shader_path).string());
-    auto shader = std::static_pointer_cast<Corona::Shader>(Corona::ResourceManager::instance().load_once(shaderId));
+std::shared_ptr<Corona::TextFile> load_shader(const std::filesystem::path& shader_path) {
+    auto shaderId = Corona::ResourceId::from(Corona::ResourceType::TextFile, (shader_path).string());
+    auto shader = std::static_pointer_cast<Corona::TextFile>(Corona::ResourceManager::instance().load_once(shaderId));
     return shader;
 }
 
@@ -51,8 +51,8 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
         // visionDevice = RHIContext::instance().create_device("cuda");
         visionDevice.init_rtx();
         vision::Global::instance().set_device(&visionDevice);
-        vision::Global::instance().set_scene_path("E:\\CoronaResource\\examples\\assets\\test_vision\\render_scene\\kitchen");
-        auto str = "E:\\CoronaResource\\examples\\assets\\test_vision\\render_scene\\kitchen\\vision_scene.json";
+        vision::Global::instance().set_scene_path("E:\\CoronaTestScenes\\test_vision\\render_scene\\kitchen");
+        auto str = "E:\\CoronaTestScenes\\test_vision\\render_scene\\kitchen\\vision_scene.json";
         renderPipeline = vision::Importer::import_scene(str);
         renderPipeline->init();
         renderPipeline->prepare();
@@ -67,32 +67,43 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
         importedViewImage = HardwareImage(imageSize.x, imageSize.y, ImageFormat::RGBA32_FLOAT, ImageUsage::StorageImage);
         importedViewBuffer = HardwareBuffer(imageSize.x * imageSize.y, sizeof(float) * 4, BufferUsage::StorageBuffer);
 
-        // uint64_t viewBufferHandleWin = device.export_handle(*buffer.handle());
-        // uint64_t viewBufferHandleCUDA = device.import_handle(viewBufferHandleWin, buffer.size_in_byte());
+        uint64_t viewBufferHandleWin = visionDevice.export_handle(cudaViewBuffer->handle());
+        // uint64_t viewBufferHandleCUDA = visionDevice.import_handle(viewBufferHandleWin, cudaViewBuffer->size_in_byte());
 
-        // Buffer v_buffer = device.create_buffer<float4>(buffer.size(), handle_ty(viewBufferHandleCUDA));
+        // Buffer v_buffer = visionDevice.create_buffer<float4>(cudaViewBuffer->size(), handle_ty(viewBufferHandleCUDA));
 
         // std::vector<float4> imageData(buffer.size());
-        // buffer.download_immediately(imageData.data());
+        cudaViewBuffer->download_immediately(imageData.data());
 
-        // std::vector<float4> imageData2(buffer.size());
+        // std::vector<float4> imageData2(cudaViewBuffer->size());
         // v_buffer.download_immediately(imageData2.data());
 
         // uint2 imageSize = rp->frame_buffer()->raytracing_resolution();
 
-        // ExternalHandle handle;
-        // handle.handle = reinterpret_cast<HANDLE>(viewBufferHandleWin);
-        // importedViewBuffer = HardwareBuffer(handle, imageSize.x * imageSize.y, sizeof(float) * 4, buffer.size_in_byte(), BufferUsage::StorageBuffer);
+        ExternalHandle handle;
+        handle.handle = reinterpret_cast<HANDLE>(viewBufferHandleWin);
+        // importedViewBuffer = HardwareBuffer(handle, imageSize.x * imageSize.y, sizeof(float) * 4, cudaViewBuffer->size_in_byte(), BufferUsage::StorageBuffer);
+
+        // importedViewBuffer.copyToData(imageData2.data(), cudaViewBuffer->size_in_byte());
 
         // importedViewImage = HardwareImage(imageSize.x, imageSize.y, ImageFormat::RGBA32_FLOAT, ImageUsage::StorageImage);
         //  importedViewImage.copyFromBuffer(importedViewBuffer);
         //  importedViewImage.copyFromData(imageData.data());
 
-        // HardwareBuffer testBuffer = HardwareBuffer(imageSize.x * imageSize.y, sizeof(float) * 4, BufferUsage::StorageBuffer, imageData.data());
-        //  HardwareBuffer testBuffer2(testBuffer.exportBufferMemory(), imageSize.x * imageSize.y, sizeof(float) * 4, buffer.size_in_byte(), BufferUsage::StorageBuffer);
-        //  testBuffer2.copyFromData(imageData.data(), imageData.size() * sizeof(float) * 4);
+        HardwareBuffer testBuffer = HardwareBuffer(imageSize.x * imageSize.y, sizeof(float) * 4, BufferUsage::StorageBuffer, imageData.data());
 
-        // importedViewImage.copyFromBuffer(testBuffer2);
+        std::vector<float4> imageData3(cudaViewBuffer->size());
+        testBuffer.copyToData(imageData3.data(), cudaViewBuffer->size_in_byte());
+
+        std::vector<float4> imageData2(cudaViewBuffer->size());
+        HardwareBuffer testBuffer2(testBuffer.exportBufferMemory(), imageSize.x * imageSize.y, sizeof(float) * 4, cudaViewBuffer->size_in_byte(), BufferUsage::StorageBuffer);
+        testBuffer2.copyToData(imageData2.data(), cudaViewBuffer->size_in_byte());
+
+        std::vector<float4> imageData4(cudaViewBuffer->size());
+        // HardwareBuffer testBuffer3 = HardwareBuffer(imageData3.data(), cudaViewBuffer->size_in_byte());
+        // testBuffer3.copyToData(imageData4.data(), cudaViewBuffer->size_in_byte());
+        // testBuffer2.copyFromData(imageData2.data(), imageData.size() * sizeof(float) * 4);imageData2
+        //  importedViewImage.copyFromBuffer(testBuffer2);
 
         // uint64_t viewBufferHandleCUDA2 = device.import_handle(handle_ty(testBuffer.exportBufferMemory().handle), buffer.size_in_byte());
 
@@ -101,7 +112,7 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
         // std::vector<float4> imageData2(buffer.size());
         // v_buffer.download_immediately(imageData2.data());
 
-        // importedViewImage.copyFromBuffer(importedViewBuffer);
+        importedViewImage.copyFromBuffer(importedViewBuffer);
 #endif
     }
 
@@ -126,10 +137,12 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
 
     hardware_->finalOutputImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
 
-    auto shader_code = load_shader(std::filesystem::current_path() / "assets");
+    auto vert_code = load_shader(std::filesystem::current_path() / "assets" / "shaders" / "test.vert.glsl");
+    auto frag_code = load_shader(std::filesystem::current_path() / "assets" / "shaders" / "test.frag.glsl");
+    auto compute_code = load_shader(std::filesystem::current_path() / "assets" / "shaders" / "test.comp.glsl");
 
-    hardware_->rasterizerPipeline = RasterizerPipeline(shader_code->vertCode, shader_code->fragCode);
-    hardware_->computePipeline = ComputePipeline(shader_code->computeCode);
+    hardware_->rasterizerPipeline = RasterizerPipeline(vert_code->text, frag_code->text);
+    hardware_->computePipeline = ComputePipeline(compute_code->text);
     hardware_->shaderHasInit = true;
 
     // 【订阅系统内部事件】使用 EventBus
@@ -257,27 +270,23 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
                     hardware_->uniformBuffer.copyFromData(&hardware_->uniformBufferObjects, sizeof(hardware_->uniformBufferObjects));
                     hardware_->computePipeline["pushConsts.uniformBufferIndex"] = hardware_->uniformBuffer.storeDescriptor();
 
-                    if (!SharedDataHub::instance().optics_storage().empty()) {
-                        hardware_->executor << hardware_->rasterizerPipeline(1920, 1080)
-                                            << hardware_->executor.commit();
-                    }
+                    hardware_->executor << hardware_->rasterizerPipeline(1920, 1080)
+                                        << hardware_->computePipeline(1920 / 8, 1080 / 8, 1)
+                                        << hardware_->executor.commit();
 
-                    hardware_->executor
-                        << hardware_->computePipeline(1920 / 8, 1080 / 8, 1)
-                        << hardware_->executor.commit();
-#ifdef CORONA_ENABLE_VISION
-                    if (hardware_->displayers_.contains(camera.surface)) {
-                        renderPipeline->display(1 / 30);
-                        cudaViewBuffer->download_immediately(imageData.data());
-                        importedViewBuffer.copyFromData(imageData.data(), imageData.size() * sizeof(float) * 4);
-                        importedViewImage.copyFromBuffer(importedViewBuffer);
-                        hardware_->displayers_.at(camera.surface).wait(hardware_->executor) << importedViewImage;
-                    }
-#else
+//#ifdef CORONA_ENABLE_VISION
+//                    if (hardware_->displayers_.contains(reinterpret_cast<uint64_t>(camera.surface))) {
+//                        renderPipeline->display(1 / 30);
+//                        cudaViewBuffer->download_immediately(imageData.data());
+//                        importedViewBuffer.copyFromData(imageData.data(), imageData.size() * sizeof(float) * 4);
+//                        importedViewImage.copyFromBuffer(importedViewBuffer);
+//                        hardware_->displayers_.at(reinterpret_cast<uint64_t>(camera.surface)).wait(hardware_->executor) << importedViewImage;
+//                    }
+//#else
                     if (hardware_->displayers_.contains(reinterpret_cast<uint64_t>(camera.surface))) {
                         hardware_->displayers_.at(reinterpret_cast<uint64_t>(camera.surface)).wait(hardware_->executor) << hardware_->finalOutputImage;
                     }
-#endif
+//#endif
                 });
             });
         }

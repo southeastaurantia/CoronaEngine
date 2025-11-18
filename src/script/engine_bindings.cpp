@@ -1,5 +1,5 @@
-#include <corona/script/python/engine_scripts.h>
 #include <corona/script/api/corona_engine_api.h>
+#include <corona/script/python/engine_scripts.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/array.h>
 #include <nanobind/stl/string.h>
@@ -112,18 +112,11 @@ void BindAll(nanobind::module_& m) {
         .def("set", &Camera::set,
              nb::arg("position"), nb::arg("forward"), nb::arg("world_up"), nb::arg("fov"),
              "Set all camera parameters at once")
-        .def("set_surface", [](Camera& self, std::uintptr_t surface) {
-            self.set_surface(reinterpret_cast<void*>(surface));
-        }, nb::arg("surface"),
-             "Set render surface (pass window ID as integer)")
-        .def("get_position", &Camera::get_position,
-             "Get camera position [x, y, z]")
-        .def("get_forward", &Camera::get_forward,
-             "Get camera forward direction [x, y, z]")
-        .def("get_world_up", &Camera::get_world_up,
-             "Get camera world up vector [x, y, z]")
-        .def("get_fov", &Camera::get_fov,
-             "Get field of view in degrees");
+        .def("set_surface", [](Camera& self, std::uintptr_t surface) { self.set_surface(reinterpret_cast<void*>(surface)); }, nb::arg("surface"), "Set render surface (pass window ID as integer)")
+        .def("get_position", &Camera::get_position, "Get camera position [x, y, z]")
+        .def("get_forward", &Camera::get_forward, "Get camera forward direction [x, y, z]")
+        .def("get_world_up", &Camera::get_world_up, "Get camera world up vector [x, y, z]")
+        .def("get_fov", &Camera::get_fov, "Get field of view in degrees");
 
     // ============================================================================
     // ImageEffects: 图像效果类
