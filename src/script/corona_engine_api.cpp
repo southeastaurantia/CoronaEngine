@@ -268,7 +268,7 @@ std::uintptr_t Corona::API::Environment::get_handle() const {
 // ########################
 Corona::API::Geometry::Geometry(const std::string& model_path)
     : handle_(0), transform_handle_(0), model_resource_handle_(0) {
-    auto model_id = ResourceId::from("model", model_path);
+    auto model_id = ResourceId::from(Corona::ResourceType::Model, model_path);
     auto model_ptr = std::static_pointer_cast<Model>(ResourceManager::instance().load_once(model_id));
     if (!model_ptr) {
         if (auto* logger = Kernel::KernelContext::instance().logger()) {

@@ -21,7 +21,7 @@
 namespace {
 
 std::shared_ptr<Corona::Shader> load_shader(const std::filesystem::path& shader_path) {
-    auto shaderId = Corona::ResourceId::from("shader", (shader_path).string());
+    auto shaderId = Corona::ResourceId::from(Corona::ResourceType::TextFile, (shader_path).string());
     auto shader = std::static_pointer_cast<Corona::Shader>(Corona::ResourceManager::instance().load_once(shaderId));
     return shader;
 }
