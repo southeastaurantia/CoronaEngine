@@ -64,7 +64,7 @@ bool Engine::initialize() {
     }
 
     auto& resource_manager = ResourceManager::instance();
-    resource_manager.register_loader(std::make_shared<ShaderLoader>());
+    resource_manager.register_loader(std::make_shared<TextFileLoader>());
     resource_manager.register_loader(std::make_shared<ModelLoader>());
 
     // 3. 初始化所有系统
