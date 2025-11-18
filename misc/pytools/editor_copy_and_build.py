@@ -24,24 +24,85 @@ def echo(msg: str) -> None:
     print(msg)
 
 
-def copy_tree(src: Path, dst: Path) -> None:
+def copy_tree(src: Path, dst: Path, merge_content: bool = False) -> None:
     if not src.exists():
         echo(f"[editor-copy] Skip (not exists): {src}")
         return
     # Ensure destination directory exists
     dst.mkdir(parents=True, exist_ok=True)
-    # Copy content of src into dst/src.name
-    target = dst / src.name
-    # If target exists, use dirs_exist_ok=True to merge
-    echo(f"[editor-copy] Copying: {src} -> {target}")
-    # Avoid copying heavy transient folders
+
+    # Avoid copying heavy transient folders and development-only files
+    def _should_ignore(name: str) -> bool:
+        """Check if a file/directory should be ignored."""
+        # Direct match list
+        ignored_exact = {
+            # Node/Frontend build artifacts
+            "node_modules", "dist", ".vite", ".turbo",
+            # Python cache and test
+            "__pycache__", ".pytest_cache", ".tox",
+            # IDE and editor
+            ".idea", ".vscode", ".vs", "autosave",
+            # Version control
+            ".git", ".gitignore", ".gitattributes",
+            # Build and deployment
+            "build.py", "Dockerfile", "docker-compose.yml",
+            # Documentation
+            "README.md", "docs",
+            # Configuration examples (keep actual config)
+            "ai_settings.example.toml",
+            # Dependencies manifests (dev-only lock files)
+            "requirements.txt", "package-lock.json", "yarn.lock", "pnpm-lock.yaml",
+            # Test files
+            "tests", "test",
+            # Temporary and log files
+            ".cache", ".temp", "tmp",
+            # OS files
+            ".DS_Store", "Thumbs.db", "desktop.ini"
+        }
+
+        # Direct match
+        if name in ignored_exact:
+            return True
+
+        # Pattern matching
+        if name.endswith(('.pyc', '.pyo', '.log', '.bak', '.backup', '.md')) or name.endswith('~'):
+            return True
+        if '_test.py' in name or name.startswith('test_'):
+            return True
+        if '.example.' in name or '.sample.' in name:
+            return True
+
+        return False
+
     def _ignore(dirpath: str, names: list[str]) -> set[str]:
-        ignored = {"node_modules", "dist", ".vite", ".turbo", ".cache"}
-        return {n for n in names if n in ignored}
-    try:
-        shutil.copytree(src, target, dirs_exist_ok=True, ignore=_ignore)
-    except Exception as e:
-        print(f"[editor-copy] ERROR copying {src} -> {target}: {e}")
+        """shutil.copytree compatible ignore function."""
+        return {n for n in names if _should_ignore(n)}
+
+    if merge_content:
+        # Copy the content of src directory directly into dst (no subdirectory created)
+        echo(f"[editor-copy] Merging content: {src}/* -> {dst}")
+        for item in src.iterdir():
+            # Check if should be ignored
+            if _should_ignore(item.name):
+                echo(f"[editor-copy] Ignoring: {item.name}")
+                continue
+
+            target = dst / item.name
+            try:
+                if item.is_dir():
+                    shutil.copytree(item, target, dirs_exist_ok=True, ignore=_ignore)
+                else:
+                    shutil.copy2(item, target)
+            except Exception as e:
+                print(f"[editor-copy] ERROR copying {item} -> {target}: {e}")
+    else:
+        # Original behavior: copy src as a subdirectory of dst
+        target = dst / src.name
+        echo(f"[editor-copy] Copying: {src} -> {target}")
+        try:
+            shutil.copytree(src, target, dirs_exist_ok=True, ignore=_ignore)
+        except Exception as e:
+            print(f"[editor-copy] ERROR copying {src} -> {target}: {e}")
 
 
 def run(cmd: list[str], cwd: Path | None = None, env: dict | None = None) -> int:
@@ -98,6 +159,8 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Copy editor resources and run npm build")
     ap.add_argument("--dest-root", required=True, help="Destination root directory (CabbageEditor under target dir)")
     ap.add_argument("--src-dir", action="append", default=[], help="Source directory to copy (can be specified multiple times)")
+    ap.add_argument("--merge-content", action="store_true",
+                    help="Merge source directory content directly into dest (don't create subdirectory)")
     ap.add_argument("--frontend-dir", required=True, help="Frontend directory path for npm build")
     ap.add_argument("--node-dir", required=True, help="Bundled Node directory path")
     args = ap.parse_args(argv)
@@ -111,7 +174,7 @@ def main(argv: list[str] | None = None) -> int:
     dest_root.mkdir(parents=True, exist_ok=True)
 
     for s in src_dirs:
-        copy_tree(s, dest_root)
+        copy_tree(s, dest_root, merge_content=args.merge_content)
 
     # Run npm build last
     return maybe_run_npm(frontend_dir, node_dir)
