@@ -48,8 +48,6 @@ def copy_tree(src: Path, dst: Path, merge_content: bool = False) -> None:
             "build.py", "Dockerfile", "docker-compose.yml",
             # Documentation
             "README.md", "docs",
-            # Configuration examples (keep actual config)
-            "ai_settings.example.toml",
             # Dependencies manifests (dev-only lock files)
             "requirements.txt", "package-lock.json", "yarn.lock", "pnpm-lock.yaml",
             # Test files
@@ -68,8 +66,6 @@ def copy_tree(src: Path, dst: Path, merge_content: bool = False) -> None:
         if name.endswith(('.pyc', '.pyo', '.log', '.bak', '.backup', '.md')) or name.endswith('~'):
             return True
         if '_test.py' in name or name.startswith('test_'):
-            return True
-        if '.example.' in name or '.sample.' in name:
             return True
 
         return False
