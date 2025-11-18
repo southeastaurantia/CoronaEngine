@@ -17,6 +17,7 @@ Makefile
 # Local IDE settings
 .vscode/
 .idea/
+.vs/
 
 # Tool caches
 **/.cache/
