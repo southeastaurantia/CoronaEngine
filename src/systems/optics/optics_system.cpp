@@ -9,7 +9,7 @@
 
 #include <filesystem>
 
-#include "corona/resource_manager/shader.h"
+#include "corona/resource_manager/text_file.h"
 #include "hardware.h"
 
 #ifdef CORONA_ENABLE_VISION
@@ -20,9 +20,9 @@
 
 namespace {
 
-std::shared_ptr<Corona::Shader> load_shader(const std::filesystem::path& shader_path) {
+std::shared_ptr<Corona::TextFile> load_shader(const std::filesystem::path& shader_path) {
     auto shaderId = Corona::ResourceId::from(Corona::ResourceType::TextFile, (shader_path).string());
-    auto shader = std::static_pointer_cast<Corona::Shader>(Corona::ResourceManager::instance().load_once(shaderId));
+    auto shader = std::static_pointer_cast<Corona::TextFile>(Corona::ResourceManager::instance().load_once(shaderId));
     return shader;
 }
 
@@ -137,10 +137,12 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
 
     hardware_->finalOutputImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
 
-    auto shader_code = load_shader(std::filesystem::current_path() / "assets");
+    auto vert_code = load_shader(std::filesystem::current_path() / "assets" / "shaders" / "test.vert.glsl");
+    auto frag_code = load_shader(std::filesystem::current_path() / "assets" / "shaders" / "test.frag.glsl");
+    auto compute_code = load_shader(std::filesystem::current_path() / "assets" / "shaders" / "test.comp.glsl");
 
-    hardware_->rasterizerPipeline = RasterizerPipeline(shader_code->vert_code, shader_code->frag_code);
-    hardware_->computePipeline = ComputePipeline(shader_code->compute_code);
+    hardware_->rasterizerPipeline = RasterizerPipeline(vert_code->text, frag_code->text);
+    hardware_->computePipeline = ComputePipeline(compute_code->text);
     hardware_->shaderHasInit = true;
 
     // 【订阅系统内部事件】使用 EventBus

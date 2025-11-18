@@ -15,7 +15,7 @@
 #include <thread>
 
 #include "corona/resource_manager/model.h"
-#include "corona/resource_manager/shader.h"
+#include "corona/resource_manager/text_file.h"
 
 namespace Corona {
 
