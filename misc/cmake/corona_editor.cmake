@@ -30,28 +30,15 @@ function(corona_configure_corona_editor target_name)
         return()
     endif()
 
-    set(_CORONA_BACKEND_DIR "${PROJECT_SOURCE_DIR}/editor/CabbageEditor/Backend")
-    set(_CORONA_FRONTEND_DIR "${PROJECT_SOURCE_DIR}/editor/CabbageEditor/Frontend")
+    set(_CORONA_EDITOR_DIR "${PROJECT_SOURCE_DIR}/editor/CabbageEditor")
     set(_CORONA_EXISTING_DIRS)
 
-    if(EXISTS "${_CORONA_BACKEND_DIR}")
-        list(APPEND _CORONA_EXISTING_DIRS "${_CORONA_BACKEND_DIR}")
-    else()
-        message(STATUS "[Corona:Editor] Backend directory not found: ${_CORONA_BACKEND_DIR}")
-    endif()
-
-    if(EXISTS "${_CORONA_FRONTEND_DIR}")
-        list(APPEND _CORONA_EXISTING_DIRS "${_CORONA_FRONTEND_DIR}")
-    else()
-        message(STATUS "[Corona:Editor] Frontend directory not found: ${_CORONA_FRONTEND_DIR}")
-    endif()
-
-    if(_CORONA_EXISTING_DIRS)
-        list(REMOVE_DUPLICATES _CORONA_EXISTING_DIRS)
+    if(EXISTS "${_CORONA_EDITOR_DIR}")
+        list(APPEND _CORONA_EXISTING_DIRS "${_CORONA_EDITOR_DIR}")
         set_target_properties(${target_name} PROPERTIES INTERFACE_CORONA_EDITOR_DIRS "${_CORONA_EXISTING_DIRS}")
-        message(STATUS "[Corona:Editor] Collected directories for ${target_name}: ${_CORONA_EXISTING_DIRS}")
+        message(STATUS "[Corona:Editor] Collected CabbageEditor directory for ${target_name}: ${_CORONA_EDITOR_DIR}")
     else()
-        message(WARNING "[Corona:Editor] No editor directories collected (backend/frontend missing).")
+        message(WARNING "[Corona:Editor] CabbageEditor directory not found: ${_CORONA_EDITOR_DIR}")
     endif()
 endfunction()
 
@@ -97,7 +84,7 @@ function(corona_install_corona_editor target_name core_target)
             "set DEST_ROOT=%~1\n"
             "set FRONTEND_DIR=%~2\n"
             "echo [Corona:Editor] Installing editor resources to %DEST_ROOT%\n"
-            "\"${Python_EXECUTABLE}\" \"${_CORONA_PY_SCRIPT}\" --dest-root \"%DEST_ROOT%\""
+            "\"${Python_EXECUTABLE}\" \"${_CORONA_PY_SCRIPT}\" --dest-root \"%DEST_ROOT%\" --merge-content"
         )
 
         foreach(_CORONA_DIR IN LISTS _CORONA_EDITOR_DIRS)
@@ -128,7 +115,7 @@ function(corona_install_corona_editor target_name core_target)
             "DEST_ROOT=\"$1\"\n"
             "FRONTEND_DIR=\"$2\"\n"
             "echo \"[Corona:Editor] Installing editor resources to $DEST_ROOT\"\n"
-            "\"${Python_EXECUTABLE}\" \"${_CORONA_PY_SCRIPT}\" --dest-root \"$DEST_ROOT\""
+            "\"${Python_EXECUTABLE}\" \"${_CORONA_PY_SCRIPT}\" --dest-root \"$DEST_ROOT\" --merge-content"
         )
 
         foreach(_CORONA_DIR IN LISTS _CORONA_EDITOR_DIRS)

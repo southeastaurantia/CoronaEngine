@@ -208,13 +208,6 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
                         SharedDataHub::instance().geometry_storage().read(optics.geometry_handle, [&](const GeometryDevice& geom) {
                             SharedDataHub::instance().model_transform_storage().read(geom.transform_handle, [&](const ModelTransform& transform) {
                                 auto model_matrix = transform.compute_matrix();
-                                // 调试：输出变换数据
-                                static int frame_counter = 0;
-                                if (++frame_counter % 120 == 0) {  // 每2秒输出一次（假设60fps）
-                                    std::cout << "Transform - pos: (" << transform.position.x << ", "
-                                              << transform.position.y << ", " << transform.position.z << "), "
-                                              << "geom_handle: " << optics.geometry_handle << std::endl;
-                                }
                                 hardware_->rasterizerPipeline["pushConsts.modelMatrix"] = model_matrix;
                             });
                             hardware_->rasterizerPipeline["pushConsts.uniformBufferIndex"] = hardware_->gbufferUniformBuffer.storeDescriptor();

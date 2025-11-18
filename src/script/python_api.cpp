@@ -98,7 +98,7 @@ inline const std::string& EditorBackendAbs() {
 }
 
 inline std::string RuntimeBackendAbs() {
-    auto p = std::filesystem::current_path() / "CabbageEditor" / "Backend";
+    auto p = std::filesystem::current_path() / "CabbageEditor";
     return Normalize(p.string());
 }
 
@@ -163,6 +163,7 @@ bool PythonAPI::ensureInitialized() {
         PyWideStringList_Append(&config.module_search_paths, str2wstr(CORONA_PYTHON_MODULE_LIB_DIR).c_str());
         PyWideStringList_Append(&config.module_search_paths, str2wstr(PathCfg::SitePackagesDir()).c_str());
     }
+
 
     Py_InitializeFromConfig(&config);
 
