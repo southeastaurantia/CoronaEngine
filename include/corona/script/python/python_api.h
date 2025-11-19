@@ -1,14 +1,17 @@
 #pragma once
 
 #include <Python.h>
-#include <corona/kernel/core/i_logger.h>
 #include <corona/script/python/python_hotfix.h>
+#include <corona/kernel/core/i_logger.h>
 #include <nanobind/nanobind.h>
 
 #include <chrono>
 #include <filesystem>
+#include <memory>
 #include <shared_mutex>
 #include <string>
+
+namespace Corona::Script::Python {
 
 struct PythonAPI {
     PythonAPI();
@@ -50,3 +53,4 @@ struct PythonAPI {
                                   const std::filesystem::path& destDir,
                                   int64_t checkTimeMs);
 };
+}  // namespace Corona::Script::Python

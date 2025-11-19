@@ -3,114 +3,23 @@
 #include <nanobind/stl/string.h>
 #include <windows.h>
 
-#include <entt/signal/sigh.hpp>
 #include <iostream>
 #include <ranges>
 #include <regex>
 #include <set>
 #include <unordered_map>
 
-namespace {
-inline void log_nanobind_python_error(const nanobind::python_error& e) {
-    // Ensure GIL is held and try to render a full traceback into a single string.
-    try {
-        nanobind::gil_scoped_acquire gil;
-        std::string formatted;
-        try {
-            nanobind::module_ traceback = nanobind::module_::import_("traceback");
-            nanobind::object format_exception = nanobind::getattr(traceback, "format_exception");
-            auto formatted_list = format_exception(e.type(), e.value(), e.traceback());
-            nanobind::str sep("");
-            auto joined = nanobind::getattr(sep, "join")(formatted_list);
-            formatted = nanobind::cast<std::string>(joined);
-        } catch (...) {
-            // Fallback: best-effort type/value rendering.
-            try {
-                std::string type_name;
-                try {
-                    type_name = nanobind::cast<std::string>(nanobind::str(nanobind::getattr(e.type(), "__name__")));
-                } catch (...) {
-                }
-                std::string value_str;
-                try {
-                    value_str = nanobind::cast<std::string>(nanobind::str(e.value()));
-                } catch (...) {
-                }
-                if (!type_name.empty() || !value_str.empty()) {
-                    formatted = type_name;
-                    if (!value_str.empty()) {
-                        if (!formatted.empty()) formatted += ": ";
-                        formatted += value_str;
-                    }
-                } else {
-                    formatted = e.what();
-                }
-            } catch (...) {
-                formatted = e.what();
-            }
-        }
-        // Write everything to stderr in one place to avoid mixed stdout/stderr ordering.
-        std::cerr << "[Python Error] " << formatted << std::endl;
-        std::cerr.flush();
-    } catch (const std::exception& ex) {
-        std::cerr << "[Python Error] (formatting failed) " << ex.what() << std::endl;
-    } catch (...) {
-        std::cerr << "[Python Error] (formatting failed) Unknown error" << std::endl;
-    }
-}
-
-}  // namespace
+#include "python_error_handler.cpp"
+#include "python_path_config.cpp"
 
 extern "C" PyObject* PyInit_CoronaEngine();
 
-namespace PathCfg {
-inline std::string Normalize(std::string s) {
-    std::ranges::replace(s, '\\', '/');
-    return s;
-}
+namespace Corona::Script::Python {
 
-inline const std::string& EngineRoot() {
-    static std::string root = [] {
-        std::string resultPath;
-        std::string runtimePath = std::filesystem::current_path().string();
-        std::regex pattern(R"((.*)CoronaEngine\b)");
-        std::smatch matches;
-        if (std::regex_search(runtimePath, matches, pattern)) {
-            if (matches.size() > 1) {
-                resultPath = matches[1].str() + "CoronaEngine";
-            } else {
-                throw std::runtime_error("Failed to resolve source path.");
-            }
-        }
-        return Normalize(resultPath);
-    }();
-    return root;
-}
-
-inline const std::string& EditorBackendRel() {
-    static const std::string rel = "Editor/CabbageEditor/Backend";
-    return rel;
-}
-
-inline const std::string& EditorBackendAbs() {
-    static const std::string abs = [] { return Normalize(EngineRoot() + "/" + EditorBackendRel()); }();
-    return abs;
-}
-
-inline std::string RuntimeBackendAbs() {
-    auto p = std::filesystem::current_path() / "CabbageEditor";
-    return Normalize(p.string());
-}
-
-inline std::string SitePackagesDir() {
-    return Normalize(std::string(CORONA_PYTHON_MODULE_LIB_DIR) + "/site-packages");
-}
-}  // namespace PathCfg
-
-const std::string PythonAPI::codePath = PathCfg::EngineRoot();
+const std::string codePath = PathCfg::engine_root();
 
 PythonAPI::PythonAPI() {
-    logger = Corona::Kernel::create_logger();
+    logger = Kernel::create_logger();
     // TODO: 添加写入文件的 sink
     // logger->add_sink(Corona::Kernel::create_file_sink());
 }
@@ -157,13 +66,12 @@ bool PythonAPI::ensureInitialized() {
     config.module_search_paths_set = 1;
 
     {
-        std::string runtimePath = PathCfg::RuntimeBackendAbs();
+        std::string runtimePath = PathCfg::runtime_backend_abs();
         PyWideStringList_Append(&config.module_search_paths, str2wstr(runtimePath).c_str());
         PyWideStringList_Append(&config.module_search_paths, str2wstr(CORONA_PYTHON_MODULE_DLL_DIR).c_str());
         PyWideStringList_Append(&config.module_search_paths, str2wstr(CORONA_PYTHON_MODULE_LIB_DIR).c_str());
-        PyWideStringList_Append(&config.module_search_paths, str2wstr(PathCfg::SitePackagesDir()).c_str());
+        PyWideStringList_Append(&config.module_search_paths, str2wstr(PathCfg::site_packages_dir()).c_str());
     }
-
 
     Py_InitializeFromConfig(&config);
 
@@ -186,7 +94,6 @@ bool PythonAPI::ensureInitialized() {
         return false;
     }
 
-
     {
         nanobind::gil_scoped_acquire gil;
         try {
@@ -207,7 +114,7 @@ bool PythonAPI::ensureInitialized() {
             pFunc = std::move(run_attr);
             messageFunc = std::move(putq_attr);
         } catch (const nanobind::python_error& e) {
-            log_nanobind_python_error(e);
+            log_python_error(e);
             pModule.reset();
             pFunc.reset();
             messageFunc.reset();
@@ -254,7 +161,7 @@ bool PythonAPI::performHotReload() {
         messageFunc = std::move(newMsg);
     } catch (const nanobind::python_error& e) {
         std::cout << "[Hotfix][API] reload(main) failed (python_error)" << std::endl;
-        log_nanobind_python_error(e);
+        log_python_error(e);
         return false;
     }
 
@@ -273,7 +180,7 @@ void PythonAPI::invokeEntry(bool isReload) const {
     try {
         (void)pFunc(isReload ? 1 : 0);
     } catch (const nanobind::python_error& e) {
-        log_nanobind_python_error(e);
+        log_python_error(e);
     }
 }
 
@@ -286,7 +193,7 @@ void PythonAPI::sendMessage(const std::string& message) const {
     try {
         (void)messageFunc(message.c_str());
     } catch (const nanobind::python_error& e) {
-        log_nanobind_python_error(e);
+        log_python_error(e);
     }
 }
 
@@ -309,8 +216,8 @@ void PythonAPI::runPythonScript() {
 }
 
 void PythonAPI::checkPythonScriptChange() {
-    const std::string& sourcePath = PathCfg::EditorBackendAbs();
-    const std::string runtimePath = PathCfg::RuntimeBackendAbs();
+    const std::string& sourcePath = PathCfg::editor_backend_abs();
+    const std::string runtimePath = PathCfg::runtime_backend_abs();
     int64_t checkTime = PythonHotfix::GetCurrentTimeMsec();
     std::cout << "[Hotfix] checkPythonScriptChange: src=" << sourcePath
               << ", dst=" << runtimePath
@@ -329,7 +236,7 @@ void PythonAPI::checkReleaseScriptChange() {
     lastCheckTime = currentTime;
 
     std::queue<std::unordered_set<std::string>> messageQue;
-    const std::string runtimePathStr = PathCfg::RuntimeBackendAbs();
+    const std::string runtimePathStr = Corona::Script::Python::PathCfg::runtime_backend_abs();
     const std::filesystem::path runtimePath(runtimePathStr);
     PythonHotfix::TraverseDirectory(runtimePathStr, messageQue, currentTime);
 
@@ -448,3 +355,4 @@ void PythonAPI::copyModifiedFiles(const std::filesystem::path& sourceDir,
         }
     }
 }
+}  // namespace Corona::Script::Python
