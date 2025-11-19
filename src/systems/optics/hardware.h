@@ -1,8 +1,6 @@
 #pragma once
 
 #include <CabbageHardware.h>
-#include <Pipeline/ComputePipeline.h>
-#include <Pipeline/RasterizerPipeline.h>
 
 struct Hardware {
     HardwareImage gbufferPostionImage;

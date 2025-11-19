@@ -4,6 +4,8 @@
 #include <memory>
 #include <vector>
 
+#include <ktm/ktm.h>
+
 #include "CabbageHardware.h"
 #include "corona/resource_manager/mesh.h"
 
