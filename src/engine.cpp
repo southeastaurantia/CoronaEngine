@@ -2,7 +2,6 @@
 
 #include <corona/events/engine_events.h>
 #include <corona/resource_manager/resource_manager.h>
-#include <corona/script/python/python_api.h>
 #include <corona/systems/acoustics/acoustics_system.h>
 #include <corona/systems/display/display_system.h>
 #include <corona/systems/geometry/geometry_system.h>
@@ -85,7 +84,6 @@ bool Engine::initialize() {
 }
 
 void Engine::run() {
-    Script::Python::PythonAPI python_api;
     auto* logger = kernel_.logger();
     if (!initialized_.load()) {
         logger->error("Cannot run engine: not initialized");
@@ -123,9 +121,7 @@ void Engine::run() {
         last_time = frame_start_time;
 
         // 执行一帧
-#ifdef CORONA_ENABLE_PYTHON_API
-        python_api.runPythonScript();
-#endif
+
         tick();
 
         // 帧号递增

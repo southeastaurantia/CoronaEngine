@@ -14,9 +14,9 @@
 
 extern "C" PyObject* PyInit_CoronaEngine();
 
-const std::string codePath = Corona::Script::Python::PathCfg::engine_root();
-
 namespace Corona::Script::Python {
+
+const std::string codePath = PathCfg::engine_root();
 
 PythonAPI::PythonAPI() {
     logger = Kernel::create_logger();
