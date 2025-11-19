@@ -61,7 +61,7 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
 
         ExternalHandle handle;
         handle.handle = reinterpret_cast<HANDLE>(viewBufferHandleWin);
-        //importedViewBuffer = HardwareBuffer(handle, imageSize.x * imageSize.y, sizeof(float) * 4, cudaViewBuffer->size_in_byte(), BufferUsage::StorageBuffer);
+        importedViewBuffer = HardwareBuffer(handle, imageSize.x * imageSize.y, sizeof(float) * 4, visionDevice.get_aligned_memory_size(cudaViewBuffer->handle()), BufferUsage::StorageBuffer);
 #endif
     }
 
@@ -223,19 +223,17 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
                                         << hardware_->computePipeline(1920 / 8, 1080 / 8, 1)
                                         << hardware_->executor.commit();
 
-//#ifdef CORONA_ENABLE_VISION
-//                    if (hardware_->displayers_.contains(reinterpret_cast<uint64_t>(camera.surface))) {
-//                        renderPipeline->display(1 / 30);
-//                        cudaViewBuffer->download_immediately(imageData.data());
-//                        importedViewBuffer.copyFromData(imageData.data(), imageData.size() * sizeof(float) * 4);
-//                        importedViewImage.copyFromBuffer(importedViewBuffer);
-//                        hardware_->displayers_.at(reinterpret_cast<uint64_t>(camera.surface)).wait(hardware_->executor) << importedViewImage;
-//                    }
-//#else
+#ifdef CORONA_ENABLE_VISION
+                    if (hardware_->displayers_.contains(reinterpret_cast<uint64_t>(camera.surface))) {
+                        renderPipeline->display(1 / 30);
+                        importedViewImage.copyFromBuffer(importedViewBuffer);
+                        hardware_->displayers_.at(reinterpret_cast<uint64_t>(camera.surface)).wait(hardware_->executor) << importedViewImage;
+                    }
+#else
                     if (hardware_->displayers_.contains(reinterpret_cast<uint64_t>(camera.surface))) {
                         hardware_->displayers_.at(reinterpret_cast<uint64_t>(camera.surface)).wait(hardware_->executor) << hardware_->finalOutputImage;
                     }
-//#endif
+#endif
                 });
             });
         }
