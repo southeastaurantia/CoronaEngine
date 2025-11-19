@@ -9,6 +9,7 @@
 #include <corona/systems/kinematics/kinematics_system.h>
 #include <corona/systems/mechanics/mechanics_system.h>
 #include <corona/systems/optics/optics_system.h>
+#include <corona/systems/script/script_system.h>
 
 #include <chrono>
 #include <memory>
@@ -84,7 +85,7 @@ bool Engine::initialize() {
 }
 
 void Engine::run() {
-    PythonAPI python_api;
+    Script::Python::PythonAPI python_api;
     auto* logger = kernel_.logger();
     if (!initialized_.load()) {
         logger->error("Cannot run engine: not initialized");
@@ -256,6 +257,9 @@ bool Engine::register_systems() {
     // Acoustics System (声学系统)
     sys_mgr->register_system(std::make_shared<Systems::AcousticsSystem>());
     logger->info("  - AcousticsSystem registered (priority 70)");
+
+    sys_mgr->register_system(std::make_shared<Systems::ScriptSystem>());
+    logger->info("  - ScriptSystem registered (priority 60)");
 
     logger->info("All core systems registered");
 

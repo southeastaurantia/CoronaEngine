@@ -28,10 +28,6 @@ unset(_CORONA_SYSTEM_DIRS)
 unset(_system_dir)
 unset(_system_name)
 
-# ------------------------------------------------------------------------------
-# 添加脚本模块
-# ------------------------------------------------------------------------------
-add_subdirectory(script)
 
 # ==============================================================================
 # CoronaEngine 核心库
@@ -48,6 +44,7 @@ add_library(CoronaEngine STATIC
         ${PROJECT_SOURCE_DIR}/include/corona/events/geometry_system_events.h
         ${PROJECT_SOURCE_DIR}/include/corona/events/mechanics_system_events.h
         ${PROJECT_SOURCE_DIR}/include/corona/events/optics_system_events.h
+        ${PROJECT_SOURCE_DIR}/include/corona/events/script_system_events.h
 )
 
 add_library(corona::engine ALIAS CoronaEngine)
@@ -64,9 +61,9 @@ target_link_libraries(CoronaEngine PUBLIC
         corona::system::optics
         corona::system::mechanics
         corona::system::geometry
-        corona::system::animation
         corona::system::display
-        corona::script::python
+        corona::system::kinematics
+        corona::system::script
 )
 
 # 设置 C++ 标准
