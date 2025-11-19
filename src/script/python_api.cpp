@@ -186,10 +186,15 @@ bool PythonAPI::ensureInitialized() {
         return false;
     }
 
+
     {
         nanobind::gil_scoped_acquire gil;
         try {
-            nanobind::module_ main_mod = nanobind::module_::import_("main");
+            nanobind::module_ main_mod = nanobind::module_::import_("cpp_client");
+
+            nanobind::object init_func = nanobind::getattr(main_mod, "initialize");
+            init_func();
+
             nanobind::object run_attr = nanobind::getattr(main_mod, "run");
             nanobind::object putq_attr = nanobind::getattr(main_mod, "put_queue");
 
