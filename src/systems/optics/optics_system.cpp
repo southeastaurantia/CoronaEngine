@@ -12,6 +12,8 @@
 #include "corona/resource_manager/text_file.h"
 #include "hardware.h"
 
+#undef CORONA_ENABLE_VISION
+
 #ifdef CORONA_ENABLE_VISION
 #include "base/import/importer.h"
 #include "base/mgr/pipeline.h"
@@ -174,14 +176,14 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
                             });
                             hardware_->rasterizerPipeline["pushConsts.uniformBufferIndex"] = hardware_->gbufferUniformBuffer.storeDescriptor();
 
-                            hardware_->rasterizerPipeline["pushConsts.boneIndex"] = boneMatrixBuf.storeDescriptor();
+                            //hardware_->rasterizerPipeline["pushConsts.boneIndex"] = boneMatrixBuf.storeDescriptor();
 
                             for (const auto& m : geom.mesh_handles) {
                                 hardware_->rasterizerPipeline["inPosition"] = m.pointsBuffer;
                                 hardware_->rasterizerPipeline["inNormal"] = m.normalsBuffer;
                                 hardware_->rasterizerPipeline["inTexCoord"] = m.texCoordsBuffer;
-                                hardware_->rasterizerPipeline["boneIndexes"] = m.boneIndexesBuffer;
-                                hardware_->rasterizerPipeline["jointWeights"] = m.boneWeightsBuffer;
+                                //hardware_->rasterizerPipeline["boneIndexes"] = m.boneIndexesBuffer;
+                                //hardware_->rasterizerPipeline["jointWeights"] = m.boneWeightsBuffer;
                                 hardware_->rasterizerPipeline["pushConsts.textureIndex"] = m.textureIndex;
 
                                 hardware_->executor << hardware_->rasterizerPipeline.record(m.indexBuffer);
