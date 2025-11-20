@@ -299,8 +299,6 @@ Corona::API::Geometry::Geometry(const std::string& model_path)
         dev.normalsBuffer = HardwareBuffer(mesh.normals, BufferUsage::VertexBuffer);
         dev.texCoordsBuffer = HardwareBuffer(mesh.tex_coords, BufferUsage::VertexBuffer);
         dev.indexBuffer = HardwareBuffer(mesh.indices, BufferUsage::IndexBuffer);
-        dev.boneIndexesBuffer = HardwareBuffer(mesh.bone_indices, BufferUsage::VertexBuffer);
-        dev.boneWeightsBuffer = HardwareBuffer(mesh.bone_weights, BufferUsage::VertexBuffer);
         dev.materialIndex = 0;
 
         if (!mesh.textures.empty() && mesh.textures[0]) {
@@ -459,40 +457,15 @@ std::uintptr_t Corona::API::Geometry::get_model_resource_handle() const {
 //         Optics
 // ########################
 Corona::API::Optics::Optics(Geometry& geo)
-    : geometry_(&geo), handle_(0), skinning_handle_(0) {
-    bool has_bones = false;
-    SharedDataHub::instance().geometry_storage().read(geo.get_handle(), [&](const GeometryDevice& geom_dev) {
-        SharedDataHub::instance().model_resource_storage().read(geom_dev.model_resource_handle, [&](const ModelResource& res) {
-            has_bones = (res.model_ptr && res.model_ptr->bone_counter > 0);
-        });
-    });
-
-    if (has_bones) {
-        size_t bone_count = 0;
-        SharedDataHub::instance().geometry_storage().read(geo.get_handle(), [&](const GeometryDevice& geom_dev) {
-            SharedDataHub::instance().model_resource_storage().read(geom_dev.model_resource_handle, [&](const ModelResource& res) {
-                bone_count = res.model_ptr->bone_counter;
-            });
-        });
-
-        skinning_handle_ = SharedDataHub::instance().skinning_storage().allocate([&](SkinningDevice& slot) {
-            std::vector<ktm::fmat4x4> initial_matrices(bone_count, ktm::fmat4x4::from_eye());
-            slot.bone_matrix_buffer = HardwareBuffer(initial_matrices, BufferUsage::StorageBuffer);
-        });
-    }
-
+    : geometry_(&geo), handle_(0) {
     handle_ = SharedDataHub::instance().optics_storage().allocate([&](OpticsDevice& slot) {
         slot.geometry_handle = geo.get_handle();
-        slot.skinning_handle = skinning_handle_;
     });
 }
 
 Corona::API::Optics::~Optics() {
     if (handle_ != 0) {
         SharedDataHub::instance().optics_storage().deallocate(handle_);
-    }
-    if (skinning_handle_ != 0) {
-        SharedDataHub::instance().skinning_storage().deallocate(skinning_handle_);
     }
 }
 
@@ -599,114 +572,30 @@ Corona::API::Geometry* Corona::API::Acoustics::get_geometry() const {
 //       Kinematics
 // ########################
 Corona::API::Kinematics::Kinematics(Geometry& geo)
-    : geometry_(&geo), handle_(0), animation_handle_(0), skinning_handle_(0) {
-    bool has_bones = false;
-    size_t bone_count = 0;
-    SharedDataHub::instance().geometry_storage().read(geo.get_handle(), [&](const GeometryDevice& geom_dev) {
-        SharedDataHub::instance().model_resource_storage().read(geom_dev.model_resource_handle, [&](const ModelResource& res) {
-            if (res.model_ptr) {
-                has_bones = (res.model_ptr->bone_counter > 0);
-                bone_count = res.model_ptr->bone_counter;
-            }
-        });
-    });
+    : geometry_(&geo), handle_(0) {
 
-    animation_handle_ = SharedDataHub::instance().animation_controller_storage().allocate([&](AnimationState& slot) {
-        slot.animation_index = 0;
-        slot.current_time = 0.0f;
-        slot.playback_speed = 1.0f;
-        slot.active = has_bones;
-    });
-
-    if (has_bones) {
-        skinning_handle_ = SharedDataHub::instance().skinning_storage().allocate([&](SkinningDevice& slot) {
-            std::vector<ktm::fmat4x4> initial_matrices(bone_count, ktm::fmat4x4::from_eye());
-            slot.bone_matrix_buffer = HardwareBuffer(initial_matrices, BufferUsage::StorageBuffer);
-        });
-    }
-
-    handle_ = SharedDataHub::instance().kinematics_storage().allocate([&](KinematicsDevice& slot) {
-        slot.geometry_handle = geo.get_handle();
-        slot.skinning_handle = skinning_handle_;
-        slot.animation_controller_handle = animation_handle_;
-    });
 }
 
 Corona::API::Kinematics::~Kinematics() {
-    if (handle_ != 0) {
-        SharedDataHub::instance().kinematics_storage().deallocate(handle_);
-    }
-    if (animation_handle_ != 0) {
-        SharedDataHub::instance().animation_controller_storage().deallocate(animation_handle_);
-    }
-    if (skinning_handle_ != 0) {
-        SharedDataHub::instance().skinning_storage().deallocate(skinning_handle_);
-    }
 }
 
 void Corona::API::Kinematics::set_animation(std::uint32_t animation_index) {
-    if (handle_ == 0 || animation_handle_ == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Kinematics::set_animation] Invalid handle");
-        }
-        return;
-    }
 
-    SharedDataHub::instance().animation_controller_storage().write(animation_handle_, [&](AnimationState& slot) {
-        slot.animation_index = animation_index;
-        slot.current_time = 0.0f;
-    });
 }
 
 void Corona::API::Kinematics::play_animation(float speed) {
-    if (handle_ == 0 || animation_handle_ == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Kinematics::play_animation] Invalid handle");
-        }
-        return;
-    }
 
-    SharedDataHub::instance().animation_controller_storage().write(animation_handle_, [&](AnimationState& slot) {
-        slot.playback_speed = speed;
-        slot.active = true;
-    });
 }
 
 void Corona::API::Kinematics::stop_animation() {
-    if (handle_ == 0 || animation_handle_ == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Kinematics::stop_animation] Invalid handle");
-        }
-        return;
-    }
-
-    SharedDataHub::instance().animation_controller_storage().write(animation_handle_, [&](AnimationState& slot) {
-        slot.active = false;
-    });
 }
 
 std::uint32_t Corona::API::Kinematics::get_animation_index() const {
-    if (animation_handle_ == 0) {
-        return 0;
-    }
 
-    std::uint32_t result = 0;
-    SharedDataHub::instance().animation_controller_storage().read(animation_handle_, [&](const AnimationState& slot) {
-        result = slot.animation_index;
-    });
-    return result;
 }
 
 float Corona::API::Kinematics::get_current_time() const {
-    if (animation_handle_ == 0) {
-        return 0.0f;
-    }
 
-    float result = 0.0f;
-    SharedDataHub::instance().animation_controller_storage().read(animation_handle_, [&](const AnimationState& slot) {
-        result = slot.current_time;
-    });
-    return result;
 }
 
 std::uintptr_t Corona::API::Kinematics::get_handle() const {

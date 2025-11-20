@@ -7,17 +7,14 @@
 
 #include <memory>
 
-namespace Corona {
-struct AnimationState;
-}
 
 namespace Corona::Systems {
 
 /**
- * @brief 动画系统
+ * @brief 运动学系统
  *
- * 负责管理和更新所有动画状态，包括骨骼动画、变换动画等。
- * 运行在独立线程，以 60 FPS 更新动画逻辑。
+ * 负责管理和更新物体的运动学状态。
+ * 运行在独立线程，以 60 FPS 更新运动学逻辑。
  */
 class KinematicsSystem : public Kernel::SystemBase {
    public:
@@ -61,9 +58,6 @@ class KinematicsSystem : public Kernel::SystemBase {
     void shutdown() override;
 
    private:
-    // 动画系统私有成员
-    static void update_animation();
-    static void update_animation_state(AnimationState& state, float dt);
 };
 
 }  // namespace Corona::Systems

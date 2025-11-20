@@ -82,7 +82,6 @@ class Optics {
 
     Geometry* geometry_;
     std::uintptr_t handle_{};
-    std::uintptr_t skinning_handle_{};
 };
 
 // ============================================================================
@@ -107,7 +106,7 @@ class Acoustics {
 };
 
 // ============================================================================
-// Kinematics: 运动学/动画组件，依赖 Geometry
+// Kinematics: 运动学组件，依赖 Geometry
 // ============================================================================
 class Kinematics {
    public:
@@ -129,8 +128,6 @@ class Kinematics {
 
     Geometry* geometry_;
     std::uintptr_t handle_{0};
-    std::uintptr_t animation_handle_{0};
-    std::uintptr_t skinning_handle_{0};
 };
 
 // ============================================================================

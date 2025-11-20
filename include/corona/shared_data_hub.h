@@ -7,7 +7,6 @@
 #include <ktm/ktm.h>
 
 #include "CabbageHardware.h"
-#include "corona/resource_manager/mesh.h"
 
 // Forward declarations
 
@@ -20,21 +19,13 @@ struct MeshDevice {
     HardwareBuffer normalsBuffer;
     HardwareBuffer texCoordsBuffer;
     HardwareBuffer indexBuffer;
-    HardwareBuffer boneIndexesBuffer;
-    HardwareBuffer boneWeightsBuffer;
 
     uint32_t materialIndex;
     uint32_t textureIndex;
 
-    Mesh meshData;
+    // Mesh meshData;
 };
 
-struct AnimationState {
-    std::uint32_t animation_index = 0;
-    float current_time = 0.0f;
-    float playback_speed = 1.0f;
-    bool active = true;
-};
 
 struct ModelTransform {
     ktm::fvec3 position;
@@ -74,9 +65,6 @@ struct ModelResource {
     std::shared_ptr<Model> model_ptr;
 };
 
-struct SkinningDevice {
-    HardwareBuffer bone_matrix_buffer;
-};
 
 struct GeometryDevice {
     std::uintptr_t transform_handle{};
@@ -86,8 +74,6 @@ struct GeometryDevice {
 
 struct KinematicsDevice {
     std::uintptr_t geometry_handle{};
-    std::uintptr_t skinning_handle{};
-    std::uintptr_t animation_controller_handle{};
 };
 
 struct MechanicsDevice {
@@ -103,7 +89,6 @@ struct AcousticsDevice {
 
 struct OpticsDevice {
     std::uintptr_t geometry_handle{};
-    std::uintptr_t skinning_handle{};
 };
 
 struct ProfileDevice {
@@ -188,8 +173,6 @@ class SharedDataHub {
    public:
     using ModelResourceStorage = Kernel::Utils::Storage<ModelResource>;
     using ModelTransformStorage = Kernel::Utils::Storage<ModelTransform>;
-    using AnimationControllerStorage = Kernel::Utils::Storage<AnimationState>;
-    using SkinningStorage = Kernel::Utils::Storage<SkinningDevice>;
     using GeometryStorage = Kernel::Utils::Storage<GeometryDevice>;
     using KinematicsStorage = Kernel::Utils::Storage<KinematicsDevice>;
     using MechanicsStorage = Kernel::Utils::Storage<MechanicsDevice>;
@@ -208,11 +191,6 @@ class SharedDataHub {
     ModelTransformStorage& model_transform_storage();
     const ModelTransformStorage& model_transform_storage() const;
 
-    AnimationControllerStorage& animation_controller_storage();
-    const AnimationControllerStorage& animation_controller_storage() const;
-
-    SkinningStorage& skinning_storage();
-    const SkinningStorage& skinning_storage() const;
 
     GeometryStorage& geometry_storage();
     const GeometryStorage& geometry_storage() const;
@@ -253,8 +231,6 @@ class SharedDataHub {
     GeometryStorage geometry_storage_;
     ModelTransformStorage model_transform_storage_;
 
-    SkinningStorage skinning_storage_;
-    AnimationControllerStorage animation_controller_storage_;
 
     KinematicsStorage kinematics_storage_;
     MechanicsStorage mechanics_storage_;

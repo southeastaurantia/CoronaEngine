@@ -154,21 +154,6 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
                     hardware_->rasterizerPipeline.setDepthImage(hardware_->gbufferDepthImage);
 
                     SharedDataHub::instance().optics_storage().for_each_read([&](const OpticsDevice& optics) {
-                        static HardwareBuffer s_identity_bone_buffer;
-                        static bool s_identity_inited = false;
-                        if (!s_identity_inited) {
-                            std::vector<ktm::fmat4x4> identity_matrix = {ktm::fmat4x4::from_eye()};
-                            s_identity_bone_buffer = HardwareBuffer(identity_matrix, BufferUsage::StorageBuffer);
-                            s_identity_inited = true;
-                        }
-
-                        HardwareBuffer boneMatrixBuf = s_identity_bone_buffer;
-                        if (optics.skinning_handle != 0) {
-                            SharedDataHub::instance().skinning_storage().read(optics.skinning_handle, [&](const SkinningDevice& skin) {
-                                boneMatrixBuf = skin.bone_matrix_buffer;
-                            });
-                        }
-
                         SharedDataHub::instance().geometry_storage().read(optics.geometry_handle, [&](const GeometryDevice& geom) {
                             SharedDataHub::instance().model_transform_storage().read(geom.transform_handle, [&](const ModelTransform& transform) {
                                 auto model_matrix = transform.compute_matrix();
@@ -176,14 +161,10 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
                             });
                             hardware_->rasterizerPipeline["pushConsts.uniformBufferIndex"] = hardware_->gbufferUniformBuffer.storeDescriptor();
 
-                            //hardware_->rasterizerPipeline["pushConsts.boneIndex"] = boneMatrixBuf.storeDescriptor();
-
                             for (const auto& m : geom.mesh_handles) {
                                 hardware_->rasterizerPipeline["inPosition"] = m.pointsBuffer;
                                 hardware_->rasterizerPipeline["inNormal"] = m.normalsBuffer;
                                 hardware_->rasterizerPipeline["inTexCoord"] = m.texCoordsBuffer;
-                                //hardware_->rasterizerPipeline["boneIndexes"] = m.boneIndexesBuffer;
-                                //hardware_->rasterizerPipeline["jointWeights"] = m.boneWeightsBuffer;
                                 hardware_->rasterizerPipeline["pushConsts.textureIndex"] = m.textureIndex;
 
                                 hardware_->executor << hardware_->rasterizerPipeline.record(m.indexBuffer);
