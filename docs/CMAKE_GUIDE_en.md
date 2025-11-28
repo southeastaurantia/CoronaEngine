@@ -62,7 +62,7 @@ The build system is modularized into several helper scripts located in `misc/cma
 
 - `corona_options.cmake`: Defines the main build options (see section above).
 - `corona_python.cmake`: Manages the discovery of the embedded Python interpreter and its dependencies.
-- `corona_third_party.cmake`: Manages all external third-party libraries (like EnTT, spdlog, glfw) using `FetchContent`. This ensures dependencies are downloaded and configured automatically.
+- `corona_third_party.cmake`: Manages all external third-party libraries using `FetchContent`. This ensures dependencies are downloaded and configured automatically.
 - `corona_compile_config.cmake`: Sets project-wide compiler flags, C++ standard, and preprocessor definitions.
 - `corona_collect_module.cmake`: Provides the `corona_collect_module()` function, which automatically discovers and adds source and header files from a given module directory, simplifying target definitions.
 - `corona_runtime_deps.cmake`: Provides the `corona_runtime_deps()` function, which copies necessary runtime dependencies (like DLLs from third-party libraries) to the target's output directory.
@@ -72,7 +72,7 @@ The build system is modularized into several helper scripts located in `misc/cma
 
 ### Third-Party Libraries
 All external dependencies are managed via `FetchContent` in `misc/cmake/corona_third_party.cmake`. This approach avoids the need for manual installation of libraries. Key dependencies include:
-- **Core**: EnTT, ktm, nlohmann_json, spdlog
+- **Core**: ktm, nlohmann_json, spdlog
 - **Windowing & Rendering**: glfw, volk, VulkanMemoryAllocator, glslang, SPIRV-Cross
 - **Asset Loading**: assimp, stb
 

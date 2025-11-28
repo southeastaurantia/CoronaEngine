@@ -41,13 +41,6 @@ FetchContent_Declare(stb
     EXCLUDE_FROM_ALL
 )
 
-FetchContent_Declare(entt
-    GIT_REPOSITORY https://github.com/skypjack/entt.git
-    GIT_TAG master
-    GIT_SHALLOW TRUE
-    EXCLUDE_FROM_ALL
-)
-
 FetchContent_Declare(nanobind
     GIT_REPOSITORY https://github.com/wjakob/nanobind.git
     GIT_TAG v2.9.2
@@ -88,9 +81,6 @@ message(STATUS "[3rdparty] assimp module enabled")
 
 FetchContent_MakeAvailable(stb)
 message(STATUS "[3rdparty] stb module enabled")
-
-FetchContent_MakeAvailable(entt)
-message(STATUS "[3rdparty] entt module enabled")
 
 FetchContent_MakeAvailable(nanobind)
 message(STATUS "[3rdparty] nanobind module enabled")
