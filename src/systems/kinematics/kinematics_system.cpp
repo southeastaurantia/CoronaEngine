@@ -9,8 +9,7 @@
 
 namespace Corona::Systems {
 bool KinematicsSystem::initialize(Kernel::ISystemContext* ctx) {
-    auto* logger = ctx->logger();
-    logger->info("KinematicsSystem: Initializing...");
+    CFW_LOG_NOTICE("KinematicsSystem: Initializing...");
     return true;
 }
 
@@ -18,7 +17,6 @@ void KinematicsSystem::update() {
 }
 
 void KinematicsSystem::shutdown() {
-    auto* logger = context()->logger();
-    logger->info("KinematicsSystem: Shutting down...");
+    CFW_LOG_NOTICE("KinematicsSystem: Shutting down...");
 }
 }  // namespace Corona::Systems

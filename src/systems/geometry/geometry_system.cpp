@@ -8,8 +8,7 @@
 namespace Corona::Systems {
 
 bool GeometrySystem::initialize(Kernel::ISystemContext* ctx) {
-    auto* logger = ctx->logger();
-    logger->info("GeometrySystem: Initializing...");
+    CFW_LOG_NOTICE("GeometrySystem: Initializing...");
     return true;
 }
 
@@ -17,8 +16,7 @@ void GeometrySystem::update() {
 }
 
 void GeometrySystem::shutdown() {
-    auto* logger = context()->logger();
-    logger->info("GeometrySystem: Shutting down...");
+    CFW_LOG_NOTICE("GeometrySystem: Shutting down...");
 }
 
 }  // namespace Corona::Systems

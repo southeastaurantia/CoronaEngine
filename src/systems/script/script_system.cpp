@@ -8,13 +8,14 @@
 namespace Corona::Systems {
 
 bool ScriptSystem::initialize(Kernel::ISystemContext* ctx) {
-    auto* logger = ctx->logger();
-    logger->info("ScriptSystem: Initializing...");
+    CFW_LOG_NOTICE("ScriptSystem: Initializing...");
 
     // 【订阅系统内部事件】使用 EventBus
     auto* event_bus = ctx->event_bus();
     if (event_bus) {
-        logger->info("ScriptSystem: EventBus subscriptions ready");
+        CFW_LOG_DEBUG("ScriptSystem: EventBus subscriptions ready");
+    } else {
+        CFW_LOG_WARNING("ScriptSystem: No event bus available");
     }
 
     return true;
@@ -29,8 +30,7 @@ void ScriptSystem::update() {
 }
 
 void ScriptSystem::shutdown() {
-    auto* logger = context()->logger();
-    logger->info("ScriptSystem: Shutting down...");
+    CFW_LOG_NOTICE("ScriptSystem: Shutting down...");
 }
 
 }  // namespace Corona::Systems

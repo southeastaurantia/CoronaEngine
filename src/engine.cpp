@@ -1,7 +1,6 @@
 #include "corona/engine.h"
 
 #include <corona/events/engine_events.h>
-#include <corona/resource_manager/resource_manager.h>
 #include <corona/systems/acoustics/acoustics_system.h>
 #include <corona/systems/display/display_system.h>
 #include <corona/systems/geometry/geometry_system.h>
@@ -9,13 +8,16 @@
 #include <corona/systems/mechanics/mechanics_system.h>
 #include <corona/systems/optics/optics_system.h>
 #include <corona/systems/script/script_system.h>
+#include <corona/kernel/core/i_logger.h>
+
+#include <corona/resource/resource_manager.h>
+#include <corona/resource/types/text/text.h>
+#include <corona/resource/types/scene/scene.h>
+#include <corona/resource/types/image/image.h>
 
 #include <chrono>
 #include <memory>
 #include <thread>
-
-#include "corona/resource_manager/model.h"
-#include "corona/resource_manager/text_file.h"
 
 namespace Corona {
 
@@ -49,58 +51,58 @@ bool Engine::initialize() {
 
     // 1. 初始化 KernelContext
     if (!kernel_.initialize()) {
+        CFW_LOG_CRITICAL("Failed to initialize KernelContext");
         return false;
     }
 
-    auto* logger = kernel_.logger();
-    logger->info("====================================");
-    logger->info("CoronaEngine Initializing...");
-    logger->info("====================================");
+    CFW_LOG_NOTICE("====================================");
+    CFW_LOG_NOTICE("CoronaEngine Initializing...");
+    CFW_LOG_NOTICE("====================================");
 
     // 2. 注册核心系统
     if (!register_systems()) {
-        logger->error("Failed to register systems");
+        CFW_LOG_CRITICAL("Failed to register systems");
         return false;
     }
 
-    auto& resource_manager = ResourceManager::instance();
-    resource_manager.register_loader(std::make_shared<TextFileLoader>());
-    resource_manager.register_loader(std::make_shared<ModelLoader>());
+    auto& resource_manager = Resource::ResourceManager::get_instance();
+    resource_manager.register_parser<Resource::TextParser>();
+    resource_manager.register_parser<Resource::ImageParser>();
+    resource_manager.register_parser<Resource::SceneParser>();
 
     // 3. 初始化所有系统
     auto* sys_mgr = kernel_.system_manager();
     if (!sys_mgr || !sys_mgr->initialize_all()) {
-        logger->error("Failed to initialize systems");
+        CFW_LOG_CRITICAL("Failed to initialize systems");
         return false;
     }
 
     initialized_.store(true);
 
-    logger->info("====================================");
-    logger->info("CoronaEngine Initialized Successfully");
-    logger->info("====================================");
+    CFW_LOG_NOTICE("====================================");
+    CFW_LOG_NOTICE("CoronaEngine Initialized Successfully");
+    CFW_LOG_NOTICE("====================================");
 
     return true;
 }
 
 void Engine::run() {
-    auto* logger = kernel_.logger();
     if (!initialized_.load()) {
-        logger->error("Cannot run engine: not initialized");
+        CFW_LOG_CRITICAL("Cannot run engine: not initialized");
         return;
     }
 
     if (running_.load()) {
-        logger->warning("Engine is already running");
+        CFW_LOG_WARNING("Engine is already running");
         return;
     }
 
     running_.store(true);
     exit_requested_.store(false);
 
-    logger->info("====================================");
-    logger->info("CoronaEngine Starting Main Loop");
-    logger->info("====================================");
+    CFW_LOG_NOTICE("====================================");
+    CFW_LOG_NOTICE("CoronaEngine Starting Main Loop");
+    CFW_LOG_NOTICE("====================================");
 
     // 启动所有系统线程
     auto* sys_mgr = kernel_.system_manager();
@@ -138,9 +140,9 @@ void Engine::run() {
         }
     }
 
-    logger->info("====================================");
-    logger->info("CoronaEngine Main Loop Exited");
-    logger->info("====================================");
+    CFW_LOG_NOTICE("====================================");
+    CFW_LOG_NOTICE("CoronaEngine Main Loop Exited");
+    CFW_LOG_NOTICE("====================================");
 
     running_.store(false);
 }
@@ -148,8 +150,7 @@ void Engine::run() {
 void Engine::request_exit() {
     exit_requested_.store(true);
 
-    auto* logger = kernel_.logger();
-    logger->info("Engine exit requested");
+    CFW_LOG_NOTICE("Engine exit requested");
 }
 
 void Engine::shutdown() {
@@ -163,10 +164,9 @@ void Engine::shutdown() {
         sys_mgr->shutdown_all();
     }
 
-    auto* logger = kernel_.logger();
-    logger->info("====================================");
-    logger->info("CoronaEngine Shutting Down...");
-    logger->info("====================================");
+    CFW_LOG_NOTICE("====================================");
+    CFW_LOG_NOTICE("CoronaEngine Shutting Down...");
+    CFW_LOG_NOTICE("====================================");
 
     // 关闭内核（SystemManager 的析构函数会自动调用 shutdown_all() 和 stop_all()）
     // 注意：kernel_.shutdown() 会重置 logger，所以之后不能再使用 logger 指针
@@ -201,10 +201,6 @@ Kernel::ISystemManager* Engine::system_manager() {
     return kernel_.system_manager();
 }
 
-Kernel::ILogger* Engine::logger() {
-    return kernel_.logger();
-}
-
 Kernel::IEventBus* Engine::event_bus() {
     return kernel_.event_bus();
 }
@@ -220,51 +216,48 @@ Kernel::IEventBusStream* Engine::event_stream() {
 bool Engine::register_systems() {
     auto* sys_mgr = kernel_.system_manager();
     if (!sys_mgr) {
+        CFW_LOG_CRITICAL("SystemManager is null, cannot register systems");
         return false;
     }
-
-    auto* logger = kernel_.logger();
 
     // 注册核心系统（按优先级自动排序）
     // Display(100) > Optics(90) > Geometry(85) > Animation(80) > Mechanics(75) > Acoustics(70)
 
-    logger->info("Registering core systems...");
+    CFW_LOG_INFO("Registering core systems...");
 
     // Display System - 最高优先级
     sys_mgr->register_system(std::make_shared<Systems::DisplaySystem>());
-    logger->info("  - DisplaySystem registered (priority 100)");
+    CFW_LOG_INFO("  - DisplaySystem registered (priority 100)");
 
     // Optics System (光学系统)
     sys_mgr->register_system(std::make_shared<Systems::OpticsSystem>());
-    logger->info("  - OpticsSystem registered (priority 90)");
+    CFW_LOG_INFO("  - OpticsSystem registered (priority 90)");
 
     // Geometry System (几何系统)
     sys_mgr->register_system(std::make_shared<Systems::GeometrySystem>());
-    logger->info("  - GeometrySystem registered (priority 85)");
+    CFW_LOG_INFO("  - GeometrySystem registered (priority 85)");
 
     // Animation System (动画系统)
     sys_mgr->register_system(std::make_shared<Systems::KinematicsSystem>());
-    logger->info("  - AnimationSystem registered (priority 80)");
+    CFW_LOG_INFO("  - AnimationSystem registered (priority 80)");
 
     // Mechanics System (力学系统)
     sys_mgr->register_system(std::make_shared<Systems::MechanicsSystem>());
-    logger->info("  - MechanicsSystem registered (priority 75)");
+    CFW_LOG_INFO("  - MechanicsSystem registered (priority 75)");
 
     // Acoustics System (声学系统)
     sys_mgr->register_system(std::make_shared<Systems::AcousticsSystem>());
-    logger->info("  - AcousticsSystem registered (priority 70)");
+    CFW_LOG_INFO("  - AcousticsSystem registered (priority 70)");
 
     sys_mgr->register_system(std::make_shared<Systems::ScriptSystem>());
-    logger->info("  - ScriptSystem registered (priority 60)");
+    CFW_LOG_INFO("  - ScriptSystem registered (priority 60)");
 
-    logger->info("All core systems registered");
+    CFW_LOG_NOTICE("All core systems registered successfully");
 
     return true;
 }
 
 void Engine::tick() {
-    auto* logger = kernel_.logger();
-
     // 4. 更新系统上下文的帧信息
     // 系统通过 SystemBase 的 delta_time() 和 frame_number() 访问帧信息
 

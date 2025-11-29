@@ -8,8 +8,7 @@
 namespace Corona::Systems {
 
 bool AcousticsSystem::initialize(Kernel::ISystemContext* ctx) {
-    auto* logger = ctx->logger();
-    logger->info("AcousticsSystem: Initializing...");
+    CFW_LOG_NOTICE("AcousticsSystem: Initializing...");
     return true;
 }
 
@@ -17,8 +16,7 @@ void AcousticsSystem::update() {
 }
 
 void AcousticsSystem::shutdown() {
-    auto* logger = context()->logger();
-    logger->info("AcousticsSystem: Shutting down...");
+    CFW_LOG_NOTICE("AcousticsSystem: Shutting down...");
 }
 
 }  // namespace Corona::Systems

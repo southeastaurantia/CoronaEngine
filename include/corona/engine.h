@@ -125,12 +125,6 @@ class Engine {
     Kernel::ISystemManager* system_manager();
 
     /**
-     * @brief 获取日志系统
-     * @return 日志系统指针，未初始化返回 nullptr
-     */
-    Kernel::ILogger* logger();
-
-    /**
      * @brief 获取事件总线
      * @return 事件总线指针，未初始化返回 nullptr
      */

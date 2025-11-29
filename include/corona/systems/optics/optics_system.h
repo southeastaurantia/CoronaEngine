@@ -8,7 +8,6 @@
 
 #include <memory>
 
-#include "corona/resource_manager/mesh.h"
 // 前向声明 Hardware 结构体
 struct Hardware;
 

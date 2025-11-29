@@ -14,6 +14,7 @@ const SharedDataHub::ModelResourceStorage& SharedDataHub::model_resource_storage
 SharedDataHub::ModelTransformStorage& SharedDataHub::model_transform_storage() { return model_transform_storage_; }
 const SharedDataHub::ModelTransformStorage& SharedDataHub::model_transform_storage() const { return model_transform_storage_; }
 
+
 SharedDataHub::GeometryStorage& SharedDataHub::geometry_storage() { return geometry_storage_; }
 const SharedDataHub::GeometryStorage& SharedDataHub::geometry_storage() const { return geometry_storage_; }
 

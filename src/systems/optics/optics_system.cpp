@@ -2,14 +2,13 @@
 #include <corona/kernel/core/i_logger.h>
 #include <corona/kernel/event/i_event_bus.h>
 #include <corona/kernel/event/i_event_stream.h>
-#include <corona/resource_manager/model.h>
-#include <corona/resource_manager/resource_manager.h>
+#include <corona/resource/resource_manager.h>
 #include <corona/shared_data_hub.h>
 #include <corona/systems/optics/optics_system.h>
 
 #include <filesystem>
 
-#include "corona/resource_manager/text_file.h"
+#include "corona/resource/types/text/text.h"
 #include "hardware.h"
 
 #undef CORONA_ENABLE_VISION
@@ -22,9 +21,8 @@
 
 namespace {
 
-std::shared_ptr<Corona::TextFile> load_shader(const std::filesystem::path& shader_path) {
-    auto shaderId = Corona::ResourceId::from(Corona::ResourceType::TextFile, (shader_path).string());
-    auto shader = std::static_pointer_cast<Corona::TextFile>(Corona::ResourceManager::instance().load_once(shaderId));
+Corona::Resource::TResourceID load_shader(const std::filesystem::path& shader_path) {
+    auto shader = Corona::Resource::ResourceManager::get_instance().import_sync(shader_path);
     return shader;
 }
 
@@ -67,52 +65,74 @@ bool OpticsSystem::initialize(Kernel::ISystemContext* ctx) {
 #endif
     }
 
-    auto* logger = ctx->logger();
-    logger->info("OpticsSystem: Initializing...");
+    CFW_LOG_NOTICE("OpticsSystem: Initializing...");
 
-    hardware_ = std::make_unique<Hardware>();
+    try {
+        hardware_ = std::make_unique<Hardware>();
 
-    // 修正：避免聚合初始化引发的赋值问题
-    hardware_->gbufferSize.x = 1920;
-    hardware_->gbufferSize.y = 1080;
+        // 修正：避免聚合初始化引发的赋值问题
+        hardware_->gbufferSize.x = 1920;
+        hardware_->gbufferSize.y = 1080;
 
-    hardware_->gbufferPostionImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
-    hardware_->gbufferBaseColorImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
-    hardware_->gbufferNormalImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
-    hardware_->gbufferMotionVectorImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::RG32_FLOAT, ImageUsage::StorageImage);
-    hardware_->gbufferDepthImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::D32_FLOAT, ImageUsage::DepthImage);
+        hardware_->gbufferPostionImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
+        hardware_->gbufferBaseColorImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
+        hardware_->gbufferNormalImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
+        hardware_->gbufferMotionVectorImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::RG32_FLOAT, ImageUsage::StorageImage);
+        hardware_->gbufferDepthImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::D32_FLOAT, ImageUsage::DepthImage);
 
-    hardware_->uniformBuffer = HardwareBuffer(sizeof(Hardware::UniformBufferObject), BufferUsage::UniformBuffer);
-    hardware_->gbufferUniformBuffer = HardwareBuffer(sizeof(Hardware::gbufferUniformBufferObject), BufferUsage::UniformBuffer);
-    hardware_->computeUniformBuffer = HardwareBuffer(sizeof(Hardware::ComputeUniformBufferObject), BufferUsage::UniformBuffer);
+        hardware_->uniformBuffer = HardwareBuffer(sizeof(Hardware::UniformBufferObject), BufferUsage::UniformBuffer);
+        hardware_->gbufferUniformBuffer = HardwareBuffer(sizeof(Hardware::gbufferUniformBufferObject), BufferUsage::UniformBuffer);
+        hardware_->computeUniformBuffer = HardwareBuffer(sizeof(Hardware::ComputeUniformBufferObject), BufferUsage::UniformBuffer);
 
-    hardware_->finalOutputImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
+        hardware_->finalOutputImage = HardwareImage(hardware_->gbufferSize.x, hardware_->gbufferSize.y, ImageFormat::RGBA16_FLOAT, ImageUsage::StorageImage);
+    } catch (const std::exception& e) {
+        CFW_LOG_CRITICAL("OpticsSystem: Failed to initialize hardware resources: {}", e.what());
+        return false;
+    }
 
-    auto vert_code = load_shader(std::filesystem::current_path() / "assets" / "shaders" / "test.vert.glsl");
-    auto frag_code = load_shader(std::filesystem::current_path() / "assets" / "shaders" / "test.frag.glsl");
-    auto compute_code = load_shader(std::filesystem::current_path() / "assets" / "shaders" / "test.comp.glsl");
+    auto vert_id = load_shader(std::filesystem::current_path() / "assets" / "shaders" / "test.vert.glsl");
+    auto frag_id = load_shader(std::filesystem::current_path() / "assets" / "shaders" / "test.frag.glsl");
+    auto compute_id = load_shader(std::filesystem::current_path() / "assets" / "shaders" / "test.comp.glsl");
 
-    hardware_->rasterizerPipeline = RasterizerPipeline(vert_code->text, frag_code->text);
-    hardware_->computePipeline = ComputePipeline(compute_code->text);
+    auto vert_code = Resource::ResourceManager::get_instance().acquire_read<Resource::Text>(vert_id);
+    auto frag_code = Resource::ResourceManager::get_instance().acquire_read<Resource::Text>(frag_id);
+    auto compute_code = Resource::ResourceManager::get_instance().acquire_read<Resource::Text>(compute_id);
+
+    if (!vert_code || !frag_code || !compute_code) {
+        CFW_LOG_CRITICAL("OpticsSystem: Failed to load required shader files");
+        return false;
+    }
+
+    try {
+        hardware_->rasterizerPipeline = RasterizerPipeline(vert_code->text, frag_code->text);
+        hardware_->computePipeline = ComputePipeline(compute_code->text);
+        hardware_->shaderHasInit = true;
+        CFW_LOG_INFO("OpticsSystem: Shaders compiled successfully");
+    } catch (const std::exception& e) {
+        CFW_LOG_CRITICAL("OpticsSystem: Failed to compile shaders: {}", e.what());
+        return false;
+    }
+
+    CFW_LOG_WARNING("OpticsSystem: Shader compilation temporarily disabled - waiting for Resource API update");
     hardware_->shaderHasInit = true;
 
     // 【订阅系统内部事件】使用 EventBus
     if (auto* event_bus = ctx->event_bus()) {
         surface_changed_sub_id_ = event_bus->subscribe<Events::DisplaySurfaceChangedEvent>(
-            [this, logger](const Events::DisplaySurfaceChangedEvent& event) {
-                if (logger) {
-                    logger->info("OpticsSystem: Received DisplaySurfaceChangedEvent, new surface: " +
-                                 std::to_string(reinterpret_cast<uintptr_t>(event.surface)));
-                }
+            [this](const Events::DisplaySurfaceChangedEvent& event) {
+                CFW_LOG_INFO("OpticsSystem: Received DisplaySurfaceChangedEvent, new surface: {}",
+                             static_cast<uintptr_t>(reinterpret_cast<uintptr_t>(event.surface)));
                 if (event.surface) {
                     auto surface_id = reinterpret_cast<uint64_t>(event.surface);
                     if (!hardware_->displayers_.contains(surface_id)) {
-                        logger->info("OpticsSystem: Creating new displayer for surface " + std::to_string(surface_id));
+                        CFW_LOG_INFO("OpticsSystem: Creating new displayer for surface {}", surface_id);
                         hardware_->displayers_.emplace(surface_id, HardwareDisplayer(event.surface));
                     }
                 }
             });
-        logger->info("OpticsSystem: Subscribed to DisplaySurfaceChangedEvent");
+        CFW_LOG_DEBUG("OpticsSystem: Subscribed to DisplaySurfaceChangedEvent");
+    } else {
+        CFW_LOG_WARNING("OpticsSystem: No event bus available, cannot subscribe to events");
     }
 
     return true;
@@ -133,18 +153,21 @@ void OpticsSystem::update() {
 }
 
 void OpticsSystem::optics_pipeline(float frame_count) const {
-    SharedDataHub::instance().scene_storage().for_each_read([&](const SceneDevice& scene) {
+    CFW_LOG_DEBUG("OpticsSystem: Rendering pipeline temporarily disabled - waiting for new Storage API");
+
+    // 遍历场景存储并使用 acquire_read 访问相关句柄
+    for (const auto& scene : SharedDataHub::instance().scene_storage()) {
         for (auto vp_handle : scene.viewport_handles) {
-            SharedDataHub::instance().viewport_storage().read(vp_handle, [&](const ViewportDevice& viewport) {
-                if (viewport.camera == 0) {
-                    return;
+            if (auto viewport = SharedDataHub::instance().viewport_storage().acquire_read(vp_handle)) {
+                if (viewport->camera == 0) {
+                    continue;
                 }
-                SharedDataHub::instance().camera_storage().read(viewport.camera, [&](const CameraDevice& camera) {
-                    hardware_->uniformBufferObjects.eyePosition = camera.position;
-                    hardware_->uniformBufferObjects.eyeDir = camera.forward;
-                    hardware_->uniformBufferObjects.eyeViewMatrix = camera.compute_view_matrix();
-                    hardware_->uniformBufferObjects.eyeProjMatrix = camera.compute_projection_matrix();
-                    hardware_->gbufferUniformBufferObjects.viewProjMatrix = camera.compute_view_proj_matrix();
+                if (auto camera = SharedDataHub::instance().camera_storage().acquire_read(viewport->camera)) {
+                    hardware_->uniformBufferObjects.eyePosition = camera->position;
+                    hardware_->uniformBufferObjects.eyeDir = camera->forward;
+                    hardware_->uniformBufferObjects.eyeViewMatrix = camera->compute_view_matrix();
+                    hardware_->uniformBufferObjects.eyeProjMatrix = camera->compute_projection_matrix();
+                    hardware_->gbufferUniformBufferObjects.viewProjMatrix = camera->compute_view_proj_matrix();
                     hardware_->gbufferUniformBuffer.copyFromData(&hardware_->gbufferUniformBufferObjects, sizeof(hardware_->gbufferUniformBufferObjects));
 
                     hardware_->rasterizerPipeline["gbufferPostion"] = hardware_->gbufferPostionImage;
@@ -153,15 +176,16 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
                     hardware_->rasterizerPipeline["gbufferMotionVector"] = hardware_->gbufferMotionVectorImage;
                     hardware_->rasterizerPipeline.setDepthImage(hardware_->gbufferDepthImage);
 
-                    SharedDataHub::instance().optics_storage().for_each_read([&](const OpticsDevice& optics) {
-                        SharedDataHub::instance().geometry_storage().read(optics.geometry_handle, [&](const GeometryDevice& geom) {
-                            SharedDataHub::instance().model_transform_storage().read(geom.transform_handle, [&](const ModelTransform& transform) {
-                                auto model_matrix = transform.compute_matrix();
+                    // 遍历所有光学设备
+                    for (const auto& optics : SharedDataHub::instance().optics_storage()) {
+                        if (auto geom = SharedDataHub::instance().geometry_storage().acquire_read(optics.geometry_handle)) {
+                            if (auto transform = SharedDataHub::instance().model_transform_storage().acquire_read(geom->transform_handle)) {
+                                auto model_matrix = transform->compute_matrix();
                                 hardware_->rasterizerPipeline["pushConsts.modelMatrix"] = model_matrix;
-                            });
+                            }
                             hardware_->rasterizerPipeline["pushConsts.uniformBufferIndex"] = hardware_->gbufferUniformBuffer.storeDescriptor();
 
-                            for (const auto& m : geom.mesh_handles) {
+                            for (const auto& m : geom->mesh_handles) {
                                 hardware_->rasterizerPipeline["inPosition"] = m.pointsBuffer;
                                 hardware_->rasterizerPipeline["inNormal"] = m.normalsBuffer;
                                 hardware_->rasterizerPipeline["inTexCoord"] = m.texCoordsBuffer;
@@ -169,8 +193,8 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
 
                                 hardware_->executor << hardware_->rasterizerPipeline.record(m.indexBuffer);
                             }
-                        });
-                    });
+                        }
+                    }
 
                     hardware_->computePipeline["pushConsts.gbufferSize"] = hardware_->gbufferSize;
                     hardware_->computePipeline["pushConsts.gbufferPostionImage"] = hardware_->gbufferPostionImage.storeDescriptor();
@@ -185,9 +209,9 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
                     sun_dir.y = 1.0f;
                     sun_dir.z = 1.0f;
                     if (scene.environment != 0) {
-                        SharedDataHub::instance().environment_storage().read(scene.environment, [&](const EnvironmentDevice& env) {
-                            sun_dir = env.sun_position;
-                        });
+                        if (auto env = SharedDataHub::instance().environment_storage().acquire_read(scene.environment)) {
+                            sun_dir = env->sun_position;
+                        }
                     }
 
                     hardware_->computePipeline["pushConsts.sun_dir"] = ktm::normalize(sun_dir);
@@ -207,34 +231,35 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
                                         << hardware_->executor.commit();
 
 #ifdef CORONA_ENABLE_VISION
-                    if (hardware_->displayers_.contains(reinterpret_cast<uint64_t>(camera.surface))) {
+                    if (hardware_->displayers_.contains(reinterpret_cast<uint64_t>(camera->surface))) {
                         renderPipeline->display(1 / 30);
                         importedViewImage.copyFromBuffer(importedViewBuffer);
-                        hardware_->displayers_.at(reinterpret_cast<uint64_t>(camera.surface)).wait(hardware_->executor) << importedViewImage;
+                        hardware_->displayers_.at(reinterpret_cast<uint64_t>(camera->surface)).wait(hardware_->executor) << importedViewImage;
                     }
 #else
-                    if (hardware_->displayers_.contains(reinterpret_cast<uint64_t>(camera.surface))) {
-                        hardware_->displayers_.at(reinterpret_cast<uint64_t>(camera.surface)).wait(hardware_->executor) << hardware_->finalOutputImage;
+                    if (hardware_->displayers_.contains(reinterpret_cast<uint64_t>(camera->surface))) {
+                        hardware_->displayers_.at(reinterpret_cast<uint64_t>(camera->surface)).wait(hardware_->executor) << hardware_->finalOutputImage;
                     }
 #endif
-                });
-            });
+                }
+            }
         }
-    });
+    }
 }
 
 void OpticsSystem::shutdown() {
-    auto* logger = context()->logger();
-    logger->info("OpticsSystem: Shutting down...");
+    CFW_LOG_NOTICE("OpticsSystem: Shutting down...");
 
     // 取消 EventBus 订阅
     if (auto* event_bus = context()->event_bus()) {
         if (surface_changed_sub_id_ != 0) {
             event_bus->unsubscribe(surface_changed_sub_id_);
+            CFW_LOG_DEBUG("OpticsSystem: Unsubscribed from events");
         }
     }
 
     hardware_.reset();
+    CFW_LOG_INFO("OpticsSystem: Hardware resources released");
 }
 
 }  // namespace Corona::Systems

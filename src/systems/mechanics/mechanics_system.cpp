@@ -95,8 +95,7 @@ bool checkCollision(const std::vector<ktm::fvec3>& vertices1, const std::vector<
 
 namespace Corona::Systems {
 bool MechanicsSystem::initialize(Kernel::ISystemContext* ctx) {
-    auto* logger = ctx->logger();
-    logger->info("MechanicsSystem: Initializing...");
+    CFW_LOG_NOTICE("MechanicsSystem: Initializing...");
     return true;
 }
 
@@ -105,134 +104,182 @@ void MechanicsSystem::update() {
 }
 
 void MechanicsSystem::update_physics() {
-    auto* logger = context()->logger();
-
-    SharedDataHub::instance().mechanics_storage().for_each_read([&](const MechanicsDevice& m1) {
-        SharedDataHub::instance().mechanics_storage().for_each_read([&](const MechanicsDevice& m2) {
-            if (&m1 == &m2) {
-                return;
+    auto& mechanics_storage = SharedDataHub::instance().mechanics_storage();
+    auto& geometry_storage = SharedDataHub::instance().geometry_storage();
+    auto& transform_storage = SharedDataHub::instance().model_transform_storage();
+    
+    // 获取所有的 MechanicsDevice 句柄
+    std::vector<std::uintptr_t> mechanics_handles;
+    
+    // 遍历所有 MechanicsDevice 来收集句柄（假设有 for_each 或类似方法）
+    // 如果没有遍历方法，我们需要维护一个句柄列表或使用其他方式获取所有活动句柄
+    
+    // 临时解决方案：假设我们有一种方式获取所有活动的句柄
+    // 这里需要根据实际的 Storage API 进行调整
+    
+    CFW_LOG_DEBUG("MechanicsSystem: Starting collision detection update");
+    
+    // 双重循环进行碰撞检测
+    // 注意：这里需要根据实际的 Storage API 来获取所有活动句柄
+    // 目前我们先实现基本框架，假设我们有方式获取句柄列表
+    
+    // 示例：如果我们有一些方式获取句柄列表
+    for (std::uintptr_t handle1 : mechanics_handles) {
+        // 获取第一个 MechanicsDevice 的读取访问权
+        auto m1_accessor = mechanics_storage.acquire_read(handle1);
+        if (!m1_accessor) {
+            continue; // 无法获取访问权，跳过
+        }
+        
+        const auto& m1 = *m1_accessor;
+        
+        for (std::uintptr_t handle2 : mechanics_handles) {
+            if (handle1 == handle2) {
+                continue; // 跳过自身
             }
-
+            
+            // 获取第二个 MechanicsDevice 的读取访问权
+            auto m2_accessor = mechanics_storage.acquire_read(handle2);
+            if (!m2_accessor) {
+                continue;
+            }
+            
+            const auto& m2 = *m2_accessor;
+            
+            // 获取第一个物体的世界坐标顶点
             std::vector<ktm::fvec3> vertices1;
             bool found1 = false;
-
-            SharedDataHub::instance().geometry_storage().read(m1.geometry_handle, [&](const GeometryDevice& geom) {
-                SharedDataHub::instance().model_transform_storage().read(geom.transform_handle, [&](const ModelTransform& transform) {
+            
+            if (auto geom1_accessor = geometry_storage.acquire_read(m1.geometry_handle)) {
+                const auto& geom1 = *geom1_accessor;
+                
+                if (auto transform1_accessor = transform_storage.acquire_read(geom1.transform_handle)) {
+                    const auto& transform1 = *transform1_accessor;
+                    
                     vertices1 = calculateVertices(m1.min_xyz, m1.max_xyz);
-
+                    
                     // 从局部参数计算世界矩阵
-                    ktm::fmat4x4 world_matrix = transform.compute_matrix();
-
+                    ktm::fmat4x4 world_matrix = transform1.compute_matrix();
+                    
                     for (auto& v : vertices1) {
                         ktm::fvec4 v4;
                         v4.x = v.x;
                         v4.y = v.y;
                         v4.z = v.z;
                         v4.w = 1.0f;
-
+                        
                         ktm::fvec4 world_v = world_matrix * v4;
                         v.x = world_v.x;
                         v.y = world_v.y;
                         v.z = world_v.z;
                     }
                     found1 = true;
-                });
-            });
-
-            if (!found1 || vertices1.empty()) {
-                return;
+                }
             }
-
-            // 获取 m2 的世界坐标顶点
+            
+            if (!found1 || vertices1.empty()) {
+                continue;
+            }
+            
+            // 获取第二个物体的世界坐标顶点
             std::vector<ktm::fvec3> vertices2;
             bool found2 = false;
-
-            SharedDataHub::instance().geometry_storage().read(m2.geometry_handle, [&](const GeometryDevice& geom) {
-                SharedDataHub::instance().model_transform_storage().read(geom.transform_handle, [&](const ModelTransform& transform) {
+            
+            if (auto geom2_accessor = geometry_storage.acquire_read(m2.geometry_handle)) {
+                const auto& geom2 = *geom2_accessor;
+                
+                if (auto transform2_accessor = transform_storage.acquire_read(geom2.transform_handle)) {
+                    const auto& transform2 = *transform2_accessor;
+                    
                     vertices2 = calculateVertices(m2.min_xyz, m2.max_xyz);
-
+                    
                     // 从局部参数计算世界矩阵
-                    ktm::fmat4x4 world_matrix = transform.compute_matrix();
-
+                    ktm::fmat4x4 world_matrix = transform2.compute_matrix();
+                    
                     for (auto& v : vertices2) {
                         ktm::fvec4 v4;
                         v4.x = v.x;
                         v4.y = v.y;
                         v4.z = v.z;
                         v4.w = 1.0f;
-
+                        
                         ktm::fvec4 world_v = world_matrix * v4;
                         v.x = world_v.x;
                         v.y = world_v.y;
                         v.z = world_v.z;
                     }
                     found2 = true;
-                });
-            });
-
-            if (!found2 || vertices2.empty()) {
-                return;
+                }
             }
-
+            
+            if (!found2 || vertices2.empty()) {
+                continue;
+            }
+            
             // 碰撞检测
             if (checkCollision(vertices1, vertices2)) {
-                if (logger) {
-                    logger->info("Collision detected!");
-                }
-
+                CFW_LOG_DEBUG("Collision detected between objects with handles {} and {}", handle1, handle2);
+                
                 // 计算碰撞法线（从 m1 中心指向 m2 中心）
                 ktm::fvec3 center1;
                 center1.x = (m1.min_xyz.x + m1.max_xyz.x) * 0.5f;
                 center1.y = (m1.min_xyz.y + m1.max_xyz.y) * 0.5f;
                 center1.z = (m1.min_xyz.z + m1.max_xyz.z) * 0.5f;
-
+                
                 ktm::fvec3 center2;
                 center2.x = (m2.min_xyz.x + m2.max_xyz.x) * 0.5f;
                 center2.y = (m2.min_xyz.y + m2.max_xyz.y) * 0.5f;
                 center2.z = (m2.min_xyz.z + m2.max_xyz.z) * 0.5f;
-
+                
                 ktm::fvec3 diff;
                 diff.x = center2.x - center1.x;
                 diff.y = center2.y - center1.y;
                 diff.z = center2.z - center1.z;
-
+                
                 ktm::fvec3 normal = ktm::normalize(diff);
-
+                
                 // 物体分离（防止穿透）
                 constexpr float separation = 0.02f;
                 constexpr float bounceStrength = 0.1f;
-
+                
                 ktm::fvec3 total_offset;
                 total_offset.x = normal.x * (separation + bounceStrength);
                 total_offset.y = normal.y * (separation + bounceStrength);
                 total_offset.z = normal.z * (separation + bounceStrength);
-
+                
                 // 更新 m1 的 transform（反方向偏移）- 直接修改局部位置参数
-                SharedDataHub::instance().geometry_storage().read(m1.geometry_handle, [&](const GeometryDevice& geom) {
-                    SharedDataHub::instance().model_transform_storage().write(geom.transform_handle, [&](ModelTransform& transform) {
+                if (auto geom1_accessor = geometry_storage.acquire_read(m1.geometry_handle)) {
+                    const auto& geom1 = *geom1_accessor;
+                    
+                    if (auto transform1_accessor = transform_storage.acquire_write(geom1.transform_handle)) {
+                        auto& transform1 = *transform1_accessor;
+                        
                         // 直接修改局部位置参数
-                        transform.position.x -= total_offset.x;
-                        transform.position.y -= total_offset.y;
-                        transform.position.z -= total_offset.z;
-                    });
-                });
-
+                        transform1.position.x -= total_offset.x;
+                        transform1.position.y -= total_offset.y;
+                        transform1.position.z -= total_offset.z;
+                    }
+                }
+                
                 // 更新 m2 的 transform（正方向偏移）- 直接修改局部位置参数
-                SharedDataHub::instance().geometry_storage().read(m2.geometry_handle, [&](const GeometryDevice& geom) {
-                    SharedDataHub::instance().model_transform_storage().write(geom.transform_handle, [&](ModelTransform& transform) {
+                if (auto geom2_accessor = geometry_storage.acquire_read(m2.geometry_handle)) {
+                    const auto& geom2 = *geom2_accessor;
+                    
+                    if (auto transform2_accessor = transform_storage.acquire_write(geom2.transform_handle)) {
+                        auto& transform2 = *transform2_accessor;
+                        
                         // 直接修改局部位置参数
-                        transform.position.x += total_offset.x;
-                        transform.position.y += total_offset.y;
-                        transform.position.z += total_offset.z;
-                    });
-                });
+                        transform2.position.x += total_offset.x;
+                        transform2.position.y += total_offset.y;
+                        transform2.position.z += total_offset.z;
+                    }
+                }
             }
-        });
-    });
+        }
+    }
 }
 
 void MechanicsSystem::shutdown() {
-    auto* logger = context()->logger();
-    logger->info("MechanicsSystem: Shutting down...");
+    CFW_LOG_NOTICE("MechanicsSystem: Shutting down...");
 }
 }  // namespace Corona::Systems

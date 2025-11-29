@@ -62,9 +62,8 @@ struct ModelTransform {
 };
 
 struct ModelResource {
-    std::shared_ptr<Model> model_ptr;
+    std::uint64_t model_id;
 };
-
 
 struct GeometryDevice {
     std::uintptr_t transform_handle{};
@@ -171,26 +170,26 @@ class SharedDataHub {
     SharedDataHub() = default;
 
    public:
-    using ModelResourceStorage = Kernel::Utils::Storage<ModelResource>;
-    using ModelTransformStorage = Kernel::Utils::Storage<ModelTransform>;
-    using GeometryStorage = Kernel::Utils::Storage<GeometryDevice>;
-    using KinematicsStorage = Kernel::Utils::Storage<KinematicsDevice>;
-    using MechanicsStorage = Kernel::Utils::Storage<MechanicsDevice>;
-    using AcousticsStorage = Kernel::Utils::Storage<AcousticsDevice>;
-    using OpticsStorage = Kernel::Utils::Storage<OpticsDevice>;
-    using ProfileStorage = Kernel::Utils::Storage<ProfileDevice>;
-    using ActorStorage = Kernel::Utils::Storage<ActorDevice>;
-    using CameraStorage = Kernel::Utils::Storage<CameraDevice>;
-    using ViewportStorage = Kernel::Utils::Storage<ViewportDevice>;
-    using EnvironmentStorage = Kernel::Utils::Storage<EnvironmentDevice>;
-    using SceneStorage = Kernel::Utils::Storage<SceneDevice>;
+    // 新的 Storage 类型定义，包含默认的容量和内存池参数
+    using ModelResourceStorage = Kernel::Utils::Storage<ModelResource, 128, 2>;
+    using ModelTransformStorage = Kernel::Utils::Storage<ModelTransform, 128, 2>;
+    using GeometryStorage = Kernel::Utils::Storage<GeometryDevice, 128, 2>;
+    using KinematicsStorage = Kernel::Utils::Storage<KinematicsDevice, 128, 2>;
+    using MechanicsStorage = Kernel::Utils::Storage<MechanicsDevice, 128, 2>;
+    using AcousticsStorage = Kernel::Utils::Storage<AcousticsDevice, 128, 2>;
+    using OpticsStorage = Kernel::Utils::Storage<OpticsDevice, 128, 2>;
+    using ProfileStorage = Kernel::Utils::Storage<ProfileDevice, 128, 2>;
+    using ActorStorage = Kernel::Utils::Storage<ActorDevice, 128, 2>;
+    using CameraStorage = Kernel::Utils::Storage<CameraDevice, 128, 2>;
+    using ViewportStorage = Kernel::Utils::Storage<ViewportDevice, 128, 2>;
+    using EnvironmentStorage = Kernel::Utils::Storage<EnvironmentDevice, 128, 2>;
+    using SceneStorage = Kernel::Utils::Storage<SceneDevice, 128, 2>;
 
     ModelResourceStorage& model_resource_storage();
     const ModelResourceStorage& model_resource_storage() const;
 
     ModelTransformStorage& model_transform_storage();
     const ModelTransformStorage& model_transform_storage() const;
-
 
     GeometryStorage& geometry_storage();
     const GeometryStorage& geometry_storage() const;
@@ -227,20 +226,14 @@ class SharedDataHub {
 
    private:
     ModelResourceStorage model_resource_storage_;
-
     GeometryStorage geometry_storage_;
     ModelTransformStorage model_transform_storage_;
-
-
     KinematicsStorage kinematics_storage_;
     MechanicsStorage mechanics_storage_;
-
     OpticsStorage optics_storage_;
     AcousticsStorage acoustics_storage_;
-
     ProfileStorage profile_storage_;
     ActorStorage actor_storage_;
-
     EnvironmentStorage environment_storage_;
     CameraStorage camera_storage_;
     ViewportStorage viewport_storage_;

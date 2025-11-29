@@ -6,19 +6,17 @@
 #include <corona/events/optics_system_events.h>
 #include <corona/kernel/core/kernel_context.h>
 #include <corona/kernel/event/i_event_bus.h>
-#include <corona/resource_manager/resource_manager.h>
+#include <corona/resource/resource_manager.h>
 #include <corona/script/api/corona_engine_api.h>
 #include <corona/shared_data_hub.h>
-
-#include "corona/resource_manager/model.h"
+#include <corona/resource/types/scene/scene.h>
 
 // ########################
 //          Scene
 // ########################
 Corona::API::Scene::Scene()
     : handle_(0) {
-    handle_ = SharedDataHub::instance().scene_storage().allocate([&](SceneDevice& slot) {
-    });
+    handle_ = SharedDataHub::instance().scene_storage().allocate();
 }
 
 Corona::API::Scene::~Scene() {
@@ -30,23 +28,22 @@ Corona::API::Scene::~Scene() {
 
 void Corona::API::Scene::set_environment(Environment* env) {
     if (handle_ == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Scene::set_environment] Invalid scene handle");
-        }
+        CFW_LOG_WARNING("[Scene::set_environment] Invalid scene handle");
         return;
     }
 
     if (env == nullptr) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Scene::set_environment] Null environment pointer");
-        }
+        CFW_LOG_WARNING("[Scene::set_environment] Null environment pointer");
         return;
     }
 
     environment_ = env;
-    SharedDataHub::instance().scene_storage().write(handle_, [&](SceneDevice& slot) {
-        slot.environment = env->get_handle();
-    });
+    
+    if (auto accessor = SharedDataHub::instance().scene_storage().acquire_write(handle_)) {
+        accessor->environment = env->get_handle();
+    } else {
+        CFW_LOG_ERROR("[Scene::set_environment] Failed to acquire write access to scene storage");
+    }
 }
 
 Corona::API::Environment* Corona::API::Scene::get_environment() {
@@ -61,73 +58,66 @@ void Corona::API::Scene::remove_environment() {
     if (handle_ == 0) return;
 
     environment_ = nullptr;
-    SharedDataHub::instance().scene_storage().write(handle_, [&](SceneDevice& slot) {
-        slot.environment = 0;
-    });
+    
+    if (auto accessor = SharedDataHub::instance().scene_storage().acquire_write(handle_)) {
+        accessor->environment = 0;
+    }
 }
 
 void Corona::API::Scene::add_actor(Actor* actor) {
     if (handle_ == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Scene::add_actor] Invalid scene handle");
-        }
+        CFW_LOG_WARNING("[Scene::add_actor] Invalid scene handle");
         return;
     }
 
     if (actor == nullptr) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Scene::add_actor] Null actor pointer");
-        }
+        CFW_LOG_WARNING("[Scene::add_actor] Null actor pointer");
         return;
     }
 
     auto it = std::ranges::find(actors_, actor);
     if (it != actors_.end()) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Scene::add_actor] Actor already exists in scene, handle: " + std::to_string(actor->get_handle()));
-        }
+        CFW_LOG_WARNING("[Scene::add_actor] Actor already exists in scene, handle: {}", actor->get_handle());
         return;
     }
 
     actors_.push_back(actor);
-    SharedDataHub::instance().scene_storage().write(handle_, [&](SceneDevice& slot) {
-        slot.actor_handles.push_back(actor->get_handle());
-    });
+    
+    if (auto accessor = SharedDataHub::instance().scene_storage().acquire_write(handle_)) {
+        accessor->actor_handles.push_back(actor->get_handle());
+    } else {
+        CFW_LOG_ERROR("[Scene::add_actor] Failed to acquire write access to scene storage");
+    }
 }
 
 void Corona::API::Scene::remove_actor(Actor* actor) {
     if (handle_ == 0) return;
 
     if (actor == nullptr) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Scene::remove_actor] Null actor pointer");
-        }
+        CFW_LOG_WARNING("[Scene::remove_actor] Null actor pointer");
         return;
     }
 
     auto removed = std::erase(actors_, actor);
     if (removed == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Scene::remove_actor] Actor not found in scene, handle: " + std::to_string(actor->get_handle()));
-        }
+        CFW_LOG_WARNING("[Scene::remove_actor] Actor not found in scene, handle: {}", actor->get_handle());
     }
 
-    SharedDataHub::instance().scene_storage().write(handle_, [&](SceneDevice& slot) {
-        std::erase(slot.actor_handles, actor->get_handle());
-    });
+    if (auto accessor = SharedDataHub::instance().scene_storage().acquire_write(handle_)) {
+        std::erase(accessor->actor_handles, actor->get_handle());
+    }
 }
 
 void Corona::API::Scene::clear_actors() {
     if (handle_ == 0) return;
 
-    if (auto* logger = Kernel::KernelContext::instance().logger()) {
-        logger->info("[Scene::clear_actors] Clearing " + std::to_string(actors_.size()) + " actors");
-    }
+    CFW_LOG_INFO("[Scene::clear_actors] Clearing {} actors", actors_.size());
 
     actors_.clear();
-    SharedDataHub::instance().scene_storage().write(handle_, [&](SceneDevice& slot) {
-        slot.actor_handles.clear();
-    });
+    
+    if (auto accessor = SharedDataHub::instance().scene_storage().acquire_write(handle_)) {
+        accessor->actor_handles.clear();
+    }
 }
 
 std::size_t Corona::API::Scene::actor_count() const {
@@ -141,67 +131,59 @@ bool Corona::API::Scene::has_actor(const Actor* actor) const {
 
 void Corona::API::Scene::add_viewport(Viewport* viewport) {
     if (handle_ == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Scene::add_viewport] Invalid scene handle");
-        }
+        CFW_LOG_WARNING("[Scene::add_viewport] Invalid scene handle");
         return;
     }
 
     if (viewport == nullptr) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Scene::add_viewport] Null viewport pointer");
-        }
+        CFW_LOG_WARNING("[Scene::add_viewport] Null viewport pointer");
         return;
     }
 
     auto it = std::ranges::find(viewports_, viewport);
     if (it != viewports_.end()) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Scene::add_viewport] Viewport already exists in scene");
-        }
+        CFW_LOG_WARNING("[Scene::add_viewport] Viewport already exists in scene");
         return;
     }
 
     viewports_.push_back(viewport);
-    SharedDataHub::instance().scene_storage().write(handle_, [&](SceneDevice& slot) {
-        slot.viewport_handles.push_back(viewport->get_handle());
-    });
+    
+    if (auto accessor = SharedDataHub::instance().scene_storage().acquire_write(handle_)) {
+        accessor->viewport_handles.push_back(viewport->get_handle());
+    } else {
+        CFW_LOG_ERROR("[Scene::add_viewport] Failed to acquire write access to scene storage");
+    }
 }
 
 void Corona::API::Scene::remove_viewport(Viewport* viewport) {
     if (handle_ == 0) return;
 
     if (viewport == nullptr) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Scene::remove_viewport] Null viewport pointer");
-        }
+        CFW_LOG_WARNING("[Scene::remove_viewport] Null viewport pointer");
         return;
     }
 
     auto removed = std::erase(viewports_, viewport);
     if (removed == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Scene::remove_viewport] Viewport not found in scene");
-        }
+        CFW_LOG_WARNING("[Scene::remove_viewport] Viewport not found in scene");
         return;
     }
 
-    SharedDataHub::instance().scene_storage().write(handle_, [&](SceneDevice& slot) {
-        std::erase(slot.viewport_handles, viewport->get_handle());
-    });
+    if (auto accessor = SharedDataHub::instance().scene_storage().acquire_write(handle_)) {
+        std::erase(accessor->viewport_handles, viewport->get_handle());
+    }
 }
 
 void Corona::API::Scene::clear_viewports() {
     if (handle_ == 0) return;
 
-    if (auto* logger = Kernel::KernelContext::instance().logger()) {
-        logger->info("[Scene::clear_viewports] Clearing " + std::to_string(viewports_.size()) + " viewports");
-    }
+    CFW_LOG_INFO("[Scene::clear_viewports] Clearing {} viewports", viewports_.size());
 
     viewports_.clear();
-    SharedDataHub::instance().scene_storage().write(handle_, [&](SceneDevice& slot) {
-        slot.viewport_handles.clear();
-    });
+    
+    if (auto accessor = SharedDataHub::instance().scene_storage().acquire_write(handle_)) {
+        accessor->viewport_handles.clear();
+    }
 }
 
 std::size_t Corona::API::Scene::viewport_count() const {
@@ -218,8 +200,7 @@ bool Corona::API::Scene::has_viewport(const Viewport* viewport) const {
 // ########################
 Corona::API::Environment::Environment()
     : handle_(0) {
-    handle_ = SharedDataHub::instance().environment_storage().allocate([&](EnvironmentDevice& slot) {
-    });
+    handle_ = SharedDataHub::instance().environment_storage().allocate();
 }
 
 Corona::API::Environment::~Environment() {
@@ -231,32 +212,26 @@ Corona::API::Environment::~Environment() {
 
 void Corona::API::Environment::set_sun_direction(const std::array<float, 3>& direction) {
     if (handle_ == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Environment::set_sun_direction] Invalid environment handle");
-        }
+        CFW_LOG_WARNING("[Environment::set_sun_direction] Invalid environment handle");
         return;
     }
 
-    SharedDataHub::instance().environment_storage().write(handle_, [&](EnvironmentDevice& slot) {
-        slot.sun_position.x = direction[0];
-        slot.sun_position.y = direction[1];
-        slot.sun_position.z = direction[2];
-    });
-
-    if (auto* logger = Kernel::KernelContext::instance().logger()) {
-        logger->info("[Environment::set_sun_direction] Sun direction set to: (" +
-                     std::to_string(direction[0]) + ", " +
-                     std::to_string(direction[1]) + ", " +
-                     std::to_string(direction[2]) + ")");
+    if (auto accessor = SharedDataHub::instance().environment_storage().acquire_write(handle_)) {
+        accessor->sun_position.x = direction[0];
+        accessor->sun_position.y = direction[1];
+        accessor->sun_position.z = direction[2];
+        
+        CFW_LOG_INFO("[Environment::set_sun_direction] Sun direction set to: ({}, {}, {})",
+                     direction[0], direction[1], direction[2]);
+    } else {
+        CFW_LOG_ERROR("[Environment::set_sun_direction] Failed to acquire write access to environment storage");
     }
 }
 
 void Corona::API::Environment::set_floor_grid(bool enabled) const {
     // TODO: Implement floor grid rendering control
-    if (auto* logger = Kernel::KernelContext::instance().logger()) {
-        logger->warning("[Corona::API::Environment::set_floor_grid] Not implemented yet: " +
-                        std::string(enabled ? "enabled" : "disabled"));
-    }
+    CFW_LOG_WARNING("[Corona::API::Environment::set_floor_grid] Not implemented yet: {}",
+                    enabled ? "enabled" : "disabled");
 }
 
 std::uintptr_t Corona::API::Environment::get_handle() const {
@@ -268,60 +243,94 @@ std::uintptr_t Corona::API::Environment::get_handle() const {
 // ########################
 Corona::API::Geometry::Geometry(const std::string& model_path)
     : handle_(0), transform_handle_(0), model_resource_handle_(0) {
-    auto model_id = ResourceId::from(Corona::ResourceType::Model, model_path);
-    auto model_ptr = std::static_pointer_cast<Model>(ResourceManager::instance().load_once(model_id));
-    if (!model_ptr) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->error("[Corona::API::Geometry] Failed to load model: " + model_path);
-        }
+    auto model_id = Resource::ResourceManager::get_instance().import_sync(std::filesystem::path(model_path));
+    if (model_id == 0) {
+        CFW_LOG_CRITICAL("[Corona::API::Geometry] Failed to load model: {}", model_path);
         return;
     }
 
-    // 1. 分配 ModelResource
-    model_resource_handle_ = SharedDataHub::instance().model_resource_storage().allocate(
-        [&](ModelResource& slot) {
-            slot.model_ptr = model_ptr;
-        });
+    model_resource_handle_ = SharedDataHub::instance().model_resource_storage().allocate();
+    if (const auto handle = SharedDataHub::instance().model_resource_storage().acquire_write(model_resource_handle_)) {
+        handle->model_id = model_id;
+    } else {
+        CFW_LOG_ERROR("[Geometry] Failed to acquire write access to model resource storage");
+        SharedDataHub::instance().model_resource_storage().deallocate(model_resource_handle_);
+        model_resource_handle_ = 0;
+        return;
+    }
 
-    // 2. 分配 ModelTransform（使用局部参数，默认值已在结构体中定义）
-    transform_handle_ = SharedDataHub::instance().model_transform_storage().allocate(
-        [&](ModelTransform& slot) {
-            // 默认值：position(0,0,0), rotation(0,0,0), scale(1,1,1)
-            // 已在 ModelTransform 结构体中初始化
-        });
+    transform_handle_ = SharedDataHub::instance().model_transform_storage().allocate();
 
-    // 3. 创建 MeshDevice 列表
+    auto model_ptr = Resource::ResourceManager::get_instance().acquire_read<Resource::Scene>(model_id);
     std::vector<MeshDevice> mesh_devices;
-    mesh_devices.reserve(model_ptr->meshes.size());
-    for (const auto& mesh : model_ptr->meshes) {
+    mesh_devices.reserve(model_ptr->data.meshes.size());
+    for (const auto& mesh : model_ptr->data.meshes) {
         MeshDevice dev{};
-        dev.pointsBuffer = HardwareBuffer(mesh.points, BufferUsage::VertexBuffer);
-        dev.normalsBuffer = HardwareBuffer(mesh.normals, BufferUsage::VertexBuffer);
-        dev.texCoordsBuffer = HardwareBuffer(mesh.tex_coords, BufferUsage::VertexBuffer);
-        dev.indexBuffer = HardwareBuffer(mesh.indices, BufferUsage::IndexBuffer);
-        dev.materialIndex = 0;
 
-        if (!mesh.textures.empty() && mesh.textures[0]) {
+        std::vector mesh_vertices(
+            model_ptr->data.vertices.begin() + mesh.vertex_offset,
+            model_ptr->data.vertices.begin() + mesh.vertex_offset + mesh.vertex_count
+        );
+
+        std::vector mesh_indices(
+            model_ptr->data.indices.begin() + mesh.index_offset,
+            model_ptr->data.indices.begin() + mesh.index_offset + mesh.index_count
+        );
+
+        dev.pointsBuffer = HardwareBuffer(mesh_vertices, BufferUsage::VertexBuffer);
+        dev.indexBuffer = HardwareBuffer(mesh_indices, BufferUsage::IndexBuffer);
+
+        std::vector<std::array<float, 3>> normals;
+        std::vector<std::array<float, 2>> tex_coords;
+        normals.reserve(mesh.vertex_count);
+        tex_coords.reserve(mesh.vertex_count);
+
+        for (const auto& v : mesh_vertices) {
+            normals.push_back(v.normal);
+            tex_coords.push_back(v.tex_coords);
+        }
+
+        dev.normalsBuffer = HardwareBuffer(normals, BufferUsage::VertexBuffer);
+        dev.texCoordsBuffer = HardwareBuffer(tex_coords, BufferUsage::VertexBuffer);
+
+        dev.materialIndex = (mesh.material_index != Resource::InvalidIndex) ? mesh.material_index : 0;
+
+        if (mesh.material_index != Resource::InvalidIndex && mesh.material_index < model_ptr->data.materials.size()) {
+            const auto& material = model_ptr->data.materials[mesh.material_index];
+            dev.textureIndex = (material.albedo_texture != Resource::InvalidTextureId)
+                              ? static_cast<std::uint32_t>(material.albedo_texture)
+                              : 0;
         } else {
             dev.textureIndex = 0;
         }
 
-        dev.meshData = mesh;
         mesh_devices.emplace_back(std::move(dev));
     }
 
     // 4. 分配 GeometryDevice
-    handle_ = SharedDataHub::instance().geometry_storage().allocate(
-        [&](GeometryDevice& slot) {
-            slot.transform_handle = transform_handle_;
-            slot.model_resource_handle = model_resource_handle_;
-            slot.mesh_handles = std::move(mesh_devices);
-        });
+    handle_ = SharedDataHub::instance().geometry_storage().allocate();
+    if (auto accessor = SharedDataHub::instance().geometry_storage().acquire_write(handle_)) {
+        accessor->transform_handle = transform_handle_;
+        accessor->model_resource_handle = model_resource_handle_;
+        accessor->mesh_handles = std::move(mesh_devices);
+    } else {
+        CFW_LOG_CRITICAL("[Corona::API::Geometry] Failed to acquire write access to geometry storage");
+        // 清理已分配的资源
+        if (transform_handle_ != 0) {
+            SharedDataHub::instance().model_transform_storage().deallocate(transform_handle_);
+            transform_handle_ = 0;
+        }
+        if (model_resource_handle_ != 0) {
+            SharedDataHub::instance().model_resource_storage().deallocate(model_resource_handle_);
+            model_resource_handle_ = 0;
+        }
+        SharedDataHub::instance().geometry_storage().deallocate(handle_);
+        handle_ = 0;
+        return;
+    }
 
     if (handle_ == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->error("[Corona::API::Geometry] Failed to allocate GeometryDevice");
-        }
+        CFW_LOG_CRITICAL("[Corona::API::Geometry] Failed to allocate GeometryDevice");
     }
 }
 
@@ -339,104 +348,104 @@ Corona::API::Geometry::~Geometry() {
 
 void Corona::API::Geometry::set_position(const std::array<float, 3>& pos) {
     if (transform_handle_ == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Geometry::set_position] Invalid transform handle");
-        }
+        CFW_LOG_WARNING("[Geometry::set_position] Invalid transform handle");
         return;
     }
 
-    SharedDataHub::instance().model_transform_storage().write(transform_handle_, [&](ModelTransform& slot) {
-        slot.position.x = pos[0];
-        slot.position.y = pos[1];
-        slot.position.z = pos[2];
-    });
+    if (auto accessor = SharedDataHub::instance().model_transform_storage().acquire_write(transform_handle_)) {
+        accessor->position.x = pos[0];
+        accessor->position.y = pos[1];
+        accessor->position.z = pos[2];
+    } else {
+        CFW_LOG_ERROR("[Geometry::set_position] Failed to acquire write access to transform storage");
+    }
 }
 
 void Corona::API::Geometry::set_rotation(const std::array<float, 3>& euler) {
     if (transform_handle_ == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Geometry::set_rotation] Invalid transform handle");
-        }
+        CFW_LOG_WARNING("[Geometry::set_rotation] Invalid transform handle");
         return;
     }
 
     // 直接写入容器中的局部旋转参数（欧拉角 ZYX 顺序）
-    SharedDataHub::instance().model_transform_storage().write(transform_handle_, [&](ModelTransform& slot) {
-        slot.euler_rotation.x = euler[0];  // Pitch
-        slot.euler_rotation.y = euler[1];  // Yaw
-        slot.euler_rotation.z = euler[2];  // Roll
-    });
+    if (auto accessor = SharedDataHub::instance().model_transform_storage().acquire_write(transform_handle_)) {
+        accessor->euler_rotation.x = euler[0];  // Pitch
+        accessor->euler_rotation.y = euler[1];  // Yaw
+        accessor->euler_rotation.z = euler[2];  // Roll
+    } else {
+        CFW_LOG_ERROR("[Geometry::set_rotation] Failed to acquire write access to transform storage");
+    }
 }
 
 void Corona::API::Geometry::set_scale(const std::array<float, 3>& scl) {
     if (transform_handle_ == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Geometry::set_scale] Invalid transform handle");
-        }
+        CFW_LOG_WARNING("[Geometry::set_scale] Invalid transform handle");
         return;
     }
 
     // 直接写入容器中的局部缩放参数
-    SharedDataHub::instance().model_transform_storage().write(transform_handle_, [&](ModelTransform& slot) {
-        slot.scale.x = scl[0];
-        slot.scale.y = scl[1];
-        slot.scale.z = scl[2];
-    });
+    if (auto accessor = SharedDataHub::instance().model_transform_storage().acquire_write(transform_handle_)) {
+        accessor->scale.x = scl[0];
+        accessor->scale.y = scl[1];
+        accessor->scale.z = scl[2];
+    } else {
+        CFW_LOG_ERROR("[Geometry::set_scale] Failed to acquire write access to transform storage");
+    }
 }
 
 std::array<float, 3> Corona::API::Geometry::get_position() const {
     if (transform_handle_ == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Geometry::get_position] Invalid transform handle");
-        }
+        CFW_LOG_WARNING("[Geometry::get_position] Invalid transform handle");
         return {0.0f, 0.0f, 0.0f};
     }
 
     // 从容器中读取局部位置参数
     std::array<float, 3> result = {0.0f, 0.0f, 0.0f};
-    SharedDataHub::instance().model_transform_storage().read(transform_handle_, [&](const ModelTransform& slot) {
-        result[0] = slot.position.x;
-        result[1] = slot.position.y;
-        result[2] = slot.position.z;
-    });
+    if (auto accessor = SharedDataHub::instance().model_transform_storage().acquire_read(transform_handle_)) {
+        result[0] = accessor->position.x;
+        result[1] = accessor->position.y;
+        result[2] = accessor->position.z;
+    } else {
+        CFW_LOG_ERROR("[Geometry::get_position] Failed to acquire read access to transform storage");
+    }
 
     return result;
 }
 
 std::array<float, 3> Corona::API::Geometry::get_rotation() const {
     if (transform_handle_ == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Geometry::get_rotation] Invalid transform handle");
-        }
+        CFW_LOG_WARNING("[Geometry::get_rotation] Invalid transform handle");
         return {0.0f, 0.0f, 0.0f};
     }
 
     // 从容器中读取局部旋转参数（欧拉角 ZYX 顺序）
     std::array<float, 3> result = {0.0f, 0.0f, 0.0f};
-    SharedDataHub::instance().model_transform_storage().read(transform_handle_, [&](const ModelTransform& slot) {
-        result[0] = slot.euler_rotation.x;  // Pitch
-        result[1] = slot.euler_rotation.y;  // Yaw
-        result[2] = slot.euler_rotation.z;  // Roll
-    });
+    if (auto accessor = SharedDataHub::instance().model_transform_storage().acquire_read(transform_handle_)) {
+        result[0] = accessor->euler_rotation.x;  // Pitch
+        result[1] = accessor->euler_rotation.y;  // Yaw
+        result[2] = accessor->euler_rotation.z;  // Roll
+    } else {
+        CFW_LOG_ERROR("[Geometry::get_rotation] Failed to acquire read access to transform storage");
+    }
 
     return result;
 }
 
 std::array<float, 3> Corona::API::Geometry::get_scale() const {
     if (transform_handle_ == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Geometry::get_scale] Invalid transform handle");
-        }
+        CFW_LOG_WARNING("[Geometry::get_scale] Invalid transform handle");
         return {1.0f, 1.0f, 1.0f};
     }
 
     // 从容器中读取局部缩放参数
     std::array<float, 3> result = {1.0f, 1.0f, 1.0f};
-    SharedDataHub::instance().model_transform_storage().read(transform_handle_, [&](const ModelTransform& slot) {
-        result[0] = slot.scale.x;
-        result[1] = slot.scale.y;
-        result[2] = slot.scale.z;
-    });
+    if (auto accessor = SharedDataHub::instance().model_transform_storage().acquire_read(transform_handle_)) {
+        result[0] = accessor->scale.x;
+        result[1] = accessor->scale.y;
+        result[2] = accessor->scale.z;
+    } else {
+        CFW_LOG_ERROR("[Geometry::get_scale] Failed to acquire read access to transform storage");
+    }
 
     return result;
 }
@@ -458,9 +467,14 @@ std::uintptr_t Corona::API::Geometry::get_model_resource_handle() const {
 // ########################
 Corona::API::Optics::Optics(Geometry& geo)
     : geometry_(&geo), handle_(0) {
-    handle_ = SharedDataHub::instance().optics_storage().allocate([&](OpticsDevice& slot) {
-        slot.geometry_handle = geo.get_handle();
-    });
+    handle_ = SharedDataHub::instance().optics_storage().allocate();
+    if (auto accessor = SharedDataHub::instance().optics_storage().acquire_write(handle_)) {
+        accessor->geometry_handle = geo.get_handle();
+    } else {
+        CFW_LOG_ERROR("[Optics] Failed to acquire write access to optics storage");
+        SharedDataHub::instance().optics_storage().deallocate(handle_);
+        handle_ = 0;
+    }
 }
 
 Corona::API::Optics::~Optics() {
@@ -485,21 +499,28 @@ Corona::API::Mechanics::Mechanics(Geometry& geo)
     // 获取模型的包围盒信息
     ktm::fvec3 max_xyz{0, 0, 0};
     ktm::fvec3 min_xyz{0, 0, 0};
-    SharedDataHub::instance().geometry_storage().read(geo.get_handle(), [&](const GeometryDevice& geom_dev) {
-        SharedDataHub::instance().model_resource_storage().read(geom_dev.model_resource_handle, [&](const ModelResource& res) {
-            if (res.model_ptr) {
-                max_xyz = res.model_ptr->max_xyz;
-                min_xyz = res.model_ptr->min_xyz;
-            }
-        });
-    });
+    
+    if (auto geom_handle = SharedDataHub::instance().geometry_storage().acquire_read(geo.get_handle())) {
+        if (auto res_handle = SharedDataHub::instance().model_resource_storage().acquire_read(geom_handle->model_resource_handle)) {
+            // if (res_handle->model_id) {
+            //     max_xyz = res_handle->model_id->max_xyz;
+            //     min_xyz = res_handle->model_id->min_xyz;
+            // }
+            return;
+        }
+    }
 
     // 创建 MechanicsDevice
-    handle_ = SharedDataHub::instance().mechanics_storage().allocate([&](MechanicsDevice& slot) {
-        slot.geometry_handle = geo.get_handle();
-        slot.max_xyz = max_xyz;
-        slot.min_xyz = min_xyz;
-    });
+    handle_ = SharedDataHub::instance().mechanics_storage().allocate();
+    if (auto accessor = SharedDataHub::instance().mechanics_storage().acquire_write(handle_)) {
+        accessor->geometry_handle = geo.get_handle();
+        accessor->max_xyz = max_xyz;
+        accessor->min_xyz = min_xyz;
+    } else {
+        CFW_LOG_ERROR("[Mechanics] Failed to acquire write access to mechanics storage");
+        SharedDataHub::instance().mechanics_storage().deallocate(handle_);
+        handle_ = 0;
+    }
 }
 
 Corona::API::Mechanics::~Mechanics() {
@@ -521,9 +542,14 @@ Corona::API::Geometry* Corona::API::Mechanics::get_geometry() const {
 // ########################
 Corona::API::Acoustics::Acoustics(Geometry& geo)
     : geometry_(&geo), handle_(0) {
-    handle_ = SharedDataHub::instance().acoustics_storage().allocate([&](AcousticsDevice& slot) {
-        slot.geometry_handle = geo.get_handle();
-    });
+    handle_ = SharedDataHub::instance().acoustics_storage().allocate();
+    if (auto accessor = SharedDataHub::instance().acoustics_storage().acquire_write(handle_)) {
+        accessor->geometry_handle = geo.get_handle();
+    } else {
+        CFW_LOG_ERROR("[Acoustics] Failed to acquire write access to acoustics storage");
+        SharedDataHub::instance().acoustics_storage().deallocate(handle_);
+        handle_ = 0;
+    }
 }
 
 Corona::API::Acoustics::~Acoustics() {
@@ -534,29 +560,29 @@ Corona::API::Acoustics::~Acoustics() {
 
 void Corona::API::Acoustics::set_volume(float volume) {
     if (handle_ == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Acoustics::set_volume] Invalid acoustics handle");
-        }
+        CFW_LOG_WARNING("[Acoustics::set_volume] Invalid acoustics handle");
         return;
     }
 
-    SharedDataHub::instance().acoustics_storage().write(handle_, [&](AcousticsDevice& slot) {
-        slot.volume = volume;
-    });
+    if (auto accessor = SharedDataHub::instance().acoustics_storage().acquire_write(handle_)) {
+        accessor->volume = volume;
+    } else {
+        CFW_LOG_ERROR("[Acoustics::set_volume] Failed to acquire write access to acoustics storage");
+    }
 }
 
 float Corona::API::Acoustics::get_volume() const {
     if (handle_ == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("Acoustics::get_volume] Invalid acoustics handle");
-        }
+        CFW_LOG_WARNING("[Acoustics::get_volume] Invalid acoustics handle");
         return 0.0f;
     }
 
     float result = 0.0f;
-    SharedDataHub::instance().acoustics_storage().read(handle_, [&](const AcousticsDevice& slot) {
-        result = slot.volume;
-    });
+    if (auto accessor = SharedDataHub::instance().acoustics_storage().acquire_read(handle_)) {
+        result = accessor->volume;
+    } else {
+        CFW_LOG_ERROR("[Acoustics::get_volume] Failed to acquire read access to acoustics storage");
+    }
     return result;
 }
 
@@ -574,28 +600,39 @@ Corona::API::Geometry* Corona::API::Acoustics::get_geometry() const {
 Corona::API::Kinematics::Kinematics(Geometry& geo)
     : geometry_(&geo), handle_(0) {
 
+    handle_ = SharedDataHub::instance().kinematics_storage().allocate();
 }
 
 Corona::API::Kinematics::~Kinematics() {
+    if (handle_ != 0) {
+        SharedDataHub::instance().kinematics_storage().deallocate(handle_);
+    }
 }
 
 void Corona::API::Kinematics::set_animation(std::uint32_t animation_index) {
 
+    CFW_LOG_WARNING("[Kinematics::set_animation] Not implemented yet");
 }
 
 void Corona::API::Kinematics::play_animation(float speed) {
 
+    CFW_LOG_WARNING("[Kinematics::play_animation] Not implemented yet");
 }
 
 void Corona::API::Kinematics::stop_animation() {
+    CFW_LOG_WARNING("[Kinematics::stop_animation] Not implemented yet");
 }
 
 std::uint32_t Corona::API::Kinematics::get_animation_index() const {
 
+    CFW_LOG_WARNING("[Kinematics::get_animation_index] Not implemented yet");
+    return 0;
 }
 
 float Corona::API::Kinematics::get_current_time() const {
 
+    CFW_LOG_WARNING("[Kinematics::get_current_time] Not implemented yet");
+    return 0.0f;
 }
 
 std::uintptr_t Corona::API::Kinematics::get_handle() const {
@@ -611,8 +648,7 @@ Corona::API::Geometry* Corona::API::Kinematics::get_geometry() const {
 // ########################
 Corona::API::Actor::Actor()
     : handle_(0), active_profile_handle_(0), next_profile_handle_(1) {
-    handle_ = SharedDataHub::instance().actor_storage().allocate([&](ActorDevice& slot) {
-    });
+    handle_ = SharedDataHub::instance().actor_storage().allocate();
 }
 
 Corona::API::Actor::~Actor() {
@@ -623,37 +659,27 @@ Corona::API::Actor::~Actor() {
 
 Corona::API::Actor::Profile* Corona::API::Actor::add_profile(const Profile& profile) {
     if (!profile.geometry) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->error("[Actor::add_profile] Profile must have a valid Geometry");
-        }
+        CFW_LOG_CRITICAL("[Actor::add_profile] Profile must have a valid Geometry");
         return nullptr;
     }
 
     if (profile.optics && profile.optics->geometry_ != profile.geometry) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->error("[Actor::add_profile] Optics references a different Geometry");
-        }
+        CFW_LOG_CRITICAL("[Actor::add_profile] Optics references a different Geometry");
         return nullptr;
     }
 
     if (profile.mechanics && profile.mechanics->geometry_ != profile.geometry) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->error("[Actor::add_profile] Mechanics references a different Geometry");
-        }
+        CFW_LOG_CRITICAL("[Actor::add_profile] Mechanics references a different Geometry");
         return nullptr;
     }
 
     if (profile.acoustics && profile.acoustics->geometry_ != profile.geometry) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->error("[Actor::add_profile] Acoustics references a different Geometry");
-        }
+        CFW_LOG_CRITICAL("[Actor::add_profile] Acoustics references a different Geometry");
         return nullptr;
     }
 
     if (profile.kinematics && profile.kinematics->geometry_ != profile.geometry) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->error("[Actor::add_profile] Kinematics references a different Geometry");
-        }
+        CFW_LOG_CRITICAL("[Actor::add_profile] Kinematics references a different Geometry");
         return nullptr;
     }
 
@@ -665,9 +691,11 @@ Corona::API::Actor::Profile* Corona::API::Actor::add_profile(const Profile& prof
     }
 
     if (handle_ != 0) {
-        SharedDataHub::instance().actor_storage().write(handle_, [&](ActorDevice& slot) {
-            slot.profile_handles.push_back(profile_handle);
-        });
+        if (auto accessor = SharedDataHub::instance().actor_storage().acquire_write(handle_)) {
+            accessor->profile_handles.push_back(profile_handle);
+        } else {
+            CFW_LOG_ERROR("[Actor::add_profile] Failed to acquire write access to actor storage");
+        }
     }
 
     return &profiles_[profile_handle];
@@ -675,9 +703,7 @@ Corona::API::Actor::Profile* Corona::API::Actor::add_profile(const Profile& prof
 
 void Corona::API::Actor::remove_profile(const Profile* profile) {
     if (handle_ == 0 || profile == nullptr) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Actor::remove_profile] Invalid actor handle or null profile");
-        }
+        CFW_LOG_WARNING("[Actor::remove_profile] Invalid actor handle or null profile");
         return;
     }
 
@@ -690,9 +716,7 @@ void Corona::API::Actor::remove_profile(const Profile* profile) {
     }
 
     if (profile_handle == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Actor::remove_profile] Profile not found in this actor");
-        }
+        CFW_LOG_WARNING("[Actor::remove_profile] Profile not found in this actor");
         return;
     }
 
@@ -710,27 +734,21 @@ void Corona::API::Actor::remove_profile(const Profile* profile) {
     if (active_profile_handle_ == profile_handle) {
         if (!profiles_.empty()) {
             active_profile_handle_ = profiles_.begin()->first;
-            if (auto* logger = Kernel::KernelContext::instance().logger()) {
-                logger->info("[Actor::remove_profile] Switched to first available profile");
-            }
+            CFW_LOG_INFO("[Actor::remove_profile] Switched to first available profile");
         } else {
             active_profile_handle_ = 0;
-            if (auto* logger = Kernel::KernelContext::instance().logger()) {
-                logger->info("[Actor::remove_profile] No profiles remaining");
-            }
+            CFW_LOG_INFO("[Actor::remove_profile] No profiles remaining");
         }
     }
 
-    SharedDataHub::instance().actor_storage().write(handle_, [&](ActorDevice& slot) {
-        std::erase(slot.profile_handles, profile_handle);
-    });
+    if (auto accessor = SharedDataHub::instance().actor_storage().acquire_write(handle_)) {
+        std::erase(accessor->profile_handles, profile_handle);
+    }
 }
 
 void Corona::API::Actor::set_active_profile(const Profile* profile) {
     if (profile == nullptr) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Actor::set_active_profile] Null profile pointer");
-        }
+        CFW_LOG_WARNING("[Actor::set_active_profile] Null profile pointer");
         return;
     }
 
@@ -741,9 +759,7 @@ void Corona::API::Actor::set_active_profile(const Profile* profile) {
         }
     }
 
-    if (auto* logger = Kernel::KernelContext::instance().logger()) {
-        logger->warning("[Actor::set_active_profile] Profile not found in this actor");
-    }
+    CFW_LOG_WARNING("[Actor::set_active_profile] Profile not found in this actor");
 }
 
 Corona::API::Actor::Profile* Corona::API::Actor::get_active_profile() {
@@ -770,12 +786,17 @@ Corona::API::Camera::Camera()
     ktm::fvec3 up_vec{0.0f, 1.0f, 0.0f};
     float fov = 45.0f;
 
-    handle_ = SharedDataHub::instance().camera_storage().allocate([&](CameraDevice& slot) {
-        slot.position = pos_vec;
-        slot.forward = fwd_vec;
-        slot.world_up = up_vec;
-        slot.fov = fov;
-    });
+    handle_ = SharedDataHub::instance().camera_storage().allocate();
+    if (auto accessor = SharedDataHub::instance().camera_storage().acquire_write(handle_)) {
+        accessor->position = pos_vec;
+        accessor->forward = fwd_vec;
+        accessor->world_up = up_vec;
+        accessor->fov = fov;
+    } else {
+        CFW_LOG_ERROR("[Camera] Failed to acquire write access to camera storage");
+        SharedDataHub::instance().camera_storage().deallocate(handle_);
+        handle_ = 0;
+    }
 }
 
 Corona::API::Camera::Camera(const std::array<float, 3>& position, const std::array<float, 3>& forward, const std::array<float, 3>& world_up, float fov)
@@ -784,12 +805,17 @@ Corona::API::Camera::Camera(const std::array<float, 3>& position, const std::arr
     ktm::fvec3 fwd_vec{forward[0], forward[1], forward[2]};
     ktm::fvec3 up_vec{world_up[0], world_up[1], world_up[2]};
 
-    handle_ = SharedDataHub::instance().camera_storage().allocate([&](CameraDevice& slot) {
-        slot.position = pos_vec;
-        slot.forward = fwd_vec;
-        slot.world_up = up_vec;
-        slot.fov = fov;
-    });
+    handle_ = SharedDataHub::instance().camera_storage().allocate();
+    if (auto accessor = SharedDataHub::instance().camera_storage().acquire_write(handle_)) {
+        accessor->position = pos_vec;
+        accessor->forward = fwd_vec;
+        accessor->world_up = up_vec;
+        accessor->fov = fov;
+    } else {
+        CFW_LOG_ERROR("[Camera] Failed to acquire write access to camera storage");
+        SharedDataHub::instance().camera_storage().deallocate(handle_);
+        handle_ = 0;
+    }
 }
 
 Corona::API::Camera::~Camera() {
@@ -801,9 +827,7 @@ Corona::API::Camera::~Camera() {
 
 void Corona::API::Camera::set(const std::array<float, 3>& position, const std::array<float, 3>& forward, const std::array<float, 3>& world_up, float fov) {
     if (handle_ == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Camera::set] Invalid camera handle");
-        }
+        CFW_LOG_WARNING("[Camera::set] Invalid camera handle");
         return;
     }
 
@@ -811,80 +835,82 @@ void Corona::API::Camera::set(const std::array<float, 3>& position, const std::a
     ktm::fvec3 fwd_vec{forward[0], forward[1], forward[2]};
     ktm::fvec3 up_vec{world_up[0], world_up[1], world_up[2]};
 
-    SharedDataHub::instance().camera_storage().write(handle_, [&](CameraDevice& slot) {
-        slot.position = pos_vec;
-        slot.forward = fwd_vec;
-        slot.world_up = up_vec;
-        slot.fov = fov;
-    });
+    if (auto accessor = SharedDataHub::instance().camera_storage().acquire_write(handle_)) {
+        accessor->position = pos_vec;
+        accessor->forward = fwd_vec;
+        accessor->world_up = up_vec;
+        accessor->fov = fov;
+    } else {
+        CFW_LOG_ERROR("[Camera::set] Failed to acquire write access to camera storage");
+    }
 }
 
 std::array<float, 3> Corona::API::Camera::get_position() const {
     if (handle_ == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Camera::get_position] Invalid camera handle");
-        }
+        CFW_LOG_WARNING("[Camera::get_position] Invalid camera handle");
         return {0.0f, 0.0f, 0.0f};
     }
 
     std::array result = {0.0f, 0.0f, 0.0f};
-    SharedDataHub::instance().camera_storage().read(handle_, [&](const CameraDevice& slot) {
-        result[0] = slot.position.x;
-        result[1] = slot.position.y;
-        result[2] = slot.position.z;
-    });
+    if (auto accessor = SharedDataHub::instance().camera_storage().acquire_read(handle_)) {
+        result[0] = accessor->position.x;
+        result[1] = accessor->position.y;
+        result[2] = accessor->position.z;
+    } else {
+        CFW_LOG_ERROR("[Camera::get_position] Failed to acquire read access to camera storage");
+    }
 
     return result;
 }
 
 std::array<float, 3> Corona::API::Camera::get_forward() const {
     if (handle_ == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Camera::get_forward] Invalid camera handle");
-        }
+        CFW_LOG_WARNING("[Camera::get_forward] Invalid camera handle");
         return {0.0f, 0.0f, -1.0f};
     }
 
     std::array result = {0.0f, 0.0f, -1.0f};
-    SharedDataHub::instance().camera_storage().read(handle_, [&](const CameraDevice& slot) {
-        result[0] = slot.forward.x;
-        result[1] = slot.forward.y;
-        result[2] = slot.forward.z;
-    });
+    if (auto accessor = SharedDataHub::instance().camera_storage().acquire_read(handle_)) {
+        result[0] = accessor->forward.x;
+        result[1] = accessor->forward.y;
+        result[2] = accessor->forward.z;
+    } else {
+        CFW_LOG_ERROR("[Camera::get_forward] Failed to acquire read access to camera storage");
+    }
 
     return result;
 }
 
 std::array<float, 3> Corona::API::Camera::get_world_up() const {
     if (handle_ == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Camera::get_world_up] Invalid camera handle");
-        }
+        CFW_LOG_WARNING("[Camera::get_world_up] Invalid camera handle");
         return {0.0f, 1.0f, 0.0f};
     }
 
     std::array result = {0.0f, 1.0f, 0.0f};
-    SharedDataHub::instance().camera_storage().read(handle_, [&](const CameraDevice& slot) {
-        result[0] = slot.world_up.x;
-        result[1] = slot.world_up.y;
-        result[2] = slot.world_up.z;
-    });
+    if (auto accessor = SharedDataHub::instance().camera_storage().acquire_read(handle_)) {
+        result[0] = accessor->world_up.x;
+        result[1] = accessor->world_up.y;
+        result[2] = accessor->world_up.z;
+    } else {
+        CFW_LOG_ERROR("[Camera::get_world_up] Failed to acquire read access to camera storage");
+    }
 
     return result;
 }
 
 float Corona::API::Camera::get_fov() const {
     if (handle_ == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Camera::get_fov] Invalid camera handle");
-        }
+        CFW_LOG_WARNING("[Camera::get_fov] Invalid camera handle");
         return 45.0f;
     }
 
     float result = 45.0f;
-    SharedDataHub::instance().camera_storage().read(handle_, [&](const CameraDevice& slot) {
-        result = slot.fov;
-    });
+    if (auto accessor = SharedDataHub::instance().camera_storage().acquire_read(handle_)) {
+        result = accessor->fov;
+    } else {
+        CFW_LOG_ERROR("[Camera::get_fov] Failed to acquire read access to camera storage");
+    }
 
     return result;
 }
@@ -895,15 +921,16 @@ std::uintptr_t Corona::API::Camera::get_handle() const {
 
 void Corona::API::Camera::set_surface(void* surface) {
     if (handle_ == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Camera::set_surface] Invalid camera handle");
-        }
+        CFW_LOG_WARNING("[Camera::set_surface] Invalid camera handle");
         return;
     }
 
-    SharedDataHub::instance().camera_storage().write(handle_, [&](CameraDevice& slot) {
-        slot.surface = surface;
-    });
+    if (auto accessor = SharedDataHub::instance().camera_storage().acquire_write(handle_)) {
+        accessor->surface = surface;
+    } else {
+        CFW_LOG_ERROR("[Camera::set_surface] Failed to acquire write access to camera storage");
+        return;
+    }
 
     if (auto* event_bus = Kernel::KernelContext::instance().event_bus()) {
         event_bus->publish<Events::DisplaySurfaceChangedEvent>({surface});
@@ -929,16 +956,26 @@ Corona::API::ImageEffects::~ImageEffects() {
 // ########################
 Corona::API::Viewport::Viewport()
     : handle_(0) {
-    handle_ = SharedDataHub::instance().viewport_storage().allocate([&](ViewportDevice& slot) {
-        slot.camera = 0;  // 初始无 Camera
-    });
+    handle_ = SharedDataHub::instance().viewport_storage().allocate();
+    if (auto accessor = SharedDataHub::instance().viewport_storage().acquire_write(handle_)) {
+        accessor->camera = 0;  // 初始无 Camera
+    } else {
+        CFW_LOG_ERROR("[Viewport] Failed to acquire write access to viewport storage");
+        SharedDataHub::instance().viewport_storage().deallocate(handle_);
+        handle_ = 0;
+    }
 }
 
 Corona::API::Viewport::Viewport(int width, int height, bool light_field)
     : handle_(0), width_(width), height_(height) {
-    handle_ = SharedDataHub::instance().viewport_storage().allocate([&](ViewportDevice& slot) {
-        slot.camera = 0;  // 初始无 Camera
-    });
+    handle_ = SharedDataHub::instance().viewport_storage().allocate();
+    if (auto accessor = SharedDataHub::instance().viewport_storage().acquire_write(handle_)) {
+        accessor->camera = 0;  // 初始无 Camera
+    } else {
+        CFW_LOG_ERROR("[Viewport] Failed to acquire write access to viewport storage");
+        SharedDataHub::instance().viewport_storage().deallocate(handle_);
+        handle_ = 0;
+    }
 }
 
 Corona::API::Viewport::~Viewport() {
@@ -950,17 +987,17 @@ Corona::API::Viewport::~Viewport() {
 
 void Corona::API::Viewport::set_camera(Camera* camera) {
     if (handle_ == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Viewport::set_camera] Invalid viewport handle");
-        }
+        CFW_LOG_WARNING("[Viewport::set_camera] Invalid viewport handle");
         return;
     }
 
     camera_ = camera;
 
-    SharedDataHub::instance().viewport_storage().write(handle_, [&](ViewportDevice& slot) {
-        slot.camera = camera_ ? camera_->get_handle() : 0;
-    });
+    if (auto accessor = SharedDataHub::instance().viewport_storage().acquire_write(handle_)) {
+        accessor->camera = camera_ ? camera_->get_handle() : 0;
+    } else {
+        CFW_LOG_ERROR("[Viewport::set_camera] Failed to acquire write access to viewport storage");
+    }
 }
 
 Corona::API::Camera* Corona::API::Viewport::get_camera() {
@@ -975,9 +1012,10 @@ void Corona::API::Viewport::remove_camera() {
     if (handle_ == 0) return;
 
     camera_ = nullptr;
-    SharedDataHub::instance().viewport_storage().write(handle_, [&](ViewportDevice& slot) {
-        slot.camera = 0;
-    });
+    
+    if (auto accessor = SharedDataHub::instance().viewport_storage().acquire_write(handle_)) {
+        accessor->camera = 0;
+    }
 }
 
 void Corona::API::Viewport::set_image_effects(ImageEffects* effects) {
@@ -1000,46 +1038,37 @@ void Corona::API::Viewport::remove_image_effects() {
 
 void Corona::API::Viewport::set_size(int width, int height) {
     if (handle_ == 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Viewport::set_size] Invalid viewport handle");
-        }
+        CFW_LOG_WARNING("[Viewport::set_size] Invalid viewport handle");
         return;
     }
 
     if (width <= 0 || height <= 0) {
-        if (auto* logger = Kernel::KernelContext::instance().logger()) {
-            logger->warning("[Viewport::set_size] Invalid size: " +
-                            std::to_string(width) + "x" + std::to_string(height));
-        }
+        CFW_LOG_WARNING("[Viewport::set_size] Invalid size: {}x{}", width, height);
         return;
     }
 
     width_ = width;
     height_ = height;
 
-    SharedDataHub::instance().viewport_storage().write(handle_, [&](ViewportDevice& slot) {
-    });
+    // Viewport 的大小可能需要在 ViewportDevice 中存储
+    if (auto accessor = SharedDataHub::instance().viewport_storage().acquire_write(handle_)) {
+        // TODO: 如果 ViewportDevice 有 width/height 字段，在此设置
+    }
 }
 
 void Corona::API::Viewport::set_viewport_rect(int x, int y, int width, int height) {
     // TODO: Implement viewport rectangle settings
-    if (auto* logger = Kernel::KernelContext::instance().logger()) {
-        logger->warning("[Corona::API::Viewport::set_viewport_rect] Not implemented yet");
-    }
+    CFW_LOG_WARNING("[Corona::API::Viewport::set_viewport_rect] Not implemented yet");
 }
 
 void Corona::API::Viewport::pick_actor_at_pixel(int x, int y) const {
     // TODO: Implement pixel picking for actor selection
-    if (auto* logger = Kernel::KernelContext::instance().logger()) {
-        logger->warning("[Corona::API::Viewport::pick_actor_at_pixel] Not implemented yet");
-    }
+    CFW_LOG_WARNING("[Corona::API::Viewport::pick_actor_at_pixel] Not implemented yet");
 }
 
 void Corona::API::Viewport::save_screenshot(const std::string& path) const {
     // TODO: Implement screenshot functionality
-    if (auto* logger = Kernel::KernelContext::instance().logger()) {
-        logger->warning("[Corona::API::Viewport::save_screenshot] Not implemented yet: " + path);
-    }
+    CFW_LOG_WARNING("[Corona::API::Viewport::save_screenshot] Not implemented yet: {}", path);
 }
 
 std::uintptr_t Corona::API::Viewport::get_handle() const {

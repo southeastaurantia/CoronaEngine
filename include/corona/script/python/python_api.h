@@ -2,7 +2,6 @@
 
 #include <Python.h>
 #include <corona/script/python/python_hotfix.h>
-#include <corona/kernel/core/i_logger.h>
 #include <nanobind/nanobind.h>
 
 #include <chrono>
@@ -40,8 +39,6 @@ struct PythonAPI {
     std::vector<std::string> callableList;
 
     PyConfig config{};  // 值初始化
-
-    std::unique_ptr<Corona::Kernel::ILogger> logger;
 
     bool ensureInitialized();
     bool performHotReload();

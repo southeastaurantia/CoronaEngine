@@ -1,5 +1,6 @@
 #define PY_SSIZE_T_CLEAN
 #include <corona/script/python/python_api.h>
+#include <corona/kernel/core/i_logger.h>
 #include <nanobind/stl/string.h>
 #include <windows.h>
 
@@ -19,9 +20,7 @@ namespace Corona::Script::Python {
 const std::string codePath = PathCfg::engine_root();
 
 PythonAPI::PythonAPI() {
-    logger = Kernel::create_logger();
-    // TODO: 添加写入文件的 sink
-    // logger->add_sink(Corona::Kernel::create_file_sink());
+    CFW_LOG_DEBUG("PythonAPI: Constructor called");
 }
 
 PythonAPI::~PythonAPI() {
@@ -33,6 +32,7 @@ PythonAPI::~PythonAPI() {
             messageFunc.reset();
         }
         Py_FinalizeEx();
+        CFW_LOG_DEBUG("PythonAPI: Python interpreter finalized");
     }
     PyConfig_Clear(&config);
 }
@@ -57,6 +57,8 @@ bool PythonAPI::ensureInitialized() {
         return true;
     }
 
+    CFW_LOG_INFO("PythonAPI: Initializing Python interpreter...");
+
     // 注册 nanobind 导出的 CoronaEngine 模块
     PyImport_AppendInittab("CoronaEngine", &PyInit_CoronaEngine);
 
@@ -76,20 +78,20 @@ bool PythonAPI::ensureInitialized() {
     Py_InitializeFromConfig(&config);
 
     if (!Py_IsInitialized()) {
-        std::cerr << "[Python Error] Python failed to initialize. Diagnostics:" << std::endl;
+        CFW_LOG_CRITICAL("Python failed to initialize. Diagnostics:");
         try {
             auto print_wlist = [&](const char* title, const PyWideStringList& list) {
-                std::cerr << "  " << title << " (" << list.length << "):" << std::endl;
+                CFW_LOG_ERROR("  {} ({})", title, list.length);
                 for (Py_ssize_t i = 0; i < list.length; ++i) {
                     std::wstring ws = list.items[i] ? std::wstring(list.items[i]) : L"";
-                    std::cerr << "    - " << wstr2str(ws) << std::endl;
+                    CFW_LOG_ERROR("    - {}", wstr2str(ws));
                 }
             };
-            std::cerr << "  home: " << wstr2str(config.home) << std::endl;
-            std::cerr << "  pythonpath_env: " << wstr2str(config.pythonpath_env) << std::endl;
+            CFW_LOG_ERROR("  home: {}", wstr2str(config.home));
+            CFW_LOG_ERROR("  pythonpath_env: {}", wstr2str(config.pythonpath_env));
             print_wlist("module_search_paths", config.module_search_paths);
         } catch (...) {
-            // swallow
+            CFW_LOG_ERROR("Failed to print Python configuration diagnostics");
         }
         return false;
     }
@@ -106,13 +108,15 @@ bool PythonAPI::ensureInitialized() {
             nanobind::object putq_attr = nanobind::getattr(main_mod, "put_queue");
 
             if (!nanobind::callable::check_(run_attr)) {
-                std::cerr << "[Hotfix][API] 'run' attribute is not callable" << std::endl;
+                CFW_LOG_ERROR("PythonAPI: 'run' attribute is not callable");
                 return false;
             }
 
             pModule = std::move(main_mod);
             pFunc = std::move(run_attr);
             messageFunc = std::move(putq_attr);
+            
+            CFW_LOG_INFO("PythonAPI: Python interpreter initialized successfully");
         } catch (const nanobind::python_error& e) {
             log_python_error(e);
             pModule.reset();
@@ -131,16 +135,16 @@ bool PythonAPI::performHotReload() {
         return false;
     }
 
-    std::cout << "[Hotfix] performHotReload triggered. packageSet.size=" << hotfixManger.packageSet.size() << std::endl;
+    CFW_LOG_DEBUG("PythonAPI: performHotReload triggered. packageSet.size={}", hotfixManger.packageSet.size());
 
     bool reloadedDeps = hotfixManger.ReloadPythonFile();
     if (!reloadedDeps) {
-        std::cout << "[Hotfix] hotfixManger.ReloadPythonFile returned false" << std::endl;
+        CFW_LOG_DEBUG("PythonAPI: hotfixManger.ReloadPythonFile returned false");
         return false;
     }
 
     nanobind::gil_scoped_acquire gil;
-    std::cout << "[Hotfix] reloading 'main' module (via importlib.reload)" << std::endl;
+    CFW_LOG_DEBUG("PythonAPI: reloading 'main' module (via importlib.reload)");
 
     try {
         nanobind::module_ importlib = nanobind::module_::import_("importlib");
@@ -151,7 +155,7 @@ bool PythonAPI::performHotReload() {
 
         nanobind::object newFunc = nanobind::getattr(mod, "run");
         if (!nanobind::callable::check_(newFunc)) {
-            std::cout << "[Hotfix][API] new run attr invalid" << std::endl;
+            CFW_LOG_WARNING("PythonAPI: new run attribute is not callable");
             return false;
         }
         nanobind::object newMsg = nanobind::getattr(mod, "put_queue");
@@ -160,14 +164,14 @@ bool PythonAPI::performHotReload() {
         pFunc = std::move(newFunc);
         messageFunc = std::move(newMsg);
     } catch (const nanobind::python_error& e) {
-        std::cout << "[Hotfix][API] reload(main) failed (python_error)" << std::endl;
+        CFW_LOG_ERROR("PythonAPI: reload(main) failed");
         log_python_error(e);
         return false;
     }
 
     lastHotReloadTime = currentTime;
     hasHotReload = true;
-    std::cout << "[Hotfix] performHotReload finished successfully" << std::endl;
+    CFW_LOG_DEBUG("PythonAPI: performHotReload finished successfully");
     return true;
 }
 
@@ -199,7 +203,7 @@ void PythonAPI::sendMessage(const std::string& message) const {
 
 void PythonAPI::runPythonScript() {
     if (!ensureInitialized()) {
-        std::cerr << "Python init failed." << std::endl;
+        CFW_LOG_ERROR("PythonAPI: Python initialization failed");
         return;
     }
 
@@ -219,9 +223,7 @@ void PythonAPI::checkPythonScriptChange() {
     const std::string& sourcePath = PathCfg::editor_backend_abs();
     const std::string runtimePath = PathCfg::runtime_backend_abs();
     int64_t checkTime = PythonHotfix::GetCurrentTimeMsec();
-    std::cout << "[Hotfix] checkPythonScriptChange: src=" << sourcePath
-              << ", dst=" << runtimePath
-              << ", t=" << checkTime << std::endl;
+    CFW_LOG_DEBUG("PythonAPI: checkPythonScriptChange: src={}, dst={}, t={}", sourcePath, runtimePath, checkTime);
     copyModifiedFiles(sourcePath, runtimePath, checkTime);
 }
 
@@ -246,14 +248,16 @@ void PythonAPI::checkReleaseScriptChange() {
 
     std::unique_lock lk(queMtx);
     const auto& mods = messageQue.front();
-    std::cout << "[Hotfix] detected modified modules (" << mods.size() << ") from runtime scan: ";
+    
+    // Build module list string for logging
+    std::string moduleListStr;
     bool first = true;
     for (const auto& m : mods) {
-        if (!first) std::cout << ", ";
-        std::cout << m;
+        if (!first) moduleListStr += ", ";
+        moduleListStr += m;
         first = false;
     }
-    std::cout << std::endl;
+    CFW_LOG_DEBUG("PythonAPI: detected modified modules ({}): {}", mods.size(), moduleListStr);
 
     auto modToPath = [&](const std::string& mod) {
         std::string rel = mod;  // replace '.' with '/'
@@ -273,16 +277,15 @@ void PythonAPI::checkReleaseScriptChange() {
 
         auto it = lastProcessedMtime.find(mod);
         if (it != lastProcessedMtime.end() && fileMtimeMs > 0 && fileMtimeMs <= it->second) {
-            std::cout << "[Hotfix] skip duplicate module in window: '" << mod << "' mtime=" << fileMtimeMs
-                      << " lastProcessed=" << it->second << std::endl;
+            CFW_LOG_DEBUG("PythonAPI: skip duplicate module in window: '{}' mtime={} lastProcessed={}", mod, fileMtimeMs, it->second);
             continue;
         }
 
         if (!hotfixManger.packageSet.contains(mod)) {
             hotfixManger.packageSet.emplace(mod, currentTime);
-            std::cout << "[Hotfix] packageSet.emplace: '" << mod << "' @" << currentTime << std::endl;
+            CFW_LOG_DEBUG("PythonAPI: packageSet.emplace: '{}' @{}", mod, currentTime);
         } else {
-            std::cout << "[Hotfix] packageSet already contains: '" << mod << "' (skip)" << std::endl;
+            CFW_LOG_DEBUG("PythonAPI: packageSet already contains: '{}' (skip)", mod);
         }
         if (fileMtimeMs > 0) {
             lastProcessedMtime[mod] = fileMtimeMs;
@@ -346,12 +349,11 @@ void PythonAPI::copyModifiedFiles(const std::filesystem::path& sourceDir,
 
                 std::string modName = destFilePath.string();
                 PythonHotfix::NormalizeModuleName(modName);
-                std::cout << "[Hotfix] copied recent file: " << filePath.string()
-                          << " -> " << destFilePath.string()
-                          << ", module='" << modName << "' src_mtime=" << modifyMs << std::endl;
+                CFW_LOG_DEBUG("PythonAPI: copied recent file: {} -> {}, module='{}' src_mtime={}", 
+                             filePath.string(), destFilePath.string(), modName, modifyMs);
             }
         } catch (const std::exception& e) {
-            std::cerr << "File copy error: " << e.what() << std::endl;
+            CFW_LOG_ERROR("PythonAPI: File copy error: {}", e.what());
         }
     }
 }

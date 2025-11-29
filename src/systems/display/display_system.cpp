@@ -8,13 +8,14 @@
 namespace Corona::Systems {
 
 bool DisplaySystem::initialize(Kernel::ISystemContext* ctx) {
-    auto* logger = ctx->logger();
-    logger->info("DisplaySystem: Initializing...");
+    CFW_LOG_NOTICE("DisplaySystem: Initializing...");
 
     // 【订阅系统内部事件】使用 EventBus
     auto* event_bus = ctx->event_bus();
     if (event_bus) {
-        logger->info("DisplaySystem: EventBus subscriptions ready");
+        CFW_LOG_DEBUG("DisplaySystem: EventBus subscriptions ready");
+    } else {
+        CFW_LOG_WARNING("DisplaySystem: No event bus available");
     }
 
     return true;
@@ -24,8 +25,7 @@ void DisplaySystem::update() {
 }
 
 void DisplaySystem::shutdown() {
-    auto* logger = context()->logger();
-    logger->info("DisplaySystem: Shutting down...");
+    CFW_LOG_NOTICE("DisplaySystem: Shutting down...");
 }
 
 }  // namespace Corona::Systems
