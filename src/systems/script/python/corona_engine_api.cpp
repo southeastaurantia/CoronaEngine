@@ -243,14 +243,16 @@ std::uintptr_t Corona::API::Environment::get_handle() const {
 // ########################
 Corona::API::Geometry::Geometry(const std::string& model_path)
     : handle_(0), transform_handle_(0), model_resource_handle_(0) {
+    // 1. 同步导入场景资源
     auto model_id = Resource::ResourceManager::get_instance().import_sync(std::filesystem::path(model_path));
     if (model_id == 0) {
-        CFW_LOG_CRITICAL("[Corona::API::Geometry] Failed to load model: {}", model_path);
+        CFW_LOG_CRITICAL("[Geometry] Failed to load model: {}", model_path);
         return;
     }
 
+    // 2. 分配并存储模型资源句柄
     model_resource_handle_ = SharedDataHub::instance().model_resource_storage().allocate();
-    if (const auto handle = SharedDataHub::instance().model_resource_storage().acquire_write(model_resource_handle_)) {
+    if (auto handle = SharedDataHub::instance().model_resource_storage().acquire_write(model_resource_handle_)) {
         handle->model_id = model_id;
     } else {
         CFW_LOG_ERROR("[Geometry] Failed to acquire write access to model resource storage");
@@ -259,44 +261,68 @@ Corona::API::Geometry::Geometry(const std::string& model_path)
         return;
     }
 
+    // 3. 分配变换句柄
     transform_handle_ = SharedDataHub::instance().model_transform_storage().allocate();
 
-    auto model_ptr = Resource::ResourceManager::get_instance().acquire_read<Resource::Scene>(model_id);
+    // 4. 获取场景数据的只读访问
+    auto scene = Resource::ResourceManager::get_instance().acquire_read<Resource::Scene>(model_id);
+    if (!scene) {
+        CFW_LOG_ERROR("[Geometry] Failed to acquire read access to scene resource");
+        SharedDataHub::instance().model_resource_storage().deallocate(model_resource_handle_);
+        SharedDataHub::instance().model_transform_storage().deallocate(transform_handle_);
+        model_resource_handle_ = 0;
+        transform_handle_ = 0;
+        return;
+    }
+
+    // 诊断：检查场景数据内容
+    CFW_LOG_INFO("[Geometry] Scene data summary:");
+    CFW_LOG_INFO("  - Meshes: {}", scene->data.meshes.size());
+    CFW_LOG_INFO("  - Vertices: {}", scene->data.vertices.size());
+    CFW_LOG_INFO("  - Indices: {}", scene->data.indices.size());
+    CFW_LOG_INFO("  - Materials: {}", scene->data.materials.size());
+    CFW_LOG_INFO("  - Nodes: {}", scene->data.nodes.size());
+
+    if (scene->data.meshes.empty()) {
+        CFW_LOG_WARNING("[Geometry] Scene has no meshes, checking nodes for mesh references...");
+        for (std::uint32_t i = 0; i < scene->data.nodes.size(); ++i) {
+            const auto& node = scene->data.nodes[i];
+            CFW_LOG_DEBUG("  - Node {}: mesh_index={}", i, node.mesh_index);
+        }
+    }
+
+    // 5. 使用 Scene 提供的方法构建 Mesh 设备数据
     std::vector<MeshDevice> mesh_devices;
-    mesh_devices.reserve(model_ptr->data.meshes.size());
-    for (const auto& mesh : model_ptr->data.meshes) {
+    mesh_devices.reserve(scene->data.meshes.size());
+
+    for (std::uint32_t mesh_idx = 0; mesh_idx < scene->data.meshes.size(); ++mesh_idx) {
+        const auto& mesh = scene->data.meshes[mesh_idx];
         MeshDevice dev{};
 
-        std::vector mesh_vertices(
-            model_ptr->data.vertices.begin() + mesh.vertex_offset,
-            model_ptr->data.vertices.begin() + mesh.vertex_offset + mesh.vertex_count
-        );
+        // 使用 Scene 的辅助方法提取数据
+        auto positions = scene->get_mesh_positions(mesh_idx);
+        auto normals = scene->get_mesh_normals(mesh_idx);
+        auto texcoords = scene->get_mesh_texcoords(mesh_idx);
+        auto indices_span = scene->get_mesh_indices(mesh_idx);
 
-        std::vector mesh_indices(
-            model_ptr->data.indices.begin() + mesh.index_offset,
-            model_ptr->data.indices.begin() + mesh.index_offset + mesh.index_count
-        );
+        // 转换 span 为 vector (HardwareBuffer 需要)
+        std::vector<std::uint16_t> indices(indices_span.begin(), indices_span.end());
 
-        dev.pointsBuffer = HardwareBuffer(mesh_vertices, BufferUsage::VertexBuffer);
-        dev.indexBuffer = HardwareBuffer(mesh_indices, BufferUsage::IndexBuffer);
-
-        std::vector<std::array<float, 3>> normals;
-        std::vector<std::array<float, 2>> tex_coords;
-        normals.reserve(mesh.vertex_count);
-        tex_coords.reserve(mesh.vertex_count);
-
-        for (const auto& v : mesh_vertices) {
-            normals.push_back(v.normal);
-            tex_coords.push_back(v.tex_coords);
-        }
-
+        // 创建硬件缓冲区
+        dev.pointsBuffer = HardwareBuffer(positions, BufferUsage::VertexBuffer);
         dev.normalsBuffer = HardwareBuffer(normals, BufferUsage::VertexBuffer);
-        dev.texCoordsBuffer = HardwareBuffer(tex_coords, BufferUsage::VertexBuffer);
+        dev.texCoordsBuffer = HardwareBuffer(texcoords, BufferUsage::VertexBuffer);
+        dev.indexBuffer = HardwareBuffer(indices, BufferUsage::IndexBuffer);
 
-        dev.materialIndex = (mesh.material_index != Resource::InvalidIndex) ? mesh.material_index : 0;
+        // 设置材质索引
+        dev.materialIndex = (mesh.material_index != Resource::InvalidIndex)
+                            ? mesh.material_index
+                            : 0;
 
-        if (mesh.material_index != Resource::InvalidIndex && mesh.material_index < model_ptr->data.materials.size()) {
-            const auto& material = model_ptr->data.materials[mesh.material_index];
+        // 设置纹理索引
+        if (mesh.material_index != Resource::InvalidIndex &&
+            mesh.material_index < scene->data.materials.size()) {
+            const auto& material = scene->data.materials[mesh.material_index];
             dev.textureIndex = (material.albedo_texture != Resource::InvalidTextureId)
                               ? static_cast<std::uint32_t>(material.albedo_texture)
                               : 0;
@@ -307,31 +333,26 @@ Corona::API::Geometry::Geometry(const std::string& model_path)
         mesh_devices.emplace_back(std::move(dev));
     }
 
-    // 4. 分配 GeometryDevice
+    // 6. 分配 GeometryDevice 并写入数据
     handle_ = SharedDataHub::instance().geometry_storage().allocate();
     if (auto accessor = SharedDataHub::instance().geometry_storage().acquire_write(handle_)) {
         accessor->transform_handle = transform_handle_;
         accessor->model_resource_handle = model_resource_handle_;
         accessor->mesh_handles = std::move(mesh_devices);
     } else {
-        CFW_LOG_CRITICAL("[Corona::API::Geometry] Failed to acquire write access to geometry storage");
+        CFW_LOG_CRITICAL("[Geometry] Failed to acquire write access to geometry storage");
         // 清理已分配的资源
-        if (transform_handle_ != 0) {
-            SharedDataHub::instance().model_transform_storage().deallocate(transform_handle_);
-            transform_handle_ = 0;
-        }
-        if (model_resource_handle_ != 0) {
-            SharedDataHub::instance().model_resource_storage().deallocate(model_resource_handle_);
-            model_resource_handle_ = 0;
-        }
+        SharedDataHub::instance().model_transform_storage().deallocate(transform_handle_);
+        SharedDataHub::instance().model_resource_storage().deallocate(model_resource_handle_);
         SharedDataHub::instance().geometry_storage().deallocate(handle_);
         handle_ = 0;
+        transform_handle_ = 0;
+        model_resource_handle_ = 0;
         return;
     }
 
-    if (handle_ == 0) {
-        CFW_LOG_CRITICAL("[Corona::API::Geometry] Failed to allocate GeometryDevice");
-    }
+    CFW_LOG_INFO("[Geometry] Successfully created geometry with {} meshes from: {}",
+                 mesh_devices.size(), model_path);
 }
 
 Corona::API::Geometry::~Geometry() {
