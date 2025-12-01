@@ -186,12 +186,12 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
                             hardware_->rasterizerPipeline["pushConsts.uniformBufferIndex"] = hardware_->gbufferUniformBuffer.storeDescriptor();
 
                             for (const auto& m : geom->mesh_handles) {
-                                hardware_->rasterizerPipeline["inPosition"] = m.pointsBuffer;
-                                hardware_->rasterizerPipeline["inNormal"] = m.normalsBuffer;
-                                hardware_->rasterizerPipeline["inTexCoord"] = m.texCoordsBuffer;
+                                //hardware_->rasterizerPipeline["inPosition"] = m.pointsBuffer;
+                                //hardware_->rasterizerPipeline["inNormal"] = m.normalsBuffer;
+                                //hardware_->rasterizerPipeline["inTexCoord"] = m.texCoordsBuffer;
                                 hardware_->rasterizerPipeline["pushConsts.textureIndex"] = m.textureIndex;
 
-                                hardware_->executor << hardware_->rasterizerPipeline.record(m.indexBuffer);
+                                hardware_->executor << hardware_->rasterizerPipeline.record(m.indexBuffer, m.vertexBuffer);
                             }
                         }
                     }

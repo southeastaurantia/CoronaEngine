@@ -15,10 +15,9 @@ namespace Corona {
 class Model;
 
 struct MeshDevice {
-    HardwareBuffer pointsBuffer;
-    HardwareBuffer normalsBuffer;
-    HardwareBuffer texCoordsBuffer;
     HardwareBuffer indexBuffer;
+
+    HardwareBuffer vertexBuffer;
 
     uint32_t materialIndex;
     uint32_t textureIndex;
