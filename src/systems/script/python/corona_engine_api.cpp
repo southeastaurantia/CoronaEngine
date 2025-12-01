@@ -304,18 +304,18 @@ Corona::API::Geometry::Geometry(const std::string& model_path)
         //auto normals = scene->get_mesh_normals(mesh_idx);
         //auto texcoords = scene->get_mesh_texcoords(mesh_idx);
 
-        auto vertices = scene->get_mesh_vertices(mesh_idx);
-        auto indices_span = scene->get_mesh_indices(mesh_idx);
+        //auto vertices = scene->get_mesh_vertices(mesh_idx);
+        //auto indices_span = scene->get_mesh_indices(mesh_idx);
 
         // 转换 span 为 vector (HardwareBuffer 需要)
-        std::vector<std::uint16_t> indices(indices_span.begin(), indices_span.end());
+        //std::vector<std::uint16_t> indices(indices_span.begin(), indices_span.end());
 
         // 创建硬件缓冲区
         //dev.pointsBuffer = HardwareBuffer(positions, BufferUsage::VertexBuffer);
         //dev.normalsBuffer = HardwareBuffer(normals, BufferUsage::VertexBuffer);
         //dev.texCoordsBuffer = HardwareBuffer(texcoords, BufferUsage::VertexBuffer);
-        dev.vertexBuffer = HardwareBuffer(vertices, BufferUsage::VertexBuffer);
-        dev.indexBuffer = HardwareBuffer(indices, BufferUsage::IndexBuffer);
+        dev.vertexBuffer = HardwareBuffer(scene->get_mesh_vertices(mesh_idx), BufferUsage::VertexBuffer);
+        dev.indexBuffer = HardwareBuffer(scene->get_mesh_indices(mesh_idx), BufferUsage::IndexBuffer);
 
         // 设置材质索引
         dev.materialIndex = (mesh.material_index != Resource::InvalidIndex)
