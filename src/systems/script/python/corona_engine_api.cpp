@@ -241,8 +241,7 @@ std::uintptr_t Corona::API::Environment::get_handle() const {
 // ########################
 //         Geometry
 // ########################
-Corona::API::Geometry::Geometry(const std::string& model_path)
-    : handle_(0), transform_handle_(0), model_resource_handle_(0) {
+Corona::API::Geometry::Geometry(const std::string& model_path) {
     // 1. 同步导入场景资源
     auto model_id = Resource::ResourceManager::get_instance().import_sync(std::filesystem::path(model_path));
     if (model_id == 0) {
@@ -275,14 +274,6 @@ Corona::API::Geometry::Geometry(const std::string& model_path)
         return;
     }
 
-    // 诊断：检查场景数据内容
-    CFW_LOG_INFO("[Geometry] Scene data summary:");
-    CFW_LOG_INFO("  - Meshes: {}", scene->data.meshes.size());
-    CFW_LOG_INFO("  - Vertices: {}", scene->data.vertices.size());
-    CFW_LOG_INFO("  - Indices: {}", scene->data.indices.size());
-    CFW_LOG_INFO("  - Materials: {}", scene->data.materials.size());
-    CFW_LOG_INFO("  - Nodes: {}", scene->data.nodes.size());
-
     if (scene->data.meshes.empty()) {
         CFW_LOG_WARNING("[Geometry] Scene has no meshes, checking nodes for mesh references...");
         for (std::uint32_t i = 0; i < scene->data.nodes.size(); ++i) {
@@ -299,30 +290,13 @@ Corona::API::Geometry::Geometry(const std::string& model_path)
         const auto& mesh = scene->data.meshes[mesh_idx];
         MeshDevice dev{};
 
-        // 使用 Scene 的辅助方法提取数据
-        //auto positions = scene->get_mesh_positions(mesh_idx);
-        //auto normals = scene->get_mesh_normals(mesh_idx);
-        //auto texcoords = scene->get_mesh_texcoords(mesh_idx);
-
-        //auto vertices = scene->get_mesh_vertices(mesh_idx);
-        //auto indices_span = scene->get_mesh_indices(mesh_idx);
-
-        // 转换 span 为 vector (HardwareBuffer 需要)
-        //std::vector<std::uint16_t> indices(indices_span.begin(), indices_span.end());
-
-        // 创建硬件缓冲区
-        //dev.pointsBuffer = HardwareBuffer(positions, BufferUsage::VertexBuffer);
-        //dev.normalsBuffer = HardwareBuffer(normals, BufferUsage::VertexBuffer);
-        //dev.texCoordsBuffer = HardwareBuffer(texcoords, BufferUsage::VertexBuffer);
         dev.vertexBuffer = HardwareBuffer(scene->get_mesh_vertices(mesh_idx), BufferUsage::VertexBuffer);
         dev.indexBuffer = HardwareBuffer(scene->get_mesh_indices(mesh_idx), BufferUsage::IndexBuffer);
 
-        // 设置材质索引
         dev.materialIndex = (mesh.material_index != Resource::InvalidIndex)
                             ? mesh.material_index
                             : 0;
 
-        // 设置纹理索引
         if (mesh.material_index != Resource::InvalidIndex &&
             mesh.material_index < scene->data.materials.size()) {
             const auto& material = scene->data.materials[mesh.material_index];
@@ -336,7 +310,6 @@ Corona::API::Geometry::Geometry(const std::string& model_path)
         mesh_devices.emplace_back(std::move(dev));
     }
 
-    // 6. 分配 GeometryDevice 并写入数据
     handle_ = SharedDataHub::instance().geometry_storage().allocate();
     if (auto accessor = SharedDataHub::instance().geometry_storage().acquire_write(handle_)) {
         accessor->transform_handle = transform_handle_;
