@@ -456,6 +456,7 @@ void main()
             uniformBufferObjects[pushConsts.uniformBufferIndex].lightPostion,
             pushConsts.lightColor,
             gbufferBaseColor.xyz, 0.5, 0.5);
+        renderResult = max(renderResult,vec3(0.01,0.01,0.01));
 	}
     else
     {
