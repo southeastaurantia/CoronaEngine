@@ -11,9 +11,9 @@
 #include <corona/kernel/core/i_logger.h>
 
 #include <corona/resource/resource_manager.h>
-#include <corona/resource/types/text/text.h>
-#include <corona/resource/types/scene/scene.h>
-#include <corona/resource/types/image/image.h>
+#include <corona/resource/types/text.h>
+#include <corona/resource/types/scene.h>
+#include <corona/resource/types/image.h>
 
 #include <chrono>
 #include <memory>

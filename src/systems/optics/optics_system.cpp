@@ -8,7 +8,7 @@
 
 #include <filesystem>
 
-#include "corona/resource/types/text/text.h"
+#include "corona/resource/types/text.h"
 #include "hardware.h"
 
 #undef CORONA_ENABLE_VISION

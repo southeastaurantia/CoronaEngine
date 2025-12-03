@@ -9,7 +9,7 @@
 #include <corona/resource/resource_manager.h>
 #include <corona/script/api/corona_engine_api.h>
 #include <corona/shared_data_hub.h>
-#include <corona/resource/types/scene/scene.h>
+#include <corona/resource/types/scene.h>
 
 // ########################
 //          Scene
@@ -311,10 +311,10 @@ Corona::API::Geometry::Geometry(const std::string& model_path) {
     }
 
     handle_ = SharedDataHub::instance().geometry_storage().allocate();
-    if (auto accessor = SharedDataHub::instance().geometry_storage().acquire_write(handle_)) {
-        accessor->transform_handle = transform_handle_;
-        accessor->model_resource_handle = model_resource_handle_;
-        accessor->mesh_handles = std::move(mesh_devices);
+    if (auto handle = SharedDataHub::instance().geometry_storage().acquire_write(handle_)) {
+        handle->transform_handle = transform_handle_;
+        handle->model_resource_handle = model_resource_handle_;
+        handle->mesh_handles = std::move(mesh_devices);
     } else {
         CFW_LOG_CRITICAL("[Geometry] Failed to acquire write access to geometry storage");
         // 清理已分配的资源
