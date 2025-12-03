@@ -30,7 +30,14 @@ layout(location = 3) out vec2 gbufferMotionVector;
 
 void main()
 {
-    gbufferBaseColor = vec4(fragColor,1.0f);
+    if(pushConsts.textureIndex >= 0)
+    {
+        gbufferBaseColor = vec4(vec3(texture(textures[pushConsts.textureIndex], fragTexCoord)),1.0f);
+    }
+    else
+    {
+        gbufferBaseColor = vec4(fragColor,1.0f);
+    }
     gbufferNormal = fragNormal;
     gbufferPostion = fragPos;
     gbufferMotionVector = fragMotionVector;
