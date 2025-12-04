@@ -178,19 +178,15 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
 
                     // 遍历所有光学设备
                     for (const auto& optics : SharedDataHub::instance().optics_storage()) {
-                        if (auto geom = SharedDataHub::instance().geometry_storage().acquire_read(optics.geometry_handle)) {
+                        if (auto geom = SharedDataHub::instance().geometry_storage().acquire_write(optics.geometry_handle)) {
                             if (auto transform = SharedDataHub::instance().model_transform_storage().acquire_read(geom->transform_handle)) {
                                 auto model_matrix = transform->compute_matrix();
                                 hardware_->rasterizerPipeline["pushConsts.modelMatrix"] = model_matrix;
                             }
                             hardware_->rasterizerPipeline["pushConsts.uniformBufferIndex"] = hardware_->gbufferUniformBuffer.storeDescriptor();
 
-                            for (const auto& m : geom->mesh_handles) {
-                                //hardware_->rasterizerPipeline["inPosition"] = m.pointsBuffer;
-                                //hardware_->rasterizerPipeline["inNormal"] = m.normalsBuffer;
-                                //hardware_->rasterizerPipeline["inTexCoord"] = m.texCoordsBuffer;
-                                hardware_->rasterizerPipeline["pushConsts.textureIndex"] = m.textureIndex;
-
+                            for (auto& m : geom->mesh_handles) {
+                                hardware_->rasterizerPipeline["pushConsts.textureIndex"] = m.textureBuffer.storeDescriptor();
                                 hardware_->executor << hardware_->rasterizerPipeline.record(m.indexBuffer, m.vertexBuffer);
                             }
                         }

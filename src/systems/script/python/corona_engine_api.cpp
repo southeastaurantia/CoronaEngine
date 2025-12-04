@@ -7,9 +7,11 @@
 #include <corona/kernel/core/kernel_context.h>
 #include <corona/kernel/event/i_event_bus.h>
 #include <corona/resource/resource_manager.h>
+#include <corona/resource/types/scene.h>
 #include <corona/script/api/corona_engine_api.h>
 #include <corona/shared_data_hub.h>
-#include <corona/resource/types/scene.h>
+
+#include "corona/resource/types/image.h"
 
 // ########################
 //          Scene
@@ -38,7 +40,7 @@ void Corona::API::Scene::set_environment(Environment* env) {
     }
 
     environment_ = env;
-    
+
     if (auto accessor = SharedDataHub::instance().scene_storage().acquire_write(handle_)) {
         accessor->environment = env->get_handle();
     } else {
@@ -58,7 +60,7 @@ void Corona::API::Scene::remove_environment() {
     if (handle_ == 0) return;
 
     environment_ = nullptr;
-    
+
     if (auto accessor = SharedDataHub::instance().scene_storage().acquire_write(handle_)) {
         accessor->environment = 0;
     }
@@ -82,7 +84,7 @@ void Corona::API::Scene::add_actor(Actor* actor) {
     }
 
     actors_.push_back(actor);
-    
+
     if (auto accessor = SharedDataHub::instance().scene_storage().acquire_write(handle_)) {
         accessor->actor_handles.push_back(actor->get_handle());
     } else {
@@ -114,7 +116,7 @@ void Corona::API::Scene::clear_actors() {
     CFW_LOG_INFO("[Scene::clear_actors] Clearing {} actors", actors_.size());
 
     actors_.clear();
-    
+
     if (auto accessor = SharedDataHub::instance().scene_storage().acquire_write(handle_)) {
         accessor->actor_handles.clear();
     }
@@ -147,7 +149,7 @@ void Corona::API::Scene::add_viewport(Viewport* viewport) {
     }
 
     viewports_.push_back(viewport);
-    
+
     if (auto accessor = SharedDataHub::instance().scene_storage().acquire_write(handle_)) {
         accessor->viewport_handles.push_back(viewport->get_handle());
     } else {
@@ -180,7 +182,7 @@ void Corona::API::Scene::clear_viewports() {
     CFW_LOG_INFO("[Scene::clear_viewports] Clearing {} viewports", viewports_.size());
 
     viewports_.clear();
-    
+
     if (auto accessor = SharedDataHub::instance().scene_storage().acquire_write(handle_)) {
         accessor->viewport_handles.clear();
     }
@@ -220,7 +222,7 @@ void Corona::API::Environment::set_sun_direction(const std::array<float, 3>& dir
         accessor->sun_position.x = direction[0];
         accessor->sun_position.y = direction[1];
         accessor->sun_position.z = direction[2];
-        
+
         CFW_LOG_INFO("[Environment::set_sun_direction] Sun direction set to: ({}, {}, {})",
                      direction[0], direction[1], direction[2]);
     } else {
@@ -294,17 +296,28 @@ Corona::API::Geometry::Geometry(const std::string& model_path) {
         dev.indexBuffer = HardwareBuffer(scene->get_mesh_indices(mesh_idx), BufferUsage::IndexBuffer);
 
         dev.materialIndex = (mesh.material_index != Resource::InvalidIndex)
-                            ? mesh.material_index
-                            : 0;
+                                ? mesh.material_index
+                                : 0;
+
+        HardwareImageCreateInfo create_info{};
 
         if (mesh.material_index != Resource::InvalidIndex &&
             mesh.material_index < scene->data.materials.size()) {
-            const auto& material = scene->data.materials[mesh.material_index];
-            dev.textureIndex = (material.albedo_texture != Resource::InvalidTextureId)
-                              ? static_cast<std::uint32_t>(material.albedo_texture)
-                              : 0;
-        } else {
-            dev.textureIndex = 0;
+            auto texture_id = scene->data.materials[mesh.material_index].albedo_texture;
+
+            if (texture_id != Resource::InvalidIndex) {
+                auto texture_data = Resource::ResourceManager::get_instance().acquire_read<Resource::Image>(texture_id);
+                if (texture_data) {
+                    create_info.width = texture_data->get_width();
+                    create_info.height = texture_data->get_height();
+                    create_info.format = ImageFormat::RGBA8_SRGB;
+                    create_info.usage = ImageUsage::SampledImage;
+                    create_info.arrayLayers = 1;
+                    create_info.mipLevels = 5;
+                    create_info.initialData = texture_data->get_data();
+                }
+                dev.textureBuffer = HardwareImage(create_info);
+            }
         }
 
         mesh_devices.emplace_back(std::move(dev));
@@ -496,7 +509,7 @@ Corona::API::Mechanics::Mechanics(Geometry& geo)
     // 获取模型的包围盒信息
     ktm::fvec3 max_xyz{0, 0, 0};
     ktm::fvec3 min_xyz{0, 0, 0};
-    
+
     if (auto geom_handle = SharedDataHub::instance().geometry_storage().acquire_read(geo.get_handle())) {
         if (auto res_handle = SharedDataHub::instance().model_resource_storage().acquire_read(geom_handle->model_resource_handle)) {
             // if (res_handle->model_id) {
@@ -596,7 +609,6 @@ Corona::API::Geometry* Corona::API::Acoustics::get_geometry() const {
 // ########################
 Corona::API::Kinematics::Kinematics(Geometry& geo)
     : geometry_(&geo), handle_(0) {
-
     handle_ = SharedDataHub::instance().kinematics_storage().allocate();
 }
 
@@ -607,12 +619,10 @@ Corona::API::Kinematics::~Kinematics() {
 }
 
 void Corona::API::Kinematics::set_animation(std::uint32_t animation_index) {
-
     CFW_LOG_WARNING("[Kinematics::set_animation] Not implemented yet");
 }
 
 void Corona::API::Kinematics::play_animation(float speed) {
-
     CFW_LOG_WARNING("[Kinematics::play_animation] Not implemented yet");
 }
 
@@ -621,13 +631,11 @@ void Corona::API::Kinematics::stop_animation() {
 }
 
 std::uint32_t Corona::API::Kinematics::get_animation_index() const {
-
     CFW_LOG_WARNING("[Kinematics::get_animation_index] Not implemented yet");
     return 0;
 }
 
 float Corona::API::Kinematics::get_current_time() const {
-
     CFW_LOG_WARNING("[Kinematics::get_current_time] Not implemented yet");
     return 0.0f;
 }
@@ -1009,7 +1017,7 @@ void Corona::API::Viewport::remove_camera() {
     if (handle_ == 0) return;
 
     camera_ = nullptr;
-    
+
     if (auto accessor = SharedDataHub::instance().viewport_storage().acquire_write(handle_)) {
         accessor->camera = 0;
     }

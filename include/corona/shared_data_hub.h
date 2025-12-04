@@ -16,11 +16,10 @@ class Model;
 
 struct MeshDevice {
     HardwareBuffer indexBuffer;
-
     HardwareBuffer vertexBuffer;
 
     uint32_t materialIndex;
-    uint32_t textureIndex;
+    HardwareImage textureBuffer;
 
     // Mesh meshData;
 };
