@@ -313,7 +313,7 @@ Corona::API::Geometry::Geometry(const std::string& model_path) {
                     create_info.format = ImageFormat::RGBA8_SRGB;
                     create_info.usage = ImageUsage::SampledImage;
                     create_info.arrayLayers = 1;
-                    create_info.mipLevels = 5;
+                    create_info.mipLevels = 1;
                     create_info.initialData = texture_data->get_data();
                 }
                 dev.textureBuffer = HardwareImage(create_info);
