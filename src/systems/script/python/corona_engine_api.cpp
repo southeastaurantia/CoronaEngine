@@ -310,11 +310,11 @@ Corona::API::Geometry::Geometry(const std::string& model_path) {
                 if (texture_data) {
                     create_info.width = texture_data->get_width();
                     create_info.height = texture_data->get_height();
-                    create_info.format = ImageFormat::RGBA8_SRGB;
+                    create_info.format = ImageFormat::BC1_RGB_UNORM;
                     create_info.usage = ImageUsage::SampledImage;
                     create_info.arrayLayers = 1;
                     create_info.mipLevels = 1;
-                    create_info.initialData = texture_data->get_data();
+                    create_info.initialData = texture_data->get_compressed_data().data.data();
                 }
                 dev.textureBuffer = HardwareImage(create_info);
             }
