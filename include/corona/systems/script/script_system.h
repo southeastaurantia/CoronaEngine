@@ -4,7 +4,7 @@
 #include <corona/kernel/event/i_event_bus.h>
 #include <corona/kernel/event/i_event_stream.h>
 #include <corona/kernel/system/system_base.h>
-#include <corona/script/python/python_api.h>
+#include <corona/systems/script/python_api.h>
 
 #include <memory>
 

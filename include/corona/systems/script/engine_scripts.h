@@ -1,6 +1,6 @@
 #pragma once
 
-#include <corona/script/api/corona_engine_api.h>
+#include <corona/systems/script/corona_engine_api.h>
 #include <nanobind/nanobind.h>
 
 namespace EngineScripts {

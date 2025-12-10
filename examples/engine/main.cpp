@@ -1,5 +1,5 @@
 #include <corona/engine.h>
-#include <corona/script/python/python_api.h>
+#include <corona/systems/script/python_api.h>
 
 #include <csignal>
 #include <iostream>

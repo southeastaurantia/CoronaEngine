@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Python.h>
-#include <corona/script/python/python_hotfix.h>
+#include <corona/systems/script/python_hotfix.h>
 #include <nanobind/nanobind.h>
 
 #include <chrono>

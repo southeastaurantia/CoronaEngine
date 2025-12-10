@@ -1,5 +1,5 @@
-#include <corona/script/api/corona_engine_api.h>
-#include <corona/script/python/engine_scripts.h>
+#include <corona/systems/script/corona_engine_api.h>
+#include <corona/systems/script/engine_scripts.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/array.h>
 #include <nanobind/stl/string.h>

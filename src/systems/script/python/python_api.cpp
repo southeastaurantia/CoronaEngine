@@ -1,5 +1,5 @@
 #define PY_SSIZE_T_CLEAN
-#include <corona/script/python/python_api.h>
+#include <corona/systems/script/python_api.h>
 #include <corona/kernel/core/i_logger.h>
 #include <nanobind/stl/string.h>
 #include <windows.h>

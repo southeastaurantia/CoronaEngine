@@ -1,4 +1,4 @@
-#include <corona/script/python/engine_scripts.h>
+#include <corona/systems/script/engine_scripts.h>
 #include <nanobind/nanobind.h>
 
 NB_MODULE(CoronaEngine, m) {
