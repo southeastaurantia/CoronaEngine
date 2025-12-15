@@ -244,14 +244,12 @@ std::uintptr_t Corona::API::Environment::get_handle() const {
 //         Geometry
 // ########################
 Corona::API::Geometry::Geometry(const std::string& model_path) {
-    // 1. 同步导入场景资源
     auto model_id = Resource::ResourceManager::get_instance().import_sync(std::filesystem::path(model_path));
     if (model_id == 0) {
         CFW_LOG_CRITICAL("[Geometry] Failed to load model: {}", model_path);
         return;
     }
 
-    // 2. 分配并存储模型资源句柄
     model_resource_handle_ = SharedDataHub::instance().model_resource_storage().allocate();
     if (auto handle = SharedDataHub::instance().model_resource_storage().acquire_write(model_resource_handle_)) {
         handle->model_id = model_id;
@@ -262,10 +260,8 @@ Corona::API::Geometry::Geometry(const std::string& model_path) {
         return;
     }
 
-    // 3. 分配变换句柄
     transform_handle_ = SharedDataHub::instance().model_transform_storage().allocate();
 
-    // 4. 获取场景数据的只读访问
     auto scene = Resource::ResourceManager::get_instance().acquire_read<Resource::Scene>(model_id);
     if (!scene) {
         CFW_LOG_ERROR("[Geometry] Failed to acquire read access to scene resource");
@@ -284,7 +280,6 @@ Corona::API::Geometry::Geometry(const std::string& model_path) {
         }
     }
 
-    // 5. 使用 Scene 提供的方法构建 Mesh 设备数据
     std::vector<MeshDevice> mesh_devices;
     mesh_devices.reserve(scene->data.meshes.size());
 
@@ -308,13 +303,23 @@ Corona::API::Geometry::Geometry(const std::string& model_path) {
             if (texture_id != Resource::InvalidIndex) {
                 auto texture_data = Resource::ResourceManager::get_instance().acquire_read<Resource::Image>(texture_id);
                 if (texture_data) {
-                    create_info.width = texture_data->get_width();
-                    create_info.height = texture_data->get_height();
-                    create_info.format = ImageFormat::BC1_RGB_UNORM;
-                    create_info.usage = ImageUsage::SampledImage;
-                    create_info.arrayLayers = 1;
-                    create_info.mipLevels = 1;
-                    create_info.initialData = texture_data->get_compressed_data().data.data();
+                    if (texture_data->is_compressed()) {
+                        create_info.width = texture_data->get_width();
+                        create_info.height = texture_data->get_height();
+                        create_info.format = ImageFormat::BC1_RGB_UNORM;
+                        create_info.usage = ImageUsage::SampledImage;
+                        create_info.arrayLayers = 1;
+                        create_info.mipLevels = 1;
+                        create_info.initialData = const_cast<unsigned char *>(texture_data->get_compressed_data().data.data());
+                    }else {
+                        create_info.width = texture_data->get_width();
+                        create_info.height = texture_data->get_height();
+                        create_info.format = ImageFormat::RGBA8_SRGB;
+                        create_info.usage = ImageUsage::SampledImage;
+                        create_info.arrayLayers = 1;
+                        create_info.mipLevels = 1;
+                        create_info.initialData = texture_data->get_data();
+                    }
                 }
                 dev.textureBuffer = HardwareImage(create_info);
             }
