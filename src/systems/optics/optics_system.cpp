@@ -187,7 +187,8 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
 
                             for (auto& m : geom->mesh_handles) {
                                 hardware_->rasterizerPipeline["pushConsts.textureIndex"] = m.textureBuffer.storeDescriptor();
-                                hardware_->executor << hardware_->rasterizerPipeline.record(m.indexBuffer, m.vertexBuffer);
+                                //hardware_->executor << hardware_->rasterizerPipeline.record(m.indexBuffer, m.vertexBuffer);
+                                hardware_->rasterizerPipeline.record(m.indexBuffer, m.vertexBuffer);
                             }
                         }
                     }
