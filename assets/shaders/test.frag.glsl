@@ -29,8 +29,18 @@ layout(location = 3) out vec2 gbufferMotionVector;
 
 void main()
 {
-    gbufferBaseColor = vec4(vec3(texture(textures[pushConsts.textureIndex], fragTexCoord)),1.0f);
-    gbufferNormal = fragNormal;
+    // Alpha-cutout to avoid translucent Z-fighting on foliage
+    vec4 sampleColor = texture(textures[pushConsts.textureIndex], fragTexCoord);
+    if (sampleColor.a < 0.5f) {
+        discard;
+    }
+
+    gbufferBaseColor = vec4(sampleColor.rgb, 1.0f);
+    
+    // Flip normal for back-facing fragments (double-sided rendering support)
+    vec3 normal = gl_FrontFacing ? fragNormal : -fragNormal;
+    gbufferNormal = normalize(normal);
+    
     gbufferPostion = fragPos;
     gbufferMotionVector = fragMotionVector;
 }

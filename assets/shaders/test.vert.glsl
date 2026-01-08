@@ -31,7 +31,9 @@ void main()
     gl_Position = uniformBufferObjects[pushConsts.uniformBufferIndex].viewProjMatrix * worldPos;
 
     fragTexCoord = inTexCoord;
-    fragNormal = inNormal;
+    // Transform normal to world space (use inverse transpose for non-uniform scaling)
+    mat3 normalMatrix = transpose(inverse(mat3(pushConsts.modelMatrix)));
+    fragNormal = normalize(normalMatrix * inNormal);
 
     fragMotionVector = vec2(0.0f);
 }
