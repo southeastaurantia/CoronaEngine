@@ -276,10 +276,7 @@ Corona::API::Geometry::Geometry(const std::string& model_path) {
         CFW_LOG_WARNING("[Geometry] Scene has no meshes, checking nodes for mesh references...");
         for (std::uint32_t i = 0; i < scene->data.nodes.size(); ++i) {
             const auto& node = scene->data.nodes[i];
-            for(auto const& mesh_idx : node.mesh_indices) {
-                CFW_LOG_INFO("[Geometry] Found mesh reference in node '{}', mesh index: {}",
-                             scene->get_node_name(i), mesh_idx);
-            }
+            CFW_LOG_DEBUG("  - Node {}: mesh_index={}", i, node.mesh_index);
         }
     }
 
