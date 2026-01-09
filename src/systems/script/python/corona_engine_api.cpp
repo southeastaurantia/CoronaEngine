@@ -8,8 +8,8 @@
 #include <corona/kernel/event/i_event_bus.h>
 #include <corona/resource/resource_manager.h>
 #include <corona/resource/types/scene.h>
-#include <corona/systems/script/corona_engine_api.h>
 #include <corona/shared_data_hub.h>
+#include <corona/systems/script/corona_engine_api.h>
 
 #include "corona/resource/types/image.h"
 
@@ -310,8 +310,8 @@ Corona::API::Geometry::Geometry(const std::string& model_path) {
                         create_info.usage = ImageUsage::SampledImage;
                         create_info.arrayLayers = 1;
                         create_info.mipLevels = 1;
-                        create_info.initialData = const_cast<unsigned char *>(texture_data->get_compressed_data().data.data());
-                    }else {
+                        create_info.initialData = const_cast<unsigned char*>(texture_data->get_compressed_data().data.data());
+                    } else {
                         create_info.width = texture_data->get_width();
                         create_info.height = texture_data->get_height();
                         create_info.format = ImageFormat::RGBA8_SRGB;
@@ -333,6 +333,8 @@ Corona::API::Geometry::Geometry(const std::string& model_path) {
         handle->transform_handle = transform_handle_;
         handle->model_resource_handle = model_resource_handle_;
         handle->mesh_handles = std::move(mesh_devices);
+        CFW_LOG_INFO("[Geometry] Successfully created geometry with {} meshes from: {}",
+                     handle->mesh_handles.size(), model_path);
     } else {
         CFW_LOG_CRITICAL("[Geometry] Failed to acquire write access to geometry storage");
         // 清理已分配的资源
@@ -344,9 +346,6 @@ Corona::API::Geometry::Geometry(const std::string& model_path) {
         model_resource_handle_ = 0;
         return;
     }
-
-    CFW_LOG_INFO("[Geometry] Successfully created geometry with {} meshes from: {}",
-                 mesh_devices.size(), model_path);
 }
 
 Corona::API::Geometry::~Geometry() {
