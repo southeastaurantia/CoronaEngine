@@ -280,6 +280,37 @@ Corona::API::Geometry::Geometry(const std::string& model_path) {
         }
     }
 
+    // 输出模型的基础变换数据
+    CFW_LOG_INFO("[Geometry] Model loaded from: {}", model_path);
+    CFW_LOG_INFO("[Geometry] Scene contains {} nodes, {} meshes, {} materials",
+                 scene->data.nodes.size(), scene->data.meshes.size(), scene->data.materials.size());
+    
+    if (!scene->data.nodes.empty()) {
+        const auto& root_node = scene->data.nodes[0];
+        const auto& t = root_node.transform;
+        CFW_LOG_INFO("[Geometry] Root Node: '{}' | Pos({:.3f}, {:.3f}, {:.3f}) | Rot({:.3f}, {:.3f}, {:.3f}) | Scale({:.3f}, {:.3f}, {:.3f})",
+                     scene->get_node_name(0),
+                     t.position[0], t.position[1], t.position[2],
+                     t.rotation[0], t.rotation[1], t.rotation[2],
+                     t.scale[0], t.scale[1], t.scale[2]);
+    }
+
+    // 输出网格的归一化信息（如果有）
+    if (!scene->data.meshes.empty()) {
+        CFW_LOG_INFO("[Geometry] Mesh Normalization Data:");
+        for (std::uint32_t i = 0; i < scene->data.meshes.size(); ++i) {
+            const auto& mesh = scene->data.meshes[i];
+            if (mesh.is_normalized) {
+                CFW_LOG_INFO("  - Mesh {}: Normalized | Original Center({:.3f}, {:.3f}, {:.3f}) | Scale Factor: {:.3f}",
+                             i,
+                             mesh.original_center[0], mesh.original_center[1], mesh.original_center[2],
+                             mesh.original_scale_factor);
+            } else {
+                CFW_LOG_INFO("  - Mesh {}: Original Size (not normalized)", i);
+            }
+        }
+    }
+
     std::vector<MeshDevice> mesh_devices;
     mesh_devices.reserve(scene->data.meshes.size());
 
