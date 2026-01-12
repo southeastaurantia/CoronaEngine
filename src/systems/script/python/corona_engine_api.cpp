@@ -333,6 +333,7 @@ Corona::API::Geometry::Geometry(const std::string& model_path) {
 
             if (texture_id != Resource::InvalidIndex) {
                 auto texture_data = Resource::ResourceManager::get_instance().acquire_read<Resource::Image>(texture_id);
+                unsigned char* data_ptr = nullptr;
                 if (texture_data) {
                     if (texture_data->is_compressed()) {
                         create_info.width = texture_data->get_width();
@@ -341,7 +342,7 @@ Corona::API::Geometry::Geometry(const std::string& model_path) {
                         create_info.usage = ImageUsage::SampledImage;
                         create_info.arrayLayers = 1;
                         create_info.mipLevels = 1;
-                        create_info.initialData = const_cast<unsigned char*>(texture_data->get_compressed_data().data.data());
+                        data_ptr = const_cast<unsigned char*>(texture_data->get_compressed_data().data.data());
                     } else {
                         create_info.width = texture_data->get_width();
                         create_info.height = texture_data->get_height();
@@ -349,10 +350,12 @@ Corona::API::Geometry::Geometry(const std::string& model_path) {
                         create_info.usage = ImageUsage::SampledImage;
                         create_info.arrayLayers = 1;
                         create_info.mipLevels = 1;
-                        create_info.initialData = texture_data->get_data();
+                        data_ptr = texture_data->get_data();
                     }
                 }
                 dev.textureBuffer = HardwareImage(create_info);
+                HardwareExecutor temp_executor;
+                temp_executor << dev.textureBuffer.copyFrom(data_ptr) << temp_executor.commit();
             }
         }
 
