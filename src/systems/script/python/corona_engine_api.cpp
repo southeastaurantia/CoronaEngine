@@ -333,29 +333,75 @@ Corona::API::Geometry::Geometry(const std::string& model_path) {
 
             if (texture_id != Resource::InvalidIndex) {
                 auto texture_data = Resource::ResourceManager::get_instance().acquire_read<Resource::Image>(texture_id);
-                unsigned char* data_ptr = nullptr;
-                if (texture_data) {
-                    if (texture_data->is_compressed()) {
-                        create_info.width = texture_data->get_width();
-                        create_info.height = texture_data->get_height();
-                        create_info.format = ImageFormat::BC1_RGB_UNORM;
-                        create_info.usage = ImageUsage::SampledImage;
-                        create_info.arrayLayers = 1;
-                        create_info.mipLevels = 1;
-                        data_ptr = const_cast<unsigned char*>(texture_data->get_compressed_data().data.data());
-                    } else {
-                        create_info.width = texture_data->get_width();
-                        create_info.height = texture_data->get_height();
-                        create_info.format = ImageFormat::RGBA8_SRGB;
-                        create_info.usage = ImageUsage::SampledImage;
-                        create_info.arrayLayers = 1;
-                        create_info.mipLevels = 1;
-                        data_ptr = texture_data->get_data();
+                if (texture_data && texture_data->get_data() != nullptr) {
+                    const int tex_width = texture_data->get_width();
+                    const int tex_height = texture_data->get_height();
+                    const int tex_channels = texture_data->get_channels();
+                    
+                    if (tex_width > 0 && tex_height > 0 && tex_channels > 0) {
+                        constexpr bool use_compressed = false; // TODO: 测试模型兼容性  先不走压缩纹理
+                        
+                        if (use_compressed) {
+                            // 使用压缩纹理格式
+                            create_info.width = tex_width;
+                            create_info.height = tex_height;
+                            create_info.format = ImageFormat::BC1_RGB_UNORM;
+                            create_info.usage = ImageUsage::SampledImage;
+                            create_info.arrayLayers = 1;
+                            create_info.mipLevels = 1;
+                            auto* data_ptr = const_cast<unsigned char*>(texture_data->get_compressed_data().data.data());
+                            
+                            dev.textureBuffer = HardwareImage(create_info);
+                            HardwareExecutor temp_executor;
+                            temp_executor << dev.textureBuffer.copyFrom(data_ptr) << temp_executor.commit();
+                        } else {
+                            // 使用非压缩 RGBA8 格式，需要确保数据通道匹配
+                            create_info.width = tex_width;
+                            create_info.height = tex_height;
+                            create_info.format = ImageFormat::RGBA8_SRGB;
+                            create_info.usage = ImageUsage::SampledImage;
+                            create_info.arrayLayers = 1;
+                            create_info.mipLevels = 1;
+
+                            unsigned char* src_data = texture_data->get_data();
+                            std::vector<unsigned char> rgba_data;
+                            unsigned char* data_to_copy = nullptr;
+
+                            if (tex_channels == 4) {
+                                // 已经是 RGBA，直接使用
+                                data_to_copy = src_data;
+                            } else if (tex_channels == 3) {
+                                // RGB -> RGBA 转换
+                                rgba_data.resize(static_cast<size_t>(tex_width) * tex_height * 4);
+                                for (int i = 0; i < tex_width * tex_height; ++i) {
+                                    rgba_data[i * 4 + 0] = src_data[i * 3 + 0];  // R
+                                    rgba_data[i * 4 + 1] = src_data[i * 3 + 1];  // G
+                                    rgba_data[i * 4 + 2] = src_data[i * 3 + 2];  // B
+                                    rgba_data[i * 4 + 3] = 255;                   // A
+                                }
+                                data_to_copy = rgba_data.data();
+                            } else if (tex_channels == 1) {
+                                // Grayscale -> RGBA 转换
+                                rgba_data.resize(static_cast<size_t>(tex_width) * tex_height * 4);
+                                for (int i = 0; i < tex_width * tex_height; ++i) {
+                                    rgba_data[i * 4 + 0] = src_data[i];  // R
+                                    rgba_data[i * 4 + 1] = src_data[i];  // G
+                                    rgba_data[i * 4 + 2] = src_data[i];  // B
+                                    rgba_data[i * 4 + 3] = 255;          // A
+                                }
+                                data_to_copy = rgba_data.data();
+                            } else {
+                                CFW_LOG_WARNING("[Geometry] Unsupported texture channel count: {}", tex_channels);
+                            }
+
+                            if (data_to_copy != nullptr) {
+                                dev.textureBuffer = HardwareImage(create_info);
+                                HardwareExecutor temp_executor;
+                                temp_executor << dev.textureBuffer.copyFrom(data_to_copy) << temp_executor.commit();
+                            }
+                        }
                     }
                 }
-                dev.textureBuffer = HardwareImage(create_info);
-                HardwareExecutor temp_executor;
-                temp_executor << dev.textureBuffer.copyFrom(data_ptr) << temp_executor.commit();
             }
         }
 
