@@ -7,6 +7,7 @@ layout(push_constant) uniform PushConsts
     uint boneIndex;
     uint uniformBufferIndex;
     mat4 modelMatrix;
+    vec4 materialColor;
 } pushConsts;
 
 layout(set = 0, binding = 0) uniform UniformBufferObject
@@ -35,7 +36,9 @@ void main()
         discard;
     }
 
-    gbufferBaseColor = vec4(sampleColor.rgb, 1.0f);
+    // 材质颜色乘以纹理颜色
+    vec3 finalColor = sampleColor.rgb * pushConsts.materialColor.rgb;
+    gbufferBaseColor = vec4(finalColor, 1.0f);
     
     // Flip normal for back-facing fragments (double-sided rendering support)
     vec3 normal = gl_FrontFacing ? fragNormal : -fragNormal;

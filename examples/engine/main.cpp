@@ -44,6 +44,9 @@ int main(int argc, char* argv[]) {
 
     // 创建引擎实例
     Corona::Engine engine;
+
+    Corona::Kernel::CoronaLogger::set_log_level(Corona::Kernel::LogLevel::debug);
+
     g_engine = &engine;
 
     // 注册信号处理器

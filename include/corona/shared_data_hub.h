@@ -1,6 +1,7 @@
 #pragma once
 #include <corona/kernel/utils/storage.h>
 
+#include <array>
 #include <memory>
 #include <vector>
 
@@ -20,6 +21,9 @@ struct MeshDevice {
 
     uint32_t materialIndex;
     HardwareImage textureBuffer;
+    
+    // 材质颜色 (RGBA)
+    std::array<float, 4> materialColor{1.0f, 1.0f, 1.0f, 1.0f};
 
     // Mesh meshData;
 };

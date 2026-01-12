@@ -4,9 +4,9 @@
 layout(push_constant) uniform PushConsts
 {    
     uint textureIndex;
-    //uint boneIndex;
     uint uniformBufferIndex;
     mat4 modelMatrix;
+    vec4 materialColor;
 } pushConsts;
 
 layout(set = 0, binding = 0) uniform UniformBufferObject

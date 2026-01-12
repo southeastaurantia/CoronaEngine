@@ -153,7 +153,7 @@ void OpticsSystem::update() {
 }
 
 void OpticsSystem::optics_pipeline(float frame_count) const {
-    CFW_LOG_DEBUG("OpticsSystem: Rendering pipeline temporarily disabled - waiting for new Storage API");
+    // CFW_LOG_DEBUG("OpticsSystem: Rendering pipeline temporarily disabled - waiting for new Storage API");
 
     // 遍历场景存储并使用 acquire_read 访问相关句柄
     for (const auto& scene : SharedDataHub::instance().scene_storage()) {
@@ -191,6 +191,9 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
                                 hardware_->rasterizerPipeline["pushConsts.modelMatrix"] = model_matrix;
                                 hardware_->rasterizerPipeline["pushConsts.uniformBufferIndex"] = hardware_->gbufferUniformBuffer.storeDescriptor();
                                 hardware_->rasterizerPipeline["pushConsts.textureIndex"] = m.textureBuffer.storeDescriptor();
+                                // 传递材质颜色到着色器
+                                ktm::fvec4 materialColor{m.materialColor[0], m.materialColor[1], m.materialColor[2], m.materialColor[3]};
+                                hardware_->rasterizerPipeline["pushConsts.materialColor"] = materialColor;
                                 hardware_->rasterizerPipeline.record(m.indexBuffer, m.vertexBuffer);
                             }
                         }

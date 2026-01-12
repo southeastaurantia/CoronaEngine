@@ -117,7 +117,7 @@ void MechanicsSystem::update_physics() {
     // 临时解决方案：假设我们有一种方式获取所有活动的句柄
     // 这里需要根据实际的 Storage API 进行调整
     
-    CFW_LOG_DEBUG("MechanicsSystem: Starting collision detection update");
+    // CFW_LOG_DEBUG("MechanicsSystem: Starting collision detection update");
     
     // 双重循环进行碰撞检测
     // 注意：这里需要根据实际的 Storage API 来获取所有活动句柄
@@ -218,7 +218,7 @@ void MechanicsSystem::update_physics() {
             
             // 碰撞检测
             if (checkCollision(vertices1, vertices2)) {
-                CFW_LOG_DEBUG("Collision detected between objects with handles {} and {}", handle1, handle2);
+                // CFW_LOG_DEBUG("Collision detected between objects with handles {} and {}", handle1, handle2);
                 
                 // 计算碰撞法线（从 m1 中心指向 m2 中心）
                 ktm::fvec3 center1;
