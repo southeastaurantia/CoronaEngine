@@ -179,15 +179,18 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
                     // 遍历所有光学设备
                     for (const auto& optics : SharedDataHub::instance().optics_storage()) {
                         if (auto geom = SharedDataHub::instance().geometry_storage().acquire_write(optics.geometry_handle)) {
+                            // 预先计算 model_matrix，供所有 submesh 使用
+                            ktm::fmat4x4 model_matrix;
                             if (auto transform = SharedDataHub::instance().model_transform_storage().acquire_read(geom->transform_handle)) {
-                                auto model_matrix = transform->compute_matrix();
-                                hardware_->rasterizerPipeline["pushConsts.modelMatrix"] = model_matrix;
+                                model_matrix = transform->compute_matrix();
                             }
-                            hardware_->rasterizerPipeline["pushConsts.uniformBufferIndex"] = hardware_->gbufferUniformBuffer.storeDescriptor();
 
+                            // 每个 submesh 都需要完整设置所有 push constants
+                            // 因为 record() 会在保存后重置 tempPushConstant
                             for (auto& m : geom->mesh_handles) {
+                                hardware_->rasterizerPipeline["pushConsts.modelMatrix"] = model_matrix;
+                                hardware_->rasterizerPipeline["pushConsts.uniformBufferIndex"] = hardware_->gbufferUniformBuffer.storeDescriptor();
                                 hardware_->rasterizerPipeline["pushConsts.textureIndex"] = m.textureBuffer.storeDescriptor();
-                                //hardware_->executor << hardware_->rasterizerPipeline.record(m.indexBuffer, m.vertexBuffer);
                                 hardware_->rasterizerPipeline.record(m.indexBuffer, m.vertexBuffer);
                             }
                         }
@@ -213,10 +216,12 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
 
                     hardware_->computePipeline["pushConsts.sun_dir"] = ktm::normalize(sun_dir);
                     {
-                        ktm::fvec3 lightColor;
-                        lightColor.x = 23.47f;
-                        lightColor.y = 21.31f;
-                        lightColor.z = 20.79f;
+                        static const ktm::fvec3 lightColor{
+                            23.47f,
+                            21.31f,
+                            20.79f
+                        };
+
                         hardware_->computePipeline["pushConsts.lightColor"] = lightColor;
                     }
 
