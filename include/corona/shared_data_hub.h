@@ -116,11 +116,11 @@ struct CameraDevice {
     CameraDevice() {
         position.x = 0.0f;
         position.y = 0.0f;
-        position.z = 5.0f;
+        position.z = -5.0f;
 
         forward.x = 0.0f;
         forward.y = 0.0f;
-        forward.z = -1.0f;
+        forward.z = 1.0f;
 
         world_up.x = 0.0f;
         world_up.y = 1.0f;

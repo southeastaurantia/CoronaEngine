@@ -472,7 +472,7 @@ void main()
 
         vec3 cam_local_point = vec3((2.0 * point_ndc.x - 1.0) * aspect_ratio.x * fov,
                               (1.0 - 2.0 * point_ndc.y) * aspect_ratio.y * fov,
-                              -1.0);
+                              1.0);
 
         vec3 cam_origin = vec3(0, 6371e3 + 1., 0) + uniformBufferObjects[pushConsts.uniformBufferIndex].eyePosition;
         vec3 cam_look_at = vec3(0, 6371e3 + 1., 0) + uniformBufferObjects[pushConsts.uniformBufferIndex].eyeDir;

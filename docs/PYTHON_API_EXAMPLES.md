@@ -128,8 +128,8 @@ Camera 存放相机位置、方向、上向量、视野角；Viewport 绑定一�
 # 相机
 cam = Camera()
 cam.set(
-    position=[0.0, 5.0, 10.0],
-    forward=[0.0, 0.0, -1.0],
+    position=[0.0, 5.0, -10.0],
+    forward=[0.0, 0.0, 1.0],
     world_up=[0.0, 1.0, 0.0],
     fov=60.0,
 )
@@ -155,7 +155,7 @@ vp.save_screenshot("screenshot.png")
 
 # 判空 / 访问
 if vp.has_camera():
-    vp.get_camera().set([0, 3, 8], [0, 0, -1], [0, 1, 0], 60)
+    vp.get_camera().set([0, 3, -8], [0, 0, 1], [0, 1, 0], 60)
 
 if vp.has_image_effects():
     _fx = vp.get_image_effects()
@@ -234,7 +234,7 @@ scene.add_actor(actor)
 
 # 视口
 cam = Camera()
-cam.set([0, 2, 6], [0, 0, -1], [0, 1, 0], 60)
+cam.set([0, 2, -6], [0, 0, 1], [0, 1, 0], 60)
 vp = Viewport(1920, 1080)
 vp.set_camera(cam)
 scene.add_viewport(vp)

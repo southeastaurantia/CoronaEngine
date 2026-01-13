@@ -880,8 +880,8 @@ std::uintptr_t Corona::API::Actor::get_handle() const {
 // ########################
 Corona::API::Camera::Camera()
     : handle_(0) {
-    ktm::fvec3 pos_vec{0.0f, 0.0f, 5.0f};
-    ktm::fvec3 fwd_vec{0.0f, 0.0f, -1.0f};
+    ktm::fvec3 pos_vec{0.0f, 0.0f, -5.0f};
+    ktm::fvec3 fwd_vec{0.0f, 0.0f, 1.0f};
     ktm::fvec3 up_vec{0.0f, 1.0f, 0.0f};
     float fov = 45.0f;
 
@@ -965,10 +965,10 @@ std::array<float, 3> Corona::API::Camera::get_position() const {
 std::array<float, 3> Corona::API::Camera::get_forward() const {
     if (handle_ == 0) {
         CFW_LOG_WARNING("[Camera::get_forward] Invalid camera handle");
-        return {0.0f, 0.0f, -1.0f};
+        return {0.0f, 0.0f, 1.0f};
     }
 
-    std::array result = {0.0f, 0.0f, -1.0f};
+    std::array result = {0.0f, 0.0f, 1.0f};
     if (auto accessor = SharedDataHub::instance().camera_storage().acquire_read(handle_)) {
         result[0] = accessor->forward.x;
         result[1] = accessor->forward.y;
