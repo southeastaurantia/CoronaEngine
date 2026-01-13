@@ -24,8 +24,6 @@ struct MeshDevice {
     
     // 材质颜色 (RGBA)
     std::array<float, 4> materialColor{1.0f, 1.0f, 1.0f, 1.0f};
-
-    // Mesh meshData;
 };
 
 

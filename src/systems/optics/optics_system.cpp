@@ -179,14 +179,15 @@ void OpticsSystem::optics_pipeline(float frame_count) const {
                     // 遍历所有光学设备
                     for (const auto& optics : SharedDataHub::instance().optics_storage()) {
                         if (auto geom = SharedDataHub::instance().geometry_storage().acquire_write(optics.geometry_handle)) {
-                            // 预先计算 model_matrix，供所有 submesh 使用
-                            ktm::fmat4x4 model_matrix;
+                            // 获取模型的全局变换矩阵
+                            ktm::fmat4x4 model_matrix{ktm::fmat4x4::from_eye()};
                             if (auto transform = SharedDataHub::instance().model_transform_storage().acquire_read(geom->transform_handle)) {
                                 model_matrix = transform->compute_matrix();
                             }
 
                             // 每个 submesh 都需要完整设置所有 push constants
                             // 因为 record() 会在保存后重置 tempPushConstant
+                            // 注意：节点累积变换已在加载时"烘焙"到顶点数据中
                             for (auto& m : geom->mesh_handles) {
                                 hardware_->rasterizerPipeline["pushConsts.modelMatrix"] = model_matrix;
                                 hardware_->rasterizerPipeline["pushConsts.uniformBufferIndex"] = hardware_->gbufferUniformBuffer.storeDescriptor();
