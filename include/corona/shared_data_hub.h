@@ -129,7 +129,7 @@ struct CameraDevice {
 
     [[nodiscard]] ktm::fmat4x4 compute_view_matrix() const {
         ktm::fvec3 normalized_forward = ktm::normalize(forward);
-        return ktm::look_at_lh(position, normalized_forward, world_up);
+        return ktm::look_to_lh(position, normalized_forward, world_up);
     }
 
     [[nodiscard]] ktm::fmat4x4 compute_projection_matrix() const {

@@ -20,10 +20,17 @@ struct Hardware {
     HardwareExecutor executor;
 
     struct UniformBufferObject {
-        ktm::fvec3 eyePosition;
+        // Light data (for shadow mapping, etc.)
+        ktm::fvec3 lightPosition;
         float padding0;
-        ktm::fvec3 eyeDir;
+        ktm::fmat4x4 lightViewMatrix;
+        ktm::fmat4x4 lightProjMatrix;
+
+        // Eye/Camera data
+        ktm::fvec3 eyePosition;
         float padding1;
+        ktm::fvec3 eyeDir;
+        float padding2;
         ktm::fmat4x4 eyeViewMatrix;
         ktm::fmat4x4 eyeProjMatrix;
     } uniformBufferObjects{};

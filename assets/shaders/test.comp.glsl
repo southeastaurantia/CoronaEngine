@@ -40,12 +40,17 @@ layout(push_constant) uniform PushConsts
 
 layout(set = 0, binding = 0) uniform UniformBufferObject
 {
-    vec3 lightPostion;
+    // Light data (for shadow mapping, etc.)
+    vec3 lightPosition;
+    float padding0;
     mat4 lightViewMatrix;
     mat4 lightProjMatrix;
 
+    // Eye/Camera data
     vec3 eyePosition;
+    float padding1;
     vec3 eyeDir;
+    float padding2;
     mat4 eyeViewMatrix;
     mat4 eyeProjMatrix;
 } uniformBufferObjects[];
@@ -453,7 +458,7 @@ void main()
 		vec4 gbufferNormal = imageLoad(inputImageRGBA16[pushConsts.gbufferNormalImage], ivec2(gl_GlobalInvocationID.xy));
 
 		renderResult = calculateColor(gbufferPostion.xyz, gbufferNormal.xyz,
-            uniformBufferObjects[pushConsts.uniformBufferIndex].lightPostion,
+            uniformBufferObjects[pushConsts.uniformBufferIndex].lightPosition,
             pushConsts.lightColor,
             gbufferBaseColor.xyz, 0.5, 0.5);
         renderResult = max(renderResult,vec3(0.01,0.01,0.01));
